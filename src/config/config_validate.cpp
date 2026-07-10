@@ -550,7 +550,7 @@ namespace noctalia::config {
       }
     }
 
-    void validateMergedConfig(const toml::table& merged, schema::Diagnostics& diag) {
+    void appendMergedConfigDiagnostics(const toml::table& merged, schema::Diagnostics& diag) {
       checkSection(merged, "shell", schema::shellSchema(), diag);
       checkSection(
           merged, "wallpaper", schema::wallpaperSchema(), diag,
@@ -658,7 +658,7 @@ namespace noctalia::config {
         // Syntax errors were already reported during the merge.
       }
     }
-    validateMergedConfig(merged, diag);
+    appendMergedConfigDiagnostics(merged, diag);
     return diag;
   }
 
@@ -677,7 +677,13 @@ namespace noctalia::config {
     for (const LegacyConfigIssue& issue : issues) {
       diag.warn(issue.path, issue.message);
     }
-    validateMergedConfig(parsed, diag);
+    appendMergedConfigDiagnostics(parsed, diag);
+    return diag;
+  }
+
+  schema::Diagnostics validateMergedConfig(const toml::table& merged) {
+    schema::Diagnostics diag;
+    appendMergedConfigDiagnostics(merged, diag);
     return diag;
   }
 

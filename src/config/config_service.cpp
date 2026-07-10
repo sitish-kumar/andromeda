@@ -5,6 +5,7 @@
 #include "config/config_export.h"
 #include "config/config_merge.h"
 #include "config/config_migrations.h"
+#include "config/config_validate.h"
 #include "config/schema/config_schema.h"
 #include "config/schema/engine.h"
 #include "config/widget_config.h"
@@ -15,11 +16,12 @@
 #include "i18n/i18n.h"
 #include "ipc/ipc_service.h"
 #include "notification/notification_manager.h"
+#include "scripting/plugin_manager.h"
+#include "scripting/plugin_registry.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "system/distro_info.h"
 #include "system/hardware_info.h"
-#include "time/time_format.h"
 #include "util/file_utils.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
@@ -162,31 +164,10 @@ namespace {
     }
   }
 
-  void validateTimezoneSetting(const WidgetSettingValue& value, const std::string& context) {
-    const auto* timezone = std::get_if<std::string>(&value);
-    if (timezone == nullptr) {
-      throw std::runtime_error(context + ": expected a string");
-    }
-    if (!isValidTimezone(*timezone)) {
-      throw std::runtime_error(context + ": unknown timezone \"" + *timezone + "\"");
-    }
-  }
-
-  void validateClockTimezoneSetting(std::string_view widgetName, const WidgetConfig& widget) {
-    if (widget.type != "clock") {
-      return;
-    }
-    const auto timezone = widget.settings.find("timezone");
-    if (timezone != widget.settings.end()) {
-      validateTimezoneSetting(timezone->second, "widget." + std::string(widgetName) + ".timezone");
-    }
-  }
-
   void validateWidgetSettings(std::string_view widgetName, const WidgetConfig& widget) {
     validateWidgetColorSettings(widgetName, widget);
     validateWidgetScaleSetting(widgetName, widget);
     validateKeyboardLayoutWidgetSettings(widgetName, widget);
-    validateClockTimezoneSetting(widgetName, widget);
   }
 
   void validateDesktopWidgetColorSettings(const DesktopWidgetState& widget, std::string_view section) {
@@ -244,14 +225,6 @@ namespace {
       }
     }
     validateDesktopWidgetColorSettings(widget, colorSection);
-    if (widget.type == "clock") {
-      const auto timezone = widget.settings.find("timezone");
-      if (timezone != widget.settings.end()) {
-        validateTimezoneSetting(
-            timezone->second, std::string(colorSection) + ".widget." + std::string(id) + ".settings.timezone"
-        );
-      }
-    }
     return widget;
   }
 
@@ -565,7 +538,7 @@ void ConfigService::setNotificationManager(NotificationManager* manager) {
         m_notificationManager->close(m_configErrorNotificationId);
       }
       m_configErrorNotificationId =
-          m_notificationManager->addInternal("Noctalia", "Config parse error", pendingError, Urgency::Critical, 0);
+          m_notificationManager->addInternal("Noctalia", "Config error", pendingError, Urgency::Critical, 0);
     });
   }
   if (m_notificationManager != nullptr && m_legacyReminderPending) {
@@ -1237,7 +1210,7 @@ void ConfigService::setConfigParseError(std::string parseError) {
       m_notificationManager->close(m_configErrorNotificationId);
     }
     m_configErrorNotificationId =
-        m_notificationManager->addInternal("Noctalia", "Config parse error", parseError, Urgency::Critical, 0);
+        m_notificationManager->addInternal("Noctalia", "Config error", parseError, Urgency::Critical, 0);
   } else {
     m_pendingError = std::move(parseError);
   }
@@ -1430,14 +1403,43 @@ void ConfigService::loadAll() {
     return;
   }
 
-  std::string semanticError = migrationError;
+  std::string semanticError = !firstError.empty() ? firstError
+      : !m_overridesParseError.empty()            ? m_overridesParseError
+                                                  : migrationError;
+  bool candidatePluginRegistryApplied = false;
+  if (semanticError.empty()) {
+    candidatePluginRegistryApplied = true;
+    try {
+      const auto diagnostics = noctalia::config::validateMergedConfig(merged);
+      std::size_t errorCount = 0;
+      for (const auto& entry : diagnostics.entries) {
+        if (entry.severity == schema::Diagnostics::Severity::Error) {
+          ++errorCount;
+          if (semanticError.empty()) {
+            semanticError = entry.path + ": " + entry.message;
+          }
+        }
+        kLog.warn("{}: {}", entry.path, entry.message);
+      }
+      if (errorCount > 1) {
+        semanticError += std::format(" (and {} more config errors)", errorCount - 1);
+      }
+    } catch (const std::exception& e) {
+      semanticError = e.what();
+      kLog.warn("config validation error: {}", semanticError);
+    }
+  }
   if (semanticError.empty()) {
     try {
-      parseConfigTable(merged, nextConfig, true);
+      parseConfigTable(merged, nextConfig, true, false);
     } catch (const std::exception& e) {
       semanticError = e.what();
       kLog.warn("config parse error: {}", semanticError);
     }
+  }
+
+  if (!semanticError.empty() && candidatePluginRegistryApplied) {
+    scripting::applyPluginSourcesToRegistry(scripting::PluginRegistry::instance(), m_config.plugins);
   }
 
   if (semanticError.empty()) {
