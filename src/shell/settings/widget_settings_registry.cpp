@@ -1202,6 +1202,9 @@ namespace settings {
           {"attached", tr("settings.options.shell.panel-placement.attached")},
           {"floating", tr("settings.options.shell.panel-placement.floating")},
       };
+      for (const auto& option : spec.options) {
+        spec.schema.enumValues.push_back(option.value);
+      }
       spec.schema.type = schemaTypeForControl(spec.control);
       return spec;
     };
@@ -1226,6 +1229,9 @@ namespace settings {
           {"bottom_center", tr("settings.options.screen-position.bottom-center")},
           {"bottom_right", tr("settings.options.screen-position.bottom-right")},
       };
+      for (const auto& option : spec.options) {
+        spec.schema.enumValues.push_back(option.value);
+      }
       spec.schema.type = schemaTypeForControl(spec.control);
       spec.visibleWhen = WidgetSettingVisibility{placementKey, {"floating"}};
       return spec;
