@@ -52,25 +52,11 @@ namespace {
     float top = 0.0f;
   };
 
-  struct ExternalBadgeCrossOverhang {
-    float before = 0.0f;
-    float after = 0.0f;
-  };
-
   [[nodiscard]] float externalBadgeMainOverhang(WorkspaceLabelPlacement placement, float discMain) {
     if (placement == WorkspaceLabelPlacement::Centered) {
       return discMain * 0.5f;
     }
     return discMain * 0.32f;
-  }
-
-  [[nodiscard]] float
-  externalBadgeTileMainStart(WorkspaceLabelPlacement placement, float discMain, float groupPad, float groupGap) {
-    if (placement == WorkspaceLabelPlacement::Centered) {
-      return std::round(discMain * 0.5f + groupGap);
-    }
-    constexpr float kCornerInsideMainFraction = 1.0f - 0.32f;
-    return std::round(std::max(groupPad, discMain * kCornerInsideMainFraction + groupGap));
   }
 
   [[nodiscard]] ExternalBadgePosition externalBadgePosition(
@@ -86,22 +72,6 @@ namespace {
       return {centeredOffset(groupWidth, badgeWidth, outlineInset, false), std::round(-badgeHeight * 0.5f)};
     }
     return {std::round(-badgeWidth * 0.5f), centeredOffset(groupHeight, badgeHeight, outlineInset, false)};
-  }
-
-  [[nodiscard]] ExternalBadgeCrossOverhang externalBadgeCrossOverhangs(
-      WorkspaceLabelPlacement placement, bool vertical, float contentCrossSize, float badgeWidth, float badgeHeight,
-      float outlineInset
-  ) {
-    const auto position = externalBadgePosition(
-        placement, vertical, vertical ? contentCrossSize : 0.0f, vertical ? 0.0f : contentCrossSize, badgeWidth,
-        badgeHeight, outlineInset
-    );
-    const float badgeCrossPosition = vertical ? position.left : position.top;
-    const float badgeCrossSize = vertical ? badgeWidth : badgeHeight;
-    return {
-        .before = std::round(std::max(0.0f, -badgeCrossPosition)),
-        .after = std::round(std::max(0.0f, badgeCrossPosition + badgeCrossSize - contentCrossSize)),
-    };
   }
 
   [[nodiscard]] float fitBadgeFontSize(
@@ -522,29 +492,34 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       area->setEnabled(false);
     }
 
-    const bool groupedHorizontalPill = m_groupByWorkspace && !m_vertical;
-    const bool iconOddSpareOnEnd = !groupedHorizontalPill;
-    const float iconInsetX = centeredOffset(tileSize, iconSize);
-    const float iconInsetY = centeredOffset(tileSize, iconSize, 0.0f, iconOddSpareOnEnd);
+    auto content = ui::flex(
+        m_vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
+        {
+            .align = FlexAlign::Center,
+            .justify = FlexJustify::Center,
+            .gap = tilePadding,
+            .width = tileWidthWithTitle,
+            .height = tileSize,
+        }
+    );
+
     if (!task.iconPath.empty()) {
       auto image = ui::image({
           .fit = ImageFit::Contain,
           .width = iconSize,
           .height = iconSize,
       });
-      image->setPosition(iconInsetX, iconInsetY);
       image->setAppIconColorization(effectiveShellAppIconColorizationTint(m_configService.config().shell));
       image->setSourceFile(renderer, task.iconPath, static_cast<int>(std::round(iconSize)), true);
       if (image->hasImage()) {
-        area->addChild(std::move(image));
+        content->addChild(std::move(image));
       } else {
         auto glyph = ui::glyph({
             .glyph = "app-window",
             .glyphSize = iconSize,
         });
         glyph->measure(renderer);
-        glyph->setPosition(iconInsetX, iconInsetY);
-        area->addChild(std::move(glyph));
+        content->addChild(std::move(glyph));
       }
     } else {
       auto glyph = ui::glyph({
@@ -552,10 +527,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           .glyphSize = iconSize,
       });
       glyph->measure(renderer);
-      glyph->setPosition(
-          centeredOffset(tileSize, glyph->width()), centeredOffset(tileSize, glyph->height(), 0.0f, iconOddSpareOnEnd)
-      );
-      area->addChild(std::move(glyph));
+      content->addChild(std::move(glyph));
     }
 
     if (showWindowTitle) {
@@ -568,9 +540,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           .maxLines = 1,
       });
       label->measure(renderer);
-      label->setPosition(std::round(tileSize + tilePadding), 0);
-      area->addChild(std::move(label));
+      content->addChild(std::move(label));
     }
+
+    area->addChild(std::move(content));
 
     if (badgeCount > 1) {
       const std::size_t dotCount = badgeCount >= 4 ? 3U : (badgeCount == 3 ? 2U : 1U);
@@ -579,8 +552,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const float runHeight =
           dotSize * static_cast<float>(dotCount) + dotGap * static_cast<float>(dotCount > 0 ? dotCount - 1 : 0);
       const float iconRightInset = std::round(std::max(1.0f, iconSize * 0.08f));
-      const float dotX = std::round(iconInsetX + iconSize - dotSize - iconRightInset);
-      const float startY = std::round(iconInsetY + (iconSize - runHeight) * 0.5f);
+      const float dotX = std::round(centeredOffset(tileSize, iconSize) + iconSize - dotSize - iconRightInset);
+      const float startY = std::round(centeredOffset(tileSize, iconSize) + (iconSize - runHeight) * 0.5f);
       const ColorSpec dotColor = colorSpecFromRole(ColorRole::Primary, 0.9f);
 
       for (std::size_t i = 0; i < dotCount; ++i) {
@@ -629,8 +602,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   if (m_groupByWorkspace && !m_workspaces.empty()) {
     const float groupGap = Style::spaceXs * m_contentScale;
     const float groupPad = Style::spaceXs * m_contentScale;
-    const float groupPadMain = Style::spaceXs * 0.55f * m_contentScale;
-    const float groupPadCross = Style::spaceXs * 0.35f * m_contentScale;
+
     const bool inlineBadge = m_showWorkspaceLabel && m_workspaceLabelPlacement == WorkspaceLabelPlacement::Inside;
     const bool externalBadge = m_showWorkspaceLabel && !inlineBadge;
     const float badgeBase = std::round(std::max(11.0f, Style::baseGlyphSize * 0.72f) * m_contentScale);
@@ -652,114 +624,53 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     m_taskStrip->setGap(stripGap);
     m_taskStrip->setPadding(m_vertical ? 0.0f : stripPaddingMain, m_vertical ? stripPaddingMain : 0.0f, 0.0f, 0.0f);
 
-    const auto styleWorkspaceDisc = [this](Box& badge, float width, float height, const Workspace& workspace) {
-      badge.setFrameSize(width, height);
-      badge.setRadius(resolvedBarCapsuleRadius(width, height));
-      badge.setFill(m_minimal ? clearColorSpec() : workspaceFillColor(workspace));
-      badge.clearBorder();
-    };
+    auto createWorkspaceBadge = [&](const WorkspaceModel& ws, const WorkspaceDiscSize& disc, bool hover) {
+      Button::ButtonPalette badgePalette{};
+      const ColorSpec fill = workspaceFillColor(ws.workspace);
+      const ColorSpec text = workspaceTextColor(ws.workspace);
+      badgePalette.normal = Button::ButtonStateColors{fill, clearColorSpec(), text};
+      badgePalette.hover = badgePalette.normal;
+      badgePalette.pressed = badgePalette.normal;
+      badgePalette.disabled = badgePalette.normal;
+      badgePalette.borderWidth = 0.0f;
 
-    auto createWorkspaceBadgeTile = [&](const WorkspaceModel& ws) {
-      auto area = std::make_unique<InputArea>();
-      area->setFrameSize(tileSize, tileSize);
-      area->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
-      area->setOnAxisHandler(workspaceAxisHandler);
+      const float badgeFontSize =
+          fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
+
+      auto badge = ui::button({
+          .text = ws.label,
+          .fontSize = badgeFontSize,
+          .customPalette = badgePalette,
+          .minWidth = disc.width,
+          .minHeight = disc.height,
+          .maxWidth = disc.width,
+          .maxHeight = disc.height,
+          .padding = 0.0f,
+          .radius = resolvedBarCapsuleRadius(disc.width, disc.height),
+          .width = disc.width,
+          .height = disc.height,
+          .configure = [this, fontWeight, fontFamily](Button& b) {
+            if (b.label() != nullptr) {
+              b.label()->setFontWeight(fontWeight);
+              b.label()->setFontFamily(fontFamily);
+              b.label()->setTextAlign(TextAlign::Center);
+            }
+          },
+      });
+
       auto wsCopy = ws.workspace;
       wl_output* const wsHost = workspaceHostOutput(ws);
-      area->setOnClick([this, wsCopy, wsHost](const InputArea::PointerData& data) {
-        if (data.button == BTN_LEFT) {
-          m_platform.activateWorkspace(wsHost, wsCopy);
-        }
-      });
+      badge->setOnClick([this, wsCopy, wsHost]() { m_platform.activateWorkspace(wsHost, wsCopy); });
+      badge->inputArea()->setOnAxisHandler(workspaceAxisHandler);
 
-      const bool groupedHorizontalPill = m_groupByWorkspace && !m_vertical;
-      const float inlineBadgeFontSize = std::round(Style::fontSizeCaption * 0.85f * m_contentScale);
-      const float inlineBadgeHeight = std::round(std::max(10.0f, iconSize - (Style::spaceXs * m_contentScale)));
-      WorkspaceDiscSize disc = measureWorkspaceDiscSize(
-          renderer, ws.label, inlineBadgeFontSize, inlineBadgeHeight, m_contentScale, fontWeight
-      );
-      disc.height = inlineBadgeHeight;
-      disc.width = std::round(std::max(inlineBadgeHeight, disc.width));
-      const float badgeX = centeredOffset(tileSize, disc.width);
-      const float badgeY = centeredOffset(tileSize, disc.height, 0.0f, !groupedHorizontalPill);
-
-      auto badge = ui::box();
-      badge->setPosition(badgeX, badgeY);
-      styleWorkspaceDisc(*badge, disc.width, disc.height, ws.workspace);
-      auto* badgePtr = static_cast<Box*>(area->addChild(std::move(badge)));
-
-      const float badgeFontSize =
-          fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
-      auto badgeText = ui::label({
-          .text = ws.label,
-          .fontSize = badgeFontSize,
-          .fontWeight = fontWeight,
-          .fontFamily = fontFamily,
-          .color = workspaceTextColor(ws.workspace),
-      });
-      badgeText->measure(renderer);
-      badgeText->setPosition(
-          std::round((disc.width - badgeText->width()) * 0.5f), std::round((disc.height - badgeText->height()) * 0.5f)
-      );
-      badgePtr->addChild(std::move(badgeText));
-      attachHover(*area, tileSize, tileSize);
-      return area;
-    };
-
-    auto addExternalWorkspaceBadge = [&](const WorkspaceModel& ws, Box* badgeParent, float badgeLayoutWidth,
-                                         float badgeLayoutHeight, const WorkspaceDiscSize& disc, bool emptyWorkspace,
-                                         float badgeOriginMain, float badgeOriginCross) {
-      const auto badgePos = externalBadgePosition(
-          m_workspaceLabelPlacement, m_vertical, badgeLayoutWidth, badgeLayoutHeight, disc.width, disc.height,
-          groupOutlineInset
-      );
-      auto badgeHit = std::make_unique<InputArea>();
-      badgeHit->setFrameSize(disc.width, disc.height);
-      if (m_vertical) {
-        badgeHit->setPosition(badgeOriginCross + badgePos.left, badgeOriginMain + badgePos.top);
-      } else {
-        badgeHit->setPosition(badgeOriginMain + badgePos.left, badgeOriginCross + badgePos.top);
+      if (hover) {
+        attachHover(*badge->inputArea(), disc.width, disc.height);
       }
-      badgeHit->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
-      badgeHit->setOnAxisHandler(workspaceAxisHandler);
-      auto wsForBadge = ws.workspace;
-      wl_output* const badgeHost = workspaceHostOutput(ws);
-      badgeHit->setOnClick([this, wsForBadge, badgeHost](const InputArea::PointerData& data) {
-        if (data.button == BTN_LEFT) {
-          m_platform.activateWorkspace(badgeHost, wsForBadge);
-        }
-      });
-
-      auto badge = ui::box();
-      badge->setPosition(0.0f, 0.0f);
-      styleWorkspaceDisc(*badge, disc.width, disc.height, ws.workspace);
-      auto* badgePtr = static_cast<Box*>(badgeHit->addChild(std::move(badge)));
-
-      const float badgeFontSize =
-          fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
-      auto badgeText = ui::label({
-          .text = ws.label,
-          .fontSize = badgeFontSize,
-          .fontWeight = fontWeight,
-          .fontFamily = fontFamily,
-          .color = workspaceTextColor(ws.workspace),
-      });
-      badgeText->measure(renderer);
-      badgeText->setPosition(
-          std::round((disc.width - badgeText->width()) * 0.5f), std::round((disc.height - badgeText->height()) * 0.5f)
-      );
-      badgePtr->addChild(std::move(badgeText));
-      if (emptyWorkspace) {
-        badgeHit->setHitTestVisible(false);
-      } else {
-        attachHover(*badgeHit, disc.width, disc.height);
-      }
-      badgeParent->addChild(std::move(badgeHit));
+      return badge;
     };
 
     std::unordered_set<std::string> cycleKeysThisFrame;
-    for (std::size_t groupIndex = 0; groupIndex < m_workspaces.size(); ++groupIndex) {
-      const auto& ws = m_workspaces[groupIndex];
+    for (const auto& ws : m_workspaces) {
       std::vector<const TaskModel*> tasks;
       for (const auto& task : m_tasks) {
         if (taskInWorkspaceGroup(task, ws)) {
@@ -834,130 +745,39 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       }
 
       const bool emptyWorkspace = renderedTasks.empty();
-      WorkspaceDiscSize disc{};
-      if (externalBadge) {
-        disc =
-            measureWorkspaceDiscSize(renderer, ws.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
-      }
-
-      const float discMain = externalBadge ? (m_vertical ? disc.height : disc.width) : 0.0f;
-      const bool externalInsetCapsule = externalBadge && m_workspaceGroupCapsule;
-      const float mainOverhang = externalBadgeMainOverhang(m_workspaceLabelPlacement, discMain);
-      const float groupOuterLead = externalInsetCapsule
-          ? std::round(std::max(groupPad, mainOverhang + (groupIndex > 0 ? groupGap : 0.0f)))
-          : 0.0f;
-
-      float tileMain = inlineBadge ? groupPadMain : groupPad;
-      if (externalBadge) {
-        tileMain = externalBadgeTileMainStart(m_workspaceLabelPlacement, discMain, groupPad, groupGap);
-      }
-
-      const std::size_t inlineSlotCount = m_showWorkspaceLabel ? (emptyWorkspace ? 1U : renderedTasks.size() + 1)
-                                                               : (emptyWorkspace ? 0U : renderedTasks.size());
-      const float taskCount = std::max(1.0f, static_cast<float>(renderedTasks.size()));
-      const float externalGapCount = renderedTasks.empty() ? 0.0f : (taskCount - 1.0f);
-      const float runLength = inlineBadge
-          ? (inlineSlotCount > 0 ? (tileSize * static_cast<float>(inlineSlotCount))
-                     + (groupGap * (inlineSlotCount > 1 ? static_cast<float>(inlineSlotCount - 1) : 0.0f))
-                                 : tileSize)
-          : (tileSize * taskCount) + (groupGap * externalGapCount);
-      const float innerMainTotal = inlineBadge ? (groupPadMain * 2.0f + runLength) : (tileMain + groupPad + runLength);
-      const bool paddedCrossEnvelope = inlineBadge || externalBadge || m_vertical;
-      const float innerCrossSize =
-          paddedCrossEnvelope ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize);
-      const auto badgeCrossOverhang = externalBadge
-          ? externalBadgeCrossOverhangs(
-                m_workspaceLabelPlacement, m_vertical, innerCrossSize, disc.width, disc.height, groupOutlineInset
-            )
-          : ExternalBadgeCrossOverhang{};
-      const bool hasExternalCrossEnvelope =
-          externalBadge && (badgeCrossOverhang.before > 0.0f || badgeCrossOverhang.after > 0.0f);
-      const float groupOuterCrossBefore = badgeCrossOverhang.before;
-      const float groupOuterCrossAfter = badgeCrossOverhang.after;
-
-      float groupWidth = m_vertical ? innerCrossSize : innerMainTotal;
-      float groupHeight = m_vertical ? innerMainTotal : innerCrossSize;
-      if (externalInsetCapsule) {
-        if (m_vertical) {
-          groupHeight = std::round(groupOuterLead + innerMainTotal);
-          groupWidth = std::round(groupOuterCrossBefore + innerCrossSize + groupOuterCrossAfter);
-        } else {
-          groupWidth = std::round(groupOuterLead + innerMainTotal);
-          groupHeight = std::round(groupOuterCrossBefore + innerCrossSize + groupOuterCrossAfter);
-        }
-      } else if (hasExternalCrossEnvelope) {
-        if (m_vertical) {
-          groupWidth = std::round(groupOuterCrossBefore + innerCrossSize + groupOuterCrossAfter);
-        } else {
-          groupHeight = std::round(groupOuterCrossBefore + innerCrossSize + groupOuterCrossAfter);
-        }
-      }
-      if (emptyWorkspace && !m_showWorkspaceLabel) {
-        groupWidth =
-            m_vertical ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize + (groupPadMain * 2.0f));
-        groupHeight =
-            m_vertical ? std::round(tileSize + (groupPadMain * 2.0f)) : std::round(tileSize + (groupPadCross * 2.0f));
-      }
-
-      const bool hasSeparateContentEnvelope = externalInsetCapsule;
-      const float contentWidth =
-          hasSeparateContentEnvelope ? (m_vertical ? innerCrossSize : innerMainTotal) : groupWidth;
-      const float contentHeight =
-          hasSeparateContentEnvelope ? (m_vertical ? innerMainTotal : innerCrossSize) : groupHeight;
-      const float groupCrossSize = m_vertical ? groupWidth : groupHeight;
-      const float contentCrossSize = m_vertical ? contentWidth : contentHeight;
-      const float tileCrossExtent = externalInsetCapsule ? contentCrossSize : groupCrossSize;
-      const float inlineGroupCross = inlineBadge ? innerCrossSize : tileCrossExtent;
-      const float tileCross = inlineBadge
-          ? centeredOffset(inlineGroupCross, tileSize, groupOutlineInset, true)
-          : (m_vertical ? centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, false)
-                        : centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, true));
-      const float contentOriginMain = externalInsetCapsule ? groupOuterLead : 0.0f;
-      const float contentOriginCross =
-          externalInsetCapsule ? centeredOffset(groupCrossSize, contentCrossSize, groupOutlineInset, true) : 0.0f;
-      const float badgeOriginCross = hasExternalCrossEnvelope ? groupOuterCrossBefore : contentOriginCross;
-
-      auto group = ui::box({
-          .width = groupWidth,
-          .height = groupHeight,
-      });
       const auto surfaceFill = colorSpecFromRole(ColorRole::SurfaceVariant, ws.workspace.active ? 0.52f : 0.18f);
       const auto borderColor = colorSpecFromRole(ColorRole::Primary, ws.workspace.active ? 0.65f : 0.16f);
-      if (m_workspaceGroupCapsule) {
-        if (externalInsetCapsule) {
-          group->setFill(clearColorSpec());
-          group->clearBorder();
-        } else {
-          group->setFill(surfaceFill);
-          group->setBorder(borderColor, Style::borderWidth);
-        }
-        group->setRadius(resolvedBarCapsuleRadius(groupWidth, groupHeight));
-      } else {
-        group->setFill(clearColorSpec());
-        group->clearBorder();
-        group->setRadius(0.0f);
-      }
-      auto* groupPtr = static_cast<Box*>(m_taskStrip->addChild(std::move(group)));
 
-      Box* contentPtr = groupPtr;
-      if (externalInsetCapsule) {
-        auto inner = ui::box({
-            .width = contentWidth,
-            .height = contentHeight,
-        });
-        inner->setPosition(
-            m_vertical ? contentOriginCross : contentOriginMain, m_vertical ? contentOriginMain : contentOriginCross
+      const float crossSize = std::round(tileSize + groupPad * 2.0f);
+
+      auto group = ui::flex(
+          m_vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
+          {
+              .align = FlexAlign::Center,
+              .justify = FlexJustify::Center,
+              .gap = groupGap,
+              .padding = groupPad,
+              .fill = m_workspaceGroupCapsule ? surfaceFill : clearColorSpec(),
+              .radius = m_workspaceGroupCapsule ? resolvedBarCapsuleRadius(crossSize, crossSize) : 0.0f,
+              .border = m_workspaceGroupCapsule ? borderColor : clearColorSpec(),
+              .borderWidth = m_workspaceGroupCapsule ? Style::borderWidth * m_contentScale : 0.0f,
+          }
+      );
+
+      if (inlineBadge && m_showWorkspaceLabel) {
+        const float inlineBadgeFontSize = std::round(Style::fontSizeCaption * 0.85f * m_contentScale);
+        const float inlineBadgeHeight = std::round(std::max(10.0f, iconSize - (Style::spaceXs * m_contentScale)));
+        WorkspaceDiscSize disc = measureWorkspaceDiscSize(
+            renderer, ws.label, inlineBadgeFontSize, inlineBadgeHeight, m_contentScale, fontWeight
         );
-        inner->setFill(surfaceFill);
-        inner->setBorder(borderColor, Style::borderWidth);
-        inner->setRadius(resolvedBarCapsuleRadius(contentWidth, contentHeight));
-        contentPtr = static_cast<Box*>(groupPtr->addChild(std::move(inner)));
+        disc.height = inlineBadgeHeight;
+        disc.width = std::round(std::max(inlineBadgeHeight, disc.width));
+        group->addChild(createWorkspaceBadge(ws, disc, true));
       }
 
-      if (emptyWorkspace && !m_showWorkspaceLabel) {
+      if (emptyWorkspace) {
         auto switcher = std::make_unique<InputArea>();
-        switcher->setFrameSize(groupWidth, groupHeight);
-        switcher->setPosition(0.0f, 0.0f);
+        switcher->setFrameSize(tileSize, tileSize);
         switcher->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
         switcher->setOnAxisHandler(workspaceAxisHandler);
         auto wsCopy = ws.workspace;
@@ -967,89 +787,53 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
             m_platform.activateWorkspace(wsHost, wsCopy);
           }
         });
-        groupPtr->addChild(std::move(switcher));
-      } else if (inlineBadge) {
-        for (std::size_t slot = 0; slot < inlineSlotCount; ++slot) {
-          const float tileOffset = (tileSize + groupGap) * static_cast<float>(slot);
-          std::unique_ptr<Node> tile;
-          if (m_showWorkspaceLabel && slot == 0) {
-            tile = createWorkspaceBadgeTile(ws);
-          } else {
-            const std::size_t taskIndex = m_showWorkspaceLabel ? slot - 1 : slot;
-            const TaskModel* task = renderedTasks[taskIndex];
-            const auto cycleIt = cycleCandidatesByHandle.find(task->handleKey);
-            const auto cycleKeyIt = cycleKeyByHandle.find(task->handleKey);
-            const std::size_t badgeCount =
-                badgeCountByHandle.contains(task->handleKey) ? badgeCountByHandle[task->handleKey] : 1;
-            tile = createTaskTile(
-                *task, cycleIt != cycleCandidatesByHandle.end() ? cycleIt->second : std::vector<TaskModel>{},
-                cycleKeyIt != cycleKeyByHandle.end() ? cycleKeyIt->second : std::string{}, badgeCount
-            );
-          }
-          if (m_vertical) {
-            tile->setPosition(tileCross, std::round(tileMain + tileOffset));
-          } else {
-            tile->setPosition(std::round(tileMain + tileOffset), tileCross);
-          }
-          contentPtr->addChild(std::move(tile));
-        }
+        group->addChild(std::move(switcher));
       } else {
-        if (emptyWorkspace) {
-          auto switcher = std::make_unique<InputArea>();
-          switcher->setFrameSize(contentWidth, contentHeight);
-          switcher->setPosition(0.0f, 0.0f);
-          switcher->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
-          switcher->setOnAxisHandler(workspaceAxisHandler);
-          auto wsCopy = ws.workspace;
-          wl_output* const wsHost = workspaceHostOutput(ws);
-          switcher->setOnClick([this, wsCopy, wsHost](const InputArea::PointerData& data) {
-            if (data.button == BTN_LEFT) {
-              m_platform.activateWorkspace(wsHost, wsCopy);
-            }
-          });
-          contentPtr->addChild(std::move(switcher));
-        }
-        for (std::size_t i = 0; i < renderedTasks.size(); ++i) {
-          const float tileOffset = (tileSize + groupGap) * static_cast<float>(i);
-          const TaskModel* task = renderedTasks[i];
+        for (const auto* task : renderedTasks) {
           const auto cycleIt = cycleCandidatesByHandle.find(task->handleKey);
           const auto cycleKeyIt = cycleKeyByHandle.find(task->handleKey);
           const std::size_t badgeCount =
               badgeCountByHandle.contains(task->handleKey) ? badgeCountByHandle[task->handleKey] : 1;
-          auto tile = createTaskTile(
+          group->addChild(createTaskTile(
               *task, cycleIt != cycleCandidatesByHandle.end() ? cycleIt->second : std::vector<TaskModel>{},
               cycleKeyIt != cycleKeyByHandle.end() ? cycleKeyIt->second : std::string{}, badgeCount
-          );
-          if (m_vertical) {
-            tile->setPosition(tileCross, std::round(tileMain + tileOffset));
-          } else {
-            tile->setPosition(std::round(tileMain + tileOffset), tileCross);
-          }
-          contentPtr->addChild(std::move(tile));
-        }
-        if (externalBadge) {
-          Box* badgeParent = externalInsetCapsule ? groupPtr : contentPtr;
-          const float badgeOriginMain = externalInsetCapsule ? contentOriginMain : 0.0f;
-          addExternalWorkspaceBadge(
-              ws, badgeParent, contentWidth, contentHeight, disc, emptyWorkspace, badgeOriginMain, badgeOriginCross
-          );
+          ));
         }
       }
+
+      if (externalBadge) {
+        // The group already has its content laid out; measure its real box (which
+        // includes groupPad padding and the capsule border) so the badge is
+        // centered against the actual group extent, not the tileSize approximation.
+        const auto groupSize = group->measure(renderer, {});
+        WorkspaceDiscSize disc =
+            measureWorkspaceDiscSize(renderer, ws.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
+        const auto badgePos = externalBadgePosition(
+            m_workspaceLabelPlacement, m_vertical, groupSize.width, groupSize.height, disc.width, disc.height,
+            groupOutlineInset
+        );
+        auto badge = createWorkspaceBadge(ws, disc, !emptyWorkspace);
+        badge->setParticipatesInLayout(false);
+        badge->setPosition(badgePos.left, badgePos.top);
+        badge->layout(renderer);
+        group->addChild(std::move(badge));
+      }
+
+      m_taskStrip->addChild(std::move(group));
     }
     std::erase_if(m_groupedAppCycleCursor, [&](const auto& item) { return !cycleKeysThisFrame.contains(item.first); });
     return;
   }
-
   m_taskStrip->setPadding(0.0f, 0.0f, 0.0f, 0.0f);
   m_taskStrip->setGap(tileGap);
   m_groupedAppCycleCursor.clear();
-
   for (const auto& task : m_tasks) {
     m_taskStrip->addChild(createTaskTile(task));
   }
 }
 
 void TaskbarWidget::updateModels() {
+
   syncWorkspaceGroupingCapability();
 
   const auto desktopVersion = desktopEntriesVersion();
