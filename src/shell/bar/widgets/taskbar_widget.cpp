@@ -70,8 +70,9 @@ namespace {
     }
     if (vertical) {
       return {centeredOffset(groupWidth, badgeWidth, outlineInset, false), std::round(-badgeHeight * 0.5f)};
+    } else {
+      return {std::round(-badgeWidth * 0.5f), centeredOffset(groupHeight, badgeHeight, outlineInset, false)};
     }
-    return {std::round(-badgeWidth * 0.5f), centeredOffset(groupHeight, badgeHeight, outlineInset, false)};
   }
 
   [[nodiscard]] float fitBadgeFontSize(
@@ -750,19 +751,36 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
       const float crossSize = std::round(tileSize + groupPad * 2.0f);
 
+      float groupPadV = groupPad;
+      float groupPadH = groupPad;
+      std::optional<WorkspaceDiscSize> externalBadgeDisc;
+      if (externalBadge) {
+        externalBadgeDisc =
+            measureWorkspaceDiscSize(renderer, ws.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
+        if (!tasks.empty()) {
+          const float half =
+              std::round(m_vertical ? externalBadgeDisc->height * 0.5f : externalBadgeDisc->width * 0.5f);
+          if (m_vertical) {
+            groupPadV += half;
+          } else {
+            groupPadH += half;
+          }
+        }
+      }
+
       auto group = ui::flex(
           m_vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
           {
               .align = FlexAlign::Center,
               .justify = FlexJustify::Center,
               .gap = groupGap,
-              .padding = groupPad,
               .fill = m_workspaceGroupCapsule ? surfaceFill : clearColorSpec(),
               .radius = m_workspaceGroupCapsule ? resolvedBarCapsuleRadius(crossSize, crossSize) : 0.0f,
               .border = m_workspaceGroupCapsule ? borderColor : clearColorSpec(),
               .borderWidth = m_workspaceGroupCapsule ? Style::borderWidth * m_contentScale : 0.0f,
           }
       );
+      group->setPadding(groupPadV, groupPadH, groupPadV, groupPadH);
 
       if (inlineBadge && m_showWorkspaceLabel) {
         const float inlineBadgeFontSize = std::round(Style::fontSizeCaption * 0.85f * m_contentScale);
@@ -806,8 +824,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         // includes groupPad padding and the capsule border) so the badge is
         // centered against the actual group extent, not the tileSize approximation.
         const auto groupSize = group->measure(renderer, {});
-        WorkspaceDiscSize disc =
-            measureWorkspaceDiscSize(renderer, ws.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
+        const WorkspaceDiscSize disc = *externalBadgeDisc;
         const auto badgePos = externalBadgePosition(
             m_workspaceLabelPlacement, m_vertical, groupSize.width, groupSize.height, disc.width, disc.height,
             groupOutlineInset
