@@ -348,6 +348,7 @@ struct WidgetBarCapsuleSpec {
   std::optional<float> radius;
   // Capsule background opacity multiplier (0.0–1.0).
   float opacity = 1.0f;
+  bool hoverHighlight = true;
 
   bool operator==(const WidgetBarCapsuleSpec&) const = default;
 };

@@ -457,6 +457,9 @@ void TrayWidget::rebuild(Renderer& renderer) {
   }
 
   auto attachHover = [this](InputArea& area, float size) {
+    if (!barCapsuleSpec().hoverHighlight) {
+      return;
+    }
     Box* hoverBoxPtr = nullptr;
     ColorSpec hoverFill = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface));
     hoverFill.alpha = 0.0f;
@@ -465,7 +468,7 @@ void TrayWidget::rebuild(Renderer& renderer) {
         ui::box({
             .out = &hoverBoxPtr,
             .fill = hoverFill,
-            .radius = (size + padding * 2.0f) * 0.5f,
+            .radius = resolvedBarCapsuleRadius(size + padding * 2.0f, size + padding * 2.0f),
             .width = size + padding * 2.0f,
             .height = size + padding * 2.0f,
             .configure = [padding](Box& box) {
