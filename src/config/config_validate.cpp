@@ -56,7 +56,7 @@ namespace noctalia::config {
       toml::table merged = std::move(mergeResult.merged);
       loadedFilesOut = std::move(mergeResult.loadedFiles);
       if (!mergeResult.firstError.empty()) {
-        diag.error("syntax", mergeResult.firstError);
+        diag.fatal("syntax", mergeResult.firstError, "config.syntax");
       }
       if (!settingsTomlPath.empty() && std::filesystem::exists(settingsTomlPath)) {
         try {
@@ -67,7 +67,7 @@ namespace noctalia::config {
           }
           ConfigService::deepMerge(merged, sidecar);
         } catch (const toml::parse_error& e) {
-          diag.error("syntax", formatParseError(settingsTomlPath, e));
+          diag.fatal("syntax", formatParseError(settingsTomlPath, e), "config.syntax");
         }
       }
       merged.erase(kConfigVersionKey);
@@ -88,23 +88,23 @@ namespace noctalia::config {
       }
       const auto* inc = tbl["include"].as_table();
       if (inc == nullptr) {
-        diag.error("include", "[include] must be a table");
+        diag.fatal("include", "[include] must be a table", "config.include.type");
         return;
       }
       for (const auto& [key, node] : *inc) {
         const std::string k(key.str());
         if (k == "autoload") {
           if (!node.is_boolean()) {
-            diag.error("include.autoload", "must be a boolean");
+            diag.fatal("include.autoload", "must be a boolean", "config.include.type");
           }
         } else if (k == "files") {
           const auto* arr = node.as_array();
           if (arr == nullptr) {
-            diag.error("include.files", "must be an array of strings");
+            diag.fatal("include.files", "must be an array of strings", "config.include.type");
           } else {
             for (const auto& el : *arr) {
               if (!el.is_string()) {
-                diag.error("include.files", "every entry must be a string");
+                diag.fatal("include.files", "every entry must be a string", "config.include.type");
                 break;
               }
             }
@@ -155,20 +155,28 @@ namespace noctalia::config {
     // problems are errors; out-of-range and bad-enum are advisory warnings
     // (matching the parser's clamp-and-continue behavior for known sections).
     void validateWidgetValue(
-        const toml::node& node, const schema::WidgetSettingField& f, const std::string& path, schema::Diagnostics& diag
+        const toml::node& node, const schema::WidgetSettingField& f, const std::string& path, schema::Diagnostics& diag,
+        std::string_view componentOwner = {}
     ) {
+      const auto reportError = [&](const std::string& errorPath, std::string message) {
+        if (componentOwner.empty()) {
+          diag.error(errorPath, std::move(message));
+        } else {
+          diag.componentError(errorPath, std::string(componentOwner), std::move(message));
+        }
+      };
       using schema::WidgetSettingType;
       switch (f.type) {
       case WidgetSettingType::Bool:
         if (!node.is_boolean()) {
-          diag.error(path, "expected a boolean");
+          reportError(path, "expected a boolean");
         }
         break;
       case WidgetSettingType::Int:
         if (auto v = node.value<std::int64_t>()) {
           rangeCheck(static_cast<double>(*v), f, path, diag);
         } else {
-          diag.error(path, "expected an integer");
+          reportError(path, "expected an integer");
         }
         break;
       case WidgetSettingType::Double:
@@ -176,35 +184,35 @@ namespace noctalia::config {
         if (auto v = node.value<double>()) {
           rangeCheck(*v, f, path, diag);
         } else {
-          diag.error(path, "expected a number");
+          reportError(path, "expected a number");
         }
         break;
       case WidgetSettingType::String:
         if (!node.is_string()) {
-          diag.error(path, "expected a string");
+          reportError(path, "expected a string");
         }
         break;
       case WidgetSettingType::StringList:
         if (const auto* arr = node.as_array()) {
           for (const auto& item : *arr) {
             if (!item.is_string()) {
-              diag.error(path, "expected a list of strings");
+              reportError(path, "expected a list of strings");
               break;
             }
           }
         } else {
-          diag.error(path, "expected a list of strings");
+          reportError(path, "expected a list of strings");
         }
         break;
       case WidgetSettingType::StringMap:
         if (const auto* table = node.as_table()) {
           for (const auto& [mapKey, mapValue] : *table) {
             if (!mapValue.is_string()) {
-              diag.error(path + "." + std::string(mapKey.str()), "expected a string");
+              reportError(path + "." + std::string(mapKey.str()), "expected a string");
             }
           }
         } else {
-          diag.error(path, "expected a table of strings");
+          reportError(path, "expected a table of strings");
         }
         break;
       case WidgetSettingType::Enum: {
@@ -217,7 +225,7 @@ namespace noctalia::config {
           value = std::to_string(*i);
         }
         if (!value) {
-          diag.error(path, "expected a string or integer");
+          reportError(path, "expected a string or integer");
         } else if (!std::ranges::contains(f.enumValues, *value)) {
           diag.warn(path, "\"" + *value + "\" is not one of the allowed values");
         }
@@ -228,10 +236,10 @@ namespace noctalia::config {
           try {
             (void)colorSpecFromConfigString(*v); // empty context: diag already carries the path
           } catch (const std::exception& e) {
-            diag.error(path, e.what());
+            reportError(path, e.what());
           }
         } else {
-          diag.error(path, "expected a string color");
+          reportError(path, "expected a string color");
         }
         break;
       }
@@ -242,7 +250,8 @@ namespace noctalia::config {
     // (built-in, non-scripted); scripted widgets carry user-defined settings.
     void validateSettingsMap(
         const toml::table& settings, const schema::WidgetSettingSchema& fields, const std::string& base,
-        bool flagUnknown, schema::Diagnostics& diag, const std::unordered_set<std::string>& ignoreKeys = {}
+        bool flagUnknown, schema::Diagnostics& diag, const std::unordered_set<std::string>& ignoreKeys = {},
+        std::string_view componentOwner = {}
     ) {
       for (const auto& [key, node] : settings) {
         const std::string keyStr(key.str());
@@ -256,7 +265,7 @@ namespace noctalia::config {
           }
           continue;
         }
-        validateWidgetValue(node, *field, base + "." + keyStr, diag);
+        validateWidgetValue(node, *field, base + "." + keyStr, diag, componentOwner);
       }
     }
 
@@ -284,7 +293,9 @@ namespace noctalia::config {
       }
     }
 
-    void validatePluginSettings(const toml::table& root, schema::Diagnostics& diag) {
+    void validatePluginSettings(
+        const toml::table& root, schema::Diagnostics& diag, scripting::PluginRegistry& pluginRegistry
+    ) {
       const auto* pluginSettings = root["plugin_settings"].as_table();
       if (pluginSettings == nullptr) {
         return;
@@ -296,7 +307,7 @@ namespace noctalia::config {
         }
         const std::string idStr(pluginId.str());
         const std::string base = "plugin_settings." + idStr;
-        const scripting::PluginManifest* manifest = scripting::PluginRegistry::instance().findManifest(idStr);
+        const scripting::PluginManifest* manifest = pluginRegistry.findManifest(idStr);
         if (manifest == nullptr) {
           diag.warn(base, "no loaded plugin with this id");
           continue;
@@ -323,7 +334,8 @@ namespace noctalia::config {
       }
     }
 
-    void validateBarWidgets(const toml::table& root, schema::Diagnostics& diag) {
+    void
+    validateBarWidgets(const toml::table& root, schema::Diagnostics& diag, scripting::PluginRegistry& pluginRegistry) {
       const auto* widgets = root["widget"].as_table();
       if (widgets == nullptr) {
         return;
@@ -339,26 +351,33 @@ namespace noctalia::config {
         const std::string base = "widget." + nameStr;
         WidgetConfig wc = readBarWidgetConfig(nameStr, *tbl, resolvedConfig);
         const std::string type = wc.type;
-        if (!settings::isBuiltInWidgetType(type) && !settings::isPluginWidgetType(type)) {
+        const auto pluginEntry = pluginRegistry.resolve(type);
+        const bool isPluginWidget =
+            pluginEntry.has_value() && pluginEntry->entry->kind == scripting::PluginEntryKind::Widget;
+        if (!settings::isBuiltInWidgetType(type) && !isPluginWidget) {
           diag.warn(base, "unrecognized widget type \"" + type + "\"");
           resolvedConfig.widgets[nameStr] = std::move(wc);
           continue;
         }
-        const auto fields = settings::widgetSettingSchema(type, &wc);
+        const auto fields = settings::widgetSettingSchema(type, &wc, &pluginRegistry);
         // Plugin widgets resolve their settings from a static plugin.toml manifest, so
         // unknown keys are flagged like any other widget.
-        validateSettingsMap(*tbl, fields, base, /*flagUnknown=*/true, diag, /*ignoreKeys=*/{"type"});
+        validateSettingsMap(*tbl, fields, base, /*flagUnknown=*/true, diag, /*ignoreKeys=*/{"type"}, base);
         if (type == "clock") {
           if (const auto timezone = (*tbl)["timezone"].value<std::string>();
               timezone.has_value() && !isValidTimezone(*timezone)) {
-            diag.error(base + ".timezone", "unknown timezone \"" + *timezone + "\"");
+            diag.componentError(
+                base + ".timezone", base, "unknown timezone \"" + *timezone + "\"", "clock.timezone.unknown"
+            );
           }
         }
         resolvedConfig.widgets[nameStr] = std::move(wc);
       }
     }
 
-    void validateDesktopWidgets(const toml::table& root, schema::Diagnostics& diag) {
+    void validateDesktopWidgets(
+        const toml::table& root, schema::Diagnostics& diag, scripting::PluginRegistry& pluginRegistry
+    ) {
       const auto* dw = root["desktop_widgets"].as_table();
       if (dw == nullptr) {
         return;
@@ -408,7 +427,14 @@ namespace noctalia::config {
         const std::string type = (*tbl)["type"].value<std::string>().value_or("");
         // A known type contributes at least one type-specific spec; unknown ones
         // only get the shared background settings, so detect via the type-only list.
-        if (desktop_settings::desktopWidgetSettingSpecs(type).empty()) {
+        const bool isBuiltIn =
+            std::ranges::any_of(desktop_settings::desktopWidgetTypeSpecs(), [type](const auto& spec) {
+              return spec.type == type;
+            });
+        const auto pluginEntry = pluginRegistry.resolve(type);
+        const bool isPluginWidget =
+            pluginEntry.has_value() && pluginEntry->entry->kind == scripting::PluginEntryKind::DesktopWidget;
+        if (!isBuiltIn && !isPluginWidget) {
           diag.warn(base, "unrecognized desktop widget type \"" + type + "\"");
           continue;
         }
@@ -417,19 +443,23 @@ namespace noctalia::config {
           continue;
         }
         validateSettingsMap(
-            *settingsTbl, desktop_settings::desktopWidgetSettingSchema(type), base + ".settings",
-            /*flagUnknown=*/true, diag
+            *settingsTbl, desktop_settings::desktopWidgetSettingSchema(type, &pluginRegistry), base + ".settings",
+            /*flagUnknown=*/true, diag, {}, base
         );
         if (type == "clock") {
           if (const auto timezone = (*settingsTbl)["timezone"].value<std::string>();
               timezone.has_value() && !isValidTimezone(*timezone)) {
-            diag.error(base + ".settings.timezone", "unknown timezone \"" + *timezone + "\"");
+            diag.componentError(
+                base + ".settings.timezone", base, "unknown timezone \"" + *timezone + "\"", "clock.timezone.unknown"
+            );
           }
         }
       }
     }
 
-    void validateLockscreenWidgets(const toml::table& root, schema::Diagnostics& diag) {
+    void validateLockscreenWidgets(
+        const toml::table& root, schema::Diagnostics& diag, scripting::PluginRegistry& pluginRegistry
+    ) {
       const auto* section = root["lockscreen_widgets"].as_table();
       if (section == nullptr) {
         return;
@@ -477,7 +507,14 @@ namespace noctalia::config {
           }
         }
         const std::string type = (*tbl)["type"].value<std::string>().value_or("");
-        if (type != lockscreen_login_box::kWidgetType && desktop_settings::desktopWidgetSettingSpecs(type).empty()) {
+        const bool isBuiltIn =
+            std::ranges::any_of(desktop_settings::desktopWidgetTypeSpecs(), [type](const auto& spec) {
+              return spec.type == type;
+            });
+        const auto pluginEntry = pluginRegistry.resolve(type);
+        const bool isPluginWidget =
+            pluginEntry.has_value() && pluginEntry->entry->kind == scripting::PluginEntryKind::DesktopWidget;
+        if (type != lockscreen_login_box::kWidgetType && !isBuiltIn && !isPluginWidget) {
           diag.warn(base, "unrecognized lockscreen widget type \"" + type + "\"");
           continue;
         }
@@ -486,13 +523,15 @@ namespace noctalia::config {
           continue;
         }
         validateSettingsMap(
-            *settingsTbl, desktop_settings::desktopWidgetSettingSchema(type), base + ".settings",
-            /*flagUnknown=*/true, diag
+            *settingsTbl, desktop_settings::desktopWidgetSettingSchema(type, &pluginRegistry), base + ".settings",
+            /*flagUnknown=*/true, diag, {}, base
         );
         if (type == "clock") {
           if (const auto timezone = (*settingsTbl)["timezone"].value<std::string>();
               timezone.has_value() && !isValidTimezone(*timezone)) {
-            diag.error(base + ".settings.timezone", "unknown timezone \"" + *timezone + "\"");
+            diag.componentError(
+                base + ".settings.timezone", base, "unknown timezone \"" + *timezone + "\"", "clock.timezone.unknown"
+            );
           }
         }
       }
@@ -578,8 +617,8 @@ namespace noctalia::config {
       checkSection(merged, "plugins", schema::pluginsSchema(), diag);
       checkSection(merged, "hooks", schema::hooksSchema(), diag);
 
-      // Resolve [plugins] into the registry so plugin widget types validate the same
-      // way the running app sees them. Disk-only — no materialization/network here.
+      // Resolve the candidate's plugin catalog without mutating the live registry.
+      scripting::PluginRegistry pluginRegistry;
       {
         PluginsConfig pc;
         schema::Diagnostics sink; // schema issues are already reported by checkSection above
@@ -592,14 +631,14 @@ namespace noctalia::config {
         } else {
           pc.sources = defaultPluginSources();
         }
-        scripting::applyPluginSourcesToRegistry(scripting::PluginRegistry::instance(), pc);
+        scripting::applyPluginSourcesToRegistry(pluginRegistry, pc);
       }
 
       validateBars(merged, diag);
-      validateBarWidgets(merged, diag);
-      validatePluginSettings(merged, diag);
-      validateDesktopWidgets(merged, diag);
-      validateLockscreenWidgets(merged, diag);
+      validateBarWidgets(merged, diag, pluginRegistry);
+      validatePluginSettings(merged, diag, pluginRegistry);
+      validateDesktopWidgets(merged, diag, pluginRegistry);
+      validateLockscreenWidgets(merged, diag, pluginRegistry);
       validateIncludeShape(merged, diag);
 
       // Unknown top-level sections.
@@ -668,7 +707,7 @@ namespace noctalia::config {
     try {
       parsed = toml::parse_file(std::string(path));
     } catch (const toml::parse_error& e) {
-      diag.error("syntax", formatParseError(std::filesystem::path(std::string(path)), e));
+      diag.fatal("syntax", formatParseError(std::filesystem::path(std::string(path)), e), "config.syntax");
       return diag;
     }
 

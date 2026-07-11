@@ -132,19 +132,20 @@ namespace noctalia::config {
 
     const auto value = node->value<std::int64_t>();
     if (!value.has_value()) {
-      diag.error(std::string(kConfigVersionKey), "expected a non-negative integer");
+      diag.fatal(std::string(kConfigVersionKey), "expected a non-negative integer", "config.version.invalid");
       return std::nullopt;
     }
     if (*value < 0 || *value > std::numeric_limits<int>::max()) {
-      diag.error(std::string(kConfigVersionKey), "expected a non-negative integer");
+      diag.fatal(std::string(kConfigVersionKey), "expected a non-negative integer", "config.version.invalid");
       return std::nullopt;
     }
 
     const int version = static_cast<int>(*value);
     if (version > currentConfigVersion()) {
-      diag.error(
+      diag.fatal(
           std::string(kConfigVersionKey),
-          std::format("version {} is newer than supported version {}", version, currentConfigVersion())
+          std::format("version {} is newer than supported version {}", version, currentConfigVersion()),
+          "config.version.unsupported"
       );
       return std::nullopt;
     }

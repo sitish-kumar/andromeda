@@ -16,8 +16,6 @@
 #include "i18n/i18n.h"
 #include "ipc/ipc_service.h"
 #include "notification/notification_manager.h"
-#include "scripting/plugin_manager.h"
-#include "scripting/plugin_registry.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "system/distro_info.h"
@@ -50,6 +48,23 @@
 namespace schema = noctalia::config::schema;
 
 namespace {
+
+  constexpr Logger kLog("config");
+
+  template <typename T>
+  void readConfigSection(
+      const toml::table& table, T& target, const noctalia::config::schema::Schema<T>& sectionSchema,
+      std::string_view path, noctalia::config::schema::Diagnostics& diagnostics
+  ) {
+    T candidate = target;
+    try {
+      noctalia::config::schema::readInto(table, candidate, sectionSchema, path, diagnostics);
+      target = std::move(candidate);
+    } catch (const std::exception& e) {
+      diagnostics.error(std::string(path), e.what());
+      kLog.warn("{}: {}", path, e.what());
+    }
+  }
 
   constexpr std::string_view kMigrationReminderOwner = "config_migration_reminders";
   constexpr std::string_view kMigrationReminderKey = "last_notification";
@@ -170,6 +185,50 @@ namespace {
     validateKeyboardLayoutWidgetSettings(widgetName, widget);
   }
 
+  std::optional<std::string> componentOwnerId(std::string_view ownerPath, std::string_view prefix) {
+    if (!ownerPath.starts_with(prefix) || ownerPath.size() <= prefix.size()) {
+      return std::nullopt;
+    }
+    return std::string(ownerPath.substr(prefix.size()));
+  }
+
+  void restoreInvalidComponents(
+      Config& candidate, const Config& active, const noctalia::config::schema::Diagnostics& diagnostics
+  ) {
+    const auto restorePlacementWidget = [](std::vector<DesktopWidgetState>& candidateWidgets,
+                                           const std::vector<DesktopWidgetState>& activeWidgets,
+                                           const std::string& id) {
+      const auto candidateWidget = std::ranges::find(candidateWidgets, id, &DesktopWidgetState::id);
+      const auto activeWidget = std::ranges::find(activeWidgets, id, &DesktopWidgetState::id);
+      if (activeWidget != activeWidgets.end()) {
+        if (candidateWidget != candidateWidgets.end()) {
+          *candidateWidget = *activeWidget;
+        } else {
+          candidateWidgets.push_back(*activeWidget);
+        }
+      } else if (candidateWidget != candidateWidgets.end()) {
+        candidateWidgets.erase(candidateWidget);
+      }
+    };
+
+    for (const auto& entry : diagnostics.entries) {
+      if (entry.severity != noctalia::config::schema::Diagnostics::Severity::Error
+          || entry.recoveryScope != noctalia::config::schema::Diagnostics::RecoveryScope::Component) {
+        continue;
+      }
+      if (const auto barId = componentOwnerId(entry.ownerPath, "widget.")) {
+        candidate.widgets.erase(*barId);
+        if (const auto activeWidget = active.widgets.find(*barId); activeWidget != active.widgets.end()) {
+          candidate.widgets.emplace(*barId, activeWidget->second);
+        }
+      } else if (const auto desktopId = componentOwnerId(entry.ownerPath, "desktop_widgets.widget.")) {
+        restorePlacementWidget(candidate.desktopWidgets.widgets, active.desktopWidgets.widgets, *desktopId);
+      } else if (const auto lockscreenId = componentOwnerId(entry.ownerPath, "lockscreen_widgets.widget.")) {
+        restorePlacementWidget(candidate.lockscreenWidgets.widgets, active.lockscreenWidgets.widgets, *lockscreenId);
+      }
+    }
+  }
+
   void validateDesktopWidgetColorSettings(const DesktopWidgetState& widget, std::string_view section) {
     const auto fields = desktop_settings::desktopWidgetSettingSchema(widget.type);
     for (const auto& [key, value] : widget.settings) {
@@ -251,7 +310,13 @@ namespace {
         if (widgetTable == nullptr) {
           continue;
         }
-        auto widget = readDesktopWidgetState(idNode.str(), *widgetTable, colorSection);
+        DesktopWidgetState widget;
+        try {
+          widget = readDesktopWidgetState(idNode.str(), *widgetTable, colorSection);
+        } catch (const std::exception& e) {
+          kLog.warn("{}.widget.{}: {}", colorSection, idNode.str(), e.what());
+          continue;
+        }
         if (!widget.id.empty() && !widget.type.empty()) {
           parsedWidgets.push_back(std::move(widget));
         }
@@ -306,8 +371,6 @@ namespace {
     }
     return keybinds.validate;
   }
-
-  constexpr Logger kLog("config");
 
   std::vector<std::filesystem::path> sortedConfigTomlFiles(std::string_view configDir) {
     std::vector<std::filesystem::path> files;
@@ -1172,12 +1235,14 @@ void ConfigService::loadOverridesFromFile() {
   m_overridesParseError.clear();
 
   if (m_overridesPath.empty() || !std::filesystem::exists(m_overridesPath)) {
+    m_persistedOverridesTable = toml::table{};
     return;
   }
 
   kLog.info("loading {}", m_overridesPath);
   try {
     m_overridesTable = toml::parse_file(m_overridesPath);
+    m_persistedOverridesTable = m_overridesTable;
   } catch (const toml::parse_error& e) {
     const auto& src = e.source();
     kLog.warn(
@@ -1406,23 +1471,30 @@ void ConfigService::loadAll() {
   std::string semanticError = !firstError.empty() ? firstError
       : !m_overridesParseError.empty()            ? m_overridesParseError
                                                   : migrationError;
-  bool candidatePluginRegistryApplied = false;
+  std::string diagnosticError;
+  schema::Diagnostics diagnostics;
   if (semanticError.empty()) {
-    candidatePluginRegistryApplied = true;
     try {
-      const auto diagnostics = noctalia::config::validateMergedConfig(merged);
+      diagnostics = noctalia::config::validateMergedConfig(merged);
       std::size_t errorCount = 0;
       for (const auto& entry : diagnostics.entries) {
         if (entry.severity == schema::Diagnostics::Severity::Error) {
+          if (entry.recoveryScope == schema::Diagnostics::RecoveryScope::Document) {
+            if (semanticError.empty()) {
+              semanticError = entry.path + ": " + entry.message;
+            }
+            kLog.warn("{}: {}", entry.path, entry.message);
+            continue;
+          }
           ++errorCount;
-          if (semanticError.empty()) {
-            semanticError = entry.path + ": " + entry.message;
+          if (diagnosticError.empty()) {
+            diagnosticError = entry.path + ": " + entry.message;
           }
         }
         kLog.warn("{}: {}", entry.path, entry.message);
       }
       if (errorCount > 1) {
-        semanticError += std::format(" (and {} more config errors)", errorCount - 1);
+        diagnosticError += std::format(" (and {} more config errors)", errorCount - 1);
       }
     } catch (const std::exception& e) {
       semanticError = e.what();
@@ -1432,14 +1504,11 @@ void ConfigService::loadAll() {
   if (semanticError.empty()) {
     try {
       parseConfigTable(merged, nextConfig, true, false);
+      restoreInvalidComponents(nextConfig, m_config, diagnostics);
     } catch (const std::exception& e) {
       semanticError = e.what();
       kLog.warn("config parse error: {}", semanticError);
     }
-  }
-
-  if (!semanticError.empty() && candidatePluginRegistryApplied) {
-    scripting::applyPluginSourcesToRegistry(scripting::PluginRegistry::instance(), m_config.plugins);
   }
 
   if (semanticError.empty()) {
@@ -1478,7 +1547,8 @@ void ConfigService::loadAll() {
 
   const std::string parseError = !firstError.empty() ? firstError
       : !m_overridesParseError.empty()               ? m_overridesParseError
-                                                     : semanticError;
+      : !semanticError.empty()                       ? semanticError
+                                                     : diagnosticError;
   setConfigParseError(parseError);
 
   // Included files may live in subdirectories or absolute paths outside the config
@@ -1509,7 +1579,7 @@ void ConfigService::parseConfigTable(
       if (auto v = (*barTbl)["position"].value<std::string>()) {
         bar.position = *v;
       }
-      schema::readInto(*barTbl, bar, schema::barFieldsSchema(), "bar." + bar.name, schemaDiag);
+      readConfigSection(*barTbl, bar, schema::barFieldsSchema(), "bar." + bar.name, schemaDiag);
 
       // Parse [bar.<name>.monitor.*] overrides — insertion order preserved by toml++.
       if (auto* monTblMap = (*barTbl)["monitor"].as_table()) {
@@ -1520,7 +1590,7 @@ void ConfigService::parseConfigTable(
           }
           BarMonitorOverride ovr;
           ovr.match = std::string(monName.str()); // key is the match unless an explicit `match` overrides it
-          schema::readInto(
+          readConfigSection(
               *monTbl, ovr, schema::barMonitorOverrideSchema(),
               "bar." + bar.name + ".monitor." + std::string(monName.str()), schemaDiag
           );
@@ -1565,8 +1635,13 @@ void ConfigService::parseConfigTable(
       const std::string widgetName(name.str());
       WidgetConfig wc = noctalia::config::readBarWidgetConfig(widgetName, *entryTbl, config);
 
-      validateWidgetSettings(widgetName, wc);
-      config.widgets[widgetName] = std::move(wc);
+      try {
+        validateWidgetSettings(widgetName, wc);
+        config.widgets[widgetName] = std::move(wc);
+      } catch (const std::exception& e) {
+        config.widgets.erase(widgetName);
+        kLog.warn("widget.{}: {}", widgetName, e.what());
+      }
     }
   }
 
@@ -1578,7 +1653,7 @@ void ConfigService::parseConfigTable(
       const auto* sessionTbl = (*shellTbl)["session"].as_table();
       return sessionTbl != nullptr && (*sessionTbl)["actions"].as_array() != nullptr;
     }();
-    schema::readInto(*shellTbl, config.shell, schema::shellSchema(), "shell", schemaDiag);
+    readConfigSection(*shellTbl, config.shell, schema::shellSchema(), "shell", schemaDiag);
   }
   if (!sessionActionsConfigured && config.shell.session.actions.empty()) {
     config.shell.session.actions = defaultSessionPanelActions();
@@ -1586,41 +1661,41 @@ void ConfigService::parseConfigTable(
 
   // Parse [theme]
   if (auto* themeTbl = tbl["theme"].as_table()) {
-    schema::readInto(*themeTbl, config.theme, schema::themeSchema(), "theme", schemaDiag);
+    readConfigSection(*themeTbl, config.theme, schema::themeSchema(), "theme", schemaDiag);
   }
 
   // Parse [wallpaper] (config keys only; app-managed state keys default/last/
   // monitors/favorite are handled separately by extractWallpaperFromTable).
   if (auto* wpTbl = tbl["wallpaper"].as_table()) {
-    schema::readInto(*wpTbl, config.wallpaper, schema::wallpaperSchema(), "wallpaper", schemaDiag);
+    readConfigSection(*wpTbl, config.wallpaper, schema::wallpaperSchema(), "wallpaper", schemaDiag);
   }
 
   // Parse [backdrop]
   if (auto* ovTbl = tbl["backdrop"].as_table()) {
-    schema::readInto(*ovTbl, config.backdrop, schema::backdropSchema(), "backdrop", schemaDiag);
+    readConfigSection(*ovTbl, config.backdrop, schema::backdropSchema(), "backdrop", schemaDiag);
   }
 
   // Parse [lockscreen]
   if (auto* lockTbl = tbl["lockscreen"].as_table()) {
-    schema::readInto(*lockTbl, config.lockscreen, schema::lockscreenSchema(), "lockscreen", schemaDiag);
+    readConfigSection(*lockTbl, config.lockscreen, schema::lockscreenSchema(), "lockscreen", schemaDiag);
   }
 
   // Parse [osd]
   if (auto* osdTbl = tbl["osd"].as_table()) {
-    schema::readInto(*osdTbl, config.osd, schema::osdSchema(), "osd", schemaDiag);
+    readConfigSection(*osdTbl, config.osd, schema::osdSchema(), "osd", schemaDiag);
   }
 
   if (auto* notifTbl = tbl["notification"].as_table()) {
-    schema::readInto(*notifTbl, config.notification, schema::notificationSchema(), "notification", schemaDiag);
+    readConfigSection(*notifTbl, config.notification, schema::notificationSchema(), "notification", schemaDiag);
   }
   // Compatibility alias: accept [notifications] as well.
   if (auto* notifTbl = tbl["notifications"].as_table()) {
-    schema::readInto(*notifTbl, config.notification, schema::notificationSchema(), "notifications", schemaDiag);
+    readConfigSection(*notifTbl, config.notification, schema::notificationSchema(), "notifications", schemaDiag);
   }
 
   // Parse [dock]
   if (auto* dockTbl = tbl["dock"].as_table()) {
-    schema::readInto(*dockTbl, config.dock, schema::dockSchema(), "dock", schemaDiag);
+    readConfigSection(*dockTbl, config.dock, schema::dockSchema(), "dock", schemaDiag);
   }
 
   // Parse [desktop_widgets]
@@ -1651,57 +1726,57 @@ void ConfigService::parseConfigTable(
 
   // Parse [hot_corners]
   if (auto* hotCornersTbl = tbl["hot_corners"].as_table()) {
-    schema::readInto(*hotCornersTbl, config.hotCorners, schema::hotCornersSchema(), "hot_corners", schemaDiag);
+    readConfigSection(*hotCornersTbl, config.hotCorners, schema::hotCornersSchema(), "hot_corners", schemaDiag);
   }
 
   // Parse [weather]
   if (auto* weatherTbl = tbl["weather"].as_table()) {
-    schema::readInto(*weatherTbl, config.weather, schema::weatherSchema(), "weather", schemaDiag);
+    readConfigSection(*weatherTbl, config.weather, schema::weatherSchema(), "weather", schemaDiag);
   }
 
   // Parse [calendar]
   if (auto* calendarTbl = tbl["calendar"].as_table()) {
-    schema::readInto(*calendarTbl, config.calendar, schema::calendarSchema(), "calendar", schemaDiag);
+    readConfigSection(*calendarTbl, config.calendar, schema::calendarSchema(), "calendar", schemaDiag);
   }
 
   // Parse [system]
   if (auto* systemTbl = tbl["system"].as_table()) {
-    schema::readInto(*systemTbl, config.system, schema::systemSchema(), "system", schemaDiag);
+    readConfigSection(*systemTbl, config.system, schema::systemSchema(), "system", schemaDiag);
   }
 
   // Parse [audio]
   if (auto* audioTbl = tbl["audio"].as_table()) {
-    schema::readInto(*audioTbl, config.audio, schema::audioSchema(), "audio", schemaDiag);
+    readConfigSection(*audioTbl, config.audio, schema::audioSchema(), "audio", schemaDiag);
   }
 
   // Parse [brightness]
   if (auto* brightnessTbl = tbl["brightness"].as_table()) {
-    schema::readInto(*brightnessTbl, config.brightness, schema::brightnessSchema(), "brightness", schemaDiag);
+    readConfigSection(*brightnessTbl, config.brightness, schema::brightnessSchema(), "brightness", schemaDiag);
   }
 
   // Parse [battery]
   if (auto* batteryTbl = tbl["battery"].as_table()) {
-    schema::readInto(*batteryTbl, config.battery, schema::batterySchema(), "battery", schemaDiag);
+    readConfigSection(*batteryTbl, config.battery, schema::batterySchema(), "battery", schemaDiag);
   }
 
   // Parse [keybinds]
   if (auto* keybindsTbl = tbl["keybinds"].as_table()) {
-    schema::readInto(*keybindsTbl, config.keybinds, schema::keybindsSchema(), "keybinds", schemaDiag);
+    readConfigSection(*keybindsTbl, config.keybinds, schema::keybindsSchema(), "keybinds", schemaDiag);
   }
 
   // Parse [nightlight]
   if (auto* nightlightTbl = tbl["nightlight"].as_table()) {
-    schema::readInto(*nightlightTbl, config.nightlight, schema::nightlightSchema(), "nightlight", schemaDiag);
+    readConfigSection(*nightlightTbl, config.nightlight, schema::nightlightSchema(), "nightlight", schemaDiag);
   }
 
   // Parse [location]
   if (auto* locationTbl = tbl["location"].as_table()) {
-    schema::readInto(*locationTbl, config.location, schema::locationSchema(), "location", schemaDiag);
+    readConfigSection(*locationTbl, config.location, schema::locationSchema(), "location", schemaDiag);
   }
 
   // Parse [hooks]
   if (auto* hooksTbl = tbl["hooks"].as_table()) {
-    schema::readInto(*hooksTbl, config.hooks, schema::hooksSchema(), "hooks", schemaDiag);
+    readConfigSection(*hooksTbl, config.hooks, schema::hooksSchema(), "hooks", schemaDiag);
   }
 
   // Parse [control_center]. The default-shortcuts seeding stays here because it
@@ -1709,7 +1784,7 @@ void ConfigService::parseConfigTable(
   bool controlCenterShortcutsConfigured = false;
   if (auto* ccTbl = tbl["control_center"].as_table()) {
     controlCenterShortcutsConfigured = (*ccTbl)["shortcuts"].as_array() != nullptr;
-    schema::readInto(*ccTbl, config.controlCenter, schema::controlCenterSchema(), "control_center", schemaDiag);
+    readConfigSection(*ccTbl, config.controlCenter, schema::controlCenterSchema(), "control_center", schemaDiag);
   }
   if (!controlCenterShortcutsConfigured && config.controlCenter.shortcuts.empty()) {
     config.controlCenter.shortcuts = defaultControlCenterShortcuts();
@@ -1720,7 +1795,7 @@ void ConfigService::parseConfigTable(
   bool pluginSourcesConfigured = false;
   if (auto* pluginsTbl = tbl["plugins"].as_table()) {
     pluginSourcesConfigured = (*pluginsTbl)["source"].as_array() != nullptr;
-    schema::readInto(*pluginsTbl, config.plugins, schema::pluginsSchema(), "plugins", schemaDiag);
+    readConfigSection(*pluginsTbl, config.plugins, schema::pluginsSchema(), "plugins", schemaDiag);
   }
   if (!pluginSourcesConfigured && config.plugins.sources.empty()) {
     config.plugins.sources = defaultPluginSources();
@@ -1747,7 +1822,7 @@ void ConfigService::parseConfigTable(
   // Parse [idle] and [idle.behavior.*]. Default-seeding stays here because it
   // must apply even when [idle] is absent.
   if (auto* idleTbl = tbl["idle"].as_table()) {
-    schema::readInto(*idleTbl, config.idle, schema::idleSchema(), "idle", schemaDiag);
+    readConfigSection(*idleTbl, config.idle, schema::idleSchema(), "idle", schemaDiag);
   }
   if (config.idle.behaviors.empty()) {
     config.idle.behaviors = defaultIdleBehaviors();

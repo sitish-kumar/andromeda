@@ -118,6 +118,7 @@ radius = -10
         "invalid config_version was accepted"
     );
     expect(invalidDiag.hasErrors(), "invalid config_version did not produce an error");
+    expect(invalidDiag.hasFatalErrors(), "invalid config_version was not document-fatal");
 
     toml::table future = toml::parse("config_version = 999");
     noctalia::config::schema::Diagnostics futureDiag;
@@ -126,6 +127,15 @@ radius = -10
         "future config_version was accepted"
     );
     expect(futureDiag.hasErrors(), "future config_version did not produce an error");
+    expect(futureDiag.hasFatalErrors(), "future config_version was not document-fatal");
+
+    noctalia::config::schema::Diagnostics baseline;
+    baseline.componentError("widget.clock.timezone", "widget.clock", "unknown timezone", "clock.timezone.unknown");
+    noctalia::config::schema::Diagnostics candidate = baseline;
+    candidate.error("shell.ui_scale", "expected a number", "config.type.number");
+    const auto introduced = candidate.introducedErrorsComparedTo(baseline);
+    expect(introduced.entries.size() == 1, "diagnostic comparison did not isolate the new error");
+    expect(introduced.entries.front().path == "shell.ui_scale", "diagnostic comparison returned the wrong error");
   }
 
   void checkReminderFingerprint() {

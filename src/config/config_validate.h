@@ -8,8 +8,7 @@
 namespace noctalia::config {
 
   // Validates an already merged and normalized effective config table. This is the
-  // shared semantic validation pass used by live reload and the CLI. Plugin-aware
-  // validation prepares the process-wide plugin registry for this candidate.
+  // shared, side-effect-free semantic validation pass used by live reload and the CLI.
   [[nodiscard]] schema::Diagnostics validateMergedConfig(const toml::table& merged);
 
   // Loads and merges the config sources the same way ConfigService::loadAll does

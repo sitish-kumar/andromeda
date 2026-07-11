@@ -112,12 +112,14 @@ namespace desktop_settings {
     }
 
     // Resolve "author/plugin:entry" to its [[desktop_widget]] entry, or nullopt.
-    std::optional<scripting::ResolvedPluginEntry> resolvePluginDesktopWidget(std::string_view type) {
+    std::optional<scripting::ResolvedPluginEntry>
+    resolvePluginDesktopWidget(std::string_view type, scripting::PluginRegistry* pluginRegistry = nullptr) {
       if (!type.contains('/')) {
         return std::nullopt;
       }
-      scripting::PluginRegistry::instance().ensureScanned();
-      auto entry = scripting::PluginRegistry::instance().resolve(type);
+      auto& registry = pluginRegistry != nullptr ? *pluginRegistry : scripting::PluginRegistry::instance();
+      registry.ensureScanned();
+      auto entry = registry.resolve(type);
       if (entry.has_value() && entry->entry->kind == scripting::PluginEntryKind::DesktopWidget) {
         return entry;
       }
@@ -425,10 +427,17 @@ namespace desktop_settings {
     return specs;
   }
 
-  noctalia::config::schema::WidgetSettingSchema desktopWidgetSettingSchema(std::string_view type) {
+  noctalia::config::schema::WidgetSettingSchema
+  desktopWidgetSettingSchema(std::string_view type, scripting::PluginRegistry* pluginRegistry) {
     noctalia::config::schema::WidgetSettingSchema out;
-    for (const auto& spec : desktopWidgetSettingSpecs(type)) {
-      out.push_back(spec.schema);
+    if (auto pluginEntry = resolvePluginDesktopWidget(type, pluginRegistry)) {
+      for (const auto& spec : settings::manifestSettingSpecs(pluginEntry->entry->settings)) {
+        out.push_back(spec.schema);
+      }
+    } else {
+      for (const auto& spec : desktopWidgetSettingSpecs(type)) {
+        out.push_back(spec.schema);
+      }
     }
     for (const auto& spec : commonDesktopWidgetSettingSpecs(type)) {
       out.push_back(spec.schema);

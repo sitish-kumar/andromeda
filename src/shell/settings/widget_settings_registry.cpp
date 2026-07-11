@@ -51,7 +51,8 @@ namespace settings {
 
     using i18n::tr;
 
-    std::optional<scripting::ResolvedPluginEntry> resolvePluginWidget(std::string_view type);
+    std::optional<scripting::ResolvedPluginEntry>
+    resolvePluginWidget(std::string_view type, scripting::PluginRegistry* pluginRegistry = nullptr);
 
     const std::vector<WidgetTypeSpec> kWidgetTypeSpecs = {
         {.type = "active_window", .labelKey = "settings.widgets.types.active-window", .glyph = "app-window"},
@@ -179,9 +180,11 @@ namespace settings {
     }
 
     // Resolve a widget `type` to a plugin [[widget]] entry, or nullopt for built-ins.
-    std::optional<scripting::ResolvedPluginEntry> resolvePluginWidget(std::string_view type) {
-      scripting::PluginRegistry::instance().ensureScanned();
-      auto entry = scripting::PluginRegistry::instance().resolve(type);
+    std::optional<scripting::ResolvedPluginEntry>
+    resolvePluginWidget(std::string_view type, scripting::PluginRegistry* pluginRegistry) {
+      auto& registry = pluginRegistry != nullptr ? *pluginRegistry : scripting::PluginRegistry::instance();
+      registry.ensureScanned();
+      auto entry = registry.resolve(type);
       if (entry.has_value() && entry->entry->kind == scripting::PluginEntryKind::Widget) {
         return entry;
       }
@@ -1332,8 +1335,15 @@ namespace settings {
     return out;
   }
 
-  noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(std::string_view type, const WidgetConfig* config) {
+  noctalia::config::schema::WidgetSettingSchema
+  widgetSettingSchema(std::string_view type, const WidgetConfig* config, scripting::PluginRegistry* pluginRegistry) {
     noctalia::config::schema::WidgetSettingSchema out;
+    if (auto pluginEntry = resolvePluginWidget(type, pluginRegistry)) {
+      for (const auto& spec : manifestSettingSpecs(pluginEntry->entry->settings)) {
+        out.push_back(spec.schema);
+      }
+      return out;
+    }
     for (const auto& spec : widgetSettingSpecs(type, config, "sans-serif")) {
       out.push_back(spec.schema);
     }

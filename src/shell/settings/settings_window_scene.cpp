@@ -1273,47 +1273,16 @@ std::unique_ptr<Flex> SettingsWindow::buildStatusRow(float scale) {
       ? m_statusMessage
       : i18n::tr("settings.window.legacy-config-warning", "issue", legacyIssue->path + ": " + legacyIssue->message);
 
-  const auto requestRebuild = [this]() { requestSceneRebuild(); };
-  const auto clearStatus = [this]() { clearStatusMessage(); };
-
-  auto status = ui::row({
-      .align = FlexAlign::Center,
-      .gap = Style::spaceSm * scale,
-      .configure = [this, scale](Flex& row) {
-        row.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-        row.setRadius(Style::scaledRadiusMd(scale));
-        const bool error = !m_statusMessage.empty() ? m_statusIsError : true;
-        row.setFill(colorSpecFromRole(error ? ColorRole::Error : ColorRole::Secondary, 0.14f));
-        row.setBorder(colorSpecFromRole(error ? ColorRole::Error : ColorRole::Secondary, 0.45f), Style::borderWidth);
-      },
+  return settings::makeSettingsStatusBanner({
+      .message = messageText,
+      .error = statusIsError,
+      .scale = scale,
+      .onDismiss = transientStatus ? std::function<void()>{[this]() {
+        clearStatusMessage();
+        requestSceneRebuild();
+      }}
+                                   : std::function<void()>{},
   });
-
-  auto message = makeLabel(
-      messageText, Style::fontSizeCaption * scale,
-      colorSpecFromRole(statusIsError ? ColorRole::Error : ColorRole::Secondary), FontWeight::Bold
-  );
-  message->setFlexGrow(1.0f);
-  status->addChild(std::move(message));
-
-  if (transientStatus) {
-    status->addChild(
-        ui::button({
-            .glyph = "close",
-            .glyphSize = Style::fontSizeCaption * scale,
-            .variant = ButtonVariant::Ghost,
-            .minWidth = Style::controlHeightSm * scale,
-            .minHeight = Style::controlHeightSm * scale,
-            .padding = Style::spaceXs * scale,
-            .radius = Style::scaledRadiusSm(scale),
-            .onClick = [clearStatus, requestRebuild]() {
-              clearStatus();
-              requestRebuild();
-            },
-        })
-    );
-  }
-
-  return status;
 }
 
 std::unique_ptr<Flex> SettingsWindow::buildBody(

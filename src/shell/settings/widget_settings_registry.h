@@ -14,6 +14,7 @@
 namespace scripting {
   struct ManifestField;
   struct PluginEntry;
+  class PluginRegistry;
   class PluginTranslationCatalog;
 } // namespace scripting
 
@@ -151,8 +152,9 @@ namespace settings {
   // layer (e.g. `config validate`). For plugin widgets the type alone resolves the
   // manifest, so the config arg is no longer required for them.
   [[nodiscard]] noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(std::string_view type);
-  [[nodiscard]] noctalia::config::schema::WidgetSettingSchema
-  widgetSettingSchema(std::string_view type, const WidgetConfig* config);
+  [[nodiscard]] noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(
+      std::string_view type, const WidgetConfig* config, scripting::PluginRegistry* pluginRegistry = nullptr
+  );
   [[nodiscard]] std::optional<noctalia::config::schema::WidgetSettingField>
   findWidgetSettingField(std::string_view widgetType, std::string_view settingKey);
 
