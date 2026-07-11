@@ -1466,8 +1466,8 @@
           "label": "Palette Source"
         },
         "pure-black-dark": {
-          "description": "Anchor dark surfaces to true black, so OLED panels do not band on dark grey",
-          "label": "Pure Black Dark Mode"
+          "description": "Anchor dark surfaces to true black, preventing banding on OLED panels (dark mode only)",
+          "label": "Pure Black"
         },
         "theme-mode": {
           "description": "Choose dark, light, or auto based on time of day",
