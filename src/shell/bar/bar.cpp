@@ -43,6 +43,21 @@ namespace {
   constexpr std::int32_t kAutoHideTriggerPx = 3;
   constexpr float kAutoHideSlideExtraPx = 4.0f;
 
+  [[nodiscard]] std::string activeWorkspaceId(const std::vector<Workspace>& workspaces) {
+    for (const auto& workspace : workspaces) {
+      if (workspace.active) {
+        if (!workspace.id.empty()) {
+          return workspace.id;
+        }
+        if (!workspace.name.empty()) {
+          return workspace.name;
+        }
+        return std::to_string(workspace.index);
+      }
+    }
+    return {};
+  }
+
   [[nodiscard]] FontWeight parseWidgetLabelFontWeight(const WidgetConfig& config, FontWeight fallback) {
     const auto it = config.settings.find("font_weight");
     if (it == config.settings.end()) {
@@ -1322,13 +1337,7 @@ void Bar::onWorkspaceChanged() {
 
   bool anyChanged = false;
   for (const auto& output : m_platform->outputs()) {
-    std::string activeId;
-    for (const auto& workspace : m_platform->workspaces(output.output)) {
-      if (workspace.active) {
-        activeId = workspace.id;
-        break;
-      }
-    }
+    const std::string activeId = activeWorkspaceId(m_platform->workspaces(output.output));
     if (activeId.empty()) {
       continue;
     }
@@ -1863,6 +1872,20 @@ void Bar::toggle() {
 void Bar::syncInstances() {
   const auto& outputs = m_platform->outputs();
   const auto& bars = m_config->config().bars;
+
+  std::erase_if(m_lastActiveWorkspaceByOutput, [&outputs](const auto& pair) {
+    return std::ranges::find(outputs, pair.first, &WaylandOutput::name) == outputs.end();
+  });
+
+  for (const auto& output : outputs) {
+    if (!output.done || !output.hasUsableGeometry()) {
+      continue;
+    }
+    auto& last = m_lastActiveWorkspaceByOutput[output.name];
+    if (last.empty()) {
+      last = activeWorkspaceId(m_platform->workspaces(output.output));
+    }
+  }
 
   // Remove instances for outputs that no longer exist
   std::erase_if(m_instances, [&outputs, this](const auto& inst) {
