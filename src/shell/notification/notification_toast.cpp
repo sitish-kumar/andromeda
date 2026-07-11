@@ -896,6 +896,11 @@ void NotificationToast::dismissPopup(std::size_t index) {
       [this, notificationId = entry.notificationId]() {
         if (findEntry(notificationId) != nullptr) {
           finishRemoval(notificationId);
+          for (auto& inst : m_instances) {
+            if (inst->surface != nullptr) {
+              inst->surface->renderNow();
+            }
+          }
         }
       }
   );
