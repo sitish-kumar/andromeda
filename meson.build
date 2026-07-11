@@ -854,6 +854,7 @@ _noctalia_sources = files(
   'src/theme/contrast.cpp',
   'src/theme/image_loader.cpp',
   'src/theme/palette_generator.cpp',
+  'src/theme/palette_transform.cpp',
   'src/theme/m3_schemes.cpp',
   'src/theme/custom_schemes.cpp',
   'src/theme/builtin_palettes.cpp',

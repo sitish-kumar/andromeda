@@ -1465,6 +1465,10 @@
           "description": "Where to derive the color palette from",
           "label": "Palette Source"
         },
+        "pure-black-dark": {
+          "description": "Anchor dark surfaces to true black, so OLED panels do not band on dark grey",
+          "label": "Pure Black Dark Mode"
+        },
         "theme-mode": {
           "description": "Choose dark, light, or auto based on time of day",
           "label": "Theme Mode"
