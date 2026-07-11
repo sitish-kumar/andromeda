@@ -1340,6 +1340,9 @@ namespace settings {
           lanePath.size() >= 2 && lanePath[0] == "bar" ? isBarHorizontal(ctx.config, lanePath[1]) : true;
       for (const std::size_t specIndex : specOrder) {
         const auto& spec = specs[specIndex];
+        if (!spec.visibleInInspector) {
+          continue;
+        }
         if (spec.horizontalBarOnly && !barHorizontal) {
           continue;
         }
