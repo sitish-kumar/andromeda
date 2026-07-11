@@ -63,15 +63,18 @@ namespace {
       WorkspaceLabelPlacement placement, bool vertical, float groupWidth, float groupHeight, float badgeWidth,
       float badgeHeight, float outlineInset
   ) {
-    const float cornerLeft = std::round(badgeWidth * -0.32f);
-    const float cornerTop = std::round(badgeHeight * -0.22f);
-    if (placement != WorkspaceLabelPlacement::Centered) {
-      return {cornerLeft, cornerTop};
-    }
-    if (vertical) {
-      return {centeredOffset(groupWidth, badgeWidth, outlineInset, false), std::round(-badgeHeight * 0.5f)};
+    if (placement == WorkspaceLabelPlacement::Corner) {
+      if (vertical) {
+        return {0.0f, std::round(badgeHeight * -0.2f)};
+      } else {
+        return {std::round(badgeWidth * -0.2f), 0.0f};
+      }
     } else {
-      return {std::round(-badgeWidth * 0.5f), centeredOffset(groupHeight, badgeHeight, outlineInset, false)};
+      if (vertical) {
+        return {centeredOffset(groupWidth, badgeWidth, outlineInset, false), std::round(-badgeHeight * 0.4f)};
+      } else {
+        return {std::round(-badgeWidth * 0.4f), centeredOffset(groupHeight, badgeHeight, outlineInset, false)};
+      }
     }
   }
 
@@ -759,7 +762,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
             measureWorkspaceDiscSize(renderer, ws.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
         if (!tasks.empty()) {
           const float half =
-              std::round(m_vertical ? externalBadgeDisc->height * 0.5f : externalBadgeDisc->width * 0.5f);
+              std::round(m_vertical ? externalBadgeDisc->height * 0.6f : externalBadgeDisc->width * 0.6f);
           if (m_vertical) {
             groupPadV += half;
           } else {
