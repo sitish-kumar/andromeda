@@ -803,7 +803,6 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
 
     // Explicitly enforce integer heights for the left column cards so their top/bottom edges snap to pixels.
     if (m_mediaCard != nullptr && m_dateTimeCard != nullptr) {
-      const float gap = m_rootLayout->gap(); // leftColumn gap is same as rootGap? No, it's Style::spaceSm
       const float colGap = Style::spaceSm * contentScale();
       const float avail = std::max(0.0f, gridH - colGap);
       const float mediaH =
