@@ -156,8 +156,8 @@ void WorkspacesWidget::applyItemVisualStyle(Item& item) {
 
 bool WorkspacesWidget::shouldHoldPreviousVisualWorkspace(
     const Workspace& previousVisualWorkspace, const Workspace& currentWorkspace
-) noexcept {
-  return previousVisualWorkspace.active && isEmptyWorkspace(currentWorkspace);
+) const noexcept {
+  return previousVisualWorkspace.active && isWorkspaceHidden(currentWorkspace);
 }
 
 bool WorkspacesWidget::releaseHeldVisualStyles() {

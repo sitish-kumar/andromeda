@@ -77,9 +77,9 @@ private:
   void setWorkspaceClickHandler(InputArea& area, const Workspace& workspace);
   void applyItemVisualStyle(Item& item);
   void updateHoverOverlay();
-  [[nodiscard]] static bool shouldHoldPreviousVisualWorkspace(
+  [[nodiscard]] bool shouldHoldPreviousVisualWorkspace(
       const Workspace& previousVisualWorkspace, const Workspace& currentWorkspace
-  ) noexcept;
+  ) const noexcept;
   [[nodiscard]] bool releaseHeldVisualStyles();
 
   struct Item {
