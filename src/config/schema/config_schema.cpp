@@ -1366,7 +1366,6 @@ namespace noctalia::config::schema {
 
   const Schema<ShellConfig>& shellSchema() {
     static const Schema<ShellConfig> s = {
-        field(&ShellConfig::uiScale, "ui_scale", kScaleRange),
         field(&ShellConfig::cornerRadiusScale, "corner_radius_scale", kCornerRadiusScaleRange),
         // font_family is trimmed; empty falls back to sans-serif.
         custom<ShellConfig>(
@@ -1585,6 +1584,9 @@ namespace noctalia::config::schema {
       }
       if (section == "hooks") {
         return chk(hooksSchema());
+      }
+      if (section == "accessibility") {
+        return chk(accessibilitySchema());
       }
       return false;
     }
@@ -2132,6 +2134,14 @@ namespace noctalia::config::schema {
             [](toml::table&, const BarMonitorOverride&) {}
         ),
         subTable(&BarMonitorOverride::deadZone, "dead_zone", barDeadZoneOverrideSchema()),
+    };
+    return s;
+  }
+
+  const Schema<AccessibilityConfig>& accessibilitySchema() {
+    static const Schema<AccessibilityConfig> s = {
+        field(&AccessibilityConfig::uiScale, "ui_scale", kScaleRange),
+        field(&AccessibilityConfig::highContrast, "high_contrast"),
     };
     return s;
   }

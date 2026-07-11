@@ -206,7 +206,7 @@ namespace {
     if (configService == nullptr) {
       return 1.0f;
     }
-    return std::max(0.1f, configService->config().shell.uiScale);
+    return std::max(0.1f, configService->config().accessibility.uiScale);
   }
 
   float resolvePanelCardOpacity(ConfigService* configService, float panelBackgroundOpacity) {

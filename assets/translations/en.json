@@ -1067,6 +1067,7 @@
     },
     "navigation": {
       "groups": {
+        "accessibility": "Accessibility",
         "audio": "Audio",
         "authentication": "Authentication",
         "automation": "Automation",
@@ -1083,6 +1084,7 @@
         "control-center": "Control Center",
         "dead-zone": "Dead Zone",
         "directories": "Directories",
+        "display": "Display",
         "effects": "Effects",
         "filtering": "Filtering",
         "focus-styling": "Focus Styling",
@@ -1134,6 +1136,7 @@
         "widgets": "Widgets"
       },
       "sections": {
+        "accessibility": "Accessibility",
         "appearance": "Appearance",
         "backdrop": "Backdrop",
         "bar": "Bar",
@@ -1407,6 +1410,12 @@
       }
     },
     "schema": {
+      "accessibility": {
+        "high-contrast": {
+          "description": "Increase contrast by pushing surface and background colors towards extreme values",
+          "label": "High Contrast"
+        }
+      },
       "appearance": {
         "animation-speed": {
           "description": "Speed multiplier for all animations",

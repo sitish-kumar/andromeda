@@ -285,6 +285,7 @@ namespace config_export {
     root.insert_or_assign("shell", schema::writeTable(config.shell, schema::shellSchema()));
     root.insert_or_assign("wallpaper", schema::writeTable(config.wallpaper, schema::wallpaperSchema()));
     root.insert_or_assign("theme", schema::writeTable(config.theme, schema::themeSchema()));
+    root.insert_or_assign("accessibility", schema::writeTable(config.accessibility, schema::accessibilitySchema()));
 
     root.insert_or_assign("backdrop", schema::writeTable(config.backdrop, schema::backdropSchema()));
 

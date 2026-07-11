@@ -508,8 +508,16 @@ namespace noctalia::theme {
     // which keeps storing the untransformed palette — toggling this cannot serve a stale one.
     if (cfg.pureBlackDark) {
       applyPureBlackDark(resolved->generated);
+    }
+    if (m_config.config().accessibility.highContrast) {
+      applyHighContrast(resolved->generated);
+    }
+
+    if (cfg.pureBlackDark || m_config.config().accessibility.highContrast) {
       if (resolved->mode != "light") {
         resolved->palette = mapGeneratedPaletteMode(resolved->generated.dark);
+      } else {
+        resolved->palette = mapGeneratedPaletteMode(resolved->generated.light);
       }
     }
 

@@ -14,4 +14,7 @@ namespace noctalia::theme {
   void applyPureBlackDark(TokenMap& darkTokens);
   void applyPureBlackDark(GeneratedPalette& palette);
 
+  void applyHighContrast(TokenMap& tokens, bool isDark);
+  void applyHighContrast(GeneratedPalette& palette);
+
 } // namespace noctalia::theme

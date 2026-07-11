@@ -347,7 +347,7 @@ void DesktopWidgetsEditor::handleWidgetPress(const std::string& id) {
 bool DesktopWidgetsEditor::isOpen() const noexcept { return m_open; }
 
 float DesktopWidgetsEditor::widgetContentScale() const {
-  const float baseUiScale = m_config != nullptr ? m_config->config().shell.uiScale : 1.0f;
+  const float baseUiScale = m_config != nullptr ? m_config->config().accessibility.uiScale : 1.0f;
   return desktop_widgets::widgetContentScale(baseUiScale);
 }
 

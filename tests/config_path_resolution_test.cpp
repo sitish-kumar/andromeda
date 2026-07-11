@@ -40,7 +40,7 @@ namespace {
 int main() {
   // Real override paths the settings registry emits — leaf, nested sub-table,
   // enum, named-map, and bar/monitor forms.
-  expectKnown({"shell", "ui_scale"});
+  expectKnown({"accessibility", "ui_scale"});
   expectKnown({"shell", "animation", "speed"});
   expectKnown({"shell", "panel", "control_center_placement"});
   expectKnown({"shell", "shadow", "alpha"});
@@ -80,7 +80,7 @@ int main() {
   // Typos and bogus paths must NOT resolve.
   expectUnknown({"shell", "ui_scl"});                            // leaf typo
   expectUnknown({"shell", "panel", "control_center_palcement"}); // nested typo
-  expectUnknown({"shel", "ui_scale"});                           // section typo
+  expectUnknown({"accessibilit", "ui_scale"});                   // section typo
   expectUnknown({"shell"});                                      // bare section
   expectUnknown({"dock", "radius_top_typo"});
   expectUnknown({"desktop_widgets", "enabeld"});

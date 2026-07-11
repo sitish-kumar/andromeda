@@ -1801,6 +1801,10 @@ void ConfigService::parseConfigTable(
     config.plugins.sources = defaultPluginSources();
   }
 
+  if (auto* accTbl = tbl["accessibility"].as_table()) {
+    readConfigSection(*accTbl, config.accessibility, schema::accessibilitySchema(), "accessibility", schemaDiag);
+  }
+
   // Parse [plugin_settings."author/plugin"] — open-ended per-plugin setting maps,
   // validated against the manifest schema (not the static pluginsSchema). Keys may
   // contain '/', so this is a top-level table rather than nested under [plugins].

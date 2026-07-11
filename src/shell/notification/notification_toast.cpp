@@ -108,9 +108,9 @@ namespace {
     if (config == nullptr) {
       return 1.0f;
     }
-    const auto& shell = config->config().shell;
+    const auto& accessibility = config->config().accessibility;
     const auto& notification = config->config().notification;
-    return std::max(0.1f, shell.uiScale * notification.scale);
+    return std::max(0.1f, accessibility.uiScale * notification.scale);
   }
 
   [[nodiscard]] float cardWidth(float scale) { return static_cast<float>(kCardWidth) * scale; }

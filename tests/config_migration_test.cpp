@@ -132,10 +132,10 @@ radius = -10
     noctalia::config::schema::Diagnostics baseline;
     baseline.componentError("widget.clock.timezone", "widget.clock", "unknown timezone", "clock.timezone.unknown");
     noctalia::config::schema::Diagnostics candidate = baseline;
-    candidate.error("shell.ui_scale", "expected a number", "config.type.number");
+    candidate.error("accessibility.ui_scale", "expected a number", "config.type.number");
     const auto introduced = candidate.introducedErrorsComparedTo(baseline);
     expect(introduced.entries.size() == 1, "diagnostic comparison did not isolate the new error");
-    expect(introduced.entries.front().path == "shell.ui_scale", "diagnostic comparison returned the wrong error");
+    expect(introduced.entries.front().path == "accessibility.ui_scale", "diagnostic comparison returned the wrong error");
   }
 
   void checkReminderFingerprint() {

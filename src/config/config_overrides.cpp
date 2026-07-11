@@ -372,6 +372,7 @@ namespace {
         && a.idle == b.idle
         && a.hooks == b.hooks
         && a.theme == b.theme
+        && a.accessibility == b.accessibility
         && a.controlCenter == b.controlCenter
         && pluginsConfigEqual(a.plugins, b.plugins);
   }
@@ -717,6 +718,7 @@ ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next) {
       .controlCenter = !(prev.controlCenter == next.controlCenter),
       .plugins = !pluginsConfigEqual(prev.plugins, next.plugins),
       .hotCorners = !(prev.hotCorners == next.hotCorners),
+      .accessibility = !(prev.accessibility == next.accessibility),
   };
 }
 
