@@ -166,8 +166,8 @@
     "audio": {
       "application-volumes": "Anwendungslautstärken",
       "choose-effects-profile": "Wähle ein Profil",
-      "effects-profile": "Effekte:",
-      "input-device-prefix": "Input:",
+      "effects-profile": "Effekte",
+      "input-device-prefix": "Input",
       "no-application-audio": "Kein Anwendungsaudio",
       "no-application-audio-body": "Derzeit sind keine Wiedergabestreams von Anwendungen verfügbar.",
       "no-input-devices": "Keine Eingabegeräte",
@@ -176,7 +176,7 @@
       "no-output-devices": "Keine Ausgabegeräte",
       "no-output-devices-body": "Derzeit sind keine Wiedergabegeräte verfügbar.",
       "no-output-selected": "Kein Ausgabegerät ausgewählt",
-      "output-device-prefix": "Output:",
+      "output-device-prefix": "Output",
       "unavailable-body": "PipeWire ist nicht aktiv.",
       "unavailable-title": "Audio nicht verfügbar"
     },
@@ -206,7 +206,7 @@
       },
       "unavailable": "Bluetooth-Dienst nicht verfügbar",
       "unknown-device": "Unbekanntes Gerät",
-      "visible": "Für Geräte in der Nähe sichtbar."
+      "visible": "Sichtbar für Geräte in der Nähe"
     },
     "calendar": {
       "all-day": "Ganztägig",
@@ -459,7 +459,7 @@
         "color-2": "Farbe 2",
         "color2": "Farbe 2",
         "command": "Befehl",
-        "custom-color": "Benutzerdefiniert…",
+        "custom-color": "Benutzerdefiniert",
         "description": "Beschreibung",
         "display": "Anzeige",
         "display-gauge": "Gauge",
@@ -559,7 +559,7 @@
     },
     "weather": {
       "error": "Fehler",
-      "loading": "Wird geladen",
+      "loading": "Wird geladen…",
       "no-location": "Kein Standort",
       "off": "Wetter aus"
     }
@@ -1288,7 +1288,7 @@
         }
       },
       "theme-role": {
-        "custom": "Benutzerdefiniert…",
+        "custom": "Benutzerdefiniert",
         "default": "Standard"
       },
       "wallpaper": {
@@ -1725,7 +1725,7 @@
           "description": "Hintergrunddeckkraft des Docks"
         },
         "concave-edge-corners": {
-          "description": "Erzeuge konkave Aussparungen in zwei Ecken des Docks (erfordert einen Randabstand von 0); bei einem Endabstand von 0 werden die Ecken der inneren Dock-Kante ausgespart, andernfalls werden die Ecken, die den Bildschirmrand berühren, ausgespart",
+          "description": "Erzeuge konkave Ecken auf der Seite, die den Bildschirmrand berührt; der Abstand zum Bildschirmrand muss 0 sein",
           "label": "Konkave Randecken"
         },
         "corner-bottom-left": {
@@ -1846,15 +1846,15 @@
           },
           "battery-plugged": {
             "description": "Befehl, der ausgeführt wird, wenn der Akku vollständig geladen ist oder geladen wird",
-            "label": "Bei angeschlossenem Akku"
+            "label": "Bei angeschlossenem Netzteil"
           },
           "bluetooth-disabled": {
             "description": "Befehl, der ausgeführt wird, wenn Bluetooth deaktiviert wird",
-            "label": "Bei deaktiviertem Bluetooth"
+            "label": "Beim Deaktivieren von Bluetooth"
           },
           "bluetooth-enabled": {
             "description": "Befehl, der ausgeführt wird, wenn Bluetooth aktiviert wird",
-            "label": "Bei aktiviertem Bluetooth"
+            "label": "Beim Aktivieren von Bluetooth"
           },
           "colors-changed": {
             "description": "Befehl, der ausgeführt wird, wenn sich die aktive Farbpalette ändert",
@@ -1874,7 +1874,7 @@
           },
           "session-locked": {
             "description": "Befehl, der ausgeführt wird, wenn die Sitzung gesperrt wird",
-            "label": "Bei gesperrter Sitzung"
+            "label": "Nach Sperren der Sitzung"
           },
           "session-unlocked": {
             "description": "Befehl, der nach dem Entsperren der Sitzung ausgeführt wird",
@@ -2308,7 +2308,7 @@
             "label": "Festplatten-Abfrageintervall"
           },
           "gpu-poll": {
-            "description": "Sekunden zwischen den Stichproben von GPU-Temperatur und VRAM; 0 deaktiviert es (Standard), was das Aufwecken einer dedizierten GPU vermeidet; 5 ist ein gutes Intervall bei aktivierter Erfassung",
+            "description": "Sekunden zwischen den Stichproben von GPU-Temperatur und VRAM (0 deaktiviert es, was das Aufwecken einer dedizierten GPU vermeidet; 5 ist ein gutes Intervall bei aktivierter Erfassung)",
             "label": "GPU-Abfrageintervall"
           },
           "label": "Systemmonitor",
@@ -2420,7 +2420,7 @@
       },
       "shell": {
         "avatar-path": {
-          "description": "Pfad zu einem benutzerdefinierten Avatar-Bild",
+          "description": "Pfad zu einem benutzerdefinierten Avatar-Bild; große Bilder werden automatisch zugeschnitten und skaliert",
           "label": "Avatar-Pfad",
           "placeholder": "/path/to/avatar.png"
         },
@@ -2816,7 +2816,7 @@
         "id": "ID",
         "input": "Eingabe",
         "instance": "Pro Platzierung",
-        "kilobytes": "KB/s",
+        "kilobytes": "kB/s",
         "megabytes": "MB/s",
         "name": "Name",
         "net-rx": "Netzwerk RX",

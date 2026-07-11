@@ -131,6 +131,7 @@
   },
   "control-center": {
     "audio": {
+      "effects-profile": "Bandor",
       "input-device-prefix": "Ketan",
       "output-device-prefix": "Deran"
     },
@@ -139,12 +140,13 @@
       "auto-reconnect": "Xweber girê bide",
       "bluetooth": "Bluetooth",
       "enter-code": "Kodê têxîne",
-      "off": "Bluetooth vemirî ye",
+      "off": "Bluetooth neçalak e",
       "pair-title": "Bi {device} re girê bide",
       "pairing-detail": {
         "display-passkey": "Vê kodê li ser amûrê binivîse:",
         "display-pin": "Vê PINê li ser amûrê binivîse:"
       },
+      "reject": "Paşguh bike",
       "sections": {
         "available": "Heyî",
         "connected": "Girêdayî "
@@ -166,19 +168,28 @@
       },
       "unknown": "nenas"
     },
+    "media": {
+      "nothing-playing": "Tiştek nayê lîstin",
+      "now-playing": "Niha tê lîstin",
+      "start-playback": "Lîstinê di sepana MPRIS de dest pê bike"
+    },
     "network": {
-      "connect": "girê bide",
+      "connect": "Girê bide",
       "current-connection": "Girêdanên heyî",
+      "external-ip": "WAN {ip}",
       "not-connected": "Ne girêdayî ye",
       "password": "Borînpyev",
       "password-prompt": "Borînpyevê têxîne",
       "vpns": "VPN",
       "wi-fi": "Wi-Fi",
       "wifi": "Wi-Fi",
-      "wifi-off": "Wi-Fi vemirî ye",
-      "wifi-on": "Wi-Fi vêketî ye"
+      "wifi-off": "Wi-Fi çalak e",
+      "wifi-on": "Wi-Fi çalak e",
+      "wired-connection": "Girêdanên bi têl"
     },
     "notifications": {
+      "clear-all": "Hemû agahdariyan pak bike",
+      "empty-title": "Agahdarî tune ne",
       "filter": {
         "all": "Hemû",
         "older": "Kevntir",
@@ -388,8 +399,8 @@
   },
   "osd": {
     "bluetooth": {
-      "off": "Bluetooth vemirî ye",
-      "on": "Bluetooth veketî ye"
+      "off": "Bluetooth neçalak e",
+      "on": "Bluetooth çalak e"
     },
     "caffeine": {
       "off": "Caffeine vemirî ye",
@@ -503,6 +514,7 @@
     },
     "navigation": {
       "groups": {
+        "authentication": "Rastandin",
         "monitor": "Dîmenerê pergalê",
         "power": "Hêz",
         "session-panel": "Danaşîn",

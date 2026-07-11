@@ -3107,6 +3107,10 @@
           "label": "Dimensione pillola inattiva",
           "workspaces-description": "Lunghezza minima della pillola dell'area di lavoro inattiva lungo la barra, come multiplo dello spessore; le etichette potrebbero espandersi oltre questo limite"
         },
+        "interactive": {
+          "description": "Consenti il ​​passaggio del puntatore, i clic, gli scroll e le descrizioni comandi per questo widget",
+          "label": "Interattivo"
+        },
         "interface": {
           "description": "Interfaccia di rete da monitorare; lasciare vuoto per riportare il totale su tutte le interfacce",
           "label": "Interfaccia"
@@ -3290,6 +3294,10 @@
         "taskbar-max-width": {
           "description": "Budget larghezza totale in pixel; i titoli finestra si riducono per adattarsi e si nascondono quando troppo stretti",
           "label": "Larghezza max taskbar"
+        },
+        "timezone": {
+          "description": "Identificatore fuso orario (ad esempio Europe/Berlin) da utilizzare per questo orologio; lasciare vuoto per utilizzare l'ora locale del sistema",
+          "label": "Fuso orario"
         },
         "title-scroll": {
           "description": "Quando deve scorrere il titolo del widget",

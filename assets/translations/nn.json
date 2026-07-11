@@ -918,6 +918,16 @@
           "border": "Rand",
           "border-description": "Leten for pilleomritet; lat vera på Vanleg for inkje omrit",
           "clear": "Rydd",
+          "drawer-columns": "Ilåtssøyler",
+          "drawer-columns-description": "Kor mange nøytlar det er i kvar rad i ilåtsfjøla",
+          "drawer-detached": "Ubunden fjøl",
+          "drawer-detached-description": "Opna ilåtet som ei flytande fjøl med eigen bakgrunn heller enn å vera bunde til stonga.",
+          "drawer-enabled": "Ilåt",
+          "drawer-enabled-description": "Flytta nøytlar i grupper inn i ei ilåtsfjøl som du slår av og på med ein knapp",
+          "drawer-glyph-closed": "Attlatenmerke",
+          "drawer-glyph-closed-description": "Symbol som du ser på knappen til å opna og lata att ilåtet når fjøla er attlaten",
+          "drawer-glyph-opened": "Opna merke",
+          "drawer-glyph-opened-description": "Symbol som du ser på knappen til å opna og lata att ilåtet når fjøla er open",
           "edit": "Brigda på stil",
           "fill": "Bakgrunn",
           "fill-description": "Leten for pillebakgrunnen; hex-leter er stødde òg.",
@@ -1160,8 +1170,11 @@
           "toast": "skjermvarsel"
         },
         "flags-label": "Når samsvar",
+        "match-content-label": "Innhald-regex",
+        "match-content-placeholder": "Regex mønster som finn samandrag eller hovudtekst...",
         "match-label": "App",
         "match-placeholder": "Appnamn, skrivebordsoppslag eller klasse ...",
+        "override-duration": "Overstyringsvaring",
         "play-sound": "Spel av ljod",
         "save-history": "Lagra i historikken",
         "show-toast": "Vis skjermvarsel",
@@ -1380,6 +1393,7 @@
       },
       "store": {
         "add": "Legg til i Noctalia",
+        "categories": "Klasser",
         "category-all": "Alle",
         "empty": "Ingen utvidingar funne",
         "incompatible": "Usemjande",
@@ -1521,6 +1535,10 @@
         "center-widgets": {
           "description": "Nøytlar midt i stonga",
           "label": "Nøytlar i midten"
+        },
+        "concave-edge-corners": {
+          "description": "Skòra runde skard i to av stonghyrno (krev randmarg = 0); med endemarg = 0 vert hyrno på den indre randa skòra, elles er det hyrno som råkar skjermranda.",
+          "label": "Innvendes randhyrno"
         },
         "contact-shadow": {
           "description": "Mørk letgradient mellom ei bunden fjøl og stonga for å ymta på djupn i saumen"
@@ -3011,6 +3029,10 @@
           "description": "Gøym platekunst",
           "label": "Gøym platekunst"
         },
+        "hide-artist": {
+          "description": "Gøym artistnamnet og vis berre spornamn",
+          "label": "Gøym artist"
+        },
         "hide-empty-workspaces": {
           "description": "Når Noctalia delar etter arbeidsrom, ikkje tak med piller utan køyrande ruter i lista på oppgåvelina.",
           "label": "Gøym tome arbeidsrom"
@@ -3084,6 +3106,10 @@
           "description": "Minste tillaten lengd for piller som viser inaktive arbeidsrom langs med stonga, som multiplikator på pilletjukn",
           "label": "Inaktiv-pilletjukn",
           "workspaces-description": "Minste tillaten lengd for piller som viser inaktive arbeidsrom langs med stonga, som multiplikator på pilletjukn; merkelappar kan gå utover dette"
+        },
+        "interactive": {
+          "description": "Tillata peikarsviv, trykk, blading og hjelpetekst på denne nøytelen",
+          "label": "Interaktiv"
         },
         "interface": {
           "description": "Nettverkgrensesnitt til skjerm; haldt dette tomt for å bruka summen over alle grensesnitt",
@@ -3268,6 +3294,10 @@
         "taskbar-max-width": {
           "description": "Kor breid alt i hop kan vera; rutenamn minskar seg for å høva seg og gøymer seg når dei er for smale ",
           "label": "Oppgåvelina størst breidd"
+        },
+        "timezone": {
+          "description": "Tidssone (e.g. Europe/Berlin) å bruka for denne klokka; haldt dette tomt for å nytta systemklokka. Må vera på engelsk.",
+          "label": "Tidssone"
         },
         "title-scroll": {
           "description": "Når nøytelnamnet skal rulla",

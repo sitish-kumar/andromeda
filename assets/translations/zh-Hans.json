@@ -1717,11 +1717,11 @@
       },
       "dock": {
         "active-icon-opacity": {
-          "description": "当前聚焦的 Dock 图标的不透明度",
+          "description": "焦点 Dock 图标的不透明度",
           "label": "焦点图标不透明度"
         },
         "active-icon-scale": {
-          "description": "当前聚焦的 Dock 图标的缩放比例",
+          "description": "焦点 Dock 图标的缩放比例",
           "label": "焦点图标缩放"
         },
         "active-monitor-only": {
@@ -1875,7 +1875,7 @@
             "label": "注销时"
           },
           "power-profile-changed": {
-            "description": "当前 UPower/PPD 电源配置切换时执行的命令",
+            "description": "UPower/PPD 电源配置切换时执行的命令",
             "label": "电源配置切换时"
           },
           "rebooting": {
@@ -2937,7 +2937,7 @@
           "label": "自定义图片"
         },
         "custom-image-colorize": {
-          "description": "使用小组件的“图标颜色”设置为自定义图片着色",
+          "description": "使用小组件的“图标颜色”为自定义图片着色",
           "label": "自定义图片着色"
         },
         "custom-labels": {
@@ -3107,6 +3107,10 @@
           "label": "非活动胶囊长度",
           "workspaces-description": "非活动工作区胶囊沿状态栏方向的最小长度，以胶囊厚度为单位；标签可能会超出此长度"
         },
+        "interactive": {
+          "description": "允许小组件的鼠标悬停、点击和滚动操作，并显示文字提示",
+          "label": "交互"
+        },
         "interface": {
           "description": "监视的网络接口；留空则统计所有接口的总流量",
           "label": "网络接口"
@@ -3220,7 +3224,7 @@
           "label": "脚本"
         },
         "scroll-down-command": {
-          "description": "在按钮上向下滚动时执行的 Shell 命令",
+          "description": "向下滚动按钮时执行的 Shell 命令",
           "label": "向下滚动命令"
         },
         "scroll-step": {
@@ -3228,7 +3232,7 @@
           "label": "滚动步长"
         },
         "scroll-up-command": {
-          "description": "在按钮上向上滚动时执行的 Shell 命令",
+          "description": "向上滚动按钮时执行的 Shell 命令",
           "label": "向上滚动命令"
         },
         "show-active-indicator": {
@@ -3291,16 +3295,20 @@
           "description": "总宽度限制（像素）；窗口标题会自适应缩小，过窄时隐藏",
           "label": "任务栏最大宽度"
         },
+        "timezone": {
+          "description": "时钟的时区标识符（例如 Europe/Berlin）；留空则使用系统本地时间",
+          "label": "时区"
+        },
         "title-scroll": {
           "description": "何时滚动显示小组件标题",
           "label": "标题滚动"
         },
         "tooltip": {
-          "description": "悬停按钮时显示的提示信息",
-          "label": "提示"
+          "description": "悬停按钮时显示的文字提示",
+          "label": "文字提示"
         },
         "tooltip-format": {
-          "description": "可选的提示信息格式",
+          "description": "可选的文字提示格式",
           "label": "提示格式"
         },
         "type": {
