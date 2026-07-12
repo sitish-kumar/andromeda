@@ -281,7 +281,7 @@ namespace {
     return ui::button({
         .text = std::string(label),
         .fontSize = Style::fontSizeCaption * scale,
-        .variant = ButtonVariant::Outline,
+        .variant = ButtonVariant::Default,
     });
   }
 
