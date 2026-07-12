@@ -743,6 +743,7 @@ _noctalia_sources = files(
   'src/system/rfkill_helper.cpp',
   'src/system/screen_time_service.cpp',
   'src/system/cpu_temp_sensor.cpp',
+  'src/system/intel_gpu.cpp',
   'src/system/system_monitor_service.cpp',
   'src/system/weather_service.cpp',
   'src/time/time_format.cpp',
