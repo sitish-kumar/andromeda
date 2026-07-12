@@ -107,20 +107,6 @@ namespace settings {
       return header;
     }
 
-    std::string_view widgetSettingGroupKey(const WidgetSettingSpec& spec) {
-      switch (spec.group) {
-      case WidgetSettingGroup::Runtime:
-        return "runtime";
-      case WidgetSettingGroup::Presentation:
-        return "presentation";
-      case WidgetSettingGroup::Grouping:
-        return "grouping";
-      case WidgetSettingGroup::Widget:
-        return "widget";
-      }
-      return "widget";
-    }
-
     std::string widgetSettingGroupTitle(std::string_view groupKey) {
       return i18n::tr("settings.entities.widget.settings.groups." + std::string(groupKey));
     }
@@ -1391,8 +1377,7 @@ namespace settings {
       std::size_t visibleSpecs = 0;
       std::string activeGroupKey;
       // Coalesce specs by group so each group header renders once regardless of spec declaration order.
-      const auto specOrder =
-          coalesceByGroupKey(specs.size(), [&](std::size_t i) { return std::string(widgetSettingGroupKey(specs[i])); });
+      const auto specOrder = coalesceByGroupKey(specs.size(), [&](std::size_t i) { return specs[i].group; });
       const bool barHorizontal =
           lanePath.size() >= 2 && lanePath[0] == "bar" ? isBarHorizontal(ctx.config, lanePath[1]) : true;
       for (const std::size_t specIndex : specOrder) {
@@ -1415,10 +1400,9 @@ namespace settings {
           continue;
         }
 
-        const std::string_view groupKey = widgetSettingGroupKey(spec);
-        if (groupKey != activeGroupKey) {
-          panel->addChild(makeMiniSectionHeader(widgetSettingGroupTitle(groupKey), ctx.scale, visibleSpecs > 0));
-          activeGroupKey = groupKey;
+        if (spec.group != activeGroupKey) {
+          panel->addChild(makeMiniSectionHeader(widgetSettingGroupTitle(spec.group), ctx.scale, visibleSpecs > 0));
+          activeGroupKey = spec.group;
         }
 
         const auto value = widgetSettingValue(ctx.config, widgetName, spec);

@@ -234,7 +234,7 @@ namespace settings {
       return spec;
     }
 
-    WidgetSettingSpec withGroup(WidgetSettingSpec spec, WidgetSettingGroup group) {
+    WidgetSettingSpec withGroup(WidgetSettingSpec spec, std::string_view group) {
       spec.group = group;
       return spec;
     }
@@ -555,15 +555,14 @@ namespace settings {
 
     auto enabled = boolSpec("enabled", true);
     enabled.visibleInInspector = false;
-    auto anchor = withGroup(boolSpec("anchor", false, true), WidgetSettingGroup::Presentation);
-    auto interactive = withGroup(boolSpec("interactive", true), WidgetSettingGroup::Presentation);
-    auto scale = withGroup(doubleSpec("scale", 1.0, 0.2, 2.5, 0.05), WidgetSettingGroup::Presentation);
-    auto widgetColor = withGroup(colorSpec("color", {}, true), WidgetSettingGroup::Presentation);
-    auto widgetIconColor = withGroup(colorSpec("icon_color", {}, true), WidgetSettingGroup::Presentation);
+    auto anchor = withGroup(boolSpec("anchor", false, true), "presentation");
+    auto interactive = withGroup(boolSpec("interactive", true), "presentation");
+    auto scale = withGroup(doubleSpec("scale", 1.0, 0.2, 2.5, 0.05), "presentation");
+    auto widgetColor = withGroup(colorSpec("color", {}, true), "presentation");
+    auto widgetIconColor = withGroup(colorSpec("icon_color", {}, true), "presentation");
     auto fontWeightOptions =
         buildLabelFontWeightSelectOptions(shellFontFamily, FontWeightSelectKind::WidgetInheritDefault);
-    auto fontWeight =
-        withGroup(selectSpec("font_weight", "", std::move(fontWeightOptions), true), WidgetSettingGroup::Presentation);
+    auto fontWeight = withGroup(selectSpec("font_weight", "", std::move(fontWeightOptions), true), "presentation");
     fontWeight.integerValue = true;
 
     // Font picker rendered as a filterable search picker but validated as a free string: a font configured
@@ -572,27 +571,25 @@ namespace settings {
     fontFamily.schema.type = schema::WidgetSettingType::String;
     fontFamily.options = buildFontFamilySelectOptions();
     fontFamily.literalLabels = true;
-    fontFamily = withGroup(std::move(fontFamily), WidgetSettingGroup::Presentation);
+    fontFamily = withGroup(std::move(fontFamily), "presentation");
 
-    auto capsuleToggle = withGroup(boolSpec("capsule", false), WidgetSettingGroup::Presentation);
-    auto capsuleFill = withGroup(colorSpec("capsule_fill", "", true), WidgetSettingGroup::Presentation);
+    auto capsuleToggle = withGroup(boolSpec("capsule", false), "presentation");
+    auto capsuleFill = withGroup(colorSpec("capsule_fill", "", true), "presentation");
     capsuleFill.visibleWhen = capsuleOn;
 
-    auto capsuleBorder = withGroup(colorSpec("capsule_border", {}, true), WidgetSettingGroup::Presentation);
+    auto capsuleBorder = withGroup(colorSpec("capsule_border", {}, true), "presentation");
     capsuleBorder.visibleWhen = capsuleOn;
 
-    auto capsuleForeground = withGroup(colorSpec("capsule_foreground", {}, true), WidgetSettingGroup::Presentation);
+    auto capsuleForeground = withGroup(colorSpec("capsule_foreground", {}, true), "presentation");
     capsuleForeground.visibleWhen = capsuleOn;
 
     auto capsulePadding = withGroup(
-        intSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0),
-        WidgetSettingGroup::Presentation
+        intSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0), "presentation"
     );
     capsulePadding.visibleWhen = capsuleOn;
-    auto capsuleRadius = withGroup(optionalDoubleSpec("capsule_radius", 0.0, 80.0), WidgetSettingGroup::Presentation);
+    auto capsuleRadius = withGroup(optionalDoubleSpec("capsule_radius", 0.0, 80.0), "presentation");
     capsuleRadius.visibleWhen = capsuleOn;
-    auto capsuleOpacity =
-        withGroup(doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01), WidgetSettingGroup::Presentation);
+    auto capsuleOpacity = withGroup(doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01), "presentation");
     capsuleOpacity.visibleWhen = capsuleOn;
 
     return {
@@ -869,117 +866,112 @@ namespace settings {
         add(std::move(minW));
       }
     } else if (type == "taskbar") {
-      add(boolSpec("show_all_outputs", false));
-      if (supportsTaskbarWorkspaceGrouping) {
-        add(boolSpec("group_by_workspace", false));
-        add(boolSpec("only_active_workspace", false));
-        {
-          auto showWsLabel = boolSpec("show_workspace_label", true);
-          showWsLabel.visibleWhen =
-              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
-          add(std::move(showWsLabel));
+      // Windows: what the taskbar lists and how each window tile looks.
+      add(withGroup(boolSpec("show_all_outputs", false), "taskbar.windows"));
+      add(withGroup(boolSpec("show_active_indicator", true), "taskbar.windows"));
+      add(withGroup(doubleSpec("active_opacity", 1.0, 0.1, 1.0, 0.01), "taskbar.windows"));
+      add(withGroup(doubleSpec("inactive_opacity", 1.0, 0.1, 1.0, 0.01), "taskbar.windows"));
+      {
+        // Window titles are only laid out when the taskbar is not grouping by workspace.
+        auto showWindowTitle = withGroup(boolSpec("show_window_title", false), "taskbar.windows");
+        WidgetSettingVisibility windowTitleSettings;
+        windowTitleSettings.all = {WidgetSettingVisibilityCondition{"show_window_title", {"true"}}};
+        if (supportsTaskbarWorkspaceGrouping) {
+          showWindowTitle.visibleWhen =
+              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"false"}}};
+          windowTitleSettings.all.push_back(WidgetSettingVisibilityCondition{"group_by_workspace", {"false"}});
         }
-        {
-          auto labelPlacement = selectSpec("workspace_label_placement", "corner", workspaceLabelPlacement);
-          labelPlacement.visibleWhen =
-              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
-          add(std::move(labelPlacement));
-        }
-        {
-          auto hideEmpty = boolSpec("hide_empty_workspaces", false);
-          hideEmpty.visibleWhen =
-              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
-          add(std::move(hideEmpty));
-        }
-        {
-          auto groupCapsule = boolSpec("workspace_group_capsule", true);
-          groupCapsule.descriptionKey = "settings.widgets.settings.workspace-group-capsule.description";
-          groupCapsule.visibleWhen =
-              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
-          add(std::move(groupCapsule));
-        }
-        {
-          auto focusedOutputOnly = boolSpec("focused_output_only", false);
-          focusedOutputOnly.descriptionKey = "settings.widgets.settings.focused-output-only.taskbar-description";
-          focusedOutputOnly.visibleWhen =
-              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"show_workspace_label", {"true"}}};
-          add(std::move(focusedOutputOnly));
-          auto minimal = boolSpec("minimal", false);
-          minimal.descriptionKey = "settings.widgets.settings.minimal.taskbar-description";
-          minimal.visibleWhen =
-              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"show_workspace_label", {"true"}}};
-          add(std::move(minimal));
-        }
-        {
-          auto singleIconPerApp = boolSpec("group_single_icon_per_app", false);
-          singleIconPerApp.visibleWhen =
-              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
-          add(std::move(singleIconPerApp));
-        }
+        add(std::move(showWindowTitle));
+
+        auto windowTitleMaxWidth =
+            withGroup(intSpec("window_title_max_width", 100.0, 10.0, 200.0, 1.0), "taskbar.windows");
+        windowTitleMaxWidth.visibleWhen = windowTitleSettings;
+        add(std::move(windowTitleMaxWidth));
+
+        auto taskbarMaxWidth = withGroup(intSpec("taskbar_max_width", 8192.0, 10.0, 8192.0, 1.0), "taskbar.windows");
+        taskbarMaxWidth.visibleWhen = windowTitleSettings;
+        add(std::move(taskbarMaxWidth));
       }
-      add(boolSpec("show_active_indicator", true));
-      add(doubleSpec("active_opacity", 1.0, 0.1, 1.0, 0.01));
-      add(doubleSpec("inactive_opacity", 1.0, 0.1, 1.0, 0.01));
+
       if (supportsTaskbarWorkspaceGrouping) {
         const WidgetSettingVisibility groupedWorkspaceSettings{
             WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}
         };
+
+        // Grouping: how windows are bundled into workspace capsules. only_active_workspace filters the
+        // window list on its own, so it precedes the master toggle the rest of the section hangs off.
+        add(withGroup(boolSpec("only_active_workspace", false), "taskbar.grouping"));
+        add(withGroup(boolSpec("group_by_workspace", false), "taskbar.grouping"));
         {
-          auto focusedColor = colorSpec("focused_color", "primary");
+          auto hideEmpty = withGroup(boolSpec("hide_empty_workspaces", false), "taskbar.grouping");
+          hideEmpty.visibleWhen = groupedWorkspaceSettings;
+          add(std::move(hideEmpty));
+        }
+        {
+          auto singleIconPerApp = withGroup(boolSpec("group_single_icon_per_app", false), "taskbar.grouping");
+          singleIconPerApp.visibleWhen = groupedWorkspaceSettings;
+          add(std::move(singleIconPerApp));
+        }
+        {
+          auto groupCapsule = withGroup(boolSpec("workspace_group_capsule", true), "taskbar.grouping");
+          groupCapsule.descriptionKey = "settings.widgets.settings.workspace-group-capsule.description";
+          groupCapsule.visibleWhen = groupedWorkspaceSettings;
+          add(std::move(groupCapsule));
+        }
+
+        // Workspace labels: the disc tag on each grouped capsule, and the colors it uses.
+        {
+          auto showWsLabel = withGroup(boolSpec("show_workspace_label", true), "taskbar.workspace-labels");
+          showWsLabel.visibleWhen = groupedWorkspaceSettings;
+          add(std::move(showWsLabel));
+        }
+        {
+          auto labelPlacement = withGroup(
+              selectSpec("workspace_label_placement", "corner", workspaceLabelPlacement), "taskbar.workspace-labels"
+          );
+          labelPlacement.visibleWhen = groupedWorkspaceSettings;
+          add(std::move(labelPlacement));
+        }
+        // The label styling options only bite on workspace discs, which exist solely when grouping is on.
+        WidgetSettingVisibility labelStyleSettings;
+        labelStyleSettings.all = {
+            WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}},
+            WidgetSettingVisibilityCondition{"show_workspace_label", {"true"}},
+        };
+        {
+          auto minimal = withGroup(boolSpec("minimal", false), "taskbar.workspace-labels");
+          minimal.descriptionKey = "settings.widgets.settings.minimal.taskbar-description";
+          minimal.visibleWhen = labelStyleSettings;
+          add(std::move(minimal));
+        }
+        {
+          auto focusedOutputOnly = withGroup(boolSpec("focused_output_only", false), "taskbar.workspace-labels");
+          focusedOutputOnly.descriptionKey = "settings.widgets.settings.focused-output-only.taskbar-description";
+          focusedOutputOnly.visibleWhen = labelStyleSettings;
+          add(std::move(focusedOutputOnly));
+        }
+        {
+          auto focusedColor = withGroup(colorSpec("focused_color", "primary"), "taskbar.workspace-labels");
           focusedColor.visibleWhen = groupedWorkspaceSettings;
           add(std::move(focusedColor));
         }
         {
-          auto occupiedColor = colorSpec("occupied_color", "secondary");
+          auto occupiedColor = withGroup(colorSpec("occupied_color", "secondary"), "taskbar.workspace-labels");
           occupiedColor.visibleWhen = groupedWorkspaceSettings;
           add(std::move(occupiedColor));
         }
         {
-          auto emptyColor = colorSpec("empty_color", "secondary");
+          auto emptyColor = withGroup(colorSpec("empty_color", "secondary"), "taskbar.workspace-labels");
           emptyColor.visibleWhen = groupedWorkspaceSettings;
           add(std::move(emptyColor));
         }
+
         for (auto& spec : commonSpecs) {
           if (spec.schema.key == "capsule_radius") {
             spec.descriptionKey = "settings.widgets.settings.capsule-radius.taskbar-description";
-            spec.visibleWhen =
-                WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+            spec.visibleWhen = groupedWorkspaceSettings;
             break;
           }
-        }
-        {
-          auto showWindowTitle = boolSpec("show_window_title", false);
-          showWindowTitle.visibleWhen =
-              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"false"}}};
-          add(std::move(showWindowTitle));
-        }
-        const WidgetSettingVisibility windowTitleSettings = [] {
-          WidgetSettingVisibility v;
-          v.all = {{"group_by_workspace", {"false"}}, {"show_window_title", {"true"}}};
-          return v;
-        }();
-        {
-          auto windowTitleMaxWidth = intSpec("window_title_max_width", 100.0, 10.0, 200.0, 1.0);
-          windowTitleMaxWidth.visibleWhen = windowTitleSettings;
-          add(std::move(windowTitleMaxWidth));
-        }
-        {
-          auto taskbarMaxWidth = intSpec("taskbar_max_width", 8192.0, 10.0, 8192.0, 1.0);
-          taskbarMaxWidth.visibleWhen = windowTitleSettings;
-          add(std::move(taskbarMaxWidth));
-        }
-      } else {
-        add(boolSpec("show_window_title", false));
-        const WidgetSettingVisibility windowTitleSettings{"show_window_title", {"true"}};
-        {
-          auto windowTitleMaxWidth = intSpec("window_title_max_width", 100.0, 10.0, 200.0, 1.0);
-          windowTitleMaxWidth.visibleWhen = windowTitleSettings;
-          add(std::move(windowTitleMaxWidth));
-        }
-        {
-          auto taskbarMaxWidth = intSpec("taskbar_max_width", 8192.0, 10.0, 8192.0, 1.0);
-          taskbarMaxWidth.visibleWhen = windowTitleSettings;
-          add(std::move(taskbarMaxWidth));
         }
       }
     } else if (type == "tray") {

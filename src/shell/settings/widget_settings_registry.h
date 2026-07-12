@@ -67,13 +67,6 @@ namespace settings {
     ColorSpec,
   };
 
-  enum class WidgetSettingGroup : std::uint8_t {
-    Widget,
-    Presentation,
-    Runtime,
-    Grouping,
-  };
-
   struct WidgetSettingSelectOption {
     std::string value;
     std::string labelKey; // i18n key, unless the owning spec sets `literalLabels` (then a literal label)
@@ -105,7 +98,10 @@ namespace settings {
     std::string literalLabel;       // when non-empty, used verbatim instead of tr(labelKey)
     std::string literalDescription; // when non-empty, used verbatim instead of tr(descriptionKey)
     bool literalLabels = false;     // when true, option.labelKey holds a literal label (not an i18n key)
-    WidgetSettingGroup group = WidgetSettingGroup::Widget;
+    // Section this setting renders under. Doubles as the i18n key suffix, resolved against
+    // settings.entities.widget.settings.groups.<group>. Shared across widgets: "widget", "presentation",
+    // "runtime". Anything meaningful to a single widget is prefixed with its type, e.g. "taskbar.grouping".
+    std::string group = "widget";
     std::vector<WidgetSettingSelectOption> options; // value+label; values mirror schema.enumValues
     bool visibleInInspector = true;
     bool advanced = false;

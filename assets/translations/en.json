@@ -990,9 +990,13 @@
         "settings": {
           "empty": "No settings match the current filters.",
           "groups": {
-            "grouping": "Grouping",
             "presentation": "Presentation",
             "runtime": "Runtime",
+            "taskbar": {
+              "grouping": "Grouping",
+              "windows": "Windows",
+              "workspace-labels": "Workspace Labels"
+            },
             "widget": "Widget"
           }
         }
