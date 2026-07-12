@@ -3342,7 +3342,7 @@
           "label": "类型"
         },
         "vertical-format": {
-          "description": "垂直状态栏的可选格式",
+          "description": "可选的垂直状态栏格式",
           "label": "垂直格式"
         },
         "warning-color": {

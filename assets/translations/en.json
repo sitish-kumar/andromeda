@@ -1260,12 +1260,12 @@
         "horizontal": "Horizontal",
         "vertical": "Vertical"
       },
-      "panel-position": {
-        "auto": "Follow Bar"
-      },
       "panel-bar-alignment": {
         "centered": "Centered",
         "near-trigger": "Near Trigger"
+      },
+      "panel-position": {
+        "auto": "Follow Bar"
       },
       "screen-position": {
         "bottom-center": "Bottom Center",
