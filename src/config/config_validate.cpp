@@ -614,6 +614,7 @@ namespace noctalia::config {
       checkSection(merged, "idle", schema::idleSchema(), diag);
       checkSection(merged, "keybinds", schema::keybindsSchema(), diag);
       checkSection(merged, "dock", schema::dockSchema(), diag);
+      checkSection(merged, "hot_corners", schema::hotCornersSchema(), diag);
       checkSection(merged, "control_center", schema::controlCenterSchema(), diag);
       checkSection(merged, "plugins", schema::pluginsSchema(), diag);
       checkSection(merged, "hooks", schema::hooksSchema(), diag);
@@ -644,36 +645,14 @@ namespace noctalia::config {
 
       // Unknown top-level sections.
       static const std::unordered_set<std::string> kKnownSections = {
-          "shell",
-          "accessibility",
-          "wallpaper",
-          "theme",
-          "backdrop",
-          "lockscreen",
-          "notification",
-          "notifications",
-          "osd",
-          "system",
-          "weather",
-          "calendar",
-          "audio",
-          "brightness",
-          "battery",
-          "nightlight",
-          "location",
-          "idle",
-          "keybinds",
-          "bar",
-          "dock",
-          "desktop_widgets",
-          "lockscreen_widgets",
-          "widget",
-          "control_center",
-          "plugins",
-          "plugin_settings",
-          "hooks",
-          "include",
-          "config_version",
+          "shell",    "accessibility",  "wallpaper",       "theme",
+          "backdrop", "lockscreen",     "notification",    "notifications",
+          "osd",      "system",         "weather",         "calendar",
+          "audio",    "brightness",     "battery",         "nightlight",
+          "location", "idle",           "keybinds",        "bar",
+          "dock",     "hot_corners",    "desktop_widgets", "lockscreen_widgets",
+          "widget",   "control_center", "plugins",         "plugin_settings",
+          "hooks",    "include",        "config_version",
       };
       for (const auto& [key, node] : merged) {
         (void)node;
