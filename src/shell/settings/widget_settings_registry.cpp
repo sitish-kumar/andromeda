@@ -1239,7 +1239,7 @@ namespace settings {
       spec.control = WidgetControlKind::Bool;
       spec.schema.defaultValue = field != nullptr ? field->defaultValue() : entry.panelOpenNearClickDefault;
       spec.schema.type = schemaTypeForControl(spec.control);
-      spec.visibleWhen = WidgetSettingVisibility{placementKey, {"attached", "floating"}};
+      spec.visibleWhen = WidgetSettingVisibility{placementKey, {"attached"}};
       return spec;
     };
 
