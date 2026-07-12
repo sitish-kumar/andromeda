@@ -1263,6 +1263,10 @@
       "panel-position": {
         "auto": "Follow Bar"
       },
+      "panel-bar-alignment": {
+        "centered": "Centered",
+        "near-trigger": "Near Trigger"
+      },
       "screen-position": {
         "bottom-center": "Bottom Center",
         "bottom-left": "Bottom Left",
@@ -1349,8 +1353,8 @@
       "browse-store": "Browse Plugins",
       "panels": {
         "open-near-click": {
-          "description": "Open the panel near the bar widget that toggled it",
-          "label": "Open Near Click"
+          "description": "Position the panel near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "placement": {
           "description": "Attach the panel to the bar or float it near the bar edge",
@@ -2153,24 +2157,24 @@
           "label": "Sort by Usage"
         },
         "open-near-click-clipboard": {
-          "description": "Position the clipboard panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position the clipboard panel near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "open-near-click-control-center": {
-          "description": "Position the Control Center panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position Control Center near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "open-near-click-launcher": {
-          "description": "Position the launcher panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position the launcher near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "open-near-click-session": {
-          "description": "Position the session panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position the session panel near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "open-near-click-wallpaper": {
-          "description": "Position the wallpaper picker panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position the wallpaper picker near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "placement-clipboard": {
           "description": "Choose whether the clipboard attaches to the bar or floats at a chosen screen position",

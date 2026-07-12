@@ -1249,10 +1249,19 @@ namespace settings {
       spec.schema.key = openNearClickKey;
       spec.literalLabel = entryPrefix(tr("settings.plugins.panels.open-near-click.label"));
       spec.literalDescription = tr("settings.plugins.panels.open-near-click.description");
-      spec.control = WidgetControlKind::Bool;
+      spec.control = WidgetControlKind::Select;
+      spec.segmented = true;
+      spec.literalLabels = true;
       spec.schema.defaultValue = field != nullptr ? field->defaultValue() : entry.panelOpenNearClickDefault;
-      spec.schema.type = schemaTypeForControl(spec.control);
-      spec.visibleWhen = WidgetSettingVisibility{placementKey, {"attached"}};
+      spec.options = {
+          {"false", tr("settings.options.panel-bar-alignment.centered")},
+          {"true", tr("settings.options.panel-bar-alignment.near-trigger")},
+      };
+      spec.schema.type = schema::WidgetSettingType::Bool;
+      spec.visibleWhen = WidgetSettingVisibility{
+          {placementKey, {"attached"}},
+          {positionKey, {"auto"}},
+      };
       return spec;
     };
 

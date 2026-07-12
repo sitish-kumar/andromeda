@@ -1211,7 +1211,7 @@ namespace settings {
       }
 
       SelectSetting selectSetting{std::move(options), std::move(selectedValue)};
-      selectSetting.integerValue = spec.integerValue;
+      selectSetting.valueType = spec.integerValue ? SelectValueType::Integer : SelectValueType::String;
       return selectSetting;
     }
 
@@ -1664,7 +1664,7 @@ namespace settings {
             selectSetting = SelectSetting{std::move(options), selectedValue};
           }
           selectSetting.segmented = spec.segmented;
-          selectSetting.integerValue = spec.integerValue;
+          selectSetting.valueType = spec.integerValue ? SelectValueType::Integer : SelectValueType::String;
           if (const auto* defaultString = std::get_if<std::string>(&spec.schema.defaultValue);
               defaultString != nullptr) {
             selectSetting.clearOnEmpty = defaultString->empty();
