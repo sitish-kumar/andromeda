@@ -687,6 +687,8 @@
       "calendar-google-connect-start-failed": "Die Google-Autorisierung konnte nicht gestartet werden. Überprüfe deine Netzwerkverbindung und versuche es erneut.",
       "calendar-google-connect-start-http": "Die Google-Autorisierung konnte nicht gestartet werden. Der OAuth-Broker gab HTTP {status} zurück.",
       "calendar-google-connect-timeout": "Bei der Google-Autorisierung ist eine Zeitüberschreitung aufgetreten. Starte die Verbindung erneut, wenn du bereit bist, dich anzumelden.",
+      "config-migration-body": "Veraltete Konfiguration wird im Arbeitsspeicher migriert, einschließlich {path}. Aktualisiere die Quellkonfiguration; die Einstellungen und noctalia config validate zeigen den erforderlichen Ersatz.",
+      "config-migration-title": "Konfigurationsupdate erforderlich",
       "dbus-disabled": "DBus-Benachrichtigungen deaktiviert",
       "desktop-widgets-editor": "Widget-Editor",
       "desktop-widgets-editor-enabled": "Der Desktop-Widget-Editor ist aktiv. Wechsle zu einer leeren Arbeitsfläche, um das Editor-Overlay zu sehen.",
@@ -918,6 +920,16 @@
           "border": "Rahmen",
           "border-description": "Farbe des Kapselumrisses; auf Standard belassen, um keinen Umriss anzuzeigen",
           "clear": "Leeren",
+          "drawer-columns": "Drawer-Spalten",
+          "drawer-columns-description": "Anzahl der Widgets pro Reihe im Drawer-Panel",
+          "drawer-detached": "Losgelöstes Panel",
+          "drawer-detached-description": "Öffne den Drawer als schwebendes Panel mit eigenem Hintergrund, statt ihn in die Leiste zu integrieren",
+          "drawer-enabled": "Drawer",
+          "drawer-enabled-description": "Verschiebe Gruppen-Widgets in ein Drawer-Panel, das per Button ein- und ausgeblendet wird",
+          "drawer-glyph-closed": "Geschlossen-Icon",
+          "drawer-glyph-closed-description": "Symbol auf dem Drawer-Toggle-Button, wenn das Panel geschlossen ist",
+          "drawer-glyph-opened": "Geöffnet-Icon",
+          "drawer-glyph-opened-description": "Symbol auf dem Drawer-Toggle-Button, wenn das Panel geöffnet ist",
           "edit": "Stil bearbeiten",
           "fill": "Hintergrund",
           "fill-description": "Farbe des Kapselhintergrunds; feste Hex-Farben werden ebenfalls unterstützt",
@@ -1086,7 +1098,7 @@
         "kinds": "Typen",
         "launcher": "Launcher",
         "layout": "Layout",
-        "lifecycle": "Lebenszyklus",
+        "lifecycle": "Systemereignisse",
         "location": "Standort",
         "lock-screen": "Sperrbildschirm",
         "media": "Medien",
@@ -1452,6 +1464,10 @@
         "palette-source": {
           "description": "Herkunft der Farbpalette",
           "label": "Palettenquelle"
+        },
+        "pure-black-dark": {
+          "description": "Setze dunkle Oberflächen auf reines Schwarz, um Banding auf OLED-Panels zu verhindern (nur im dunklen Modus)",
+          "label": "Reines Schwarz"
         },
         "theme-mode": {
           "description": "Wähle dunkel, hell oder automatisch basierend auf der Tageszeit",
@@ -3057,7 +3073,7 @@
           "label": "Ausblenden, wenn inaktiv"
         },
         "hide-when-plugged": {
-          "description": "Blende das Akku-Widget aus, wenn es an Netzstrom angeschlossen ist",
+          "description": "Blende das Akku-Widget aus, wenn Netzstrom angeschlossen ist",
           "label": "Ausblenden, wenn angeschlossen"
         },
         "hide-when-single-layout": {
@@ -3370,6 +3386,7 @@
       "export-config": "Konfiguration exportieren…",
       "export-config-saved": "Konfigurationsexport gespeichert.",
       "filter-modified": "Geändert",
+      "legacy-config-warning": "Veraltete Konfiguration wird im Arbeitsspeicher migriert: {issue}. Führe noctalia config validate aus, um alle erforderlichen Änderungen zu sehen.",
       "native-title": "Noctalia-Einstellungen",
       "no-results": "Keine Einstellungen gefunden",
       "no-results-hint": "Versuche einen anderen Einstellungsnamen oder Konfigurationsschlüssel.",

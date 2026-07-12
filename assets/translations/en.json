@@ -990,6 +990,7 @@
         "settings": {
           "empty": "No settings match the current filters.",
           "groups": {
+            "grouping": "Grouping",
             "presentation": "Presentation",
             "runtime": "Runtime",
             "taskbar": {
@@ -3184,8 +3185,8 @@
         "minimal": {
           "description": "Show workspace ID or name labels only, without animated pills",
           "label": "Minimal Style",
-          "workspaces-description": "Text-only workspace labels without pill backgrounds or slide animation",
-          "taskbar-description": "Text-only workspace labels without colored disc backgrounds"
+          "taskbar-description": "Text-only workspace labels without colored disc backgrounds",
+          "workspaces-description": "Text-only workspace labels without pill backgrounds or slide animation"
         },
         "mirrored": {
           "description": "Mirror the visualizer around its center",

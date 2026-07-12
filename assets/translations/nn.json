@@ -687,6 +687,8 @@
       "calendar-google-connect-start-failed": "Kunne ikkje byrja Google-sanninga. Sjå etter nettverktilkoplinga og prøv å nyo.",
       "calendar-google-connect-start-http": "Kunne ikkje byrja Google-sanninga. OAuth-handsamaren svara med HTTP {status}.",
       "calendar-google-connect-timeout": "Google-sanning gjekk ut. Byrja koplinga å nyo når du vil skriva deg inn.",
+      "config-migration-body": "Utdatert tilmåting vert flytta i minnet, medrekna {path}. Oppdater brunntilmåtinga; Innstillingar og noctalia config validate vis det som må bytast ut.",
+      "config-migration-title": "Tilmåtinga krev oppdatering",
       "dbus-disabled": "DBus-varsel avslegne",
       "desktop-widgets-editor": "Nøytelbrigdar",
       "desktop-widgets-editor-enabled": "Skrivebordsnøytelbrigdaren er på. Gå til eit tomt arbeidsrom for å sjå brigdaroverlaget.",
@@ -1462,6 +1464,10 @@
         "palette-source": {
           "description": "Kvar Noctalia tek letpaletten frå",
           "label": "Palettbrunn"
+        },
+        "pure-black-dark": {
+          "description": "Gjer mørke flater heilsvart, som hindrar bandleggjing på OLED-fjøler (einast i mørkham)",
+          "label": "Heilsvart"
         },
         "theme-mode": {
           "description": "Vel mørk, ljos eller automatisk alt etter tida",
@@ -3380,6 +3386,7 @@
       "export-config": "Før ut tilmåting ...",
       "export-config-saved": "Tilmåtingsutførsle lagra.",
       "filter-modified": "Brigda",
+      "legacy-config-warning": "Utdatert tilmåting flyttar i minnet: {issue}. Køyr noctalia config validate for å sjå kva du må brigda.",
       "native-title": "Noctalia-innstillingar",
       "no-results": "Ingen innstillingar funne",
       "no-results-hint": "Prøv med eit anna innstillingsnamn eller config-lykel.",
