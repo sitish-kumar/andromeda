@@ -1688,10 +1688,6 @@ void ConfigService::parseConfigTable(
   if (auto* notifTbl = tbl["notification"].as_table()) {
     readConfigSection(*notifTbl, config.notification, schema::notificationSchema(), "notification", schemaDiag);
   }
-  // Compatibility alias: accept [notifications] as well.
-  if (auto* notifTbl = tbl["notifications"].as_table()) {
-    readConfigSection(*notifTbl, config.notification, schema::notificationSchema(), "notifications", schemaDiag);
-  }
 
   // Parse [dock]
   if (auto* dockTbl = tbl["dock"].as_table()) {

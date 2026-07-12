@@ -1533,7 +1533,7 @@ namespace noctalia::config::schema {
       if (section == "lockscreen") {
         return chk(lockscreenSchema());
       }
-      if (section == "notification" || section == "notifications") {
+      if (section == "notification") {
         return chk(notificationSchema());
       }
       if (section == "osd") {

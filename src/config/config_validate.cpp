@@ -600,7 +600,6 @@ namespace noctalia::config {
       checkSection(merged, "backdrop", schema::backdropSchema(), diag);
       checkSection(merged, "lockscreen", schema::lockscreenSchema(), diag);
       checkSection(merged, "notification", schema::notificationSchema(), diag);
-      checkSection(merged, "notifications", schema::notificationSchema(), diag); // compatibility alias
       checkSection(merged, "osd", schema::osdSchema(), diag);
       checkSection(merged, "system", schema::systemSchema(), diag);
       checkSection(merged, "weather", schema::weatherSchema(), diag);
@@ -645,14 +644,36 @@ namespace noctalia::config {
 
       // Unknown top-level sections.
       static const std::unordered_set<std::string> kKnownSections = {
-          "shell",    "accessibility",  "wallpaper",       "theme",
-          "backdrop", "lockscreen",     "notification",    "notifications",
-          "osd",      "system",         "weather",         "calendar",
-          "audio",    "brightness",     "battery",         "nightlight",
-          "location", "idle",           "keybinds",        "bar",
-          "dock",     "hot_corners",    "desktop_widgets", "lockscreen_widgets",
-          "widget",   "control_center", "plugins",         "plugin_settings",
-          "hooks",    "include",        "config_version",
+          "shell",
+          "accessibility",
+          "wallpaper",
+          "theme",
+          "backdrop",
+          "lockscreen",
+          "notification",
+          "osd",
+          "system",
+          "weather",
+          "calendar",
+          "audio",
+          "brightness",
+          "battery",
+          "nightlight",
+          "location",
+          "idle",
+          "keybinds",
+          "bar",
+          "dock",
+          "hot_corners",
+          "desktop_widgets",
+          "lockscreen_widgets",
+          "widget",
+          "control_center",
+          "plugins",
+          "plugin_settings",
+          "hooks",
+          "include",
+          "config_version",
       };
       for (const auto& [key, node] : merged) {
         (void)node;
