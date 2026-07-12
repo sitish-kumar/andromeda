@@ -856,6 +856,7 @@ Config ConfigService::makeDefaultConfig() {
   config.bars.push_back(BarConfig{});
   config.controlCenter.shortcuts = defaultControlCenterShortcuts();
   config.shell.session.actions = defaultSessionPanelActions();
+  config.plugins.sources = defaultPluginSources();
   return config;
 }
 
