@@ -997,7 +997,12 @@
               "windows": "Windows",
               "workspace-labels": "Workspace Labels"
             },
-            "widget": "Widget"
+            "widget": "Widget",
+            "workspaces": {
+              "colors": "Colors",
+              "list": "Workspaces",
+              "pills": "Pill Style"
+            }
           }
         }
       }

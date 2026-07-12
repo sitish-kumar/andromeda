@@ -1021,63 +1021,60 @@ namespace settings {
           break;
         }
       }
+
+      // Workspaces: which workspaces appear, and what each one's label shows.
       {
-        auto minimal = boolSpec("minimal", false);
-        minimal.descriptionKey = "settings.widgets.settings.minimal.workspaces-description";
-        add(std::move(minimal));
+        auto hideWhenEmpty = withGroup(boolSpec("hide_when_empty", false), "workspaces.list");
+        hideWhenEmpty.descriptionKey = "settings.widgets.settings.hide-when-empty.workspaces-description";
+        add(std::move(hideWhenEmpty));
       }
+      add(withGroup(segmentedSpec("display", "id", workspaceDisplay), "workspaces.list"));
       {
-        auto focusedOutputOnly = boolSpec("focused_output_only", false);
-        focusedOutputOnly.descriptionKey = "settings.widgets.settings.focused-output-only.workspaces-description";
-        add(std::move(focusedOutputOnly));
-      }
-      add(segmentedSpec("display", "id", workspaceDisplay));
-      {
-        auto labelsOnlyWhenOccupied = boolSpec("labels_only_when_occupied", false);
+        auto labelsOnlyWhenOccupied = withGroup(boolSpec("labels_only_when_occupied", false), "workspaces.list");
         labelsOnlyWhenOccupied.descriptionKey =
             "settings.widgets.settings.labels-only-when-occupied.workspaces-description";
         add(std::move(labelsOnlyWhenOccupied));
       }
       {
-        auto hideWhenEmpty = boolSpec("hide_when_empty", false);
-        hideWhenEmpty.descriptionKey = "settings.widgets.settings.hide-when-empty.workspaces-description";
-        add(std::move(hideWhenEmpty));
-      }
-      {
-        auto maxLabelChars = intSpec("max_label_chars", 1, 1.0, 20.0, 1.0);
+        auto maxLabelChars = withGroup(intSpec("max_label_chars", 1, 1.0, 20.0, 1.0), "workspaces.list");
         maxLabelChars.descriptionKey = "settings.widgets.settings.max-label-chars.workspaces-description";
         add(std::move(maxLabelChars));
       }
+
+      // Pill style: minimal drops the pills entirely, so the pill sizing options hang off it.
       {
-        auto pillScale = doubleSpec("pill_scale", 1.0, 0.1, 1.0, 0.05);
+        auto minimal = withGroup(boolSpec("minimal", false), "workspaces.pills");
+        minimal.descriptionKey = "settings.widgets.settings.minimal.workspaces-description";
+        add(std::move(minimal));
+      }
+      {
+        auto pillScale = withGroup(doubleSpec("pill_scale", 1.0, 0.1, 1.0, 0.05), "workspaces.pills");
         pillScale.descriptionKey = "settings.widgets.settings.pill-scale.workspaces-description";
         pillScale.visibleWhen = pillStyleOnly;
         add(std::move(pillScale));
       }
       {
-        auto activePillSize = doubleSpec("active_pill_size", 2.2, 0.25, 8.0, 0.05);
+        auto activePillSize = withGroup(doubleSpec("active_pill_size", 2.2, 0.25, 8.0, 0.05), "workspaces.pills");
         activePillSize.descriptionKey = "settings.widgets.settings.active-pill-size.workspaces-description";
         activePillSize.visibleWhen = pillStyleOnly;
         add(std::move(activePillSize));
       }
       {
-        auto inactivePillSize = doubleSpec("inactive_pill_size", 1.0, 0.25, 8.0, 0.05);
+        auto inactivePillSize = withGroup(doubleSpec("inactive_pill_size", 1.0, 0.25, 8.0, 0.05), "workspaces.pills");
         inactivePillSize.descriptionKey = "settings.widgets.settings.inactive-pill-size.workspaces-description";
         inactivePillSize.visibleWhen = pillStyleOnly;
         add(std::move(inactivePillSize));
       }
+
+      // Colors: the focused/occupied/empty palette and which monitor gets the focused treatment.
       {
-        auto focusedColor = colorSpec("focused_color", "primary");
-        add(std::move(focusedColor));
+        auto focusedOutputOnly = withGroup(boolSpec("focused_output_only", false), "workspaces.colors");
+        focusedOutputOnly.descriptionKey = "settings.widgets.settings.focused-output-only.workspaces-description";
+        add(std::move(focusedOutputOnly));
       }
-      {
-        auto occupiedColor = colorSpec("occupied_color", "secondary");
-        add(std::move(occupiedColor));
-      }
-      {
-        auto emptyColor = colorSpec("empty_color", "secondary");
-        add(std::move(emptyColor));
-      }
+      add(withGroup(colorSpec("focused_color", "primary"), "workspaces.colors"));
+      add(withGroup(colorSpec("occupied_color", "secondary"), "workspaces.colors"));
+      add(withGroup(colorSpec("empty_color", "secondary"), "workspaces.colors"));
     }
 
     specs.insert(specs.end(), std::make_move_iterator(commonSpecs.begin()), std::make_move_iterator(commonSpecs.end()));
