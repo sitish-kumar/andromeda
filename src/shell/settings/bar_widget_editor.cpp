@@ -161,7 +161,7 @@ namespace settings {
           ui::button({
               .glyph = std::move(glyph),
               .glyphSize = Style::fontSizeBody * ctx.scale,
-              .variant = ButtonVariant::Outline,
+              .variant = ButtonVariant::Default,
               .minWidth = Style::controlHeight * ctx.scale,
               .minHeight = Style::controlHeight * ctx.scale,
               .paddingV = Style::spaceXs * ctx.scale,
@@ -1432,7 +1432,7 @@ namespace settings {
               ui::button({
                   .glyph = "apps",
                   .glyphSize = Style::fontSizeBody * ctx.scale,
-                  .variant = ButtonVariant::Outline,
+                  .variant = ButtonVariant::Default,
                   .minWidth = Style::controlHeight * ctx.scale,
                   .minHeight = Style::controlHeight * ctx.scale,
                   .paddingV = Style::spaceXs * ctx.scale,
@@ -2228,7 +2228,7 @@ namespace settings {
               .glyph = "stack-pop",
               .fontSize = Style::fontSizeCaption * ctx.scale,
               .glyphSize = Style::fontSizeCaption * ctx.scale,
-              .variant = ButtonVariant::Outline,
+              .variant = ButtonVariant::Default,
               .minHeight = Style::controlHeightSm * ctx.scale,
               .paddingV = Style::spaceXs * ctx.scale,
               .paddingH = Style::spaceSm * ctx.scale,

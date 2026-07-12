@@ -410,7 +410,7 @@ namespace settings {
         .fontSize = Style::fontSizeBody * scale,
         .glyphSize = Style::fontSizeBody * scale,
         .contentAlign = ButtonContentAlign::Start,
-        .variant = ButtonVariant::Outline,
+        .variant = ButtonVariant::Default,
         .minWidth = 190.0f * scale,
         .minHeight = Style::controlHeight * scale,
         .paddingV = Style::spaceSm * scale,

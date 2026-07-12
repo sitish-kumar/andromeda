@@ -607,7 +607,7 @@ namespace settings {
             .glyph = "add",
             .fontSize = Style::fontSizeCaption * scale,
             .glyphSize = Style::fontSizeBody * scale,
-            .variant = ButtonVariant::Outline,
+            .variant = ButtonVariant::Default,
             .onClick = [cb = ctx.addSource]() {
               if (cb) {
                 cb();
