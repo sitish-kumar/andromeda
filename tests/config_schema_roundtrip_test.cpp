@@ -100,6 +100,47 @@ location = "https://example.invalid/bad"
     }
   }
 
+  void checkIdleActionResolution() {
+    const IdleBehaviorConfig screenOff{
+        .name = "screen-off",
+        .enabled = true,
+        .timeoutSeconds = 60,
+        .action = "screen_off",
+        .command = {},
+        .resumeCommand = "notify-send resumed",
+    };
+    const ResolvedIdleBehavior resolvedScreenOff = resolveIdleBehaviorActions(screenOff);
+    if (resolvedScreenOff.idleAction.kind != IdleActionKind::ScreenOff) {
+      fail("idle: screen_off did not resolve to native screen-off");
+    }
+    if (resolvedScreenOff.resumeAction.kind != IdleActionKind::ScreenOn) {
+      fail("idle: screen_off did not retain native screen-on with a custom resume command");
+    }
+    if (resolvedScreenOff.resumeCommand != screenOff.resumeCommand) {
+      fail("idle: screen_off did not retain its additional resume command");
+    }
+
+    const IdleBehaviorConfig custom{
+        .name = "custom",
+        .enabled = true,
+        .timeoutSeconds = 60,
+        .action = "command",
+        .command = "notify-send idle",
+        .resumeCommand = "notify-send resumed",
+    };
+    const ResolvedIdleBehavior resolvedCustom = resolveIdleBehaviorActions(custom);
+    if (resolvedCustom.idleAction.kind != IdleActionKind::Command
+        || resolvedCustom.idleAction.command != custom.command) {
+      fail("idle: custom command did not resolve to its configured idle command");
+    }
+    if (resolvedCustom.resumeAction.kind != IdleActionKind::None) {
+      fail("idle: custom command gained an implicit native resume action");
+    }
+    if (resolvedCustom.resumeCommand != custom.resumeCommand) {
+      fail("idle: custom command did not retain its configured resume command");
+    }
+  }
+
   void checkPluginIdValidation() {
     const std::string valid[] = {"noctalia/screen_recorder", "me/hello", "Team/repo_2", "a/b.c-d"};
     for (const auto& id : valid) {
@@ -501,6 +542,7 @@ location = "https://example.invalid/bad"
 } // namespace
 
 int main() {
+  checkIdleActionResolution();
   // Captured from the pre-refactor config_export::serialize for the fully-specified probe
   // bar. Pins byte-identical bar serialization across the schema migration: the
   // resolve-and-flatten monitor write and the conditional/optional fields must

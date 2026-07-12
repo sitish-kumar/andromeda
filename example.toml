@@ -251,13 +251,12 @@ address     = ""                     # e.g. "Toronto, ON"; geocoded when auto_lo
 
 [idle.behavior.lock]
 timeout = 600
-command = "noctalia:session lock"
+action = "lock"
 enabled = false
 
 [idle.behavior.screen-off]
 timeout = 660
-command = "noctalia:dpms-off"
-resume_command = "noctalia:dpms-on"
+action = "screen_off"
 enabled = false
 
 # ── Keybinds ──────────────────────────────────────────────────────────────────
@@ -461,7 +460,7 @@ battery_low_percent_threshold = 0   # set to e.g. 15 to enable battery_under_thr
 # type                = "custom_button"
 # glyph               = "lock"
 # tooltip             = "Lock screen"
-# command             = "noctalia:session lock"
+# command             = "noctalia msg session lock"
 # right_command       = ""
 # middle_command      = ""
 # scroll_up_command   = ""
