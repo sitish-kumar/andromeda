@@ -1447,6 +1447,10 @@
           "description": "Choose a palette from the bundled catalog",
           "label": "Built-In Palette"
         },
+        "button-borders": {
+          "description": "Draw outlines around buttons throughout the shell",
+          "label": "Button Borders"
+        },
         "community-palette": {
           "description": "Choose a palette from the community catalog",
           "label": "Community Palette",

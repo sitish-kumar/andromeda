@@ -940,6 +940,7 @@ struct ShellConfig {
   };
 
   float cornerRadiusScale = 1.0f;
+  bool buttonBorders = true;
   std::string fontFamily = "sans-serif";
   std::string lang; // empty = auto-detect from $LC_ALL/$LC_MESSAGES/$LANG
   std::string timeFormat = "{:%H:%M}";

@@ -1370,6 +1370,7 @@ namespace noctalia::config::schema {
   const Schema<ShellConfig>& shellSchema() {
     static const Schema<ShellConfig> s = {
         field(&ShellConfig::cornerRadiusScale, "corner_radius_scale", kCornerRadiusScaleRange),
+        field(&ShellConfig::buttonBorders, "button_borders"),
         // font_family is trimmed; empty falls back to sans-serif.
         custom<ShellConfig>(
             "font_family",
