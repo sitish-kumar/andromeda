@@ -1,6 +1,7 @@
 #include "config/config_export.h"
 
 #include "config/schema/config_schema.h"
+#include "config/schema/config_sections.h"
 #include "config/schema/engine.h"
 
 #include <algorithm>
@@ -282,14 +283,11 @@ namespace config_export {
   toml::table serialize(const Config& config) {
     toml::table root;
 
-    root.insert_or_assign("shell", schema::writeTable(config.shell, schema::shellSchema()));
-    root.insert_or_assign("wallpaper", schema::writeTable(config.wallpaper, schema::wallpaperSchema()));
-    root.insert_or_assign("theme", schema::writeTable(config.theme, schema::themeSchema()));
-    root.insert_or_assign("accessibility", schema::writeTable(config.accessibility, schema::accessibilitySchema()));
+    for (const schema::SectionSpec& spec : schema::sections()) {
+      root.insert_or_assign(spec.name, spec.write(config));
+    }
 
-    root.insert_or_assign("backdrop", schema::writeTable(config.backdrop, schema::backdropSchema()));
-
-    root.insert_or_assign("lockscreen", schema::writeTable(config.lockscreen, schema::lockscreenSchema()));
+    // Root keys whose shape is not a plain section schema.
     root.insert_or_assign(
         "lockscreen_widgets",
         widgetsPlacementTable(
@@ -297,26 +295,7 @@ namespace config_export {
             config.lockscreenWidgets.widgets
         )
     );
-
-    root.insert_or_assign("notification", schema::writeTable(config.notification, schema::notificationSchema()));
-
-    root.insert_or_assign("osd", schema::writeTable(config.osd, schema::osdSchema()));
-
-    root.insert_or_assign("system", schema::writeTable(config.system, schema::systemSchema()));
-
-    root.insert_or_assign("weather", schema::writeTable(config.weather, schema::weatherSchema()));
-    root.insert_or_assign("calendar", schema::writeTable(config.calendar, schema::calendarSchema()));
-    root.insert_or_assign("audio", schema::writeTable(config.audio, schema::audioSchema()));
-
-    root.insert_or_assign("brightness", schema::writeTable(config.brightness, schema::brightnessSchema()));
-    root.insert_or_assign("battery", schema::writeTable(config.battery, schema::batterySchema()));
-
-    root.insert_or_assign("nightlight", schema::writeTable(config.nightlight, schema::nightlightSchema()));
-    root.insert_or_assign("location", schema::writeTable(config.location, schema::locationSchema()));
-
-    root.insert_or_assign("idle", schema::writeTable(config.idle, schema::idleSchema()));
-
-    root.insert_or_assign("keybinds", schema::writeTable(config.keybinds, schema::keybindsSchema()));
+    root.insert_or_assign("desktop_widgets", desktopWidgetsTable(config.desktopWidgets));
 
     toml::table barRoot;
     toml::array barOrder;
@@ -329,9 +308,6 @@ namespace config_export {
     }
     barRoot.insert_or_assign("order", std::move(barOrder));
     root.insert_or_assign("bar", std::move(barRoot));
-
-    root.insert_or_assign("dock", schema::writeTable(config.dock, schema::dockSchema()));
-    root.insert_or_assign("desktop_widgets", desktopWidgetsTable(config.desktopWidgets));
 
     toml::table widgetRoot;
     std::vector<std::string> widgetNames;
@@ -346,11 +322,6 @@ namespace config_export {
     }
     root.insert_or_assign("widget", std::move(widgetRoot));
 
-    root.insert_or_assign("control_center", schema::writeTable(config.controlCenter, schema::controlCenterSchema()));
-
-    root.insert_or_assign("plugins", schema::writeTable(config.plugins, schema::pluginsSchema()));
-
-    root.insert_or_assign("hooks", schema::writeTable(config.hooks, schema::hooksSchema()));
     return root;
   }
 

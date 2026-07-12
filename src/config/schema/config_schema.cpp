@@ -1,6 +1,7 @@
 #include "config/schema/config_schema.h"
 
 #include "config/config_types.h"
+#include "config/schema/config_sections.h"
 #include "config/schema/engine.h"
 #include "config/schema/ranges.h"
 #include "core/input/key_chord.h"
@@ -1514,81 +1515,19 @@ namespace noctalia::config::schema {
     // Run collectUnknownKeys for `section`'s schema; false if the section name is
     // unknown. The single dispatch from a section name to its schema.
     bool collectUnknownInSection(std::string_view section, const toml::table& tbl, std::vector<std::string>& unknown) {
-      const auto chk = [&](const auto& sch) {
-        collectUnknownKeys(tbl, sch, section, unknown);
+      if (const SectionSpec* spec = findSection(section); spec != nullptr) {
+        spec->collectUnknown(tbl, unknown);
         return true;
-      };
-      if (section == "shell") {
-        return chk(shellSchema());
       }
-      if (section == "wallpaper") {
-        return chk(wallpaperSchema());
-      }
-      if (section == "theme") {
-        return chk(themeSchema());
-      }
-      if (section == "backdrop") {
-        return chk(backdropSchema());
-      }
-      if (section == "lockscreen") {
-        return chk(lockscreenSchema());
-      }
-      if (section == "notification") {
-        return chk(notificationSchema());
-      }
-      if (section == "osd") {
-        return chk(osdSchema());
-      }
-      if (section == "system") {
-        return chk(systemSchema());
-      }
-      if (section == "weather") {
-        return chk(weatherSchema());
-      }
-      if (section == "calendar") {
-        return chk(calendarSchema());
-      }
-      if (section == "audio") {
-        return chk(audioSchema());
-      }
-      if (section == "brightness") {
-        return chk(brightnessSchema());
-      }
-      if (section == "battery") {
-        return chk(batterySchema());
-      }
-      if (section == "nightlight") {
-        return chk(nightlightSchema());
-      }
-      if (section == "location") {
-        return chk(locationSchema());
-      }
-      if (section == "idle") {
-        return chk(idleSchema());
-      }
-      if (section == "keybinds") {
-        return chk(keybindsSchema());
-      }
-      if (section == "dock") {
-        return chk(dockSchema());
-      }
+      // Schema-backed but not plain sections: their read/write shape is bespoke, so
+      // they are custom root keys rather than SectionSpec rows.
       if (section == "desktop_widgets") {
-        return chk(desktopWidgetsSchema());
-      }
-      if (section == "hot_corners") {
-        return chk(hotCornersSchema());
+        collectUnknownKeys(tbl, desktopWidgetsSchema(), section, unknown);
+        return true;
       }
       if (section == "lockscreen_widgets") {
-        return chk(lockscreenWidgetsSchema());
-      }
-      if (section == "control_center") {
-        return chk(controlCenterSchema());
-      }
-      if (section == "hooks") {
-        return chk(hooksSchema());
-      }
-      if (section == "accessibility") {
-        return chk(accessibilitySchema());
+        collectUnknownKeys(tbl, lockscreenWidgetsSchema(), section, unknown);
+        return true;
       }
       return false;
     }
