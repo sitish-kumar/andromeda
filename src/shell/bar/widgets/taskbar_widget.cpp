@@ -52,11 +52,21 @@ namespace {
     float top = 0.0f;
   };
 
-  [[nodiscard]] float externalBadgeMainOverhang(WorkspaceLabelPlacement placement, float discMain) {
-    if (placement == WorkspaceLabelPlacement::Centered) {
-      return discMain * 0.5f;
+  [[nodiscard]] float externalBadgeMainStartInset(WorkspaceLabelPlacement placement, float badgeMain) {
+    if (placement == WorkspaceLabelPlacement::Corner) {
+      return badgeMain * 0.2f;
     }
-    return discMain * 0.32f;
+    if (placement == WorkspaceLabelPlacement::Centered) {
+      return badgeMain * 0.4f;
+    }
+    return 0.0f;
+  }
+
+  [[nodiscard]] float externalBadgeCrossStartInset(WorkspaceLabelPlacement placement, float badgeCross) {
+    if (placement == WorkspaceLabelPlacement::Centered) {
+      return badgeCross * 0.4f;
+    }
+    return 0.0f;
   }
 
   [[nodiscard]] ExternalBadgePosition externalBadgePosition(
@@ -613,20 +623,28 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     const float externalBadgeFontSize = std::round(Style::fontSizeCaption * 0.72f * m_contentScale);
 
     float stripGap = groupGap;
-    float stripPaddingMain = 0.0f;
-    if (externalBadge && !m_workspaceGroupCapsule) {
-      float maxMainOverhang = 0.0f;
+    float stripPaddingMainStart = 0.0f;
+    float stripPaddingCrossStart = 0.0f;
+    if (externalBadge) {
+      float maxMainStart = 0.0f;
+      float maxCrossStart = 0.0f;
       for (const auto& wsm : m_workspaces) {
         const auto measuredDisc =
             measureWorkspaceDiscSize(renderer, wsm.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
-        const float measuredMain = m_vertical ? measuredDisc.height : measuredDisc.width;
-        maxMainOverhang = std::max(maxMainOverhang, externalBadgeMainOverhang(m_workspaceLabelPlacement, measuredMain));
+        const float badgeMain = m_vertical ? measuredDisc.height : measuredDisc.width;
+        const float badgeCross = m_vertical ? measuredDisc.width : measuredDisc.height;
+        maxMainStart = std::max(maxMainStart, externalBadgeMainStartInset(m_workspaceLabelPlacement, badgeMain));
+        maxCrossStart = std::max(maxCrossStart, externalBadgeCrossStartInset(m_workspaceLabelPlacement, badgeCross));
       }
-      stripGap = std::round(std::max(groupGap, maxMainOverhang + groupGap));
-      stripPaddingMain = std::round(maxMainOverhang);
+      stripPaddingMainStart = std::round(maxMainStart);
+      stripPaddingCrossStart = std::round(maxCrossStart);
     }
     m_taskStrip->setGap(stripGap);
-    m_taskStrip->setPadding(m_vertical ? 0.0f : stripPaddingMain, m_vertical ? stripPaddingMain : 0.0f, 0.0f, 0.0f);
+    if (m_vertical) {
+      m_taskStrip->setPadding(stripPaddingMainStart, 0.0f, 0.0f, stripPaddingCrossStart);
+    } else {
+      m_taskStrip->setPadding(stripPaddingCrossStart, 0.0f, 0.0f, stripPaddingMainStart);
+    }
 
     auto createWorkspaceBadge = [&](const WorkspaceModel& ws, const WorkspaceDiscSize& disc, bool hover) {
       Button::ButtonPalette badgePalette{};
