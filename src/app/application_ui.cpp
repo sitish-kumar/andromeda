@@ -608,6 +608,7 @@ void Application::initPanelManagerAndPanels() {
   m_compositorPlatform.setOverviewChangeCallback([this]() {
     m_overviewLauncherCapture.sync();
     m_bar.scheduleSmartAutoHideReevaluation();
+    m_dock.scheduleSmartAutoHideReevaluation();
   });
   m_panelManager.setPanelOpenedCallback([this]() {
     m_overviewLauncherCapture.sync();

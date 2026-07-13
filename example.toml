@@ -333,6 +333,7 @@ margin_v            = 8
 shadow              = true
 show_running        = true
 auto_hide           = false
+# smart_auto_hide   = false       # show when the active workspace is empty; hide when it has windows
 reserve_space       = true
 active_scale        = 1.0
 inactive_scale      = 0.85

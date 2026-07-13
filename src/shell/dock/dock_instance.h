@@ -53,6 +53,8 @@ namespace shell::dock {
     // Auto-hide: tracks visibility [0,1] driven by hover.
     float hideOpacity = 1.0f;
     AnimationManager::Id hideAnimId = 0;
+    // smart_auto_hide: active workspace empty (or overview open) — keep the dock visible.
+    bool smartAutoHidePinnedVisible = false;
     Signal<>::ScopedConnection paletteConn;
     bool suppressItemClick = false; // set on press-release when a hold/drag consumed the gesture
 
@@ -91,5 +93,6 @@ namespace shell::dock {
   void syncDockSlideLayerTransform(DockInstance& instance, const DockConfig& cfg);
   void applyDockCompositorBlur(DockInstance& instance, const DockConfig& cfg);
   void startHideFadeOut(DockInstance& instance, ConfigService& config);
+  void revealAutoHideDock(DockInstance& instance, ConfigService& config);
 
 } // namespace shell::dock

@@ -166,7 +166,7 @@ namespace settings {
       return "off";
     }
 
-    [[nodiscard]] SelectSetting barAutoHideModeSelect(std::string_view mode, std::vector<std::string> smartPath) {
+    [[nodiscard]] SelectSetting autoHideModeSelect(std::string_view mode, std::vector<std::string> smartPath) {
       auto select = asSegmented(plainSelect(
           {{"off", "settings.options.bar.auto-hide.off"},
            {"on", "settings.options.bar.auto-hide.on"},
@@ -847,8 +847,12 @@ namespace settings {
     ));
     entries.push_back(makeEntry(
         SettingsSection::Dock, "behavior", tr("settings.schema.shared.auto-hide.label"),
-        tr("settings.schema.dock.auto-hide.description"), {"dock", "auto_hide"}, ToggleSetting{cfg.dock.autoHide},
-        "autohide"
+        tr("settings.schema.dock.auto-hide.description"), {"dock", "auto_hide"},
+        autoHideModeSelect(
+            barAutoHideMode(cfg.dock.autoHide, cfg.dock.smartAutoHide),
+            std::vector<std::string>{"dock", "smart_auto_hide"}
+        ),
+        "autohide smart workspace"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Dock, "behavior", tr("settings.schema.shared.reserve-space.label"),
@@ -2606,7 +2610,7 @@ namespace settings {
       entries.push_back(makeEntry(
           section, "general", tr("settings.schema.shared.auto-hide.label"),
           tr("settings.schema.bar.auto-hide.description"), path("auto_hide"),
-          barAutoHideModeSelect(barAutoHideMode(bar.autoHide, bar.smartAutoHide), path("smart_auto_hide")),
+          autoHideModeSelect(barAutoHideMode(bar.autoHide, bar.smartAutoHide), path("smart_auto_hide")),
           "autohide smart workspace"
       ));
       const SettingVisibility autoHideOn = [barName = bar.name](const Config& c) {
@@ -2940,7 +2944,7 @@ namespace settings {
         entries.push_back(makeEntry(
             section, "general", tr("settings.schema.shared.auto-hide.label"),
             tr("settings.schema.bar.auto-hide.description"), monitorPath("auto_hide"),
-            barAutoHideModeSelect(
+            autoHideModeSelect(
                 barAutoHideMode(ovr.autoHide.value_or(bar.autoHide), ovr.smartAutoHide.value_or(bar.smartAutoHide)),
                 monitorPath("smart_auto_hide")
             ),
