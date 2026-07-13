@@ -182,6 +182,7 @@
     },
     "bluetooth": {
       "accept": "Accept",
+      "address": "Address",
       "auto-reconnect": "Auto-reconnect",
       "bluetooth": "Bluetooth",
       "enter-code": "Enter code",

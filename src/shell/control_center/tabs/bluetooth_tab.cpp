@@ -252,8 +252,38 @@ public:
 
     setHeader(std::move(header));
 
+    auto bodyColumn = ui::column(
+        {
+            .align = FlexAlign::Stretch,
+            .gap = Style::spaceSm * scale,
+        },
+        ui::row(
+            {
+                .align = FlexAlign::Center,
+                .gap = Style::spaceSm * scale,
+                .configure =
+                    [scale](Flex& body) {
+                      body.setPadding(
+                          Style::spaceXs * scale, Style::spaceMd * scale, Style::spaceSm * scale, Style::spaceMd * scale
+                      );
+                    },
+            },
+            ui::label({
+                .text = i18n::tr("control-center.bluetooth.address"),
+                .fontSize = Style::fontSizeCaption * scale,
+                .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                .flexGrow = 1.0f,
+            }),
+            ui::label(
+                {.text = m_device.address,
+                 .fontSize = Style::fontSizeCaption * scale,
+                 .color = colorSpecFromRole(ColorRole::OnSurface)}
+            )
+        )
+    );
+
     if (m_device.paired) {
-      setBody(
+      bodyColumn->addChild(
           ui::row(
               {.align = FlexAlign::Center,
                .gap = Style::spaceSm * scale,
@@ -282,6 +312,8 @@ public:
           )
       );
     }
+
+    setBody(std::move(bodyColumn));
   }
 
   void startConnectingSpinner() {
