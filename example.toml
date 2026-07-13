@@ -285,6 +285,7 @@ widget_spacing     = 6
 scale              = 1.0
 shadow             = true
 auto_hide          = false
+# smart_auto_hide    = false       # show when the active workspace is empty; hide when it has windows
 # show_on_workspace_switch = true   # with auto_hide: briefly reveal when the active workspace changes
 reserve_space      = true
 capsule            = false

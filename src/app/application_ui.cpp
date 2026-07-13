@@ -605,7 +605,10 @@ void Application::initPanelManagerAndPanels() {
         );
       }
   );
-  m_compositorPlatform.setOverviewChangeCallback([this]() { m_overviewLauncherCapture.sync(); });
+  m_compositorPlatform.setOverviewChangeCallback([this]() {
+    m_overviewLauncherCapture.sync();
+    m_bar.scheduleSmartAutoHideReevaluation();
+  });
   m_panelManager.setPanelOpenedCallback([this]() {
     m_overviewLauncherCapture.sync();
     if (m_panelManager.isAttachedOpen()) {

@@ -1201,6 +1201,13 @@
       }
     },
     "options": {
+      "bar": {
+        "auto-hide": {
+          "off": "Off",
+          "on": "On",
+          "smart": "Smart"
+        }
+      },
       "clipboard": {
         "auto-paste": {
           "ctrl-shift-v": "Ctrl+Shift+V",
@@ -1525,7 +1532,7 @@
       },
       "bar": {
         "auto-hide": {
-          "description": "Automatically hide the bar when not in use"
+          "description": "Off keeps the bar visible. On hides it until you move the pointer to the screen edge. Smart shows the bar on an empty workspace and hides it when windows are open."
         },
         "background-opacity": {
           "description": "Background opacity of the bar"

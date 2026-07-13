@@ -619,6 +619,7 @@ void Application::initWaylandCallbacks() {
   });
   m_compositorPlatform.setToplevelChangeCallback([this]() {
     m_screenTimeService.onFocusChange();
+    m_bar.scheduleSmartAutoHideReevaluation();
     m_bar.refresh();
     m_dock.refresh();
     m_windowSwitcher.onToplevelChange();

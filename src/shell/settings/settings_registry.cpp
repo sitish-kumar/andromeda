@@ -156,6 +156,35 @@ namespace settings {
       return SelectSetting{std::move(opts), std::string(selected)};
     }
 
+    [[nodiscard]] std::string barAutoHideMode(bool autoHide, bool smartAutoHide) {
+      if (smartAutoHide) {
+        return "smart";
+      }
+      if (autoHide) {
+        return "on";
+      }
+      return "off";
+    }
+
+    [[nodiscard]] SelectSetting barAutoHideModeSelect(std::string_view mode, std::vector<std::string> smartPath) {
+      auto select = asSegmented(plainSelect(
+          {{"off", "settings.options.bar.auto-hide.off"},
+           {"on", "settings.options.bar.auto-hide.on"},
+           {"smart", "settings.options.bar.auto-hide.smart"}},
+          mode
+      ));
+      select.linkedPath = std::move(smartPath);
+      select.groupedCommit = [](std::string_view value, const std::vector<std::string>& primaryPath) {
+        auto companionPath = primaryPath;
+        companionPath.back() = "smart_auto_hide";
+        return std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>{
+            {primaryPath, ConfigOverrideValue{value == "on"}},
+            {std::move(companionPath), ConfigOverrideValue{value == "smart"}},
+        };
+      };
+      return select;
+    }
+
     ColorSwatchPreview palettePreviewFromPalette(const ::Palette& palette) {
       return ColorSwatchPreview{
           .surface = fixedColorSpec(palette.surface),
@@ -2576,9 +2605,14 @@ namespace settings {
       ));
       entries.push_back(makeEntry(
           section, "general", tr("settings.schema.shared.auto-hide.label"),
-          tr("settings.schema.bar.auto-hide.description"), path("auto_hide"), ToggleSetting{bar.autoHide}, "autohide"
+          tr("settings.schema.bar.auto-hide.description"), path("auto_hide"),
+          barAutoHideModeSelect(barAutoHideMode(bar.autoHide, bar.smartAutoHide), path("smart_auto_hide")),
+          "autohide smart workspace"
       ));
-      const SettingVisibility autoHideOn = [on = bar.autoHide](const Config&) { return on; };
+      const SettingVisibility autoHideOn = [barName = bar.name](const Config& c) {
+        const BarConfig* b = findBar(c, barName);
+        return b != nullptr && b->autoHide && !b->smartAutoHide;
+      };
       {
         auto e = makeEntry(
             section, "general", tr("settings.schema.bar.show-on-workspace-switch.label"),
@@ -2906,10 +2940,21 @@ namespace settings {
         entries.push_back(makeEntry(
             section, "general", tr("settings.schema.shared.auto-hide.label"),
             tr("settings.schema.bar.auto-hide.description"), monitorPath("auto_hide"),
-            ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"
+            barAutoHideModeSelect(
+                barAutoHideMode(ovr.autoHide.value_or(bar.autoHide), ovr.smartAutoHide.value_or(bar.smartAutoHide)),
+                monitorPath("smart_auto_hide")
+            ),
+            "autohide smart workspace"
         ));
-        const SettingVisibility monitorAutoHideOn = [on = ovr.autoHide.value_or(bar.autoHide)](const Config&) {
-          return on;
+        const SettingVisibility monitorAutoHideOn = [barName = bar.name, match = ovr.match](const Config& c) {
+          const BarConfig* b = findBar(c, barName);
+          if (b == nullptr) {
+            return false;
+          }
+          const BarMonitorOverride* o = findMonitorOverride(*b, match);
+          const bool autoHide = o != nullptr && o->autoHide.has_value() ? *o->autoHide : b->autoHide;
+          const bool smart = o != nullptr && o->smartAutoHide.has_value() ? *o->smartAutoHide : b->smartAutoHide;
+          return autoHide && !smart;
         };
         {
           auto e = makeEntry(
