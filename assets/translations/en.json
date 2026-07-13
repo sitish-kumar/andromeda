@@ -1770,7 +1770,7 @@
           "label": "Active Monitor Only"
         },
         "auto-hide": {
-          "description": "Automatically hide the dock when not in use"
+          "description": "Off keeps the dock visible. On hides it until you move the pointer to the screen edge. Smart shows the dock on an empty workspace and hides it when windows are open."
         },
         "background-opacity": {
           "description": "Background opacity of the dock"

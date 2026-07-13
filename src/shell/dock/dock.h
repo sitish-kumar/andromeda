@@ -37,6 +37,8 @@ public:
   /// Tears down dock surfaces without changing config (e.g. lockscreen widget editor overlay).
   void suppressDisplay();
   void unsuppressDisplay();
+  void onWorkspaceChanged();
+  void scheduleSmartAutoHideReevaluation();
   void closeAllInstances();
   void onOutputChange();
   void refresh();
@@ -67,6 +69,7 @@ private:
   void beginDrag(shell::dock::DockInstance& instance, std::size_t index, float mainPos);
   void updateDrag(shell::dock::DockInstance& instance, float mainPos);
   void endDrag(shell::dock::DockInstance& instance, bool commit);
+  void reevaluateSmartAutoHide();
 
   CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
@@ -89,4 +92,5 @@ private:
   Signal<>::ScopedConnection m_appIconColorizeConn;
   bool m_overlayDisplaySuppressed = false;
   bool m_hadInstancesBeforeOverlaySuppress = false;
+  bool m_smartAutoHideReevalQueued = false;
 };

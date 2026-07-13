@@ -605,6 +605,7 @@ void Application::initWaylandCallbacks() {
       (void)m_compositorPlatform.clearActiveWorkspaceAlerts();
     }
     m_bar.onWorkspaceChanged();
+    m_dock.onWorkspaceChanged();
     m_bar.refresh();
     m_windowSwitcher.onToplevelChange();
   });
@@ -620,6 +621,7 @@ void Application::initWaylandCallbacks() {
   m_compositorPlatform.setToplevelChangeCallback([this]() {
     m_screenTimeService.onFocusChange();
     m_bar.scheduleSmartAutoHideReevaluation();
+    m_dock.scheduleSmartAutoHideReevaluation();
     m_bar.refresh();
     m_dock.refresh();
     m_windowSwitcher.onToplevelChange();

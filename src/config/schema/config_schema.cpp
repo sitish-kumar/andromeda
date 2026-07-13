@@ -390,6 +390,7 @@ namespace noctalia::config::schema {
         field(&DockConfig::shadow, "shadow"),
         field(&DockConfig::showRunning, "show_running"),
         field(&DockConfig::autoHide, "auto_hide"),
+        field(&DockConfig::smartAutoHide, "smart_auto_hide"),
         field(&DockConfig::reserveSpace, "reserve_space"),
         field(&DockConfig::activeScale, "active_scale", kDockActiveScaleRange),
         field(&DockConfig::inactiveScale, "inactive_scale", kDockInactiveScaleRange),

@@ -193,6 +193,61 @@ namespace {
     return nullptr;
   }
 
+  [[nodiscard]] bool dockPointerHideAllowed(const DockConfig& cfg, const shell::dock::DockInstance& instance) noexcept {
+    if (cfg.smartAutoHide) {
+      return !instance.smartAutoHidePinnedVisible;
+    }
+    return cfg.autoHide;
+  }
+
+  [[nodiscard]] bool workspaceKeyMatchesAssignment(std::string_view assignmentKey, const Workspace& workspace) {
+    if (assignmentKey.empty()) {
+      return false;
+    }
+    if (!workspace.id.empty() && assignmentKey == workspace.id) {
+      return true;
+    }
+    if (!workspace.name.empty() && assignmentKey == workspace.name) {
+      return true;
+    }
+    if (workspace.index > 0 && assignmentKey == std::to_string(workspace.index)) {
+      return true;
+    }
+    return false;
+  }
+
+  [[nodiscard]] bool activeWorkspaceHasWindows(const CompositorPlatform& platform, wl_output* output) {
+    const auto workspaces = platform.workspaces(output);
+    const Workspace* active = nullptr;
+    for (const auto& workspace : workspaces) {
+      if (workspace.active) {
+        active = &workspace;
+        break;
+      }
+    }
+    if (active == nullptr) {
+      return false;
+    }
+
+    const auto assignments = platform.workspaceWindowAssignments(output);
+    for (const auto& assignment : assignments) {
+      if (workspaceKeyMatchesAssignment(assignment.workspaceKey, *active)) {
+        return true;
+      }
+    }
+    if (!assignments.empty()) {
+      return false;
+    }
+    return active->occupied;
+  }
+
+  [[nodiscard]] bool dockSmartAutoHideWantsPinnedVisible(const CompositorPlatform& platform, wl_output* output) {
+    if (platform.hasOverviewState() && platform.isOverviewOpen()) {
+      return true;
+    }
+    return !activeWorkspaceHasWindows(platform, output);
+  }
+
 } // namespace
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -432,7 +487,8 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
     }
     updateHoverZoomPointer(*m_hoveredInstance, static_cast<float>(event.sx), static_cast<float>(event.sy));
     // Auto-hide: show the dock when the pointer enters.
-    if (m_config->config().dock.autoHide && m_hoveredInstance->sceneRoot != nullptr) {
+    if (dockPointerHideAllowed(m_config->config().dock, *m_hoveredInstance)
+        && m_hoveredInstance->sceneRoot != nullptr) {
       if (m_hoveredInstance->hideAnimId != 0) {
         m_hoveredInstance->animations.cancel(m_hoveredInstance->hideAnimId);
         m_hoveredInstance->hideAnimId = 0;
@@ -468,7 +524,7 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
       m_hoveredInstance->pointerInside = false;
       m_hoveredInstance->inputDispatcher.pointerLeave();
 
-      if (m_config->config().dock.autoHide && m_popupOwnerInstance == nullptr) {
+      if (dockPointerHideAllowed(m_config->config().dock, *m_hoveredInstance) && m_popupOwnerInstance == nullptr) {
         shell::dock::startHideFadeOut(*m_hoveredInstance, *m_config);
       }
       m_hoveredInstance = nullptr;
@@ -597,6 +653,64 @@ void Dock::syncInstances() {
         std::ranges::any_of(m_instances, [&output](const auto& inst) { return inst->outputName == output.name; });
     if (!exists) {
       createInstance(output);
+    }
+  }
+  scheduleSmartAutoHideReevaluation();
+}
+
+void Dock::onWorkspaceChanged() {
+  if (m_platform == nullptr || m_overlayDisplaySuppressed) {
+    return;
+  }
+  scheduleSmartAutoHideReevaluation();
+}
+
+void Dock::scheduleSmartAutoHideReevaluation() {
+  if (m_smartAutoHideReevalQueued) {
+    return;
+  }
+  m_smartAutoHideReevalQueued = true;
+  DeferredCall::callLater([this]() {
+    m_smartAutoHideReevalQueued = false;
+    reevaluateSmartAutoHide();
+  });
+}
+
+void Dock::reevaluateSmartAutoHide() {
+  if (m_platform == nullptr || m_config == nullptr || m_overlayDisplaySuppressed) {
+    return;
+  }
+
+  const auto& cfg = m_config->config().dock;
+  if (!cfg.enabled || !cfg.smartAutoHide) {
+    return;
+  }
+
+  for (const auto& instanceUp : m_instances) {
+    shell::dock::DockInstance* instance = instanceUp.get();
+    if (instance == nullptr || instance->surface == nullptr) {
+      continue;
+    }
+
+    const bool wantsPinned = dockSmartAutoHideWantsPinnedVisible(*m_platform, instance->output);
+    const bool pinnedChanged = wantsPinned != instance->smartAutoHidePinnedVisible;
+    instance->smartAutoHidePinnedVisible = wantsPinned;
+
+    bool needsRedraw = pinnedChanged;
+    if (wantsPinned) {
+      if (instance->hideOpacity < 1.0f || pinnedChanged) {
+        shell::dock::revealAutoHideDock(*instance, *m_config);
+        needsRedraw = true;
+      }
+    } else if (!instance->pointerInside && m_popupOwnerInstance == nullptr) {
+      if (instance->hideOpacity > 0.0f || pinnedChanged) {
+        shell::dock::startHideFadeOut(*instance, *m_config);
+        needsRedraw = true;
+      }
+    }
+
+    if (needsRedraw && instance->surface != nullptr) {
+      instance->surface->requestRedraw();
     }
   }
 }
@@ -895,7 +1009,7 @@ void Dock::closeItemMenu() {
   m_itemMenu.reset();
   // Fade the owner out — the pointer left the dock to interact with the menu,
   // whether or not the compositor sent a Leave event at that time.
-  if (owner != nullptr && owner->hideOpacity > 0.0f && m_config->config().dock.autoHide) {
+  if (owner != nullptr && owner->hideOpacity > 0.0f && dockPointerHideAllowed(m_config->config().dock, *owner)) {
     owner->pointerInside = false;
     if (m_hoveredInstance == owner) {
       m_hoveredInstance = nullptr;

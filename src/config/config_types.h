@@ -562,7 +562,8 @@ struct DockConfig {
   std::int32_t marginEdge = 0;         // distance from the nearest screen edge (floats the dock when > 0)
   bool shadow = true;                  // use the global shell shadow
   bool showRunning = true;             // also show running apps not in pinned list
-  bool autoHide = false;               // fade out when not hovered (overlay mode)
+  bool autoHide = false;               // slide out when not hovered (overlay mode)
+  bool smartAutoHide = false;          // hide while the active workspace has windows; show when it is empty
   bool reserveSpace = true;            // reserve compositor exclusive zone; applies with or without auto_hide
   float activeScale = 1.0f;            // focused app icon scale
   float inactiveScale = 0.85f;         // non-focused app icon scale
