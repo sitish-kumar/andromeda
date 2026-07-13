@@ -637,6 +637,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     const float externalBadgeFontSize = std::round(Style::fontSizeCaption * 0.72f * m_contentScale);
 
     float stripGap = groupGap;
+    float stripPaddingMain = 0.0f;
     if (externalBadge && !m_workspaceGroupCapsule) {
       float maxMainOverhang = 0.0f;
       for (const auto& wsm : m_workspaces) {
@@ -646,9 +647,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         maxMainOverhang = std::max(maxMainOverhang, externalBadgeMainOverhang(m_workspaceLabelPlacement, measuredMain));
       }
       stripGap = std::round(std::max(groupGap, maxMainOverhang + groupGap));
+      stripPaddingMain = std::round(maxMainOverhang);
     }
     m_taskStrip->setGap(stripGap);
-    m_taskStrip->setPadding(0.0f, 0.0f, 0.0f, 0.0f);
+    m_taskStrip->setPadding(m_vertical ? 0.0f : stripPaddingMain, m_vertical ? stripPaddingMain : 0.0f, 0.0f, 0.0f);
 
     const auto styleWorkspaceDisc = [this](Box& badge, float width, float height, const Workspace& workspace) {
       badge.setFrameSize(width, height);
