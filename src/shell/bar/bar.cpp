@@ -67,13 +67,6 @@ namespace {
     return cfg.autoHide || cfg.smartAutoHide;
   }
 
-  [[nodiscard]] bool barUsesSlideAutoHide(const BarInstance& instance) noexcept {
-    if (instance.barConfig.smartAutoHide) {
-      return !instance.smartAutoHidePinnedVisible;
-    }
-    return instance.barConfig.autoHide;
-  }
-
   [[nodiscard]] bool barPointerHideAllowed(const BarInstance& instance) noexcept {
     if (instance.barConfig.smartAutoHide) {
       return !instance.smartAutoHidePinnedVisible;
