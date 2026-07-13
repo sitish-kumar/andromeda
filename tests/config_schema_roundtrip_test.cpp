@@ -321,6 +321,7 @@ location = "https://example.invalid/bad"
     c.nightlight = NightLightConfig{true, true, 6000, 3500}; // gap satisfied
     c.location.autoLocate = true;
     c.location.address = "Berlin";
+    c.location.customSchedule = true;
     c.location.sunset = "20:30";
     c.location.sunrise = "06:15";
     c.location.latitude = 52.52;

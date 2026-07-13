@@ -2051,31 +2051,11 @@ namespace settings {
       e.visibleWhen = autoLocateOff;
       entries.push_back(std::move(e));
     }
-    // Manual schedule fallback: shown only when no network location is configured (auto-locate off
+    // Manual coordinates: shown only when no network location is configured (auto-locate off
     // and no address). The address gate is build-time; the auto-locate gate is evaluated live.
     const SettingVisibility manualLocationHidden = [](const Config&) { return false; };
     const SettingVisibility& manualLocationControlsVisible =
         cfg.location.address.empty() ? autoLocateOff : manualLocationHidden;
-    {
-      auto e = makeEntry(
-          SettingsSection::Location, "location", tr("settings.schema.services.sunset.label"),
-          tr("settings.schema.services.sunset.description"), {"location", "sunset"},
-          TextSetting{.value = cfg.location.sunset, .placeholder = "20:30", .browseFileExtensions = {}},
-          "time schedule sunset"
-      );
-      e.visibleWhen = manualLocationControlsVisible;
-      entries.push_back(std::move(e));
-    }
-    {
-      auto e = makeEntry(
-          SettingsSection::Location, "location", tr("settings.schema.services.sunrise.label"),
-          tr("settings.schema.services.sunrise.description"), {"location", "sunrise"},
-          TextSetting{.value = cfg.location.sunrise, .placeholder = "07:30", .browseFileExtensions = {}},
-          "time schedule sunrise"
-      );
-      e.visibleWhen = manualLocationControlsVisible;
-      entries.push_back(std::move(e));
-    }
     {
       auto e = makeEntry(
           SettingsSection::Location, "location", tr("settings.schema.services.latitude.label"),
@@ -2094,6 +2074,37 @@ namespace settings {
           true
       );
       e.visibleWhen = manualLocationControlsVisible;
+      entries.push_back(std::move(e));
+    }
+
+    // Custom scheduling — explicit sunrise/sunset times for night light and theme auto mode.
+    {
+      auto e = makeEntry(
+          SettingsSection::Location, "location", tr("settings.schema.services.custom-schedule.label"),
+          tr("settings.schema.services.custom-schedule.description"), {"location", "custom_schedule"},
+          ToggleSetting{cfg.location.customSchedule}, "schedule custom time sunrise sunset"
+      );
+      entries.push_back(std::move(e));
+    }
+    const SettingVisibility customSchedOn = [](const Config& c) { return c.location.customSchedule; };
+    {
+      auto e = makeEntry(
+          SettingsSection::Location, "location", tr("settings.schema.services.sunset.label"),
+          tr("settings.schema.services.sunset.description"), {"location", "sunset"},
+          TextSetting{.value = cfg.location.sunset, .placeholder = "20:30", .browseFileExtensions = {}},
+          "time schedule sunset"
+      );
+      e.visibleWhen = customSchedOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          SettingsSection::Location, "location", tr("settings.schema.services.sunrise.label"),
+          tr("settings.schema.services.sunrise.description"), {"location", "sunrise"},
+          TextSetting{.value = cfg.location.sunrise, .placeholder = "07:30", .browseFileExtensions = {}},
+          "time schedule sunrise"
+      );
+      e.visibleWhen = customSchedOn;
       entries.push_back(std::move(e));
     }
 

@@ -14,6 +14,7 @@
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/settings/widget_settings_registry.h"
+#include "system/day_night_schedule.h"
 #include "time/time_format.h"
 
 #include <algorithm>
@@ -78,6 +79,34 @@ namespace noctalia::config {
         diag.warn(issue.path, issue.message);
       }
       return merged;
+    }
+
+    // custom_schedule promises a sunset/sunrise schedule. If the times cannot deliver one,
+    // say so instead of silently scheduling by coordinates (or not at all).
+    void validateLocation(const toml::table& merged, schema::Diagnostics& diag) {
+      const auto* location = merged["location"].as_table();
+      if (location == nullptr) {
+        return;
+      }
+
+      const bool customSchedule = (*location)["custom_schedule"].value_or(false);
+      for (const std::string_view key : {"sunset", "sunrise"}) {
+        const std::string path = "location." + std::string(key);
+        const auto value = (*location)[key].value<std::string>();
+        const bool set = value.has_value() && !value->empty();
+        if (set && !day_night_schedule::normalizedClock(*value).has_value()) {
+          const std::string message = "\"" + *value + "\" is not a time of day in HH:MM form";
+          if (customSchedule) {
+            diag.error(path, message, "location.clock.invalid");
+          } else {
+            diag.warn(path, message);
+          }
+        } else if (!set && customSchedule) {
+          diag.error(
+              path, "custom_schedule needs a " + std::string(key) + " time in HH:MM form", "location.clock.missing"
+          );
+        }
+      }
     }
 
     // Shape-checks a file's [include] table. The merged config has [include]
@@ -608,6 +637,7 @@ namespace noctalia::config {
         scripting::applyPluginSourcesToRegistry(pluginRegistry, pc);
       }
 
+      validateLocation(merged, diag);
       validateBars(merged, diag);
       validateBarWidgets(merged, diag, pluginRegistry);
       validatePluginSettings(merged, diag, pluginRegistry);

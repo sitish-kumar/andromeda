@@ -400,16 +400,27 @@ GammaService::GammaTarget GammaService::computeTarget() const {
     return {.kelvin = nightTemp, .transitioning = false};
   }
 
-  const bool manualMode = day_night_schedule::isManualMode(m_location, m_resolvedLatitude, m_resolvedLongitude);
+  const bool manualMode = day_night_schedule::isManualMode(m_location);
   if (!manualMode) {
+    const bool customTimesUsable = day_night_schedule::hasUsableCustomTimes(m_location);
+    if (m_location.customSchedule && !customTimesUsable) {
+      // Custom scheduling was asked for but cannot run: the times are missing or not HH:MM.
+      kLog.warn("custom schedule is on but sunset/sunrise are not both set to an HH:MM time");
+    }
+
     const auto coords = day_night_schedule::resolveCoordinates(m_location, m_resolvedLatitude, m_resolvedLongitude);
     if (!coords.latitude.has_value() || !coords.longitude.has_value()) {
       if (m_locationResolving || networkLocationConfigured()) {
         kLog.debug("night light schedule waiting for location resolution");
       } else if (m_location.latitude.has_value() != m_location.longitude.has_value()) {
         kLog.warn("need both latitude and longitude for manual location");
-      } else {
-        kLog.warn("no schedule: enable auto-locate, set an address, or set latitude/longitude or sunset/sunrise");
+      } else if (!m_location.customSchedule && customTimesUsable) {
+        kLog.warn("sunrise/sunset times are set but the custom schedule is off; enable it in Location settings");
+      } else if (!m_location.customSchedule) {
+        kLog.warn(
+            "no schedule: enable auto-locate, set an address, set latitude/longitude, or enable the custom schedule in "
+            "location settings"
+        );
       }
       return {};
     }
@@ -458,7 +469,7 @@ void GammaService::apply() {
     return;
   }
 
-  const bool manualMode = day_night_schedule::isManualMode(m_location, m_resolvedLatitude, m_resolvedLongitude);
+  const bool manualMode = day_night_schedule::isManualMode(m_location);
   if (effectiveEnabled() && manualMode) {
     scheduleManualTimer();
   } else if (effectiveEnabled() && !effectiveForce()) {

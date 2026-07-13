@@ -1020,6 +1020,7 @@
         "rename": "Could not rename bar."
       },
       "batch-write": "Some settings could not be saved.",
+      "custom-schedule-times": "A custom schedule needs both a sunrise and a sunset time in HH:MM form.",
       "export-config": "Failed to save config export.",
       "export-wallpaper-palette": "Could not save the wallpaper palette as a custom palette.",
       "monitor-override": {
@@ -2268,6 +2269,10 @@
           "description": "How often to sync calendar events (minutes)",
           "label": "Refresh Interval"
         },
+        "custom-schedule": {
+          "description": "Use manual sunrise/sunset times instead of computing from coordinates",
+          "label": "Custom Schedule"
+        },
         "day-temperature": {
           "description": "Color temperature during the day (Kelvin)",
           "label": "Day Temperature"
@@ -2329,11 +2334,11 @@
           "label": "Sound Volume"
         },
         "sunrise": {
-          "description": "Manual sunrise time in HH:MM, used when no location is set",
+          "description": "Time of day for sunrise (HH:MM), used with a custom schedule",
           "label": "Sunrise"
         },
         "sunset": {
-          "description": "Manual sunset time in HH:MM, used when no location is set",
+          "description": "Time of day for sunset (HH:MM), used with a custom schedule",
           "label": "Sunset"
         },
         "sync-monitor-brightness": {
