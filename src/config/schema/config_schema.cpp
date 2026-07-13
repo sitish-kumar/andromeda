@@ -90,7 +90,7 @@ namespace noctalia::config::schema {
         field(&LockscreenConfig::blurredDesktop, "blurred_desktop"),
         field(&LockscreenConfig::blurIntensity, "blur_intensity", kUnitRange),
         field(&LockscreenConfig::tintIntensity, "tint_intensity", kUnitRange),
-        field(&LockscreenConfig::wallpaper, "wallpaper"),
+        pathStringField(&LockscreenConfig::wallpaper, "wallpaper"),
         field(&LockscreenConfig::monitors, "monitors"),
     };
     return s;
@@ -401,7 +401,7 @@ namespace noctalia::config::schema {
         field(&DockConfig::showInstanceCount, "show_instance_count"),
         enumField(&DockConfig::launcherPosition, "launcher_position", kDockLauncherPositions),
         field(&DockConfig::launcherIcon, "launcher_icon"),
-        field(&DockConfig::launcherCustomImage, "launcher_custom_image"),
+        pathStringField(&DockConfig::launcherCustomImage, "launcher_custom_image"),
         field(&DockConfig::launcherCustomImageColorize, "launcher_custom_image_colorize"),
         field(&DockConfig::pinned, "pinned"),
         field(&DockConfig::monitors, "monitors"),
@@ -638,36 +638,6 @@ namespace noctalia::config::schema {
               tbl.insert_or_assign(key, colorSpecToConfigString(*(in.*member)));
             } else if (alwaysEmit) {
               tbl.insert_or_assign(key, std::string{});
-            }
-          }
-      );
-    }
-
-    // String holding a filesystem path: ~ and $VARS expand on read, emitted raw.
-    template <typename Struct> Field<Struct> pathStringField(std::string Struct::* member, std::string_view key) {
-      return custom<Struct>(
-          key,
-          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
-            if (auto v = tbl[key].value<std::string>()) {
-              out.*member = v->empty() ? *v : FileUtils::expandUserPath(*v).string();
-            }
-          },
-          [member, key](toml::table& tbl, const Struct& in) { tbl.insert_or_assign(key, in.*member); }
-      );
-    }
-
-    template <typename Struct>
-    Field<Struct> optionalPathStringField(std::optional<std::string> Struct::* member, std::string_view key) {
-      return custom<Struct>(
-          key,
-          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
-            if (auto v = tbl[key].value<std::string>()) {
-              out.*member = v->empty() ? *v : FileUtils::expandUserPath(*v).string();
-            }
-          },
-          [member, key](toml::table& tbl, const Struct& in) {
-            if ((in.*member).has_value()) {
-              tbl.insert_or_assign(key, *(in.*member));
             }
           }
       );
