@@ -64,7 +64,9 @@ namespace {
     instance.drag = {};
   }
 
-  void dismissDockTooltip() { TooltipManager::instance().onHoverChange(nullptr, nullptr, nullptr); }
+  void dismissDockTooltipImpl() {
+    TooltipManager::instance().onHoverChange(nullptr, static_cast<zwlr_layer_surface_v1*>(nullptr), nullptr);
+  }
 
   [[nodiscard]] int dockIconDecodeTargetSize(const DockConfig& cfg) {
     const float baseScale = std::max(cfg.activeScale, cfg.inactiveScale);
@@ -660,7 +662,7 @@ namespace shell::dock {
           drag.holdTimer.start(kDragHoldDelay, [instPtr, itemIndex]() {
             if (instPtr->drag.sourceIndex == itemIndex && !instPtr->drag.active) {
               instPtr->drag.armed = true;
-              dismissDockTooltip();
+              dismissDockTooltipImpl();
             }
           });
           return;
@@ -1244,5 +1246,7 @@ namespace shell::dock {
       }
     }
   }
+
+  void dismissDockTooltip() { dismissDockTooltipImpl(); }
 
 } // namespace shell::dock

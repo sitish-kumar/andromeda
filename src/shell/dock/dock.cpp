@@ -3,6 +3,7 @@
 #include "compositors/compositor_detect.h"
 #include "compositors/compositor_platform.h"
 #include "config/config_service.h"
+#include "core/deferred_call.h"
 #include "core/log.h"
 #include "ipc/ipc_service.h"
 #include "render/scene/node.h"
@@ -13,7 +14,6 @@
 #include "shell/dock/dock_model.h"
 #include "shell/dock/pinned_apps.h"
 #include "shell/panel/panel_manager.h"
-#include "shell/tooltip/tooltip_manager.h"
 #include "system/desktop_entry.h"
 #include "system/desktop_entry_launch.h"
 #include "ui/app_icon_colorization.h"
@@ -816,7 +816,7 @@ void Dock::beginDrag(shell::dock::DockInstance& instance, std::size_t index, flo
   instance.drag.currentMain = mainPos;
   instance.drag.targetIndex = shell::dock::computeDragTargetIndex(instance, cfg, mainPos);
 
-  TooltipManager::instance().onHoverChange(nullptr, nullptr, nullptr);
+  shell::dock::dismissDockTooltip();
   shell::dock::applyDragVisuals(instance, cfg);
   if (instance.surface != nullptr) {
     instance.surface->requestRedraw();
@@ -881,7 +881,12 @@ void Dock::endDrag(shell::dock::DockInstance& instance, bool commit) {
     --insertAt;
   }
   pinnedList.insert(pinnedList.begin() + static_cast<std::ptrdiff_t>(insertAt), std::move(moved));
-  (void)m_config->setOverride({"dock", "pinned"}, std::move(pinnedList));
+  ConfigService* config = m_config;
+  DeferredCall::callLater([config, pinnedList = std::move(pinnedList)]() mutable {
+    if (config != nullptr) {
+      (void)config->setOverride({"dock", "pinned"}, std::move(pinnedList));
+    }
+  });
 }
 
 void Dock::closeItemMenu() {

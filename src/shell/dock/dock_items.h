@@ -86,6 +86,7 @@ namespace shell::dock {
   void syncDockItemRestPositions(DockInstance& instance, const DockConfig& cfg);
   void applyDragVisuals(DockInstance& instance, const DockConfig& cfg);
   void clearDragVisuals(DockInstance& instance, const DockConfig& cfg);
+  void dismissDockTooltip();
   [[nodiscard]] std::size_t computeDragTargetIndex(const DockInstance& instance, const DockConfig& cfg, float mainPos);
 
 } // namespace shell::dock
