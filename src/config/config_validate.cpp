@@ -205,13 +205,23 @@ namespace noctalia::config {
         }
         break;
       case WidgetSettingType::Double:
-      case WidgetSettingType::OptionalDouble:
         if (auto v = node.value<double>()) {
           rangeCheck(*v, f, path, diag);
         } else {
           reportError(path, "expected a number");
         }
         break;
+      case WidgetSettingType::OptionalDouble: {
+        if (auto v = node.value<double>()) {
+          rangeCheck(*v, f, path, diag);
+        } else {
+          const auto value = node.value<std::string>();
+          if (!value.has_value() || *value != "auto") {
+            reportError(path, "expected a number or \"auto\"");
+          }
+        }
+        break;
+      }
       case WidgetSettingType::String:
         if (!node.is_string()) {
           reportError(path, "expected a string");
