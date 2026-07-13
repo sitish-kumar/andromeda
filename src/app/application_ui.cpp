@@ -574,6 +574,14 @@ void Application::initPanelManagerAndPanels() {
     m_launcherPanel = launcherPanel.get();
     m_panelManager.registerPanel("launcher", std::move(launcherPanel));
   }
+  m_configService.addReloadCallback(
+      [this]() {
+        if (m_launcherPanel != nullptr) {
+          m_launcherPanel->syncUsageTrackingState();
+        }
+      },
+      "launcher-usage"
+  );
   m_settingsWindow.setResetLauncherUsage([this]() {
     if (m_launcherPanel != nullptr) {
       m_launcherPanel->clearUsage();
