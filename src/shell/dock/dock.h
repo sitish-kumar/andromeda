@@ -64,6 +64,9 @@ private:
   void activateOrLaunchItem(shell::dock::DockInstance& instance, const shell::dock::DockItemAction& action);
   void openItemMenu(shell::dock::DockInstance& instance, const shell::dock::DockItemAction& action);
   void closeItemMenu();
+  void beginDrag(shell::dock::DockInstance& instance, std::size_t index, float mainPos);
+  void updateDrag(shell::dock::DockInstance& instance, float mainPos);
+  void endDrag(shell::dock::DockInstance& instance, bool commit);
 
   CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;

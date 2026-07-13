@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config/config_types.h"
+#include "core/timer_manager.h"
 #include "render/scene/input_dispatcher.h"
 #include "shell/dock/dock_items.h"
 #include "shell/dock/dock_model.h"
@@ -53,6 +54,19 @@ namespace shell::dock {
     float hideOpacity = 1.0f;
     AnimationManager::Id hideAnimId = 0;
     Signal<>::ScopedConnection paletteConn;
+    bool suppressItemClick = false; // set on press-release when a hold/drag consumed the gesture
+
+    // Drag-to-reorder state.
+    struct DragState {
+      bool active = false;         // drag mode is live
+      bool armed = false;          // hold timer has fired; drag begins on next motion
+      bool pinned = false;         // source item is pinned (only pinned items may be reordered)
+      std::size_t sourceIndex = 0; // index into snapshot.items being dragged
+      std::size_t targetIndex = 0; // current intended insert position (among pinned items)
+      float startMain = 0.0f;      // pointer main-axis position when press was received
+      float currentMain = 0.0f;    // current pointer main-axis position
+      Timer holdTimer;             // fires after hold delay to arm the drag
+    } drag;
   };
 
   struct DockInstanceDependencies {

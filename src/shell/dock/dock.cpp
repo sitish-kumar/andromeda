@@ -13,6 +13,7 @@
 #include "shell/dock/dock_model.h"
 #include "shell/dock/pinned_apps.h"
 #include "shell/panel/panel_manager.h"
+#include "shell/tooltip/tooltip_manager.h"
 #include "system/desktop_entry.h"
 #include "system/desktop_entry_launch.h"
 #include "ui/app_icon_colorization.h"
@@ -460,6 +461,9 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
   }
   case PointerEvent::Type::Leave: {
     if (m_hoveredInstance != nullptr) {
+      if (m_hoveredInstance->drag.active || m_hoveredInstance->drag.armed) {
+        endDrag(*m_hoveredInstance, false);
+      }
       clearHoverZoomPointer(*m_hoveredInstance);
       m_hoveredInstance->pointerInside = false;
       m_hoveredInstance->inputDispatcher.pointerLeave();
@@ -729,6 +733,11 @@ void Dock::rebuildItems(shell::dock::DockInstance& instance) {
           .openItemMenu = [this](
                               shell::dock::DockInstance& inst, const shell::dock::DockItemAction& action
                           ) { openItemMenu(inst, action); },
+          .beginDrag = [this](
+                           shell::dock::DockInstance& inst, std::size_t index, float mainPos
+                       ) { beginDrag(inst, index, mainPos); },
+          .updateDrag = [this](shell::dock::DockInstance& inst, float mainPos) { updateDrag(inst, mainPos); },
+          .endDrag = [this](shell::dock::DockInstance& inst, bool commit) { endDrag(inst, commit); },
       }
   );
 }
@@ -791,6 +800,89 @@ void Dock::clearHoverZoomPointer(shell::dock::DockInstance& instance) {
 }
 
 // ── Private: item context menu (right-click) ──────────────────────────────────
+
+void Dock::beginDrag(shell::dock::DockInstance& instance, std::size_t index, float mainPos) {
+  if (m_config == nullptr || instance.drag.active) {
+    return;
+  }
+
+  const auto& cfg = m_config->config().dock;
+  if (index >= cfg.pinned.size()) {
+    return;
+  }
+
+  instance.drag.active = true;
+  instance.drag.sourceIndex = index;
+  instance.drag.currentMain = mainPos;
+  instance.drag.targetIndex = shell::dock::computeDragTargetIndex(instance, cfg, mainPos);
+
+  TooltipManager::instance().onHoverChange(nullptr, nullptr, nullptr);
+  shell::dock::applyDragVisuals(instance, cfg);
+  if (instance.surface != nullptr) {
+    instance.surface->requestRedraw();
+  }
+}
+
+void Dock::updateDrag(shell::dock::DockInstance& instance, float mainPos) {
+  if (m_config == nullptr || !instance.drag.active) {
+    return;
+  }
+
+  const auto& cfg = m_config->config().dock;
+  instance.drag.currentMain = mainPos;
+  const std::size_t nextTarget = shell::dock::computeDragTargetIndex(instance, cfg, mainPos);
+  if (nextTarget != instance.drag.targetIndex) {
+    instance.drag.targetIndex = nextTarget;
+  }
+
+  shell::dock::applyDragVisuals(instance, cfg);
+  if (instance.surface != nullptr) {
+    instance.surface->requestRedraw();
+  }
+}
+
+void Dock::endDrag(shell::dock::DockInstance& instance, bool commit) {
+  if (!instance.drag.active && !instance.drag.armed) {
+    return;
+  }
+
+  instance.drag.holdTimer.stop();
+  const bool wasActive = instance.drag.active;
+  const bool wasArmed = instance.drag.armed;
+  const std::size_t sourceIndex = instance.drag.sourceIndex;
+  const std::size_t targetIndex = instance.drag.targetIndex;
+  instance.drag = {};
+
+  if (wasActive || wasArmed) {
+    instance.suppressItemClick = true;
+  }
+
+  if (m_config == nullptr) {
+    return;
+  }
+
+  const auto& cfg = m_config->config().dock;
+  if (wasActive) {
+    shell::dock::clearDragVisuals(instance, cfg);
+  }
+
+  if (!commit || !wasActive || sourceIndex == targetIndex || sourceIndex >= cfg.pinned.size()) {
+    if (instance.surface != nullptr) {
+      instance.surface->requestRedraw();
+    }
+    return;
+  }
+
+  std::vector<std::string> pinnedList = cfg.pinned;
+  std::size_t insertAt = std::min(targetIndex, pinnedList.size());
+  std::string moved = std::move(pinnedList[sourceIndex]);
+  pinnedList.erase(pinnedList.begin() + static_cast<std::ptrdiff_t>(sourceIndex));
+  if (insertAt > sourceIndex) {
+    --insertAt;
+  }
+  pinnedList.insert(pinnedList.begin() + static_cast<std::ptrdiff_t>(insertAt), std::move(moved));
+  (void)m_config->setOverride({"dock", "pinned"}, std::move(pinnedList));
+}
 
 void Dock::closeItemMenu() {
   shell::dock::DockInstance* owner = m_popupOwnerInstance;
