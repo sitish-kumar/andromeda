@@ -630,7 +630,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
     auto createWorkspaceBadge = [&](const WorkspaceModel& ws, const WorkspaceDiscSize& disc, bool hover) {
       Button::ButtonPalette badgePalette{};
-      const ColorSpec fill = workspaceFillColor(ws.workspace);
+      const ColorSpec fill = m_minimal ? clearColorSpec() : workspaceFillColor(ws.workspace);
       const ColorSpec text = workspaceTextColor(ws.workspace);
       badgePalette.normal = Button::ButtonStateColors{fill, clearColorSpec(), text};
       badgePalette.hover = badgePalette.normal;
