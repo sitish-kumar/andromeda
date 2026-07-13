@@ -287,6 +287,8 @@ void TaskbarWidget::doLayout(Renderer& renderer, float containerWidth, float con
   if (m_vertical != wasVertical) {
     m_rebuildPending = true;
   }
+  m_containerWidth = containerWidth;
+  m_containerHeight = containerHeight;
   const std::uint64_t textMetricsGeneration = renderer.textMetricsGeneration();
   if (m_textMetricsGeneration != textMetricsGeneration) {
     m_textMetricsGeneration = textMetricsGeneration;
@@ -347,9 +349,21 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   if (m_taskStrip == nullptr) {
     return;
   }
-  const float iconSize = std::round(Style::baseGlyphSize * m_contentScale);
-  const float tilePadding = Style::spaceXs * 0.35f * m_contentScale;
-  const float tileSize = std::round(iconSize + tilePadding * 2.0f);
+  float iconSize = std::round(Style::baseGlyphSize * m_contentScale);
+  float tilePadding = Style::spaceXs * 0.35f * m_contentScale;
+  float tileSize = std::round(iconSize + tilePadding * 2.0f);
+  const float crossExtent = m_vertical ? m_containerWidth : m_containerHeight;
+  if (crossExtent > 0.0f && tileSize > crossExtent + 0.5f) {
+    // Clamp tiles to the bar thickness.
+    const float maxTile = std::max(0.0f, crossExtent);
+    const float padCap = std::floor(std::max(0.0f, (maxTile - iconSize) * 0.5f));
+    tilePadding = std::min(tilePadding, padCap);
+    tileSize = std::round(iconSize + tilePadding * 2.0f);
+    if (tileSize > maxTile + 0.5f) {
+      iconSize = std::floor(std::max(0.0f, maxTile - tilePadding * 2.0f));
+      tileSize = std::round(iconSize + tilePadding * 2.0f);
+    }
+  }
   const float tileGap = Style::spaceSm * m_contentScale;
 
   const float groupBorderInset = Style::borderWidth * m_contentScale;
@@ -626,6 +640,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     float stripPaddingMainStart = 0.0f;
     float stripPaddingCrossStart = 0.0f;
     if (externalBadge) {
+      const float badgeGap = std::round(std::max(1.0f, Style::spaceXs * 0.5f * m_contentScale));
       float maxMainStart = 0.0f;
       float maxCrossStart = 0.0f;
       for (const auto& wsm : m_workspaces) {
@@ -634,10 +649,13 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         const float badgeMain = m_vertical ? measuredDisc.height : measuredDisc.width;
         const float badgeCross = m_vertical ? measuredDisc.width : measuredDisc.height;
         maxMainStart = std::max(maxMainStart, externalBadgeMainStartInset(m_workspaceLabelPlacement, badgeMain));
-        maxCrossStart = std::max(maxCrossStart, externalBadgeCrossStartInset(m_workspaceLabelPlacement, badgeCross));
+        if (m_vertical) {
+          maxCrossStart = std::max(maxCrossStart, externalBadgeCrossStartInset(m_workspaceLabelPlacement, badgeCross));
+        }
       }
       stripPaddingMainStart = std::round(maxMainStart);
       stripPaddingCrossStart = std::round(maxCrossStart);
+      stripGap = std::max(stripGap, stripPaddingMainStart + badgeGap);
     }
     m_taskStrip->setGap(stripGap);
     if (m_vertical) {
@@ -786,6 +804,14 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           } else {
             groupPadH += half;
           }
+        }
+      }
+      if (crossExtent > 0.0f) {
+        // Keep grouped capsules within the bar thickness.
+        if (m_vertical) {
+          groupPadH = std::min(groupPadH, std::max(0.0f, (crossExtent - tileWidthWithTitle) * 0.5f));
+        } else {
+          groupPadV = std::min(groupPadV, std::max(0.0f, (crossExtent - tileSize) * 0.5f));
         }
       }
 

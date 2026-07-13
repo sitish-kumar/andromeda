@@ -148,6 +148,8 @@ private:
   ShellConfig::ShadowConfig m_shadowConfig;
   bool m_rebuildPending = true;
   bool m_vertical = false;
+  float m_containerWidth = 0.0f;
+  float m_containerHeight = 0.0f;
   std::uint64_t m_textMetricsGeneration = 0;
 
   Flex* m_root = nullptr;
