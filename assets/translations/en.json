@@ -447,8 +447,8 @@
         "bands": "Bands",
         "bar-width": "Bar Width",
         "bloom-intensity": "Bloom",
-        "center-text": "Center Text",
         "center-password-text": "Center Password Text",
+        "center-text": "Center Text",
         "centered": "Centered",
         "change-image": "Change…",
         "circle": "Circle",
@@ -1135,7 +1135,7 @@
         "screen-time": "Screen Time",
         "screenshot": "Screenshot",
         "security": "Security",
-        "session-panel": "Session panel",
+        "session-panel": "Session Panel",
         "shape": "Shape",
         "system": "System",
         "theme": "Theme",
@@ -1533,7 +1533,7 @@
       },
       "bar": {
         "auto-hide": {
-          "description": "Off keeps the bar visible. On hides it until you move the pointer to the screen edge. Smart shows the bar on an empty workspace and hides it when windows are open."
+          "description": "Off keeps the bar visible; On hides it until you move the pointer to the screen edge; Smart shows the bar on an empty workspace and hides it when windows are open"
         },
         "background-opacity": {
           "description": "Background opacity of the bar"
@@ -1771,7 +1771,7 @@
           "label": "Active Monitor Only"
         },
         "auto-hide": {
-          "description": "Off keeps the dock visible. On hides it until you move the pointer to the screen edge. Smart shows the dock on an empty workspace and hides it when windows are open."
+          "description": "Off keeps the dock visible; On hides it until you move the pointer to the screen edge; Smart shows the dock on an empty workspace and hides it when windows are open"
         },
         "background-opacity": {
           "description": "Background opacity of the dock"
@@ -2342,16 +2342,16 @@
           "label": "Sound Volume"
         },
         "sunrise": {
-          "description": "Time of day for sunrise (HH:MM), used with a custom schedule",
+          "description": "Manual sunrise time in HH:MM, used when no location is set",
           "label": "Sunrise"
         },
         "sunset": {
-          "description": "Time of day for sunset (HH:MM), used with a custom schedule",
+          "description": "Manual sunset time in HH:MM, used when no location is set",
           "label": "Sunset"
         },
         "sync-monitor-brightness": {
           "description": "Sync the brightness of all monitors",
-          "label": "Sync monitor brightness"
+          "label": "Sync Monitor Brightness"
         },
         "system-monitor": {
           "cpu-poll": {
@@ -3234,7 +3234,7 @@
           "label": "Occupied Color"
         },
         "only-active-workspace": {
-          "description": "Hide windows on inactive workspaces.",
+          "description": "Hide windows on inactive workspaces",
           "label": "Only Active Workspace"
         },
         "path": {
