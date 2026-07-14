@@ -41,13 +41,13 @@ public:
   PluginLauncherProvider(scripting::PluginRuntimeContext context, PluginLauncherProviderOptions options);
   ~PluginLauncherProvider() override;
 
-  [[nodiscard]] std::string_view prefix() const override { return m_prefix; }
+  [[nodiscard]] std::string_view defaultPrefix() const override { return m_prefix; }
   [[nodiscard]] std::string_view id() const override { return m_entryId; }
   [[nodiscard]] std::string displayName() const override { return m_displayName.empty() ? m_entryId : m_displayName; }
   [[nodiscard]] std::string_view defaultGlyphName() const override {
     return m_glyph.empty() ? std::string_view("search") : std::string_view(m_glyph);
   }
-  [[nodiscard]] bool includeInGlobalSearch() const override { return m_globalSearch; }
+  [[nodiscard]] bool defaultIncludeInGlobalSearch() const override { return m_globalSearch; }
   [[nodiscard]] std::vector<LauncherCategory> categories() const override { return m_categories; }
   [[nodiscard]] bool isDynamic() const override { return true; }
   void setResultsChangedCallback(std::function<void()> callback) override { m_onResultsChanged = std::move(callback); }

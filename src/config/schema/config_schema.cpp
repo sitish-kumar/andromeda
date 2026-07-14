@@ -1199,15 +1199,30 @@ namespace noctalia::config::schema {
       return s;
     }
 
+    const Schema<LauncherProviderConfig>& launcherProviderSchema() {
+      static const Schema<LauncherProviderConfig> s = {
+          field(&LauncherProviderConfig::prefix, "prefix"),
+          optionalBoolField(&LauncherProviderConfig::global, "global"),
+      };
+      return s;
+    }
+
     const Schema<ShellConfig::LauncherConfig>& shellLauncherSchema() {
       static const Schema<ShellConfig::LauncherConfig> s = {
           field(&ShellConfig::LauncherConfig::categories, "categories"),
           field(&ShellConfig::LauncherConfig::showIcons, "show_icons"),
           field(&ShellConfig::LauncherConfig::compact, "compact"),
           field(&ShellConfig::LauncherConfig::appGrid, "app_grid"),
-          field(&ShellConfig::LauncherConfig::sessionSearch, "session_search"),
           field(&ShellConfig::LauncherConfig::sortByUsage, "sort_by_usage"),
+          field(&ShellConfig::LauncherConfig::providerPrefix, "provider_prefix"),
           subTable(&ShellConfig::LauncherConfig::dmenu, "dmenu", shellLauncherDmenuSchema()),
+          namedMap<ShellConfig::LauncherConfig, LauncherProviderConfig>(
+              &ShellConfig::LauncherConfig::providers, "providers", launcherProviderSchema(),
+              [](LauncherProviderConfig& elem, std::string_view name) {
+                elem.name = StringUtils::toLower(std::string(name));
+              },
+              [](const LauncherProviderConfig& elem) { return elem.name; }
+          ),
       };
       return s;
     }

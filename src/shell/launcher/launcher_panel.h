@@ -80,6 +80,8 @@ private:
   void applyEmptyState();
   void bindDetailResult();
   [[nodiscard]] bool shouldUseDetailPresentation() const;
+  [[nodiscard]] bool startsWithLauncherPrefix(std::string_view text) const;
+  void applyProviderConfig(LauncherProvider& provider) const;
   [[nodiscard]] std::vector<LauncherResult> providerOverviewResults(std::string_view text) const;
   void openAppActionsMenu(std::size_t index, float anchorX, float anchorY);
   void rebuildCategoryFilter(const std::vector<LauncherCategory>& categories);

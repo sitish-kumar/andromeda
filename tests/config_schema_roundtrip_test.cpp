@@ -423,7 +423,6 @@ location = "https://example.invalid/bad"
     c.shell.panel.transparencyMode = PanelTransparencyMode::Glass;
     c.shell.panel.launcherPlacement = PanelPlacement::Floating;
     c.shell.launcher.compact = true;
-    c.shell.launcher.sessionSearch = true;
     c.shell.launcher.sortByUsage = false;
     DmenuEntryConfig notifyDmenu;
     notifyDmenu.id = "notify";
@@ -433,6 +432,11 @@ location = "https://example.invalid/bad"
     notifyDmenu.glyph = std::string("bell");
     notifyDmenu.freeform = true;
     c.shell.launcher.dmenu.entries = {notifyDmenu};
+    c.shell.launcher.providerPrefix = ".";
+    c.shell.launcher.providers = {
+        LauncherProviderConfig{"session", "s", true},
+        LauncherProviderConfig{"wallpaper", "w"}
+    };
     c.shell.screenCorners.enabled = true;
     c.shell.screenCorners.size = 24;
     c.shell.mpris.blacklist = {"firefox"};
