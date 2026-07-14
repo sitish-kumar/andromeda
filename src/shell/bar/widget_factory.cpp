@@ -676,6 +676,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
     if (wc != nullptr && wc->hasSetting("max_label_chars")) {
       maxLabelChars = static_cast<std::size_t>(wc->getInt("max_label_chars", 1));
     }
+    const std::string workspaceStyle = wc != nullptr ? wc->getString("style", "regular") : "regular";
     WorkspacesWidget::Options options{
         .displayMode = displayMode,
         .focusedColor = focusedColor,
@@ -687,10 +688,11 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .pillScale = static_cast<float>(wc != nullptr ? wc->getDouble("pill_scale", 1.0) : 1.0),
         .activePillSize = static_cast<float>(wc != nullptr ? wc->getDouble("active_pill_size", 2.2) : 2.2),
         .inactivePillSize = static_cast<float>(wc != nullptr ? wc->getDouble("inactive_pill_size", 1.0) : 1.0),
-        .minimal = wc != nullptr ? wc->getBool("minimal", false) : false,
+        .minimal = workspaceStyle == "minimal",
+        .focusedPill = workspaceStyle == "focus_hint",
         .focusedOutputOnly = wc != nullptr ? wc->getBool("focused_output_only", false) : false,
     };
-    auto widget = std::make_unique<WorkspacesWidget>(m_platform, output, options);
+    auto widget = std::make_unique<WorkspacesWidget>(m_platform, m_configService, output, options);
     widget->setContentScale(contentScale);
     return widget;
   }
