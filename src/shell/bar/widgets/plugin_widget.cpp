@@ -18,7 +18,6 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
@@ -179,19 +178,15 @@ void PluginWidget::create() {
       (void)m_runtime->enqueueCallBool("onHover", false, makeScriptSnapshot());
   });
   area->setOnAxisHandler([this](const InputArea::PointerData& data) {
-    if (!m_runtime)
+    if (m_runtime == nullptr || !m_runtime->hasOnScroll())
       return false;
-    // scrollDelta covers continuous (touchpad) and lines sources; fall back to
-    // axisValue120 for high-resolution mice whose per-notch value is 120.
-    float delta = data.scrollDelta(1.0f);
-    if (delta == 0.0f && data.axisValue120 != 0)
-      delta = static_cast<float>(data.axisValue120) / 120.0f;
-    if (delta == 0.0f)
+    // Whole detent steps, so a wheel notch and a touchpad flick mean the same
+    // thing to the script. Continuous sources report 0 until a detent accrues.
+    const float steps = data.scrollSteps();
+    if (steps == 0.0f)
       return false;
-    const char* axis = (data.axis == WL_POINTER_AXIS_VERTICAL_SCROLL) ? "vertical" : "horizontal";
-    char buf[32];
-    std::snprintf(buf, sizeof(buf), "%.6g", static_cast<double>(delta));
-    (void)m_runtime->enqueueCallStrings("onScroll", axis, buf, makeScriptSnapshot());
+    const char* axis = data.axis == WL_POINTER_AXIS_VERTICAL_SCROLL ? "vertical" : "horizontal";
+    (void)m_runtime->enqueueCallArgs("onScroll", {std::string(axis), static_cast<double>(steps)}, makeScriptSnapshot());
     return true;
   });
 
