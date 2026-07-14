@@ -18,6 +18,7 @@
 struct lua_State;
 class CompositorPlatform;
 class HttpClient;
+struct Color;
 struct HttpRequest;
 
 namespace process {
@@ -41,6 +42,8 @@ public:
   using AsyncProcessMatchResultHandler = std::function<void(std::uint64_t hostId, int callbackRef, bool matched)>;
   using AsyncHttpResultHandler = std::function<
       void(std::uint64_t hostId, int callbackRef, bool ok, int status, std::string body, bool isDownload)>;
+  using ColorPickerResultHandler =
+      std::function<void(std::uint64_t hostId, int callbackRef, std::optional<std::string> color)>;
   // Registers a `noctalia.state.watch` callback with the shared store (the runtime
   // owns the token + delivery, so registration is delegated back to it).
   using StateWatchHandler = std::function<void(std::string key, int callbackRef)>;
@@ -116,6 +119,9 @@ public:
   }
   void setHttpClient(HttpClient* client) { m_httpClient = client; }
   void setAsyncHttpResultHandler(AsyncHttpResultHandler handler) { m_asyncHttpResultHandler = std::move(handler); }
+  void setColorPickerResultHandler(ColorPickerResultHandler handler) {
+    m_colorPickerResultHandler = std::move(handler);
+  }
   [[nodiscard]] bool startAsyncCommand(std::string command, int callbackRef, std::chrono::milliseconds timeout);
   [[nodiscard]] bool startAsyncProcessMatch(std::vector<std::string> needles, int callbackRef);
   // HTTP/download dispatch to the main-thread HttpClient; the response is delivered back as an
@@ -126,9 +132,13 @@ public:
       int callbackRef, bool ok, int status, const std::string& body, std::chrono::milliseconds budget
   );
   bool callAsyncDownloadCallback(int callbackRef, bool ok, std::chrono::milliseconds budget);
+  [[nodiscard]] bool startColorPicker(const Color& initialColor, int callbackRef);
+  bool
+  callColorPickerCallback(int callbackRef, const std::optional<std::string>& color, std::chrono::milliseconds budget);
   [[nodiscard]] bool hasAsyncCommandCallback(int callbackRef) const;
   [[nodiscard]] bool hasAsyncProcessMatchCallback(int callbackRef) const;
   [[nodiscard]] bool hasAsyncHttpCallback(int callbackRef) const;
+  [[nodiscard]] bool hasColorPickerCallback(int callbackRef) const;
   void interruptIfBudgetExceeded(lua_State* L);
   void scriptLog(std::string message);
   // Request the runtime tick rate (how often update() fires). A runtime concern, so
@@ -181,10 +191,12 @@ private:
   std::unordered_set<int> m_asyncCommandCallbackRefs;
   std::unordered_set<int> m_asyncProcessMatchCallbackRefs;
   std::unordered_set<int> m_asyncHttpCallbackRefs;
+  std::unordered_set<int> m_colorPickerCallbackRefs;
   HttpClient* m_httpClient = nullptr;
   AsyncCommandResultHandler m_asyncCommandResultHandler;
   AsyncProcessMatchResultHandler m_asyncProcessMatchResultHandler;
   AsyncHttpResultHandler m_asyncHttpResultHandler;
+  ColorPickerResultHandler m_colorPickerResultHandler;
   std::size_t m_memUsed = 0; // bytes tracked by allocate(); guarded by the worker-thread serialization
   std::chrono::steady_clock::time_point m_callDeadline;
   std::string m_currentCallName;

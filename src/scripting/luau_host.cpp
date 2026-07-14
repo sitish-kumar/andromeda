@@ -9,6 +9,7 @@
 #include "lualib.h"
 #include "net/http_client.h"
 #include "notification/notifications.h"
+#include "render/core/color.h"
 #include "render/text/font_registry.h"
 #include "scripting/plugin_bindings.h"
 #include "scripting/plugin_state_store.h"
@@ -18,6 +19,7 @@
 #include "system/icon_resolver.h"
 #include "system/terminal_launch.h"
 #include "time/time_format.h"
+#include "ui/dialogs/color_picker_dialog.h"
 #include "util/file_utils.h"
 #include "util/fuzzy_match.h"
 #include "util/string_utils.h"
@@ -940,6 +942,40 @@ namespace {
     return 1;
   }
 
+  int luau_openColorPicker(lua_State* L) {
+    size_t colorLen = 0;
+    const char* colorText = luaL_checklstring(L, 1, &colorLen);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+
+    const std::string_view colorValue(colorText, colorLen);
+    if (colorValue.size() != 7 || colorValue.front() != '#') {
+      luaL_argerror(L, 1, "expected a color in #RRGGBB format");
+      return 0;
+    }
+
+    Color initialColor;
+    try {
+      initialColor = hex(colorValue);
+    } catch (const std::invalid_argument&) {
+      luaL_argerror(L, 1, "expected a color in #RRGGBB format");
+      return 0;
+    }
+
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushboolean(L, 0);
+      return 1;
+    }
+
+    const int callbackRef = lua_ref(L, 2);
+    const bool ok = host->startColorPicker(initialColor, callbackRef);
+    if (!ok) {
+      lua_unref(L, callbackRef);
+    }
+    lua_pushboolean(L, ok ? 1 : 0);
+    return 1;
+  }
+
   // ── Lua <-> JSON (for the shared state store; values cross runtimes as JSON) ──
 
   nlohmann::json luaToJson(lua_State* L, int idx, int depth = 0) {
@@ -1199,6 +1235,7 @@ namespace {
       {"trp", luau_trp},
       {"http", luau_http},
       {"download", luau_download},
+      {"openColorPicker", luau_openColorPicker},
       {"fuzzyScore", luau_fuzzyScore},
       {"getConfig", scripting::luau_getConfig},
       {nullptr, nullptr},
@@ -1285,6 +1322,10 @@ LuauHost::~LuauHost() {
         lua_unref(m_T, callbackRef);
       }
       m_streamCallbackRefs.clear();
+      for (int callbackRef : m_colorPickerCallbackRefs) {
+        lua_unref(m_T, callbackRef);
+      }
+      m_colorPickerCallbackRefs.clear();
     }
     if (m_threadRef != -1)
       lua_unref(m_L, m_threadRef);
@@ -1390,6 +1431,61 @@ bool LuauHost::hasAsyncProcessMatchCallback(int callbackRef) const {
 }
 
 bool LuauHost::hasAsyncHttpCallback(int callbackRef) const { return m_asyncHttpCallbackRefs.contains(callbackRef); }
+
+bool LuauHost::hasColorPickerCallback(int callbackRef) const { return m_colorPickerCallbackRefs.contains(callbackRef); }
+
+bool LuauHost::startColorPicker(const Color& initialColor, int callbackRef) {
+  if (callbackRef <= LUA_REFNIL || !m_colorPickerCallbackRefs.empty()) {
+    return false;
+  }
+  auto handler = m_colorPickerResultHandler;
+  if (!handler) {
+    return false;
+  }
+
+  m_colorPickerCallbackRefs.insert(callbackRef);
+  DeferredCall::callLater([hostId = m_hostId, callbackRef, initialColor, handler = std::move(handler)]() mutable {
+    ColorPickerDialogOptions options;
+    options.initialColor = initialColor;
+    (void)ColorPickerDialog::open(
+        std::move(options), [hostId, callbackRef, handler = std::move(handler)](std::optional<Color> result) mutable {
+          std::optional<std::string> color;
+          if (result.has_value()) {
+            color = formatRgbHex(*result);
+          }
+          handler(hostId, callbackRef, std::move(color));
+        }
+    );
+  });
+  return true;
+}
+
+bool LuauHost::callColorPickerCallback(
+    int callbackRef, const std::optional<std::string>& color, std::chrono::milliseconds budget
+) {
+  if (m_T == nullptr) {
+    return false;
+  }
+  const auto it = m_colorPickerCallbackRefs.find(callbackRef);
+  if (it == m_colorPickerCallbackRefs.end()) {
+    return false;
+  }
+  m_colorPickerCallbackRefs.erase(it);
+
+  lua_getref(m_T, callbackRef);
+  lua_unref(m_T, callbackRef);
+  if (!lua_isfunction(m_T, -1)) {
+    lua_pop(m_T, 1);
+    return false;
+  }
+
+  if (color.has_value()) {
+    lua_pushlstring(m_T, color->data(), color->size());
+  } else {
+    lua_pushnil(m_T);
+  }
+  return callWithBudget("color picker callback", 1, 0, budget);
+}
 
 bool LuauHost::startAsyncHttp(HttpRequest request, int callbackRef) {
   if (m_httpClient == nullptr || callbackRef <= LUA_REFNIL || m_asyncHttpCallbackRefs.size() >= kMaxAsyncHttpPerHost) {

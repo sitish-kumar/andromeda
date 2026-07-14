@@ -168,6 +168,7 @@ namespace scripting {
     AsyncCommandResult,
     AsyncProcessMatchResult,
     AsyncHttpResult,
+    ColorPickerResult,
     StateWatchResult,
     StreamLine,
     SettingsChanged,
@@ -197,6 +198,8 @@ namespace scripting {
     bool httpIsDownload = false;
     int httpStatus = 0;
     std::string httpBody;
+    // ColorPickerResult payload (nil on cancellation).
+    std::optional<std::string> colorPickerResult;
     // StateWatchResult payload (the changed value as JSON).
     std::string stateJson;
     // SettingsChanged payload: the new seeded settings snapshot to swap in.
