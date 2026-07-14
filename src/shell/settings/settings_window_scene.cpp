@@ -1251,11 +1251,6 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
     );
   }
 
-  if (m_focusSearchOnRebuild && searchInputPtr != nullptr && searchInputPtr->inputArea() != nullptr) {
-    m_inputDispatcher.setFocus(searchInputPtr->inputArea());
-    m_focusSearchOnRebuild = false;
-  }
-
   return filters;
 }
 
@@ -1703,6 +1698,9 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   const float scale = uiScale();
   m_actionsMenuButton = nullptr;
   m_contentScrollView = nullptr;
+  m_sidebarScrollView = nullptr;
+  m_sidebarNav = nullptr;
+  m_settingsSearchInput = nullptr;
 
   const Config fallbackCfg{};
   const Config& cfg = m_config != nullptr ? m_config->config() : fallbackCfg;
