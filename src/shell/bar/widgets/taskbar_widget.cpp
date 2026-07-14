@@ -839,8 +839,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
       const float crossSize = std::round(tileSize + groupPad * 2.0f);
 
-      float groupPadV = groupPad;
-      float groupPadH = groupPad;
+      float groupPadTop = groupPad;
+      float groupPadRight = groupPad;
+      float groupPadBottom = groupPad;
+      float groupPadLeft = groupPad;
       std::optional<WorkspaceDiscSize> externalBadgeDisc;
       if (externalBadge) {
         externalBadgeDisc =
@@ -852,17 +854,21 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           const float half =
               std::round(m_vertical ? externalBadgeDisc->height * 0.6f : externalBadgeDisc->width * 0.6f);
           if (m_vertical) {
-            groupPadV += half;
+            groupPadTop += half;
           } else {
-            groupPadH += half;
+            groupPadLeft += half;
           }
         }
       }
       if (groupedCrossInner > 0.0f) {
         if (m_vertical) {
-          groupPadH = std::min(groupPadH, std::max(0.0f, (groupedCrossInner - tileWidthWithTitle) * 0.5f));
+          const float maxCrossPad = std::max(0.0f, (groupedCrossInner - tileWidthWithTitle) * 0.5f);
+          groupPadLeft = std::min(groupPadLeft, maxCrossPad);
+          groupPadRight = std::min(groupPadRight, maxCrossPad);
         } else {
-          groupPadV = std::min(groupPadV, std::max(0.0f, (groupedCrossInner - tileSize) * 0.5f));
+          const float maxCrossPad = std::max(0.0f, (groupedCrossInner - tileSize) * 0.5f);
+          groupPadTop = std::min(groupPadTop, maxCrossPad);
+          groupPadBottom = std::min(groupPadBottom, maxCrossPad);
         }
       }
 
@@ -878,7 +884,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
               .borderWidth = m_workspaceGroupCapsule ? Style::borderWidth * m_contentScale : 0.0f,
           }
       );
-      group->setPadding(groupPadV, groupPadH, groupPadV, groupPadH);
+      group->setPadding(groupPadTop, groupPadRight, groupPadBottom, groupPadLeft);
 
       if (inlineBadge && m_showWorkspaceLabel) {
         const float inlineBadgeFontSize = std::round(Style::fontSizeCaption * 0.85f * m_contentScale);
