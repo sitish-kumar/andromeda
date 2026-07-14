@@ -524,7 +524,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         m_vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
         {
             .align = FlexAlign::Center,
-            .justify = FlexJustify::Center,
+            .justify = showWindowTitle ? FlexJustify::Start : FlexJustify::Center,
             .gap = tilePadding,
             .width = tileWidthWithTitle,
             .height = tileSize,
