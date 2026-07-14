@@ -1183,11 +1183,11 @@ namespace settings {
       selectSetting.groupedCommit = [configService, widgetName = std::string(widgetName),
                                      allSpecs](std::string_view value, const std::vector<std::string>& path) {
         std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> overrides;
-        overrides.push_back({path, ConfigOverrideValue{std::string(value)}});
+        overrides.emplace_back(path, ConfigOverrideValue{std::string(value)});
         if ((value == "minimal" || value == "focus_hint")
             && configService != nullptr
             && settingCurrentString(configService->config(), widgetName, "display", allSpecs) == "none") {
-          overrides.push_back({widgetSettingPath(widgetName, "display"), ConfigOverrideValue{std::string("id")}});
+          overrides.emplace_back(widgetSettingPath(widgetName, "display"), ConfigOverrideValue{std::string("id")});
         }
         return overrides;
       };
