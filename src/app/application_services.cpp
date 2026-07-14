@@ -64,6 +64,7 @@
 #include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_registry.h"
 #include "scripting/plugin_runtime_context.h"
+#include "scripting/script_runtime.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
 #include "shell/control_center/control_center_panel.h"
@@ -112,6 +113,7 @@ namespace {
 
   void signal_handler(int signum) {
     if (signum == SIGTERM || signum == SIGINT) {
+      scripting::ScriptRuntime::setShutdownSignal(signum);
       Application::s_shutdownRequested = true;
     }
   }

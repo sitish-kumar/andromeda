@@ -66,6 +66,7 @@ public:
   std::optional<std::string> callGlobalReturningString(const char* name);
   bool callGlobalWithBudget(const char* name, std::chrono::milliseconds budget);
   bool callGlobalWithBoolAndBudget(const char* name, bool value, std::chrono::milliseconds budget);
+  bool callGlobalWithIntegerAndBudget(const char* name, int value, std::chrono::milliseconds budget);
   bool callGlobalWithStringsAndBudget(
       const char* name, std::string_view first, std::string_view second, std::chrono::milliseconds budget
   );

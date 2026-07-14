@@ -202,6 +202,8 @@ namespace scripting {
     std::optional<std::string> colorPickerResult;
     // StateWatchResult payload (the changed value as JSON).
     std::string stateJson;
+    // Stop payload: SIGINT/SIGTERM for signal-driven process shutdown, otherwise 0.
+    int exitSignal = 0;
     // SettingsChanged payload: the new seeded settings snapshot to swap in.
     ScriptSettings newSettings;
     ScriptSnapshot snapshot;

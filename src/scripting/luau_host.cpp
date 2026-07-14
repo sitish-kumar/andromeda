@@ -1918,6 +1918,16 @@ bool LuauHost::callGlobalWithBoolAndBudget(const char* name, bool value, std::ch
   return callGlobalInternal(name, 1, budget);
 }
 
+bool LuauHost::callGlobalWithIntegerAndBudget(const char* name, int value, std::chrono::milliseconds budget) {
+  lua_getglobal(m_T, name);
+  if (!lua_isfunction(m_T, -1)) {
+    lua_pop(m_T, 1);
+    return false;
+  }
+  lua_pushinteger(m_T, value);
+  return callGlobalInternal(name, 1, budget);
+}
+
 bool LuauHost::callGlobalWithStrings(const char* name, std::string_view first, std::string_view second) {
   return callGlobalWithStringsAndBudget(name, first, second, std::chrono::milliseconds(25));
 }
