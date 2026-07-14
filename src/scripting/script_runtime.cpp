@@ -198,6 +198,8 @@ namespace scripting {
     bool hasOnActivateKnown = false;
     bool hasOnConfigChanged = false;
     bool hasOnConfigChangedKnown = false;
+    bool hasOnScroll = false;
+    bool hasOnScrollKnown = false;
     bool unhealthy = false;
     int consecutiveTimeouts = 0;
 
@@ -298,13 +300,13 @@ namespace scripting {
           return false;
         }
 
-        // Supersede an already-queued coalescing CallStrings for the same
-        // callback with the newer payload instead of appending. Bounds the queue
-        // to a single pending event per callback (e.g. onAudioSpectrum at 60Hz),
-        // so a slow script can never accumulate stale spectrum frames.
-        if (event.kind == ScriptEventKind::CallStrings && event.coalesce) {
+        // Supersede an already-queued coalescing CallArgs for the same callback
+        // with the newer payload instead of appending. Bounds the queue to a
+        // single pending event per callback (e.g. onAudioSpectrum at 60Hz), so a
+        // slow script can never accumulate stale spectrum frames.
+        if (event.kind == ScriptEventKind::CallArgs && event.coalesce) {
           const auto existing = std::ranges::find_if(queue, [&event](const auto& queued) {
-            return queued.kind == ScriptEventKind::CallStrings
+            return queued.kind == ScriptEventKind::CallArgs
                 && queued.coalesce
                 && queued.functionName == event.functionName;
           });
@@ -334,11 +336,11 @@ namespace scripting {
             updateQueued = false;
             return false;
           }
-          if (event.kind == ScriptEventKind::CallBool) {
+          if (event.droppable) {
             return false;
           }
           const auto droppable = std::ranges::find_if(queue, [](const auto& queued) {
-            return queued.kind == ScriptEventKind::Update || queued.kind == ScriptEventKind::CallBool;
+            return queued.kind == ScriptEventKind::Update || queued.droppable;
           });
           if (droppable != queue.end()) {
             if (droppable->kind == ScriptEventKind::Update) {
@@ -582,17 +584,11 @@ namespace scripting {
         }
         ok = host->callGlobalWithBudget(event.functionName.c_str(), event.budget);
         break;
-      case ScriptEventKind::CallBool:
+      case ScriptEventKind::CallArgs:
         if (!host->hasGlobal(event.functionName.c_str())) {
           return std::nullopt;
         }
-        ok = host->callGlobalWithBoolAndBudget(event.functionName.c_str(), event.boolValue, event.budget);
-        break;
-      case ScriptEventKind::CallStrings:
-        if (!host->hasGlobal(event.functionName.c_str())) {
-          return std::nullopt;
-        }
-        ok = host->callGlobalWithStringsAndBudget(event.functionName.c_str(), event.first, event.second, event.budget);
+        ok = host->callGlobalWithArgsAndBudget(event.functionName.c_str(), event.args, event.budget);
         break;
       default:
         break;
@@ -681,6 +677,7 @@ namespace scripting {
       result.hasOnIpcKnown = true;
       const bool onActivatePresent = host != nullptr && host->hasGlobal("onActivate");
       const bool onConfigChangedPresent = host != nullptr && host->hasGlobal("onConfigChanged");
+      const bool onScrollPresent = host != nullptr && host->hasGlobal("onScroll");
       {
         std::scoped_lock lock(mutex);
         hasOnIpc = result.hasOnIpc;
@@ -689,6 +686,8 @@ namespace scripting {
         hasOnActivateKnown = true;
         hasOnConfigChanged = onConfigChangedPresent;
         hasOnConfigChangedKnown = true;
+        hasOnScroll = onScrollPresent;
+        hasOnScrollKnown = true;
       }
       return result;
     }
@@ -698,7 +697,8 @@ namespace scripting {
       PluginStateStore::instance().removeWatchers(stateToken);
       if (host != nullptr && host->hasGlobal("onExit")) {
         bindingContext.beginCall(snapshot);
-        (void)host->callGlobalWithIntegerAndBudget("onExit", signal, kCallbackBudget);
+        const ScriptArgs args{static_cast<double>(signal)};
+        (void)host->callGlobalWithArgsAndBudget("onExit", args, kCallbackBudget);
       }
       PluginStateStore::instance().removeWatchers(stateToken);
       host.reset();
@@ -895,28 +895,32 @@ namespace scripting {
     return m_state != nullptr && m_state->enqueue(std::move(event));
   }
 
-  bool ScriptRuntime::enqueueCallBool(std::string functionName, bool value, ScriptSnapshot snapshot) {
+  bool ScriptRuntime::enqueueCallArgs(
+      std::string functionName, ScriptArgs args, ScriptSnapshot snapshot, ScriptCallOptions options
+  ) {
     ScriptEvent event;
-    event.kind = ScriptEventKind::CallBool;
+    event.kind = ScriptEventKind::CallArgs;
     event.functionName = std::move(functionName);
-    event.boolValue = value;
+    event.args = std::move(args);
     event.snapshot = std::move(snapshot);
     event.budget = kCallbackBudget;
+    event.coalesce = options.coalesce;
+    event.droppable = options.droppable;
     return m_state != nullptr && m_state->enqueue(std::move(event));
+  }
+
+  bool ScriptRuntime::enqueueCallBool(std::string functionName, bool value, ScriptSnapshot snapshot) {
+    // Hover-style state echoes: a queue-full drop only loses an edge the next
+    // event supersedes anyway.
+    return enqueueCallArgs(std::move(functionName), {value}, std::move(snapshot), {.droppable = true});
   }
 
   bool ScriptRuntime::enqueueCallStrings(
       std::string functionName, std::string first, std::string second, ScriptSnapshot snapshot, bool coalesce
   ) {
-    ScriptEvent event;
-    event.kind = ScriptEventKind::CallStrings;
-    event.functionName = std::move(functionName);
-    event.first = std::move(first);
-    event.second = std::move(second);
-    event.snapshot = std::move(snapshot);
-    event.budget = kCallbackBudget;
-    event.coalesce = coalesce;
-    return m_state != nullptr && m_state->enqueue(std::move(event));
+    return enqueueCallArgs(
+        std::move(functionName), {std::move(first), std::move(second)}, std::move(snapshot), {.coalesce = coalesce}
+    );
   }
 
   bool ScriptRuntime::enqueueAsyncCommandResult(std::uint64_t hostId, int callbackRef, process::RunResult result) {
@@ -958,6 +962,14 @@ namespace scripting {
     }
     std::scoped_lock lock(m_state->mutex);
     return m_state->hasOnConfigChangedKnown && m_state->hasOnConfigChanged;
+  }
+
+  bool ScriptRuntime::hasOnScroll() const {
+    if (m_state == nullptr) {
+      return false;
+    }
+    std::scoped_lock lock(m_state->mutex);
+    return m_state->hasOnScrollKnown && m_state->hasOnScroll;
   }
 
   bool ScriptRuntime::unhealthy() const {

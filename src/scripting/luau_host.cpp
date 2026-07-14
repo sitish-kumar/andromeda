@@ -38,7 +38,9 @@
 #include <string_view>
 #include <system_error>
 #include <thread>
+#include <type_traits>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 namespace {
@@ -1904,45 +1906,30 @@ bool LuauHost::callGlobalWithBudget(const char* name, std::chrono::milliseconds 
   return callGlobalInternal(name, 0, budget);
 }
 
-bool LuauHost::callGlobalWithBool(const char* name, bool value) {
-  return callGlobalWithBoolAndBudget(name, value, std::chrono::milliseconds(25));
-}
-
-bool LuauHost::callGlobalWithBoolAndBudget(const char* name, bool value, std::chrono::milliseconds budget) {
-  lua_getglobal(m_T, name);
-  if (!lua_isfunction(m_T, -1)) {
-    lua_pop(m_T, 1);
-    return false;
-  }
-  lua_pushboolean(m_T, value ? 1 : 0);
-  return callGlobalInternal(name, 1, budget);
-}
-
-bool LuauHost::callGlobalWithIntegerAndBudget(const char* name, int value, std::chrono::milliseconds budget) {
-  lua_getglobal(m_T, name);
-  if (!lua_isfunction(m_T, -1)) {
-    lua_pop(m_T, 1);
-    return false;
-  }
-  lua_pushinteger(m_T, value);
-  return callGlobalInternal(name, 1, budget);
-}
-
-bool LuauHost::callGlobalWithStrings(const char* name, std::string_view first, std::string_view second) {
-  return callGlobalWithStringsAndBudget(name, first, second, std::chrono::milliseconds(25));
-}
-
-bool LuauHost::callGlobalWithStringsAndBudget(
-    const char* name, std::string_view first, std::string_view second, std::chrono::milliseconds budget
+bool LuauHost::callGlobalWithArgsAndBudget(
+    const char* name, std::span<const scripting::ScriptArg> args, std::chrono::milliseconds budget
 ) {
   lua_getglobal(m_T, name);
   if (!lua_isfunction(m_T, -1)) {
     lua_pop(m_T, 1);
     return false;
   }
-  lua_pushlstring(m_T, first.data(), first.size());
-  lua_pushlstring(m_T, second.data(), second.size());
-  return callGlobalInternal(name, 2, budget);
+  for (const auto& arg : args) {
+    std::visit(
+        [this](const auto& value) {
+          using T = std::decay_t<decltype(value)>;
+          if constexpr (std::is_same_v<T, bool>) {
+            lua_pushboolean(m_T, value ? 1 : 0);
+          } else if constexpr (std::is_same_v<T, double>) {
+            lua_pushnumber(m_T, value);
+          } else {
+            lua_pushlstring(m_T, value.data(), value.size());
+          }
+        },
+        arg
+    );
+  }
+  return callGlobalInternal(name, static_cast<int>(args.size()), budget);
 }
 
 std::optional<std::string> LuauHost::callGlobalReturningString(const char* name) {

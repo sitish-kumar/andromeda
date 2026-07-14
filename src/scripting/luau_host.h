@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scripting/plugin_i18n.h"
+#include "scripting/script_arg.h"
 
 #include <atomic>
 #include <chrono>
@@ -9,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -60,15 +62,13 @@ public:
   bool exec(std::string_view chunkName, std::string_view source) { return loadString(chunkName, source) && run(); }
 
   bool callGlobal(const char* name);
-  bool callGlobalWithBool(const char* name, bool value);
-  bool callGlobalWithStrings(const char* name, std::string_view first, std::string_view second);
   bool hasGlobal(const char* name);
   std::optional<std::string> callGlobalReturningString(const char* name);
   bool callGlobalWithBudget(const char* name, std::chrono::milliseconds budget);
-  bool callGlobalWithBoolAndBudget(const char* name, bool value, std::chrono::milliseconds budget);
-  bool callGlobalWithIntegerAndBudget(const char* name, int value, std::chrono::milliseconds budget);
-  bool callGlobalWithStringsAndBudget(
-      const char* name, std::string_view first, std::string_view second, std::chrono::milliseconds budget
+  // Calls a global with an arbitrary argument list; each ScriptArg is pushed as
+  // the Luau value it holds, in order.
+  bool callGlobalWithArgsAndBudget(
+      const char* name, std::span<const scripting::ScriptArg> args, std::chrono::milliseconds budget
   );
   bool callAsyncCommandCallback(int callbackRef, const process::RunResult& result, std::chrono::milliseconds budget);
   bool callAsyncProcessMatchCallback(int callbackRef, bool matched, std::chrono::milliseconds budget);
