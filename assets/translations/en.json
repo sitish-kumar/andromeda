@@ -2874,6 +2874,7 @@
         "instance": "Per Placement",
         "kilobytes": "kB/s",
         "megabytes": "MB/s",
+        "minimal": "Minimal",
         "name": "Name",
         "net-rx": "Network RX",
         "net-tx": "Network TX",
@@ -2882,6 +2883,7 @@
         "output": "Output",
         "ram-percent": "RAM Percent",
         "ram-used": "RAM Used",
+        "regular": "Regular",
         "screenshot-primary-fullscreen": "Fullscreen",
         "screenshot-primary-region": "Region",
         "shared": "Shared",
@@ -2889,6 +2891,7 @@
         "swap-percent": "Swap Percent",
         "text": "Text",
         "text-only": "Text Only",
+        "focus-hint": "Focus Hint",
         "workspace-label-centered": "Centered",
         "workspace-label-corner": "Corner",
         "workspace-label-inside": "Inside pill"
@@ -3206,8 +3209,7 @@
         "minimal": {
           "description": "Show workspace ID or name labels only, without animated pills",
           "label": "Minimal Style",
-          "taskbar-description": "Text-only workspace labels without colored disc backgrounds",
-          "workspaces-description": "Text-only workspace labels without pill backgrounds or slide animation"
+          "taskbar-description": "Text-only workspace labels without colored disc backgrounds"
         },
         "mirrored": {
           "description": "Mirror the visualizer around its center",
@@ -3277,6 +3279,11 @@
         "scroll-step": {
           "description": "Percentage change applied on each mouse wheel step",
           "label": "Scroll Step"
+        },
+        "style": {
+          "description": "Workspace switcher appearance",
+          "label": "Style",
+          "workspaces-description": "Regular shows animated pills; Minimal is text-only labels; Focus Hint uses dots for inactive workspaces and an expanded active pill with the focused app icon"
         },
         "scroll-up-command": {
           "description": "Shell command run when scrolling up over this button",

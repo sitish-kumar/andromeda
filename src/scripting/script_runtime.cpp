@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <condition_variable>
 #include <deque>
 #include <mutex>
 #include <unordered_map>
@@ -23,6 +24,7 @@ namespace scripting {
   namespace {
     constexpr Logger kLog("script-runtime");
     constexpr std::size_t kMaxQueuedEvents = 64;
+    std::atomic<int> g_shutdownSignal{0};
 
     // Unique per-State id, used to tag and clean up this runtime's state-store watchers.
     std::uint64_t nextStateToken() {
@@ -164,6 +166,7 @@ namespace scripting {
           httpClient(httpClientPtr), clipboard(clipboardService), togglePanelCallback(std::move(panelToggleCallback)) {}
 
     mutable std::mutex mutex;
+    std::condition_variable stopCv;
     std::string runtimeName;
     ScriptSettings settings;
     ScriptApiContext& scriptApi;
@@ -185,6 +188,7 @@ namespace scripting {
     ScriptResult replayState;
     bool replayStateReady = false;
     bool scheduled = false;
+    bool stopping = false;
     bool stopped = false;
     bool updateQueued = false;
     bool updateRunning = false;
@@ -248,19 +252,45 @@ namespace scripting {
       subscribers.erase(id);
     }
 
-    void stop() {
-      PluginStateStore::instance().removeWatchers(stateToken);
-      std::scoped_lock lock(mutex);
-      stopped = true;
-      queue.clear();
-      subscribers.clear();
+    void stop(int exitSignal) {
+      bool shouldSchedule = false;
+      {
+        std::scoped_lock lock(mutex);
+        if (stopped) {
+          return;
+        }
+        if (!stopping) {
+          stopping = true;
+          queue.clear();
+          updateQueued = false;
+          subscribers.clear();
+
+          ScriptEvent event;
+          event.kind = ScriptEventKind::Stop;
+          event.generation = generation;
+          event.exitSignal = exitSignal;
+          queue.push_back(std::move(event));
+          if (!scheduled) {
+            scheduled = true;
+            shouldSchedule = true;
+          }
+        }
+      }
+
+      if (shouldSchedule) {
+        auto self = shared_from_this();
+        ScriptWorkerPool::instance().post([self] { self->drain(); });
+      }
+
+      std::unique_lock lock(mutex);
+      stopCv.wait(lock, [this] { return stopped; });
     }
 
     bool enqueue(ScriptEvent event) {
       bool shouldSchedule = false;
       {
         std::scoped_lock lock(mutex);
-        if (stopped) {
+        if (stopped || stopping) {
           return false;
         }
         if (unhealthy
@@ -388,6 +418,16 @@ namespace scripting {
       (void)enqueue(std::move(event));
     }
 
+    void enqueueColorPickerResult(std::uint64_t hostId, int callbackRef, std::optional<std::string> color) {
+      ScriptEvent event;
+      event.kind = ScriptEventKind::ColorPickerResult;
+      event.hostId = hostId;
+      event.callbackRef = callbackRef;
+      event.colorPickerResult = std::move(color);
+      event.budget = kCallbackBudget;
+      (void)enqueue(std::move(event));
+    }
+
     void enqueueStateWatchResult(int callbackRef, std::string json) {
       ScriptEvent event;
       event.kind = ScriptEventKind::StateWatchResult;
@@ -422,6 +462,18 @@ namespace scripting {
             updateQueued = false;
             updateRunning = true;
           }
+        }
+
+        if (event.kind == ScriptEventKind::Stop) {
+          teardownHost(event.exitSignal, event.snapshot);
+          {
+            std::scoped_lock lock(mutex);
+            queue.clear();
+            stopped = true;
+            scheduled = false;
+          }
+          stopCv.notify_all();
+          return;
         }
 
         auto result = processEvent(event);
@@ -483,6 +535,15 @@ namespace scripting {
         return collectResult(event, "http callback", ok);
       }
 
+      if (event.kind == ScriptEventKind::ColorPickerResult) {
+        if (event.hostId != host->hostId() || !host->hasColorPickerCallback(event.callbackRef)) {
+          return std::nullopt;
+        }
+        bindingContext.beginCall(event.snapshot);
+        const bool ok = host->callColorPickerCallback(event.callbackRef, event.colorPickerResult, event.budget);
+        return collectResult(event, "color picker callback", ok);
+      }
+
       if (event.kind == ScriptEventKind::StateWatchResult) {
         if (!host->hasStateWatchCallback(event.callbackRef)) {
           return std::nullopt;
@@ -536,8 +597,7 @@ namespace scripting {
     }
 
     ScriptResult processLoad(const ScriptEvent& event) {
-      // Drop watchers registered by the previous load before re-registering below.
-      PluginStateStore::instance().removeWatchers(stateToken);
+      teardownHost(0, event.snapshot);
 
       host = std::make_unique<LuauHost>(scriptApi);
       bindingContext.settings = &settings;
@@ -574,6 +634,13 @@ namespace scripting {
           [weak](std::uint64_t hostId, int callbackRef, bool ok, int status, std::string body, bool isDownload) {
             if (auto state = weak.lock()) {
               state->enqueueAsyncHttpResult(hostId, callbackRef, ok, status, std::move(body), isDownload);
+            }
+          }
+      );
+      host->setColorPickerResultHandler(
+          [weak](std::uint64_t hostId, int callbackRef, std::optional<std::string> color) {
+            if (auto state = weak.lock()) {
+              state->enqueueColorPickerResult(hostId, callbackRef, std::move(color));
             }
           }
       );
@@ -623,6 +690,18 @@ namespace scripting {
         hasOnScrollKnown = true;
       }
       return result;
+    }
+
+    void teardownHost(int signal, const ScriptSnapshot& snapshot) {
+      // Prevent old or newly registered watchers from outliving this VM.
+      PluginStateStore::instance().removeWatchers(stateToken);
+      if (host != nullptr && host->hasGlobal("onExit")) {
+        bindingContext.beginCall(snapshot);
+        const ScriptArgs args{static_cast<double>(signal)};
+        (void)host->callGlobalWithArgsAndBudget("onExit", args, kCallbackBudget);
+      }
+      PluginStateStore::instance().removeWatchers(stateToken);
+      host.reset();
     }
 
     ScriptResult collectResult(const ScriptEvent& event, std::string_view callbackName, bool ok) {
@@ -773,8 +852,12 @@ namespace scripting {
 
   void ScriptRuntime::stop() {
     if (m_state != nullptr) {
-      m_state->stop();
+      m_state->stop(g_shutdownSignal.load(std::memory_order_relaxed));
     }
+  }
+
+  void ScriptRuntime::setShutdownSignal(int signal) noexcept {
+    g_shutdownSignal.store(signal, std::memory_order_relaxed);
   }
 
   void ScriptRuntime::start(std::string chunkName, std::string source, ScriptSnapshot snapshot) {

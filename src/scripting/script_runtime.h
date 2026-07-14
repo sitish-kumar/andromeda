@@ -36,6 +36,10 @@ namespace scripting {
     void unsubscribe(SubscriberId id);
     void stop();
 
+    // Records the process signal delivered during graceful shell shutdown so
+    // entry onExit callbacks can distinguish SIGINT/SIGTERM from ordinary teardown.
+    static void setShutdownSignal(int signal) noexcept;
+
     void start(std::string chunkName, std::string source, ScriptSnapshot snapshot);
     void reload(std::string chunkName, std::string source, ScriptSnapshot snapshot);
     [[nodiscard]] bool enqueueUpdate(ScriptSnapshot snapshot);

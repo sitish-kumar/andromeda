@@ -646,6 +646,11 @@ namespace settings {
         {"name", "settings.widgets.options.name"},
         {"none", "settings.widgets.options.none"},
     };
+    const std::vector<WidgetSettingSelectOption> workspaceStyle = {
+        {"regular", "settings.widgets.options.regular"},
+        {"minimal", "settings.widgets.options.minimal"},
+        {"focus_hint", "settings.widgets.options.focus-hint"},
+    };
     const std::vector<WidgetSettingSelectOption> workspaceLabelPlacement = {
         {"corner", "settings.widgets.options.workspace-label-corner"},
         {"centered", "settings.widgets.options.workspace-label-centered"},
@@ -1029,7 +1034,8 @@ namespace settings {
       add(boolSpec("show_condition", true));
       add(boolSpec("show_temperature", true));
     } else if (type == "workspaces") {
-      const WidgetSettingVisibility pillStyleOnly{{"minimal", {"false"}}};
+      WidgetSettingVisibility pillStyleOnly;
+      pillStyleOnly.all = {WidgetSettingVisibilityCondition{"style", {"regular"}}};
       for (auto& spec : commonSpecs) {
         if (spec.schema.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule-radius.workspaces-description";
@@ -1057,11 +1063,11 @@ namespace settings {
         add(std::move(maxLabelChars));
       }
 
-      // Pill style: minimal drops the pills entirely, so the pill sizing options hang off it.
+      // Pill style: minimal and focus_hint drop regular pill sizing options.
       {
-        auto minimal = withGroup(boolSpec("minimal", false), "workspaces.pills");
-        minimal.descriptionKey = "settings.widgets.settings.minimal.workspaces-description";
-        add(std::move(minimal));
+        auto style = withGroup(segmentedSpec("style", "regular", workspaceStyle), "workspaces.pills");
+        style.descriptionKey = "settings.widgets.settings.style.workspaces-description";
+        add(std::move(style));
       }
       {
         auto pillScale = withGroup(doubleSpec("pill_scale", 1.0, 0.1, 1.0, 0.05), "workspaces.pills");

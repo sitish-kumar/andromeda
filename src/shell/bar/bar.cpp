@@ -1908,15 +1908,29 @@ void Bar::endAttachedPopup(wl_surface* surface) {
   if (instance->attachedPopupCount > 0) {
     --instance->attachedPopupCount;
   }
-  if (m_platform != nullptr) {
-    instance->pointerInside = (m_platform->lastPointerSurface() == surface);
+  if (instance->attachedPopupCount > 0) {
+    return;
+  }
+  instance->pointerInside =
+      m_platform != nullptr && m_platform->hasPointerPosition() && m_platform->lastPointerSurface() == surface;
+  if (instance->pointerInside) {
+    instance->lastPointerSx = static_cast<float>(m_platform->lastPointerX());
+    instance->lastPointerSy = static_cast<float>(m_platform->lastPointerY());
+    instance->inputDispatcher.pointerEnter(
+        instance->lastPointerSx, instance->lastPointerSy, m_platform->lastInputSerial()
+    );
+  } else {
+    instance->inputDispatcher.pointerLeave();
+  }
+  if (instance->surface != nullptr) {
+    instance->surface->requestRedraw();
   }
   if (!instance->pointerInside && m_hoveredInstance == instance) {
     m_hoveredInstance = nullptr;
   } else if (instance->pointerInside) {
     m_hoveredInstance = instance;
   }
-  if (instance->attachedPopupCount > 0 || !barPointerHideAllowed(*instance) || instance->pointerInside) {
+  if (!barPointerHideAllowed(*instance) || instance->pointerInside) {
     return;
   }
   const bool suppressAutoHide =
