@@ -676,7 +676,9 @@ private:
 };
 
 LauncherPanel::LauncherPanel(ConfigService* config, AsyncTextureCache* asyncTextures)
-    : m_config(config), m_asyncTextures(asyncTextures) {}
+    : m_config(config), m_asyncTextures(asyncTextures) {
+  syncUsageTrackingState();
+}
 
 LauncherPanel::~LauncherPanel() = default;
 
@@ -714,7 +716,7 @@ void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
   provider->setQueryRequestedCallback([this](std::string query) { setQuery(std::move(query)); });
   LauncherProvider* providerPtr = provider.get();
   provider->setActivationDoneCallback([this, providerPtr](const std::string& resultId) {
-    if (providerPtr->trackUsage()) {
+    if (shouldTrackUsage() && providerPtr->trackUsage()) {
       m_usageTracker.record(providerPtr->id(), resultId);
     }
     PanelManager::instance().closePanel(false);
@@ -1122,6 +1124,16 @@ void LauncherPanel::clearUsage() {
   m_usageTracker.clear();
   if (m_input != nullptr) {
     reapplyCurrentQuery();
+  }
+}
+
+bool LauncherPanel::shouldTrackUsage() const {
+  return m_config != nullptr && m_config->config().shell.launcher.sortByUsage;
+}
+
+void LauncherPanel::syncUsageTrackingState() {
+  if (!shouldTrackUsage()) {
+    clearUsage();
   }
 }
 
@@ -1680,7 +1692,7 @@ void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float a
       if (!provider->activate(result)) {
         return;
       }
-      if (provider->trackUsage()) {
+      if (shouldTrackUsage() && provider->trackUsage()) {
         m_usageTracker.record(provider->id(), result.id);
       }
       PanelManager::instance().closePanel(false);
@@ -1755,7 +1767,7 @@ void LauncherPanel::activateSelected() {
       return;
     }
 
-    if (provider->trackUsage()) {
+    if (shouldTrackUsage() && provider->trackUsage()) {
       m_usageTracker.record(provider->id(), result.id);
     }
     PanelManager::instance().closePanel(false);

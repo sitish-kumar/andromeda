@@ -1,6 +1,7 @@
 #include "theme/template_apply_service.h"
 
 #include "config/config_service.h"
+#include "core/deferred_call.h"
 #include "core/files/resource_paths.h"
 #include "core/log.h"
 #include "ipc/ipc_service.h"
@@ -140,8 +141,14 @@ namespace noctalia::theme {
     }
   }
 
+  void TemplateApplyService::setAfterApplyCallback(std::function<void()> callback) const {
+    std::scoped_lock lock(m_mutex);
+    m_afterApplyCallback = std::move(callback);
+  }
+
   void TemplateApplyService::apply(const GeneratedPalette& palette, std::string_view defaultMode, bool force) const {
     ApplyRequest request = makeRequest(palette, defaultMode);
+    std::function<void()> afterApplyCallback;
     {
       std::scoped_lock lock(m_mutex);
       // Config reloads fire on every settings change, not just theme changes.
@@ -149,11 +156,22 @@ namespace noctalia::theme {
       // nothing the templates depend on has changed. Explicit re-application
       // (startup, IPC, template activation) passes force or carries new inputs.
       if (!force && m_lastAppliedRequest.has_value() && sameInputs(request, *m_lastAppliedRequest)) {
-        return;
+        if (m_afterApplyCallback && !m_inFlight) {
+          afterApplyCallback = m_afterApplyCallback;
+        }
+        if (!afterApplyCallback) {
+          return;
+        }
+      } else {
+        request.generation = ++m_nextGeneration;
+        m_lastAppliedRequest = request;
+        m_pendingRequest = std::move(request);
       }
-      request.generation = ++m_nextGeneration;
-      m_lastAppliedRequest = request;
-      m_pendingRequest = std::move(request);
+    }
+
+    if (afterApplyCallback) {
+      DeferredCall::callLater(std::move(afterApplyCallback));
+      return;
     }
     m_cv.notify_one();
   }
@@ -276,9 +294,22 @@ namespace noctalia::theme {
         }
         request = std::move(*m_pendingRequest);
         m_pendingRequest.reset();
+        m_inFlight = true;
       }
 
       applyRequest(request);
+
+      std::function<void()> afterApplyCallback;
+      {
+        std::scoped_lock lock(m_mutex);
+        m_inFlight = false;
+        if (!m_shutdown && request.generation == m_nextGeneration) {
+          afterApplyCallback = m_afterApplyCallback;
+        }
+      }
+      if (afterApplyCallback) {
+        DeferredCall::callLater(std::move(afterApplyCallback));
+      }
     }
   }
 

@@ -59,6 +59,7 @@ struct BarMonitorOverride {
   std::optional<std::string> position;
   std::optional<bool> enabled;
   std::optional<bool> autoHide;
+  std::optional<bool> smartAutoHide;
   std::optional<bool> showOnWorkspaceSwitch;
   std::optional<bool> reserveSpace;
   std::optional<std::string> layer; // top | overlay
@@ -118,6 +119,7 @@ struct BarConfig {
   std::string position = "top";
   bool enabled = true;
   bool autoHide = false;             // slide out when the pointer leaves; reveal on edge approach
+  bool smartAutoHide = false;        // hide while the active workspace has windows; show when it is empty
   bool showOnWorkspaceSwitch = true; // with auto_hide: briefly reveal when the active workspace changes
   bool reserveSpace = true;          // reserve compositor exclusive zone; applies with or without auto_hide
   std::string layer = "top";         // top | overlay — attached panels use the same layer
@@ -308,6 +310,7 @@ struct IdleActionRequest {
 struct ResolvedIdleBehavior {
   IdleActionRequest idleAction;
   IdleActionRequest resumeAction;
+  std::string resumeCommand;
 
   bool operator==(const ResolvedIdleBehavior&) const = default;
 };
@@ -559,7 +562,8 @@ struct DockConfig {
   std::int32_t marginEdge = 0;         // distance from the nearest screen edge (floats the dock when > 0)
   bool shadow = true;                  // use the global shell shadow
   bool showRunning = true;             // also show running apps not in pinned list
-  bool autoHide = false;               // fade out when not hovered (overlay mode)
+  bool autoHide = false;               // slide out when not hovered (overlay mode)
+  bool smartAutoHide = false;          // hide while the active workspace has windows; show when it is empty
   bool reserveSpace = true;            // reserve compositor exclusive zone; applies with or without auto_hide
   float activeScale = 1.0f;            // focused app icon scale
   float inactiveScale = 0.85f;         // non-focused app icon scale
@@ -950,6 +954,7 @@ struct ShellConfig {
   };
 
   float cornerRadiusScale = 1.0f;
+  bool buttonBorders = true;
   std::string fontFamily = "sans-serif";
   std::string lang; // empty = auto-detect from $LC_ALL/$LC_MESSAGES/$LANG
   std::string timeFormat = "{:%H:%M}";
@@ -1173,12 +1178,14 @@ struct NightLightConfig {
 
 struct LocationConfig {
   // Single source of truth for "where am I". Resolution priority:
-  //   auto_locate (IP) -> address (geocoded) -> manual latitude/longitude -> manual sunrise/sunset.
+  //   auto_locate (IP) -> address (geocoded) -> manual latitude/longitude.
+  // When customSchedule is true, explicit sunset/sunrise times override coordinates.
   // Consumed by the weather service, night light, and theme auto mode.
-  bool autoLocate = false; // resolve coordinates from IP geolocation
-  std::string address;     // geocoded when auto_locate is off and this is non-empty
-  std::string sunset;      // HH:MM night start, used only when no coordinates resolve
-  std::string sunrise;     // HH:MM day start, used only when no coordinates resolve
+  bool autoLocate = false;     // resolve coordinates from IP geolocation
+  std::string address;         // geocoded when auto_locate is off and this is non-empty
+  bool customSchedule = false; // when true, use sunset/sunrise times instead of coordinates
+  std::string sunset;          // HH:MM night start, used only when customSchedule is true
+  std::string sunrise;         // HH:MM day start, used only when customSchedule is true
   std::optional<double> latitude;
   std::optional<double> longitude;
 

@@ -148,7 +148,7 @@ public:
   // Public for signal handler
   static std::atomic<bool> s_shutdownRequested;
 
-  bool runUserCommand(const std::string& command);
+  bool runShellCommand(const std::string& command);
   void triggerShellAction(const std::string& action, wl_output* output = nullptr);
   // Highest layer-shell layer occupied by any bar on the given output. Hot
   // corners place their trigger surfaces on this layer.
@@ -196,10 +196,11 @@ private:
   void syncScreenTimeService();
   void performGreeterSync(bool quiet = false);
   void scheduleGreeterAutoSync();
-  bool runUserCommandBlocking(const std::string& command);
+  bool runShellCommandBlocking(const std::string& command);
   bool runIdleAction(const IdleActionRequest& action);
   void onIconThemeChanged();
   void onGraphicsReset(RenderGraphicsResetStatus status);
+  void recoverGraphicsAfterReset();
   void requestAllSurfacesRedraw();
   void onUpowerStateChangedForHooks();
   void onNetworkStateChangedForEvents(const NetworkState& state, NetworkChangeOrigin origin);
@@ -350,7 +351,10 @@ private:
   Timer m_greeterAutoSyncTimer;
   Timer m_clipboardAutoPasteTimer;
   Timer m_pluginAutoUpdateTimer;
+  Timer m_graphicsRecoveryTimer;
   std::uint64_t m_greeterSyncGeneration = 0;
+  int m_graphicsRecoveryAttempts = 0;
+  bool m_graphicsRecoveryScheduled = false;
 
   std::unique_ptr<MainLoop> m_mainLoop;
 };

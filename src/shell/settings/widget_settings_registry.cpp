@@ -6,6 +6,7 @@
 #include "scripting/plugin_registry.h"
 #include "shell/settings/font_family_catalog.h"
 #include "shell/settings/font_weight_catalog.h"
+#include "shell/settings/font_weight_i18n.h"
 #include "ui/style.h"
 
 #include <algorithm>
@@ -550,7 +551,7 @@ namespace settings {
     return entries;
   }
 
-  std::vector<WidgetSettingSpec> commonWidgetSettingSpecs(std::string_view shellFontFamily) {
+  std::vector<WidgetSettingSpec> commonWidgetSettingSpecs(std::string_view shellFontFamily, bool populateFontCatalogs) {
     const WidgetSettingVisibility capsuleOn{"capsule", {"true"}};
 
     auto enabled = boolSpec("enabled", true);
@@ -560,8 +561,16 @@ namespace settings {
     auto scale = withGroup(doubleSpec("scale", 1.0, 0.2, 2.5, 0.05), "presentation");
     auto widgetColor = withGroup(colorSpec("color", {}, true), "presentation");
     auto widgetIconColor = withGroup(colorSpec("icon_color", {}, true), "presentation");
-    auto fontWeightOptions =
-        buildLabelFontWeightSelectOptions(shellFontFamily, FontWeightSelectKind::WidgetInheritDefault);
+    std::vector<WidgetSettingSelectOption> fontWeightOptions;
+    if (populateFontCatalogs) {
+      fontWeightOptions =
+          buildLabelFontWeightSelectOptions(shellFontFamily, FontWeightSelectKind::WidgetInheritDefault);
+    } else {
+      fontWeightOptions.push_back({"", "settings.options.font-weight.default"});
+      for (const FontWeightI18nOption& option : kFontWeightOptions) {
+        fontWeightOptions.push_back({std::to_string(static_cast<int>(option.weight)), std::string(option.labelKey)});
+      }
+    }
     auto fontWeight = withGroup(selectSpec("font_weight", "", std::move(fontWeightOptions), true), "presentation");
     fontWeight.integerValue = true;
 
@@ -569,7 +578,9 @@ namespace settings {
     // elsewhere but absent here must still load. Empty value = inherit the bar/shell font.
     auto fontFamily = baseSpec("font_family", WidgetControlKind::Select, std::string{}, true);
     fontFamily.schema.type = schema::WidgetSettingType::String;
-    fontFamily.options = buildFontFamilySelectOptions();
+    if (populateFontCatalogs) {
+      fontFamily.options = buildFontFamilySelectOptions();
+    }
     fontFamily.literalLabels = true;
     fontFamily = withGroup(std::move(fontFamily), "presentation");
 
@@ -600,10 +611,12 @@ namespace settings {
     };
   }
 
-  std::vector<WidgetSettingSpec>
-  widgetSettingSpecs(std::string_view type, std::string_view shellFontFamily, bool supportsTaskbarWorkspaceGrouping) {
+  std::vector<WidgetSettingSpec> widgetSettingSpecs(
+      std::string_view type, std::string_view shellFontFamily, bool supportsTaskbarWorkspaceGrouping,
+      bool populateFontCatalogs
+  ) {
     std::vector<WidgetSettingSpec> specs;
-    auto commonSpecs = commonWidgetSettingSpecs(shellFontFamily);
+    auto commonSpecs = commonWidgetSettingSpecs(shellFontFamily, populateFontCatalogs);
 
     auto add = [&](WidgetSettingSpec spec) { specs.push_back(std::move(spec)); };
     const std::vector<WidgetSettingSelectOption> shortFull = {
@@ -632,6 +645,11 @@ namespace settings {
         {"id", "settings.widgets.options.id"},
         {"name", "settings.widgets.options.name"},
         {"none", "settings.widgets.options.none"},
+    };
+    const std::vector<WidgetSettingSelectOption> workspaceStyle = {
+        {"regular", "settings.widgets.options.regular"},
+        {"minimal", "settings.widgets.options.minimal"},
+        {"focus_hint", "settings.widgets.options.focus-hint"},
     };
     const std::vector<WidgetSettingSelectOption> workspaceLabelPlacement = {
         {"corner", "settings.widgets.options.workspace-label-corner"},
@@ -969,7 +987,10 @@ namespace settings {
         for (auto& spec : commonSpecs) {
           if (spec.schema.key == "capsule_radius") {
             spec.descriptionKey = "settings.widgets.settings.capsule-radius.taskbar-description";
-            spec.visibleWhen = groupedWorkspaceSettings;
+            spec.visibleWhen = WidgetSettingVisibility{
+                WidgetSettingVisibilityCondition{"capsule", {"true"}},
+                WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}},
+            };
             break;
           }
         }
@@ -1013,7 +1034,8 @@ namespace settings {
       add(boolSpec("show_condition", true));
       add(boolSpec("show_temperature", true));
     } else if (type == "workspaces") {
-      const WidgetSettingVisibility pillStyleOnly{{"minimal", {"false"}}};
+      WidgetSettingVisibility pillStyleOnly;
+      pillStyleOnly.all = {WidgetSettingVisibilityCondition{"style", {"regular"}}};
       for (auto& spec : commonSpecs) {
         if (spec.schema.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule-radius.workspaces-description";
@@ -1041,11 +1063,11 @@ namespace settings {
         add(std::move(maxLabelChars));
       }
 
-      // Pill style: minimal drops the pills entirely, so the pill sizing options hang off it.
+      // Pill style: minimal and focus_hint drop regular pill sizing options.
       {
-        auto minimal = withGroup(boolSpec("minimal", false), "workspaces.pills");
-        minimal.descriptionKey = "settings.widgets.settings.minimal.workspaces-description";
-        add(std::move(minimal));
+        auto style = withGroup(segmentedSpec("style", "regular", workspaceStyle), "workspaces.pills");
+        style.descriptionKey = "settings.widgets.settings.style.workspaces-description";
+        add(std::move(style));
       }
       {
         auto pillScale = withGroup(doubleSpec("pill_scale", 1.0, 0.1, 1.0, 0.05), "workspaces.pills");
@@ -1084,22 +1106,22 @@ namespace settings {
   std::vector<WidgetSettingSpec> manifestSettingSpecs(
       const std::vector<scripting::ManifestField>& fields, const scripting::PluginTranslationCatalog* translations
   ) {
+    // Host-injected panel shell fields carry no label key; their labels come from
+    // pluginPanelShellSettingSpecs() and callers drop the specs produced here.
+    const auto translate = [&](const std::string& key) {
+      if (key.empty() || translations == nullptr) {
+        return key;
+      }
+      return translations->translate(key);
+    };
+
     std::vector<WidgetSettingSpec> specs;
     specs.reserve(fields.size());
     for (const auto& field : fields) {
       WidgetSettingSpec spec;
       spec.schema.key = field.key;
-      if (!field.labelKey.empty()) {
-        spec.literalLabel = translations != nullptr ? translations->translate(field.labelKey) : field.labelKey;
-      } else {
-        spec.literalLabel = field.label.empty() ? field.key : field.label;
-      }
-      if (!field.descriptionKey.empty()) {
-        spec.literalDescription =
-            translations != nullptr ? translations->translate(field.descriptionKey) : field.descriptionKey;
-      } else {
-        spec.literalDescription = field.description;
-      }
+      spec.literalLabel = translate(field.labelKey);
+      spec.literalDescription = translate(field.descriptionKey);
       spec.advanced = field.advanced;
       spec.schema.minValue = field.minValue;
       spec.schema.maxValue = field.maxValue;
@@ -1137,11 +1159,7 @@ namespace settings {
         spec.literalLabels = true;
         for (const auto& opt : field.options) {
           spec.schema.enumValues.push_back(opt.value);
-          std::string label = opt.label;
-          if (!opt.labelKey.empty()) {
-            label = translations != nullptr ? translations->translate(opt.labelKey) : opt.labelKey;
-          }
-          spec.options.push_back(WidgetSettingSelectOption{.value = opt.value, .labelKey = std::move(label)});
+          spec.options.push_back(WidgetSettingSelectOption{.value = opt.value, .labelKey = translate(opt.labelKey)});
         }
         break;
       case scripting::ManifestFieldType::Color:
@@ -1236,10 +1254,19 @@ namespace settings {
       spec.schema.key = openNearClickKey;
       spec.literalLabel = entryPrefix(tr("settings.plugins.panels.open-near-click.label"));
       spec.literalDescription = tr("settings.plugins.panels.open-near-click.description");
-      spec.control = WidgetControlKind::Bool;
+      spec.control = WidgetControlKind::Select;
+      spec.segmented = true;
+      spec.literalLabels = true;
       spec.schema.defaultValue = field != nullptr ? field->defaultValue() : entry.panelOpenNearClickDefault;
-      spec.schema.type = schemaTypeForControl(spec.control);
-      spec.visibleWhen = WidgetSettingVisibility{placementKey, {"attached", "floating"}};
+      spec.options = {
+          {"false", tr("settings.options.panel-bar-alignment.centered")},
+          {"true", tr("settings.options.panel-bar-alignment.near-trigger")},
+      };
+      spec.schema.type = schema::WidgetSettingType::Bool;
+      spec.visibleWhen = WidgetSettingVisibility{
+          {placementKey, {"attached"}},
+          {positionKey, {"auto"}},
+      };
       return spec;
     };
 
@@ -1265,20 +1292,20 @@ namespace settings {
 
   std::vector<WidgetSettingSpec> widgetSettingSpecs(
       std::string_view type, const WidgetConfig* config, std::string_view shellFontFamily,
-      bool supportsTaskbarWorkspaceGrouping
+      bool supportsTaskbarWorkspaceGrouping, bool populateFontCatalogs
   ) {
     (void)config;
     if (auto pw = resolvePluginWidget(type)) {
       scripting::PluginTranslationCatalog translations;
       translations.load(pw->sourcePath.parent_path());
       std::vector<WidgetSettingSpec> specs = manifestSettingSpecs(pw->entry->settings, &translations);
-      auto commonSpecs = commonWidgetSettingSpecs(shellFontFamily);
+      auto commonSpecs = commonWidgetSettingSpecs(shellFontFamily, populateFontCatalogs);
       specs.insert(
           specs.end(), std::make_move_iterator(commonSpecs.begin()), std::make_move_iterator(commonSpecs.end())
       );
       return specs;
     }
-    return widgetSettingSpecs(type, shellFontFamily, supportsTaskbarWorkspaceGrouping);
+    return widgetSettingSpecs(type, shellFontFamily, supportsTaskbarWorkspaceGrouping, populateFontCatalogs);
   }
 
   namespace {
@@ -1331,7 +1358,7 @@ namespace settings {
 
   noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(std::string_view type) {
     noctalia::config::schema::WidgetSettingSchema out;
-    for (const auto& spec : widgetSettingSpecs(type, "sans-serif")) {
+    for (const auto& spec : widgetSettingSpecs(type, "sans-serif", true, false)) {
       out.push_back(spec.schema);
     }
     return out;
@@ -1346,7 +1373,7 @@ namespace settings {
       }
       return out;
     }
-    for (const auto& spec : widgetSettingSpecs(type, config, "sans-serif")) {
+    for (const auto& spec : widgetSettingSpecs(type, config, "sans-serif", true, false)) {
       out.push_back(spec.schema);
     }
     return out;

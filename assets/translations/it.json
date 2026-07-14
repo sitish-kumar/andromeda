@@ -687,6 +687,8 @@
       "calendar-google-connect-start-failed": "Impossibile avviare l'autorizzazione Google. Controlla la connessione di rete e riprova.",
       "calendar-google-connect-start-http": "Impossibile avviare l'autorizzazione Google. Il broker OAuth ha restituito HTTP {status}.",
       "calendar-google-connect-timeout": "Autorizzazione Google scaduta. Avvia di nuovo la connessione quando sei pronto ad accedere.",
+      "config-migration-body": "È in corso la migrazione della configurazione legacy in memoria, incluso {path}. Aggiorna la configurazione di origine; Le impostazioni e la convalida della configurazione di noctalia mostrano la sostituzione richiesta.",
+      "config-migration-title": "È necessario l'aggiornamento della configurazione",
       "dbus-disabled": "Notifiche DBus disabilitate",
       "desktop-widgets-editor": "Editor widget",
       "desktop-widgets-editor-enabled": "L'editor dei widget desktop è attivo. Passa a uno spazio di lavoro vuoto per visualizzarlo.",
@@ -991,7 +993,17 @@
             "grouping": "Raggruppamento",
             "presentation": "Visualizzazione",
             "runtime": "Runtime",
-            "widget": "Widget"
+            "taskbar": {
+              "grouping": "Raggruppamento",
+              "windows": "Finestre",
+              "workspace-labels": "Etichette dell'area di lavoro"
+            },
+            "widget": "Widget",
+            "workspaces": {
+              "colors": "Colori",
+              "list": "Spazi di lavoro",
+              "pills": "Stile pillola"
+            }
           }
         }
       }
@@ -1008,6 +1020,7 @@
         "rename": "Impossibile rinominare la barra."
       },
       "batch-write": "Alcune impostazioni non sono state salvate.",
+      "custom-schedule-times": "Una pianificazione personalizzata richiede sia l'ora dell'alba che quella del tramonto nel formato HH:MM.",
       "export-config": "Salvataggio esportazione configurazione non riuscito.",
       "export-wallpaper-palette": "Impossibile salvare la palette dello sfondo come palette personalizzata.",
       "monitor-override": {
@@ -1050,8 +1063,8 @@
         "kind-section-label": "Azione",
         "name-label": "Nome",
         "name-placeholder": "comportamento-inattività",
-        "resume-command-label": "Comando ripresa",
-        "resume-command-placeholder": "noctalia:dpms-on",
+        "resume-command-label": "Comando resume",
+        "resume-command-placeholder": "notify-send 'Ripresa da inattività'",
         "summary": "{name} · {seconds}s",
         "summary-disabled-timeout": "{name} · timeout disabilitato",
         "timeout-label": "Secondi timeout",
@@ -1065,6 +1078,7 @@
     },
     "navigation": {
       "groups": {
+        "accessibility": "Accessibilità",
         "audio": "Audio",
         "authentication": "Autenticazione",
         "automation": "Automazione",
@@ -1081,6 +1095,7 @@
         "control-center": "Centro di controllo",
         "dead-zone": "Zona morta",
         "directories": "Directory",
+        "display": "Mostra",
         "effects": "Effetti",
         "filtering": "Filtri",
         "focus-styling": "Stile focus",
@@ -1132,6 +1147,7 @@
         "widgets": "Widget"
       },
       "sections": {
+        "accessibility": "Accessibilità",
         "appearance": "Aspetto",
         "backdrop": "Sfondo pannelli",
         "bar": "Barra",
@@ -1185,6 +1201,13 @@
       }
     },
     "options": {
+      "bar": {
+        "auto-hide": {
+          "off": "Off",
+          "on": "On",
+          "smart": "Smart"
+        }
+      },
       "clipboard": {
         "auto-paste": {
           "ctrl-shift-v": "Ctrl+Shift+V",
@@ -1244,6 +1267,10 @@
       "orientation": {
         "horizontal": "Orizzontale",
         "vertical": "Verticale"
+      },
+      "panel-bar-alignment": {
+        "centered": "Centrato",
+        "near-trigger": "Vicino al click"
       },
       "panel-position": {
         "auto": "Segui la barra"
@@ -1405,6 +1432,12 @@
       }
     },
     "schema": {
+      "accessibility": {
+        "high-contrast": {
+          "description": "Aumenta il contrasto spingendo i colori della superficie e dello sfondo verso valori estremi",
+          "label": "Alto contrasto"
+        }
+      },
       "appearance": {
         "animation-speed": {
           "description": "Moltiplicatore di velocità per le animazioni",
@@ -1425,6 +1458,10 @@
         "builtin-palette": {
           "description": "Scegli una palette dal catalogo incluso",
           "label": "Palette integrata"
+        },
+        "button-borders": {
+          "description": "Disegna i contorni attorno ai pulsanti in tutta la shell",
+          "label": "Bordi dei pulsanti"
         },
         "community-palette": {
           "description": "Scegli una palette dal catalogo community",
@@ -1462,6 +1499,10 @@
         "palette-source": {
           "description": "Da dove ricavare la palette colori",
           "label": "Sorgente palette"
+        },
+        "pure-black-dark": {
+          "description": "Ancora le superfici scure al nero assoluto, prevenendo il banding sui pannelli OLED (solo modalità scura)",
+          "label": "Nero puro"
         },
         "theme-mode": {
           "description": "Scegli scuro, chiaro o automatico in base all'ora del giorno",
@@ -2234,6 +2275,10 @@
         "calendar-refresh-interval": {
           "description": "Frequenza di sincronizzazione degli eventi calendario (minuti)",
           "label": "Intervallo aggiornamento"
+        },
+        "custom-schedule": {
+          "description": "Utilizza gli orari di alba/tramonto manuali invece di calcolare in base alle coordinate",
+          "label": "Programmazione personalizzata"
         },
         "day-temperature": {
           "description": "Temperatura colore durante il giorno (Kelvin)",
@@ -3160,6 +3205,7 @@
         "minimal": {
           "description": "Mostra solo etichette ID o nome workspace, senza pillole animate",
           "label": "Stile minimale",
+          "taskbar-description": "Etichette dell'area di lavoro di solo testo senza sfondi colorati nei cerchi",
           "workspaces-description": "Etichette workspace solo testo senza sfondi pillola o animazione di scorrimento"
         },
         "mirrored": {
@@ -3380,6 +3426,7 @@
       "export-config": "Esporta configurazione...",
       "export-config-saved": "Esportazione configurazione salvata.",
       "filter-modified": "Modificate",
+      "legacy-config-warning": "È in corso la migrazione della configurazione legacy in memoria: {issue}. Esegui la convalida della configurazione di noctalia per tutte le modifiche richieste.",
       "native-title": "Impostazioni Noctalia",
       "no-results": "Nessuna impostazione trovata",
       "no-results-hint": "Prova un nome impostazione o una chiave configurazione diversa.",

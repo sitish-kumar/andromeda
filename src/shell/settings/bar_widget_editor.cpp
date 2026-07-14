@@ -161,7 +161,7 @@ namespace settings {
           ui::button({
               .glyph = std::move(glyph),
               .glyphSize = Style::fontSizeBody * ctx.scale,
-              .variant = ButtonVariant::Outline,
+              .variant = ButtonVariant::Default,
               .minWidth = Style::controlHeight * ctx.scale,
               .minHeight = Style::controlHeight * ctx.scale,
               .paddingV = Style::spaceXs * ctx.scale,
@@ -1159,30 +1159,54 @@ namespace settings {
       );
     }
 
-    [[nodiscard]] bool workspacesMinimalEnabled(
+    [[nodiscard]] bool workspacesCompactStyleEnabled(
         const Config& cfg, std::string_view widgetName, const std::vector<WidgetSettingSpec>& allSpecs
     ) {
-      for (const auto& spec : allSpecs) {
-        if (spec.schema.key == "minimal") {
-          return settingValueAsBool(widgetSettingValue(cfg, widgetName, spec));
-        }
+      const std::string style = settingCurrentString(cfg, widgetName, "style", allSpecs);
+      return style == "minimal" || style == "focus_hint";
+    }
+
+    SelectSetting workspacesStyleSelectSetting(
+        const BarWidgetEditorContext& ctx, std::string_view widgetName, const WidgetSettingSpec& styleSpec,
+        const std::vector<WidgetSettingSpec>& allSpecs, std::string selectedValue
+    ) {
+      std::vector<SelectOption> options;
+      options.reserve(styleSpec.options.size());
+      for (const auto& option : styleSpec.options) {
+        options.push_back(
+            SelectOption{option.value, styleSpec.literalLabels ? option.labelKey : i18n::tr(option.labelKey)}
+        );
       }
-      return false;
+      SelectSetting selectSetting{std::move(options), std::move(selectedValue)};
+      selectSetting.segmented = styleSpec.segmented;
+      const ConfigService* configService = ctx.configService;
+      selectSetting.groupedCommit = [configService, widgetName = std::string(widgetName),
+                                     allSpecs](std::string_view value, const std::vector<std::string>& path) {
+        std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> overrides;
+        overrides.emplace_back(path, ConfigOverrideValue{std::string(value)});
+        if ((value == "minimal" || value == "focus_hint")
+            && configService != nullptr
+            && settingCurrentString(configService->config(), widgetName, "display", allSpecs) == "none") {
+          overrides.emplace_back(widgetSettingPath(widgetName, "display"), ConfigOverrideValue{std::string("id")});
+        }
+        return overrides;
+      };
+      return selectSetting;
     }
 
     SelectSetting workspacesDisplaySelectSetting(
         const BarWidgetEditorContext& ctx, std::string_view widgetName, const WidgetSettingSpec& displaySpec,
         const std::vector<WidgetSettingSpec>& allSpecs, std::string selectedValue
     ) {
-      const bool minimal = workspacesMinimalEnabled(ctx.config, widgetName, allSpecs);
-      if (minimal && selectedValue == "none") {
+      const bool compactStyle = workspacesCompactStyleEnabled(ctx.config, widgetName, allSpecs);
+      if (compactStyle && selectedValue == "none") {
         selectedValue = "id";
       }
 
       std::vector<SelectOption> options;
       options.reserve(displaySpec.options.size());
       for (const auto& option : displaySpec.options) {
-        if (minimal && option.value == "none") {
+        if (compactStyle && option.value == "none") {
           continue;
         }
         options.push_back(
@@ -1211,7 +1235,7 @@ namespace settings {
       }
 
       SelectSetting selectSetting{std::move(options), std::move(selectedValue)};
-      selectSetting.integerValue = spec.integerValue;
+      selectSetting.valueType = spec.integerValue ? SelectValueType::Integer : SelectValueType::String;
       return selectSetting;
     }
 
@@ -1432,7 +1456,7 @@ namespace settings {
               ui::button({
                   .glyph = "apps",
                   .glyphSize = Style::fontSizeBody * ctx.scale,
-                  .variant = ButtonVariant::Outline,
+                  .variant = ButtonVariant::Default,
                   .minWidth = Style::controlHeight * ctx.scale,
                   .minHeight = Style::controlHeight * ctx.scale,
                   .paddingV = Style::spaceXs * ctx.scale,
@@ -1467,31 +1491,7 @@ namespace settings {
           if (const auto* defaultBool = std::get_if<bool>(&spec.schema.defaultValue)) {
             clearWhenValue = *defaultBool;
           }
-          if (widgetType == "workspaces" && spec.schema.key == "minimal") {
-            ctx.makeRow(
-                *panel, entry,
-                ui::toggle({
-                    .checked = settingValueAsBool(value),
-                    .scale = ctx.scale,
-                    .onChange = [configService = ctx.configService, setOverride = ctx.setOverride,
-                                 requestRebuild = ctx.requestRebuild, widgetName = std::string(widgetName), path,
-                                 displayPath = widgetSettingPath(std::string(widgetName), "display"),
-                                 specs](bool enabled) {
-                      setOverride(path, enabled);
-                      if (enabled
-                          && configService != nullptr
-                          && settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
-                        setOverride(displayPath, std::string("id"));
-                      }
-                      if (requestRebuild) {
-                        requestRebuild();
-                      }
-                    },
-                })
-            );
-          } else {
-            ctx.makeRow(*panel, entry, ctx.makeToggle(settingValueAsBool(value), path, clearWhenValue));
-          }
+          ctx.makeRow(*panel, entry, ctx.makeToggle(settingValueAsBool(value), path, clearWhenValue));
           break;
         }
         case WidgetControlKind::Int: {
@@ -1653,6 +1653,8 @@ namespace settings {
             );
           } else if (widgetType == "workspaces" && spec.schema.key == "display") {
             selectSetting = workspacesDisplaySelectSetting(ctx, widgetName, spec, specs, selectedValue);
+          } else if (widgetType == "workspaces" && spec.schema.key == "style") {
+            selectSetting = workspacesStyleSelectSetting(ctx, widgetName, spec, specs, selectedValue);
           } else {
             std::vector<SelectOption> options;
             options.reserve(spec.options.size());
@@ -1664,7 +1666,7 @@ namespace settings {
             selectSetting = SelectSetting{std::move(options), selectedValue};
           }
           selectSetting.segmented = spec.segmented;
-          selectSetting.integerValue = spec.integerValue;
+          selectSetting.valueType = spec.integerValue ? SelectValueType::Integer : SelectValueType::String;
           if (const auto* defaultString = std::get_if<std::string>(&spec.schema.defaultValue);
               defaultString != nullptr) {
             selectSetting.clearOnEmpty = defaultString->empty();
@@ -2228,7 +2230,7 @@ namespace settings {
               .glyph = "stack-pop",
               .fontSize = Style::fontSizeCaption * ctx.scale,
               .glyphSize = Style::fontSizeCaption * ctx.scale,
-              .variant = ButtonVariant::Outline,
+              .variant = ButtonVariant::Default,
               .minHeight = Style::controlHeightSm * ctx.scale,
               .paddingV = Style::spaceXs * ctx.scale,
               .paddingH = Style::spaceSm * ctx.scale,

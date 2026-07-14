@@ -447,6 +447,7 @@
         "bands": "Bands",
         "bar-width": "Bar Width",
         "bloom-intensity": "Bloom",
+        "center-password-text": "Center Password Text",
         "center-text": "Center Text",
         "centered": "Centered",
         "change-image": "Change…",
@@ -1020,6 +1021,7 @@
         "rename": "Could not rename bar."
       },
       "batch-write": "Some settings could not be saved.",
+      "custom-schedule-times": "A custom schedule needs both a sunrise and a sunset time in HH:MM form.",
       "export-config": "Failed to save config export.",
       "export-wallpaper-palette": "Could not save the wallpaper palette as a custom palette.",
       "monitor-override": {
@@ -1063,7 +1065,7 @@
         "name-label": "Name",
         "name-placeholder": "idle-behavior",
         "resume-command-label": "Resume command",
-        "resume-command-placeholder": "noctalia:dpms-on",
+        "resume-command-placeholder": "notify-send 'Back from idle'",
         "summary": "{name} · {seconds}s",
         "summary-disabled-timeout": "{name} · timeout disabled",
         "timeout-label": "Timeout seconds",
@@ -1134,7 +1136,7 @@
         "screen-time": "Screen Time",
         "screenshot": "Screenshot",
         "security": "Security",
-        "session-panel": "Session panel",
+        "session-panel": "Session Panel",
         "shape": "Shape",
         "system": "System",
         "theme": "Theme",
@@ -1201,6 +1203,13 @@
       }
     },
     "options": {
+      "bar": {
+        "auto-hide": {
+          "off": "Off",
+          "on": "On",
+          "smart": "Smart"
+        }
+      },
       "clipboard": {
         "auto-paste": {
           "ctrl-shift-v": "Ctrl+Shift+V",
@@ -1260,6 +1269,10 @@
       "orientation": {
         "horizontal": "Horizontal",
         "vertical": "Vertical"
+      },
+      "panel-bar-alignment": {
+        "centered": "Centered",
+        "near-trigger": "Near Trigger"
       },
       "panel-position": {
         "auto": "Follow Bar"
@@ -1350,8 +1363,8 @@
       "browse-store": "Browse Plugins",
       "panels": {
         "open-near-click": {
-          "description": "Open the panel near the bar widget that toggled it",
-          "label": "Open Near Click"
+          "description": "Position the panel near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "placement": {
           "description": "Attach the panel to the bar or float it near the bar edge",
@@ -1448,6 +1461,10 @@
           "description": "Choose a palette from the bundled catalog",
           "label": "Built-In Palette"
         },
+        "button-borders": {
+          "description": "Draw outlines around buttons throughout the shell",
+          "label": "Button Borders"
+        },
         "community-palette": {
           "description": "Choose a palette from the community catalog",
           "label": "Community Palette",
@@ -1517,7 +1534,7 @@
       },
       "bar": {
         "auto-hide": {
-          "description": "Automatically hide the bar when not in use"
+          "description": "Off keeps the bar visible; On hides it until you move the pointer to the screen edge; Smart shows the bar on an empty workspace and hides it when windows are open"
         },
         "background-opacity": {
           "description": "Background opacity of the bar"
@@ -1755,7 +1772,7 @@
           "label": "Active Monitor Only"
         },
         "auto-hide": {
-          "description": "Automatically hide the dock when not in use"
+          "description": "Off keeps the dock visible; On hides it until you move the pointer to the screen edge; Smart shows the dock on an empty workspace and hides it when windows are open"
         },
         "background-opacity": {
           "description": "Background opacity of the dock"
@@ -2190,24 +2207,24 @@
           "label": "Sort by Usage"
         },
         "open-near-click-clipboard": {
-          "description": "Position the clipboard panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position the clipboard panel near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "open-near-click-control-center": {
-          "description": "Position the Control Center panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position Control Center near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "open-near-click-launcher": {
-          "description": "Position the launcher panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position the launcher near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "open-near-click-session": {
-          "description": "Position the session panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position the session panel near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "open-near-click-wallpaper": {
-          "description": "Position the wallpaper picker panel near the bar click instead of centering it along the bar",
-          "label": "Open Near Click"
+          "description": "Position the wallpaper picker near the bar widget that opened it; openings without a bar trigger are centered",
+          "label": "Along Bar"
         },
         "placement-clipboard": {
           "description": "Choose whether the clipboard attaches to the bar or floats at a chosen screen position",
@@ -2301,6 +2318,10 @@
           "description": "How often to sync calendar events (minutes)",
           "label": "Refresh Interval"
         },
+        "custom-schedule": {
+          "description": "Use manual sunrise/sunset times instead of computing from coordinates",
+          "label": "Custom Schedule"
+        },
         "day-temperature": {
           "description": "Color temperature during the day (Kelvin)",
           "label": "Day Temperature"
@@ -2371,7 +2392,7 @@
         },
         "sync-monitor-brightness": {
           "description": "Sync the brightness of all monitors",
-          "label": "Sync monitor brightness"
+          "label": "Sync Monitor Brightness"
         },
         "system-monitor": {
           "cpu-poll": {
@@ -2894,6 +2915,7 @@
         "instance": "Per Placement",
         "kilobytes": "kB/s",
         "megabytes": "MB/s",
+        "minimal": "Minimal",
         "name": "Name",
         "net-rx": "Network RX",
         "net-tx": "Network TX",
@@ -2902,6 +2924,7 @@
         "output": "Output",
         "ram-percent": "RAM Percent",
         "ram-used": "RAM Used",
+        "regular": "Regular",
         "screenshot-primary-fullscreen": "Fullscreen",
         "screenshot-primary-region": "Region",
         "shared": "Shared",
@@ -2909,6 +2932,7 @@
         "swap-percent": "Swap Percent",
         "text": "Text",
         "text-only": "Text Only",
+        "focus-hint": "Focus Hint",
         "workspace-label-centered": "Centered",
         "workspace-label-corner": "Corner",
         "workspace-label-inside": "Inside pill"
@@ -3226,8 +3250,7 @@
         "minimal": {
           "description": "Show workspace ID or name labels only, without animated pills",
           "label": "Minimal Style",
-          "taskbar-description": "Text-only workspace labels without colored disc backgrounds",
-          "workspaces-description": "Text-only workspace labels without pill backgrounds or slide animation"
+          "taskbar-description": "Text-only workspace labels without colored disc backgrounds"
         },
         "mirrored": {
           "description": "Mirror the visualizer around its center",
@@ -3254,7 +3277,7 @@
           "label": "Occupied Color"
         },
         "only-active-workspace": {
-          "description": "Hide windows on inactive workspaces.",
+          "description": "Hide windows on inactive workspaces",
           "label": "Only Active Workspace"
         },
         "path": {
@@ -3297,6 +3320,11 @@
         "scroll-step": {
           "description": "Percentage change applied on each mouse wheel step",
           "label": "Scroll Step"
+        },
+        "style": {
+          "description": "Workspace switcher appearance",
+          "label": "Style",
+          "workspaces-description": "Regular shows animated pills; Minimal is text-only labels; Focus Hint uses dots for inactive workspaces and an expanded active pill with the focused app icon"
         },
         "scroll-up-command": {
           "description": "Shell command run when scrolling up over this button",

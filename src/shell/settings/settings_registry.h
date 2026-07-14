@@ -68,13 +68,24 @@ namespace settings {
     std::string tooltip;
   };
 
+  enum class SelectValueType : std::uint8_t {
+    String,
+    Integer,
+    Boolean,
+  };
+
   struct SelectSetting {
     std::vector<SelectOption> options;
     std::string selectedValue;
     bool clearOnEmpty = false;
-    bool segmented = false;      // render as Segmented pill group instead of dropdown Select
-    bool integerValue = false;   // option values are numeric strings; write as int64_t to config
-    float preferredWidth = 0.0f; // 0 = default settings dropdown width
+    bool segmented = false;                              // render as Segmented pill group instead of dropdown Select
+    SelectValueType valueType = SelectValueType::String; // storage type for option values
+    float preferredWidth = 0.0f;                         // 0 = default settings dropdown width
+    std::vector<std::string> linkedPath;                 // companion path for groupedCommit / override reset
+    std::function<std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>(
+        std::string_view selectedValue, const std::vector<std::string>& primaryPath
+    )>
+        groupedCommit;
   };
 
   struct SearchPickerSetting {

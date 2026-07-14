@@ -5,6 +5,7 @@
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "config/schema/config_schema.h"
+#include "config/schema/config_sections.h"
 #include "config/schema/engine.h"
 #include "config/widget_config.h"
 #include "launcher/launcher_provider.h"
@@ -15,6 +16,7 @@
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/settings/widget_settings_registry.h"
+#include "system/day_night_schedule.h"
 #include "time/time_format.h"
 
 #include <algorithm>
@@ -82,6 +84,111 @@ namespace noctalia::config {
       return merged;
     }
 
+    // custom_schedule promises a sunset/sunrise schedule. If the times cannot deliver one,
+    // say so instead of silently scheduling by coordinates (or not at all).
+    void validateLocation(const toml::table& merged, schema::Diagnostics& diag) {
+      const auto* location = merged["location"].as_table();
+      if (location == nullptr) {
+        return;
+      }
+
+      const bool customSchedule = (*location)["custom_schedule"].value_or(false);
+      for (const std::string_view key : {"sunset", "sunrise"}) {
+        const std::string path = "location." + std::string(key);
+        const auto value = (*location)[key].value<std::string>();
+        const bool set = value.has_value() && !value->empty();
+        if (set && !day_night_schedule::normalizedClock(*value).has_value()) {
+          const std::string message = "\"" + *value + "\" is not a time of day in HH:MM form";
+          if (customSchedule) {
+            diag.error(path, message, "location.clock.invalid");
+          } else {
+            diag.warn(path, message);
+          }
+        } else if (!set && customSchedule) {
+          diag.error(
+              path, "custom_schedule needs a " + std::string(key) + " time in HH:MM form", "location.clock.missing"
+          );
+        }
+      }
+    }
+
+    // Launcher provider tables are keyed by provider id, which the schema can't enumerate.
+    // Warn on an empty common prefix, on providers that name nothing real (or a disabled
+    // plugin, or the fixed Applications provider), and on two providers sharing a prefix.
+    void validateLauncherProviders(const toml::table& merged, schema::Diagnostics& diag) {
+      const auto* shellTbl = merged["shell"].as_table();
+      const auto* launcherTbl = shellTbl != nullptr ? (*shellTbl)["launcher"].as_table() : nullptr;
+      if (launcherTbl == nullptr) {
+        return;
+      }
+      if (const auto* prefixVal = (*launcherTbl)["provider_prefix"].as_string()) {
+        if (prefixVal->get().empty()) {
+          diag.warn("shell.launcher.provider_prefix", "is empty, falling back to '/'");
+        }
+      }
+      const auto* providersTbl = (*launcherTbl)["providers"].as_table();
+      if (providersTbl == nullptr) {
+        return;
+      }
+      std::unordered_map<std::string, std::string> seenPrefixes;
+      std::unordered_set<std::string> enabledPlugins;
+      if (const auto* pluginsTbl = merged["plugins"].as_table()) {
+        if (const auto* enabledArr = (*pluginsTbl)["enabled"].as_array()) {
+          for (const auto& node : *enabledArr) {
+            if (const auto* strVal = node.as_string()) {
+              enabledPlugins.insert(StringUtils::toLower(strVal->get()));
+            }
+          }
+        }
+      }
+      for (const auto& [key, node] : *providersTbl) {
+        const auto* provTbl = node.as_table();
+        if (provTbl == nullptr) {
+          continue;
+        }
+        std::string providerName = StringUtils::toLower(std::string(key.str()));
+        if (providerName == "applications") {
+          diag.warn(
+              "shell.launcher.providers.applications", "custom settings are not allowed (Applications is always global)"
+          );
+          continue;
+        }
+        const auto isBuiltin = std::ranges::contains(launcher::kBuiltinProviders, providerName);
+        if (!isBuiltin) {
+          const std::size_t colon = providerName.find(':');
+          bool isPlugin = false;
+          std::string pluginIdStr;
+          if (colon != std::string::npos) {
+            std::string_view pluginId = std::string_view(providerName).substr(0, colon);
+            std::string_view entryName = std::string_view(providerName).substr(colon + 1);
+            if (scripting::isValidPluginId(pluginId) && scripting::isValidPluginIdSegment(entryName)) {
+              isPlugin = true;
+              pluginIdStr = std::string(pluginId);
+            }
+          }
+          if (!isPlugin) {
+            diag.warn("shell.launcher.providers." + providerName, "provider is nonexistent");
+            continue;
+          }
+          if (!enabledPlugins.contains(pluginIdStr)) {
+            diag.warn("shell.launcher.providers." + providerName, "plugin '" + pluginIdStr + "' is not enabled");
+            continue;
+          }
+        }
+        const auto* prefixVal = (*provTbl)["prefix"].as_string();
+        if (prefixVal == nullptr || prefixVal->get().empty()) {
+          continue;
+        }
+        auto [it, inserted] = seenPrefixes.emplace(prefixVal->get(), std::string(key.str()));
+        if (!inserted) {
+          diag.warn(
+              "shell.launcher.providers." + std::string(key.str()) + ".prefix",
+              "duplicates the prefix of '" + it->second + "'; only one provider will be reachable by it"
+          );
+        }
+      }
+    }
+
     // Shape-checks a file's [include] table. The merged config has [include]
     // stripped, so this runs on raw per-file tables (single-file validate, and the
     // per-loaded-file pass in validateConfigSources).
@@ -118,29 +225,24 @@ namespace noctalia::config {
       }
     }
 
-    // collectUnknownKeys + a defaulted readInto: the former flags misspelled keys,
-    // the latter surfaces enum/range warnings (and throws → error on bad values).
-    template <typename T>
-    void checkSection(
-        const toml::table& root, std::string_view name, const schema::Schema<T>& sch, schema::Diagnostics& diag,
-        const std::unordered_set<std::string>& allowUnknownPaths = {}
-    ) {
-      const auto* tbl = root[name].as_table();
+    // collectUnknownKeys + a read into a defaulted struct: the former flags misspelled
+    // keys, the latter surfaces enum/range warnings (and throws → error on bad values).
+    void checkSection(const toml::table& root, const schema::SectionSpec& spec, schema::Diagnostics& diag) {
+      const auto* tbl = root[spec.name].as_table();
       if (tbl == nullptr) {
         return;
       }
       std::vector<std::string> unknown;
-      schema::collectUnknownKeys(*tbl, sch, name, unknown);
+      spec.collectUnknown(*tbl, unknown);
       for (const auto& path : unknown) {
-        if (!allowUnknownPaths.contains(path)) {
+        if (!spec.allowUnknownPaths.contains(path)) {
           diag.warn(path, "unknown setting");
         }
       }
-      T tmp{};
       try {
-        schema::readInto(*tbl, tmp, sch, name, diag);
+        spec.checkAgainstDefaults(*tbl, diag);
       } catch (const std::exception& e) {
-        diag.error(std::string(name), e.what());
+        diag.error(std::string(spec.name), e.what());
       }
     }
 
@@ -183,13 +285,23 @@ namespace noctalia::config {
         }
         break;
       case WidgetSettingType::Double:
-      case WidgetSettingType::OptionalDouble:
         if (auto v = node.value<double>()) {
           rangeCheck(*v, f, path, diag);
         } else {
           reportError(path, "expected a number");
         }
         break;
+      case WidgetSettingType::OptionalDouble: {
+        if (auto v = node.value<double>()) {
+          rangeCheck(*v, f, path, diag);
+        } else {
+          const auto value = node.value<std::string>();
+          if (!value.has_value() || *value != "auto") {
+            reportError(path, "expected a number or \"auto\"");
+          }
+        }
+        break;
+      }
       case WidgetSettingType::String:
         if (!node.is_string()) {
           reportError(path, "expected a string");
@@ -593,103 +705,11 @@ namespace noctalia::config {
     }
 
     void appendMergedConfigDiagnostics(const toml::table& merged, schema::Diagnostics& diag) {
-      checkSection(merged, "shell", schema::shellSchema(), diag);
-      checkSection(merged, "accessibility", schema::accessibilitySchema(), diag);
-      if (const auto* shellTbl = merged["shell"].as_table()) {
-        if (const auto* launcherTbl = (*shellTbl)["launcher"].as_table()) {
-          if (const auto* prefixVal = (*launcherTbl)["provider_prefix"].as_string()) {
-            if (prefixVal->get().empty()) {
-              diag.warn("shell.launcher.provider_prefix", "is empty, falling back to '/'");
-            }
-          }
-          if (const auto* providersTbl = (*launcherTbl)["providers"].as_table()) {
-            std::unordered_map<std::string, std::string> seenPrefixes;
-            std::unordered_set<std::string> enabledPlugins;
-            if (const auto* pluginsTbl = merged["plugins"].as_table()) {
-              if (const auto* enabledArr = (*pluginsTbl)["enabled"].as_array()) {
-                for (const auto& node : *enabledArr) {
-                  if (const auto* strVal = node.as_string()) {
-                    enabledPlugins.insert(StringUtils::toLower(strVal->get()));
-                  }
-                }
-              }
-            }
-
-            for (const auto& [key, node] : *providersTbl) {
-              const auto* provTbl = node.as_table();
-              if (provTbl == nullptr) {
-                continue;
-              }
-              std::string providerName = StringUtils::toLower(std::string(key.str()));
-              if (providerName == "applications") {
-                diag.warn(
-                    "shell.launcher.providers.applications",
-                    "custom settings are not allowed (Applications is always global)"
-                );
-                continue;
-              }
-              const auto isBuiltin = std::ranges::contains(launcher::kBuiltinProviders, providerName);
-              if (!isBuiltin) {
-                const std::size_t colon = providerName.find(':');
-                bool isPlugin = false;
-                std::string pluginIdStr;
-                if (colon != std::string::npos) {
-                  std::string_view pluginId = std::string_view(providerName).substr(0, colon);
-                  std::string_view entryName = std::string_view(providerName).substr(colon + 1);
-                  if (scripting::isValidPluginId(pluginId) && scripting::isValidPluginIdSegment(entryName)) {
-                    isPlugin = true;
-                    pluginIdStr = std::string(pluginId);
-                  }
-                }
-                if (!isPlugin) {
-                  diag.warn("shell.launcher.providers." + providerName, "provider is nonexistent");
-                  continue;
-                }
-                if (!enabledPlugins.contains(pluginIdStr)) {
-                  diag.warn("shell.launcher.providers." + providerName, "plugin '" + pluginIdStr + "' is not enabled");
-                  continue;
-                }
-              }
-              const auto* prefixVal = (*provTbl)["prefix"].as_string();
-              if (prefixVal == nullptr || prefixVal->get().empty()) {
-                continue;
-              }
-              auto [it, inserted] = seenPrefixes.emplace(prefixVal->get(), std::string(key.str()));
-              if (!inserted) {
-                diag.warn(
-                    "shell.launcher.providers." + std::string(key.str()) + ".prefix",
-                    "duplicates the prefix of '" + it->second + "'; only one provider will be reachable by it"
-                );
-              }
-            }
-          }
-        }
+      for (const schema::SectionSpec& spec : schema::sections()) {
+        checkSection(merged, spec, diag);
       }
-      checkSection(
-          merged, "wallpaper", schema::wallpaperSchema(), diag,
-          {"wallpaper.default", "wallpaper.last", "wallpaper.monitors", "wallpaper.favorite"}
-      );
-      checkSection(merged, "theme", schema::themeSchema(), diag);
-      checkSection(merged, "backdrop", schema::backdropSchema(), diag);
-      checkSection(merged, "lockscreen", schema::lockscreenSchema(), diag);
-      checkSection(merged, "notification", schema::notificationSchema(), diag);
-      checkSection(merged, "notifications", schema::notificationSchema(), diag); // compatibility alias
-      checkSection(merged, "osd", schema::osdSchema(), diag);
-      checkSection(merged, "system", schema::systemSchema(), diag);
-      checkSection(merged, "weather", schema::weatherSchema(), diag);
-      checkSection(merged, "calendar", schema::calendarSchema(), diag);
       validateCalendarSyntax(merged, diag);
-      checkSection(merged, "audio", schema::audioSchema(), diag);
-      checkSection(merged, "brightness", schema::brightnessSchema(), diag);
-      checkSection(merged, "battery", schema::batterySchema(), diag);
-      checkSection(merged, "nightlight", schema::nightlightSchema(), diag);
-      checkSection(merged, "location", schema::locationSchema(), diag);
-      checkSection(merged, "idle", schema::idleSchema(), diag);
-      checkSection(merged, "keybinds", schema::keybindsSchema(), diag);
-      checkSection(merged, "dock", schema::dockSchema(), diag);
-      checkSection(merged, "control_center", schema::controlCenterSchema(), diag);
-      checkSection(merged, "plugins", schema::pluginsSchema(), diag);
-      checkSection(merged, "hooks", schema::hooksSchema(), diag);
+      validateLauncherProviders(merged, diag);
 
       // Resolve the candidate's plugin catalog without mutating the live registry.
       scripting::PluginRegistry pluginRegistry;
@@ -708,6 +728,7 @@ namespace noctalia::config {
         scripting::applyPluginSourcesToRegistry(pluginRegistry, pc);
       }
 
+      validateLocation(merged, diag);
       validateBars(merged, diag);
       validateBarWidgets(merged, diag, pluginRegistry);
       validatePluginSettings(merged, diag, pluginRegistry);
@@ -715,42 +736,10 @@ namespace noctalia::config {
       validateLockscreenWidgets(merged, diag, pluginRegistry);
       validateIncludeShape(merged, diag);
 
-      // Unknown top-level sections.
-      static const std::unordered_set<std::string> kKnownSections = {
-          "shell",
-          "accessibility",
-          "wallpaper",
-          "theme",
-          "backdrop",
-          "lockscreen",
-          "notification",
-          "notifications",
-          "osd",
-          "system",
-          "weather",
-          "calendar",
-          "audio",
-          "brightness",
-          "battery",
-          "nightlight",
-          "location",
-          "idle",
-          "keybinds",
-          "bar",
-          "dock",
-          "desktop_widgets",
-          "lockscreen_widgets",
-          "widget",
-          "control_center",
-          "plugins",
-          "plugin_settings",
-          "hooks",
-          "include",
-          "config_version",
-      };
+      // Unknown top-level keys.
       for (const auto& [key, node] : merged) {
         (void)node;
-        if (!kKnownSections.contains(std::string(key.str()))) {
+        if (!schema::isKnownRootKey(key.str())) {
           diag.warn(std::string(key.str()), "unknown section");
         }
       }

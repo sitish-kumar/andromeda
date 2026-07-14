@@ -46,6 +46,7 @@
 #include "shell/bar/widgets/workspaces_widget.h"
 #include "system/format_units.h"
 #include "ui/style.h"
+#include "util/file_utils.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
 
@@ -90,9 +91,12 @@ namespace {
   }
 
   WidgetCustomImage customImageFor(const WidgetConfig* wc) {
+    if (wc == nullptr) {
+      return {};
+    }
     return WidgetCustomImage{
-        .path = wc != nullptr ? wc->getString("custom_image", "") : std::string{},
-        .colorize = wc != nullptr ? wc->getBool("custom_image_colorize", false) : false,
+        .path = FileUtils::expandUserPath(wc->getString("custom_image", "")).string(),
+        .colorize = wc->getBool("custom_image_colorize", false),
     };
   }
 
@@ -468,7 +472,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
   if (type == "sysmon") {
     const bool verticalBar = barPosition == "left" || barPosition == "right";
     std::string statStr = wc != nullptr ? wc->getString("stat", "cpu_usage") : std::string("cpu_usage");
-    std::string path = wc != nullptr ? wc->getString("path", "/") : std::string("/");
+    std::string path =
+        FileUtils::expandUserPath(wc != nullptr ? wc->getString("path", "/") : std::string("/")).string();
     SysmonStat stat = SysmonStat::CpuUsage;
     if (statStr == "cpu_temp") {
       stat = SysmonStat::CpuTemp;
@@ -567,6 +572,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
             static_cast<float>(wc != nullptr ? wc->getDouble("window_title_max_width", 100.0) : 100.0),
         .taskbarMaxWidth = static_cast<float>(wc != nullptr ? wc->getDouble("taskbar_max_width", 8192.0) : 8192.0),
         .barPosition = barPosition,
+        .barName = barName,
         .shadowConfig = m_config.shell.shadow,
     };
     if (wc != nullptr) {
@@ -670,6 +676,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
     if (wc != nullptr && wc->hasSetting("max_label_chars")) {
       maxLabelChars = static_cast<std::size_t>(wc->getInt("max_label_chars", 1));
     }
+    const std::string workspaceStyle = wc != nullptr ? wc->getString("style", "regular") : "regular";
     WorkspacesWidget::Options options{
         .displayMode = displayMode,
         .focusedColor = focusedColor,
@@ -681,10 +688,11 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .pillScale = static_cast<float>(wc != nullptr ? wc->getDouble("pill_scale", 1.0) : 1.0),
         .activePillSize = static_cast<float>(wc != nullptr ? wc->getDouble("active_pill_size", 2.2) : 2.2),
         .inactivePillSize = static_cast<float>(wc != nullptr ? wc->getDouble("inactive_pill_size", 1.0) : 1.0),
-        .minimal = wc != nullptr ? wc->getBool("minimal", false) : false,
+        .minimal = workspaceStyle == "minimal",
+        .focusedPill = workspaceStyle == "focus_hint",
         .focusedOutputOnly = wc != nullptr ? wc->getBool("focused_output_only", false) : false,
     };
-    auto widget = std::make_unique<WorkspacesWidget>(m_platform, output, options);
+    auto widget = std::make_unique<WorkspacesWidget>(m_platform, m_configService, output, options);
     widget->setContentScale(contentScale);
     return widget;
   }

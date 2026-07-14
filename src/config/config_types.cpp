@@ -208,37 +208,39 @@ ResolvedIdleBehavior resolveIdleBehaviorActions(const IdleBehaviorConfig& behavi
   IdleBehaviorConfig tmp = behavior;
   normalizeIdleBehaviorAction(tmp);
   const std::string& act = tmp.action;
-  const auto resume = [&tmp](IdleActionRequest fallback) {
-    return tmp.resumeCommand.empty() ? std::move(fallback) : commandIdleAction(tmp.resumeCommand);
-  };
 
   if (act == "lock") {
     return {
         .idleAction = idleAction(IdleActionKind::Lock),
-        .resumeAction = resume({}),
+        .resumeAction = {},
+        .resumeCommand = tmp.resumeCommand,
     };
   }
   if (act == "screen_off") {
     return {
         .idleAction = idleAction(IdleActionKind::ScreenOff),
-        .resumeAction = resume(idleAction(IdleActionKind::ScreenOn)),
+        .resumeAction = idleAction(IdleActionKind::ScreenOn),
+        .resumeCommand = tmp.resumeCommand,
     };
   }
   if (act == "suspend") {
     return {
         .idleAction = idleAction(IdleActionKind::Suspend),
-        .resumeAction = resume({}),
+        .resumeAction = {},
+        .resumeCommand = tmp.resumeCommand,
     };
   }
   if (act == "lock_and_suspend") {
     return {
         .idleAction = idleAction(IdleActionKind::LockAndSuspend),
-        .resumeAction = resume({}),
+        .resumeAction = {},
+        .resumeCommand = tmp.resumeCommand,
     };
   }
   return {
       .idleAction = commandIdleAction(behavior.command),
-      .resumeAction = commandIdleAction(behavior.resumeCommand),
+      .resumeAction = {},
+      .resumeCommand = behavior.resumeCommand,
   };
 }
 
@@ -366,11 +368,15 @@ WidgetBarCapsuleSpec resolveWidgetBarCapsuleSpec(const BarConfig& bar, const Wid
   if (bar.widgetCapsuleRadius.has_value()) {
     spec.radius = std::clamp(static_cast<float>(*bar.widgetCapsuleRadius), 0.0f, 80.0f);
   }
-  if (widget != nullptr && widget->hasSetting("capsule_radius")) {
-    spec.radius = std::clamp(
-        static_cast<float>(widget->getDouble("capsule_radius", static_cast<double>(spec.radius.value_or(0.0f)))), 0.0f,
-        80.0f
-    );
+  if (widget != nullptr) {
+    const auto radius = widget->settings.find("capsule_radius");
+    if (radius != widget->settings.end()
+        && (std::holds_alternative<double>(radius->second) || std::holds_alternative<std::int64_t>(radius->second))) {
+      spec.radius = std::clamp(
+          static_cast<float>(widget->getDouble("capsule_radius", static_cast<double>(spec.radius.value_or(0.0f)))),
+          0.0f, 80.0f
+      );
+    }
   }
   spec.opacity = bar.widgetCapsuleOpacity;
   if (widget != nullptr && widget->hasSetting("capsule_opacity")) {
