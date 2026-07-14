@@ -907,7 +907,7 @@ void LockSurface::applyBlurredDesktopTexture() {
 void LockSurface::onGpuResourcesInvalidated() {
   releaseCaptureTextures();
 
-  if (m_wallpaperTexture.id != 0 && m_textureCache != nullptr) {
+  if (!m_wallpaperPath.empty() && m_textureCache != nullptr) {
     if (m_textureCache->shared()) {
       m_wallpaperTexture = m_textureCache->peek(m_wallpaperPath);
     } else if (renderContext() != nullptr) {
@@ -921,6 +921,17 @@ void LockSurface::onGpuResourcesInvalidated() {
   m_captureDirty = true;
   m_wallpaperDirty = true;
   requestLayout();
+}
+
+void LockSurface::prepareForGraphicsReset() noexcept {
+  m_blurCache.abandon();
+  m_wallpaperBlurCache.abandon();
+  m_wallpaperTexture = {};
+  m_blurredWallpaperTexture = {};
+  m_captureSourceTexture = {};
+  m_blurredDesktopTexture = {};
+  m_captureDirty = true;
+  m_wallpaperDirty = true;
 }
 
 void LockSurface::render() {

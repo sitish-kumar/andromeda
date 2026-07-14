@@ -36,6 +36,7 @@ public:
   void endFrame(RenderTarget& target) override;
   [[nodiscard]] RenderGraphicsResetStatus graphicsResetStatus() override;
   void invalidateGpuResources() override;
+  void abandonAfterGraphicsReset() noexcept override;
 
   [[nodiscard]] std::unique_ptr<RenderSurfaceTarget> createSurfaceTarget(wl_surface* surface) override;
   [[nodiscard]] std::unique_ptr<RenderFramebuffer>
@@ -100,6 +101,7 @@ private:
   void ensureFullscreenTintProgram();
   void resolveGraphicsResetStatusProc();
   void destroyGpuObjects();
+  void abandonGpuObjects() noexcept;
 
   EGLDisplay m_display = EGL_NO_DISPLAY;
   EGLConfig m_config = nullptr;
