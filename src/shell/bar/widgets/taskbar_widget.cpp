@@ -640,7 +640,9 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
     if (task.active && m_showActiveIndicator) {
       const float d = std::max(4.0f, std::round(Style::baseGlyphSize * 0.32f * m_contentScale));
-      const float bottomInset = 0.25f * m_contentScale;
+      const float groupedCapsuleInset =
+          (m_groupByWorkspace && m_workspaceGroupCapsule ? Style::borderWidth : 0.0f) * m_contentScale;
+      const float bottomInset = 0.25f * m_contentScale + groupedCapsuleInset;
       if (showWindowTitle) {
         const float lineThickness = d * 0.5f;
         auto indicator = ui::box({
@@ -901,7 +903,6 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       }
 
       if (emptyWorkspace) {
-        // Inline badge is already clickable; skip the full tile placeholder so empty groups stay compact.
         if (!inlineBadge || !m_showWorkspaceLabel) {
           auto switcher = std::make_unique<InputArea>();
           switcher->setFrameSize(tileSize, tileSize);
@@ -915,6 +916,13 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
             }
           });
           group->addChild(std::move(switcher));
+        } else {
+          // Inline badge is clickable; reserve tile cross extent so empty groups match occupied ones.
+          if (m_vertical) {
+            group->setMinWidth(groupPadLeft + tileSize + groupPadRight);
+          } else {
+            group->setMinHeight(groupPadTop + tileSize + groupPadBottom);
+          }
         }
       } else {
         for (const auto* task : renderedTasks) {
