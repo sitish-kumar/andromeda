@@ -572,6 +572,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
             static_cast<float>(wc != nullptr ? wc->getDouble("window_title_max_width", 100.0) : 100.0),
         .taskbarMaxWidth = static_cast<float>(wc != nullptr ? wc->getDouble("taskbar_max_width", 8192.0) : 8192.0),
         .barPosition = barPosition,
+        .barName = barName,
         .shadowConfig = m_config.shell.shadow,
     };
     if (wc != nullptr) {
