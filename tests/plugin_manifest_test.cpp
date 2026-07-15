@@ -1,9 +1,9 @@
 #include "scripting/plugin_manifest.h"
 
-#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <print>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -13,17 +13,14 @@ namespace {
 
   bool expect(bool condition, const char* message) {
     if (!condition) {
-      std::fprintf(stderr, "plugin_manifest_test: %s\n", message);
+      std::println(stderr, "plugin_manifest_test: {}", message);
     }
     return condition;
   }
 
   bool expectEq(std::string_view actual, std::string_view expected, const char* message) {
     if (actual != expected) {
-      std::fprintf(
-          stderr, "plugin_manifest_test: %s\n  actual:   %.*s\n  expected: %.*s\n", message,
-          static_cast<int>(actual.size()), actual.data(), static_cast<int>(expected.size()), expected.data()
-      );
+      std::println(stderr, "plugin_manifest_test: {}\n  actual:   {}\n  expected: {}", message, actual, expected);
       return false;
     }
     return true;
@@ -165,7 +162,11 @@ int main() {
   error.clear();
   const auto literalLabel = scripting::parsePluginManifest(literalLabelPath, &error);
   ok = expect(!literalLabel.has_value(), "literal label should fail") && ok;
-  ok = expectEq(error, "setting 'mode' uses 'label'; use 'label_key' instead", "literal label error") && ok;
+  ok = expectEq(
+           error, "setting 'mode' uses 'label'; use 'label_key' that points to translation key instead",
+           "literal label error"
+       )
+      && ok;
 
   const auto literalDescriptionPath = root / "literal-description/plugin.toml";
   ok = writeText(
@@ -183,7 +184,8 @@ int main() {
   const auto literalDescription = scripting::parsePluginManifest(literalDescriptionPath, &error);
   ok = expect(!literalDescription.has_value(), "literal description should fail") && ok;
   ok = expectEq(
-           error, "setting 'mode' uses 'description'; use 'description_key' instead", "literal description error"
+           error, "setting 'mode' uses 'description'; use 'description_key' that points to translation key instead",
+           "literal description error"
        )
       && ok;
 
@@ -220,7 +222,8 @@ int main() {
   const auto literalOptionLabel = scripting::parsePluginManifest(literalOptionLabelPath, &error);
   ok = expect(!literalOptionLabel.has_value(), "literal select option label should fail") && ok;
   ok = expectEq(
-           error, "setting 'mode' option 'auto' uses 'label'; use 'label_key' instead", "literal option label error"
+           error, "setting 'mode' option 'auto' uses 'label'; use 'label_key' that points to translation key instead",
+           "literal option label error"
        )
       && ok;
 
@@ -241,10 +244,7 @@ int main() {
   error.clear();
   const auto missingOptionLabelKey = scripting::parsePluginManifest(missingOptionLabelKeyPath, &error);
   ok = expect(!missingOptionLabelKey.has_value(), "bare string select options should fail") && ok;
-  ok = expectEq(
-           error, "setting 'mode' option must be a table with value and label_key", "bare option error"
-       )
-      && ok;
+  ok = expectEq(error, "setting 'mode' option must be a table with value and label_key", "bare option error") && ok;
 
   const auto launcherManifestPath = root / "launcher/plugin.toml";
   ok = writeText(
@@ -407,7 +407,8 @@ int main() {
   error.clear();
   const auto negativeSize = scripting::parsePluginManifest(negativeSizeManifestPath, &error);
   ok = expect(!negativeSize.has_value(), "negative width should fail loudly") && ok;
-  ok = expectEq(error, "panel entry 'panel': width must be a positive number or \"fill\"", "negative width error") && ok;
+  ok =
+      expectEq(error, "panel entry 'panel': width must be a positive number or \"fill\"", "negative width error") && ok;
 
   const auto fillAttachedManifestPath = root / "fill-attached/plugin.toml";
   ok = writeText(
@@ -426,7 +427,7 @@ int main() {
   const auto fillAttached = scripting::parsePluginManifest(fillAttachedManifestPath, &error);
   ok = expect(!fillAttached.has_value(), "fill + attached placement should fail loudly") && ok;
   ok = expectEq(
-           error, "panel entry 'panel': width/height \"fill\" requires placement = \"floating\"", "fill attached error"
+           error, R"(panel entry 'panel': width/height "fill" requires placement = "floating")", "fill attached error"
        )
       && ok;
 
