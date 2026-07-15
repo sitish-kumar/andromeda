@@ -1407,8 +1407,7 @@
         "remove": "Sletta brunn",
         "save": "Lagra",
         "title": "Brunnar",
-        "update": "Oppdater",
-        "update-on-startup": "Oppdater når skalet byrjar"
+        "update": "Oppdater"
       },
       "store": {
         "add": "Legg til i Noctalia",
@@ -3193,8 +3192,7 @@
         "minimal": {
           "description": "Vis einast arbeidsrom-id eller namnemerkelappar, utan animerte piller",
           "label": "Måtehalden stil",
-          "taskbar-description": "Einast tekst på arbeidsrommerkelappar, utan leta bakgrunnar",
-          "workspaces-description": "Merkelappar for arbeidsrom viser berre tekst utan pillebakgrunn eller animasjonar "
+          "taskbar-description": "Einast tekst på arbeidsrommerkelappar, utan leta bakgrunnar"
         },
         "mirrored": {
           "description": "Spegla framsyninga kring midtpunktet",

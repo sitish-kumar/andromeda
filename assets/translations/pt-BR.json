@@ -1339,8 +1339,7 @@
         "remove": "Remover fonte",
         "save": "Salvar",
         "title": "Fontes",
-        "update": "Atualizar",
-        "update-on-startup": "Atualizar ao Iniciar o Sistema"
+        "update": "Atualizar"
       },
       "store": {
         "add": "Adicionar ao Noctalia",
@@ -2845,8 +2844,7 @@
         },
         "minimal": {
           "description": "Exibir apenas o nome do rótulo ou id do espaço de trabalho, sem as pílulas animadas.",
-          "label": "Estilo Simplificado",
-          "workspaces-description": "Rótulos de espaço de trabalho somente com texto, sem fundos de pílulas ou animação de slides"
+          "label": "Estilo Simplificado"
         },
         "mirrored": {
           "description": "Espelhe o visualizador em torno do seu centro",
