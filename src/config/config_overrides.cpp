@@ -1069,6 +1069,16 @@ bool ConfigService::markSetupWizardCompleted() {
     return true;
   }
 
+  // The bundled wallpaper is served via firstRunWallpaperPath() until setup
+  // completes. Persist it so finishing the wizard does not clear the desktop.
+  if (!hasConfiguredWallpaper()) {
+    const auto bundled = paths::assetPath("noctalia-wallpaper.png");
+    std::error_code ec;
+    if (std::filesystem::exists(bundled, ec)) {
+      setWallpaperPath(std::nullopt, bundled.string());
+    }
+  }
+
   std::ofstream out(m_setupMarkerPath, std::ios::trunc);
   if (!out.is_open()) {
     kLog.warn("failed to write {}", m_setupMarkerPath);
@@ -1776,8 +1786,18 @@ bool ConfigService::renameOverrideTable(
   return true;
 }
 
+bool ConfigService::hasConfiguredWallpaper() const {
+  if (!m_defaultWallpaperPath.empty() || !m_lastWallpaperPath.empty()) {
+    return true;
+  }
+  return !m_monitorWallpaperPaths.empty();
+}
+
 std::string ConfigService::firstRunWallpaperPath() const {
   if (m_setupMarkerPath.empty() || std::filesystem::exists(m_setupMarkerPath)) {
+    return {};
+  }
+  if (hasConfiguredWallpaper()) {
     return {};
   }
   const auto path = paths::assetPath("noctalia-wallpaper.png");
