@@ -1103,6 +1103,10 @@ void SettingsWindow::onPluginsChanged() {
   }
 }
 
+void SettingsWindow::invalidatePluginSourceCache(const std::string& sourceName) {
+  m_pluginFileCache.invalidateSource(sourceName);
+}
+
 void SettingsWindow::refreshIdleLiveStatusText() {
   if (m_idleLiveStatusLabel == nullptr) {
     return;
