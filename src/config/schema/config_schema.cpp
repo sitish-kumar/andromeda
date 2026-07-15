@@ -1132,6 +1132,16 @@ namespace noctalia::config::schema {
     }
   }
 
+  void liftTemplateConfigCustomColors(const toml::table& root, Config& config) {
+    if (const auto* configTbl = root["config"].as_table()) {
+      if (const auto* customColors = (*configTbl)["custom_colors"].as_table()) {
+        std::vector<ThemeConfig::TemplateColorConfig> lifted;
+        parseCustomColorsMap(*customColors, lifted);
+        appendUniqueCustomColors(config.theme.templates.customColors, std::move(lifted));
+      }
+    }
+  }
+
   const Schema<ThemeConfig>& themeSchema() {
     static const Schema<ThemeConfig> s = {
         enumField(&ThemeConfig::source, "source", kPaletteSources),

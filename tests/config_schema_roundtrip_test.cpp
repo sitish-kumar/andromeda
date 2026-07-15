@@ -11,7 +11,6 @@
 //   - clamp goldens — pin parse-time range behavior.
 
 #include "config/config_export.h"
-#include "config/config_service.h"
 #include "config/config_types.h"
 #include "config/schema/config_schema.h"
 #include "config/schema/config_sections.h"
@@ -605,7 +604,7 @@ color = "#0000FF"
 blend = false
 )");
     Config config;
-    ConfigService::parseConfigTable(root, config, false, false);
+    liftTemplateConfigCustomColors(root, config);
     if (config.theme.templates.customColors.size() != 2) {
       fail("config.custom_colors lift: expected two custom colors in config");
     }
