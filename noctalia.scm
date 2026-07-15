@@ -153,4 +153,3 @@ Wayland and OpenGL ES, with no Qt or GTK dependency.")
 ;; guix shell --file=noctalia.scm
 ;; guix package --install-from-file=noctalia.scm
 noctalia-git
-;; wrapped-stb
