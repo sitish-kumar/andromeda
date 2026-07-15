@@ -1,6 +1,7 @@
 #include "shell/bar/widgets/volume_widget.h"
 
 #include "config/config_types.h"
+#include "core/log.h"
 #include "i18n/i18n.h"
 #include "pipewire/pipewire_service.h"
 #include "render/scene/input_area.h"
@@ -15,6 +16,10 @@
 #include <string>
 #include <string_view>
 #include <utility>
+
+namespace {
+  constexpr Logger kLog("volume_widget");
+} // namespace
 
 VolumeWidget::VolumeWidget(
     PipeWireService* audio, EasyEffectsService* easyEffects, const Config* config, wl_output* /*output*/,
@@ -55,9 +60,12 @@ void VolumeWidget::create() {
     if (node == nullptr) {
       return;
     }
-    const float delta = data.scrollDelta(1.0f) > 0 ? -m_scrollStep : m_scrollStep;
+    const float steps = data.scrollSteps();
+    if (steps == 0.0f) {
+      return;
+    }
     const float maxVolume = (m_config != nullptr && m_config->audio.enableOverdrive) ? 1.5f : 1.0f;
-    const float newValue = std::clamp(node->volume + delta, 0.0f, maxVolume);
+    const float newValue = std::clamp(node->volume - steps * m_scrollStep, 0.0f, maxVolume);
     if (m_target == VolumeWidgetTarget::Input) {
       m_audio->setSourceVolume(node->id, newValue);
     } else {
@@ -157,6 +165,13 @@ void VolumeWidget::syncState(Renderer& renderer) {
   m_lastMuted = muted;
   m_lastVertical = m_isVertical;
   m_lastEffectsProfile = effectsProfile;
+
+  if (m_target == VolumeWidgetTarget::Output) {
+    kLog.debug(
+        "sync vol {:.6f} muted {} glyph {} node {}", volume, muted, glyphName(volume, muted),
+        node != nullptr ? node->id : 0
+    );
+  }
 
   if (m_image != nullptr) {
     widget_custom_image::sync(

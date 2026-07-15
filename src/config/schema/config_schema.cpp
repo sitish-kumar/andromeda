@@ -1,6 +1,7 @@
 #include "config/schema/config_schema.h"
 
 #include "config/config_types.h"
+#include "config/schema/config_sections.h"
 #include "config/schema/engine.h"
 #include "config/schema/ranges.h"
 #include "core/input/key_chord.h"
@@ -89,7 +90,7 @@ namespace noctalia::config::schema {
         field(&LockscreenConfig::blurredDesktop, "blurred_desktop"),
         field(&LockscreenConfig::blurIntensity, "blur_intensity", kUnitRange),
         field(&LockscreenConfig::tintIntensity, "tint_intensity", kUnitRange),
-        field(&LockscreenConfig::wallpaper, "wallpaper"),
+        pathStringField(&LockscreenConfig::wallpaper, "wallpaper"),
         field(&LockscreenConfig::monitors, "monitors"),
     };
     return s;
@@ -172,9 +173,13 @@ namespace noctalia::config::schema {
 
   const Schema<LocationConfig>& locationSchema() {
     static const Schema<LocationConfig> s = {
-        field(&LocationConfig::autoLocate, "auto_locate"), field(&LocationConfig::address, "address"),
-        field(&LocationConfig::sunset, "sunset"),          field(&LocationConfig::sunrise, "sunrise"),
-        field(&LocationConfig::latitude, "latitude"),      field(&LocationConfig::longitude, "longitude"),
+        field(&LocationConfig::autoLocate, "auto_locate"),
+        field(&LocationConfig::address, "address"),
+        field(&LocationConfig::customSchedule, "custom_schedule"),
+        field(&LocationConfig::sunset, "sunset"),
+        field(&LocationConfig::sunrise, "sunrise"),
+        field(&LocationConfig::latitude, "latitude"),
+        field(&LocationConfig::longitude, "longitude"),
     };
     return s;
   }
@@ -385,6 +390,7 @@ namespace noctalia::config::schema {
         field(&DockConfig::shadow, "shadow"),
         field(&DockConfig::showRunning, "show_running"),
         field(&DockConfig::autoHide, "auto_hide"),
+        field(&DockConfig::smartAutoHide, "smart_auto_hide"),
         field(&DockConfig::reserveSpace, "reserve_space"),
         field(&DockConfig::activeScale, "active_scale", kDockActiveScaleRange),
         field(&DockConfig::inactiveScale, "inactive_scale", kDockInactiveScaleRange),
@@ -396,7 +402,7 @@ namespace noctalia::config::schema {
         field(&DockConfig::showInstanceCount, "show_instance_count"),
         enumField(&DockConfig::launcherPosition, "launcher_position", kDockLauncherPositions),
         field(&DockConfig::launcherIcon, "launcher_icon"),
-        field(&DockConfig::launcherCustomImage, "launcher_custom_image"),
+        pathStringField(&DockConfig::launcherCustomImage, "launcher_custom_image"),
         field(&DockConfig::launcherCustomImageColorize, "launcher_custom_image_colorize"),
         field(&DockConfig::pinned, "pinned"),
         field(&DockConfig::monitors, "monitors"),
@@ -633,36 +639,6 @@ namespace noctalia::config::schema {
               tbl.insert_or_assign(key, colorSpecToConfigString(*(in.*member)));
             } else if (alwaysEmit) {
               tbl.insert_or_assign(key, std::string{});
-            }
-          }
-      );
-    }
-
-    // String holding a filesystem path: ~ and $VARS expand on read, emitted raw.
-    template <typename Struct> Field<Struct> pathStringField(std::string Struct::* member, std::string_view key) {
-      return custom<Struct>(
-          key,
-          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
-            if (auto v = tbl[key].value<std::string>()) {
-              out.*member = v->empty() ? *v : FileUtils::expandUserPath(*v).string();
-            }
-          },
-          [member, key](toml::table& tbl, const Struct& in) { tbl.insert_or_assign(key, in.*member); }
-      );
-    }
-
-    template <typename Struct>
-    Field<Struct> optionalPathStringField(std::optional<std::string> Struct::* member, std::string_view key) {
-      return custom<Struct>(
-          key,
-          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
-            if (auto v = tbl[key].value<std::string>()) {
-              out.*member = v->empty() ? *v : FileUtils::expandUserPath(*v).string();
-            }
-          },
-          [member, key](toml::table& tbl, const Struct& in) {
-            if ((in.*member).has_value()) {
-              tbl.insert_or_assign(key, *(in.*member));
             }
           }
       );
@@ -947,8 +923,9 @@ namespace noctalia::config::schema {
     using CompareColor = ThemeConfig::TemplateCompareColorConfig;
 
     // [theme.templates.custom_colors]: a name-keyed map whose value is either a
-    // bare color string or a { color, blend } table. Kept only when name+color
-    // are non-empty; emitted only when the list is non-empty.
+    // bare color string or a { color, color_dark, color_light, blend } table.
+    // Kept only when name+color are non-empty (color falls back to color_dark then
+    // color_light when not provided); emitted only when the list is non-empty.
     Field<ThemeConfig::TemplatesConfig> customColorsField() {
       return custom<ThemeConfig::TemplatesConfig>(
           "custom_colors",
@@ -964,8 +941,18 @@ namespace noctalia::config::schema {
               if (const auto* str = value.as_string()) {
                 color.color = str->get();
               } else if (const auto* t = value.as_table()) {
+                if (auto c = t->get_as<std::string>("color_dark")) {
+                  color.color_dark = c->get();
+                }
+                if (auto c = t->get_as<std::string>("color_light")) {
+                  color.color_light = c->get();
+                }
                 if (auto c = t->get_as<std::string>("color")) {
                   color.color = c->get();
+                } else if (!color.color_dark.empty()) {
+                  color.color = color.color_dark;
+                } else {
+                  color.color = color.color_light;
                 }
                 if (auto b = t->get_as<bool>("blend")) {
                   color.blend = b->get();
@@ -985,6 +972,12 @@ namespace noctalia::config::schema {
               toml::table colorTable;
               colorTable.insert_or_assign("color", color.color);
               colorTable.insert_or_assign("blend", color.blend);
+              if (!color.color_dark.empty()) {
+                colorTable.insert_or_assign("color_dark", color.color_dark);
+              }
+              if (!color.color_light.empty()) {
+                colorTable.insert_or_assign("color_light", color.color_light);
+              }
               map.insert_or_assign(color.name, std::move(colorTable));
             }
             tbl.insert_or_assign("custom_colors", std::move(map));
@@ -1115,6 +1108,7 @@ namespace noctalia::config::schema {
         field(&ThemeConfig::customPalette, "custom_palette"),
         field(&ThemeConfig::wallpaperScheme, "wallpaper_scheme"),
         enumField(&ThemeConfig::mode, "mode", kThemeModes),
+        field(&ThemeConfig::pureBlackDark, "pure_black_dark"),
         subTable(&ThemeConfig::templates, "templates", templatesSchema()),
     };
     return s;
@@ -1222,15 +1216,30 @@ namespace noctalia::config::schema {
       return s;
     }
 
+    const Schema<LauncherProviderConfig>& launcherProviderSchema() {
+      static const Schema<LauncherProviderConfig> s = {
+          field(&LauncherProviderConfig::prefix, "prefix"),
+          optionalBoolField(&LauncherProviderConfig::global, "global"),
+      };
+      return s;
+    }
+
     const Schema<ShellConfig::LauncherConfig>& shellLauncherSchema() {
       static const Schema<ShellConfig::LauncherConfig> s = {
           field(&ShellConfig::LauncherConfig::categories, "categories"),
           field(&ShellConfig::LauncherConfig::showIcons, "show_icons"),
           field(&ShellConfig::LauncherConfig::compact, "compact"),
           field(&ShellConfig::LauncherConfig::appGrid, "app_grid"),
-          field(&ShellConfig::LauncherConfig::sessionSearch, "session_search"),
           field(&ShellConfig::LauncherConfig::sortByUsage, "sort_by_usage"),
+          field(&ShellConfig::LauncherConfig::providerPrefix, "provider_prefix"),
           subTable(&ShellConfig::LauncherConfig::dmenu, "dmenu", shellLauncherDmenuSchema()),
+          namedMap<ShellConfig::LauncherConfig, LauncherProviderConfig>(
+              &ShellConfig::LauncherConfig::providers, "providers", launcherProviderSchema(),
+              [](LauncherProviderConfig& elem, std::string_view name) {
+                elem.name = StringUtils::toLower(std::string(name));
+              },
+              [](const LauncherProviderConfig& elem) { return elem.name; }
+          ),
       };
       return s;
     }
@@ -1357,6 +1366,8 @@ namespace noctalia::config::schema {
               &ShellSessionConfig::actions, "actions", sessionActionSchema(),
               [](const SessionPanelActionConfig& a) { return !a.action.empty(); }
           ),
+          field(&ShellSessionConfig::grid, "grid"),
+          field(&ShellSessionConfig::gridColumns, "grid_columns", kSessionGridColumnsRange),
           subTable(&ShellSessionConfig::power, "power", shellSessionPowerSchema()),
       };
       return s;
@@ -1365,8 +1376,8 @@ namespace noctalia::config::schema {
 
   const Schema<ShellConfig>& shellSchema() {
     static const Schema<ShellConfig> s = {
-        field(&ShellConfig::uiScale, "ui_scale", kScaleRange),
         field(&ShellConfig::cornerRadiusScale, "corner_radius_scale", kCornerRadiusScaleRange),
+        field(&ShellConfig::buttonBorders, "button_borders"),
         // font_family is trimmed; empty falls back to sans-serif.
         custom<ShellConfig>(
             "font_family",
@@ -1512,78 +1523,19 @@ namespace noctalia::config::schema {
     // Run collectUnknownKeys for `section`'s schema; false if the section name is
     // unknown. The single dispatch from a section name to its schema.
     bool collectUnknownInSection(std::string_view section, const toml::table& tbl, std::vector<std::string>& unknown) {
-      const auto chk = [&](const auto& sch) {
-        collectUnknownKeys(tbl, sch, section, unknown);
+      if (const SectionSpec* spec = findSection(section); spec != nullptr) {
+        spec->collectUnknown(tbl, unknown);
         return true;
-      };
-      if (section == "shell") {
-        return chk(shellSchema());
       }
-      if (section == "wallpaper") {
-        return chk(wallpaperSchema());
-      }
-      if (section == "theme") {
-        return chk(themeSchema());
-      }
-      if (section == "backdrop") {
-        return chk(backdropSchema());
-      }
-      if (section == "lockscreen") {
-        return chk(lockscreenSchema());
-      }
-      if (section == "notification" || section == "notifications") {
-        return chk(notificationSchema());
-      }
-      if (section == "osd") {
-        return chk(osdSchema());
-      }
-      if (section == "system") {
-        return chk(systemSchema());
-      }
-      if (section == "weather") {
-        return chk(weatherSchema());
-      }
-      if (section == "calendar") {
-        return chk(calendarSchema());
-      }
-      if (section == "audio") {
-        return chk(audioSchema());
-      }
-      if (section == "brightness") {
-        return chk(brightnessSchema());
-      }
-      if (section == "battery") {
-        return chk(batterySchema());
-      }
-      if (section == "nightlight") {
-        return chk(nightlightSchema());
-      }
-      if (section == "location") {
-        return chk(locationSchema());
-      }
-      if (section == "idle") {
-        return chk(idleSchema());
-      }
-      if (section == "keybinds") {
-        return chk(keybindsSchema());
-      }
-      if (section == "dock") {
-        return chk(dockSchema());
-      }
+      // Schema-backed but not plain sections: their read/write shape is bespoke, so
+      // they are custom root keys rather than SectionSpec rows.
       if (section == "desktop_widgets") {
-        return chk(desktopWidgetsSchema());
-      }
-      if (section == "hot_corners") {
-        return chk(hotCornersSchema());
+        collectUnknownKeys(tbl, desktopWidgetsSchema(), section, unknown);
+        return true;
       }
       if (section == "lockscreen_widgets") {
-        return chk(lockscreenWidgetsSchema());
-      }
-      if (section == "control_center") {
-        return chk(controlCenterSchema());
-      }
-      if (section == "hooks") {
-        return chk(hooksSchema());
+        collectUnknownKeys(tbl, lockscreenWidgetsSchema(), section, unknown);
+        return true;
       }
       return false;
     }
@@ -1996,6 +1948,7 @@ namespace noctalia::config::schema {
     static const Schema<BarConfig> s = {
         field(&BarConfig::enabled, "enabled"),
         field(&BarConfig::autoHide, "auto_hide"),
+        field(&BarConfig::smartAutoHide, "smart_auto_hide"),
         field(&BarConfig::showOnWorkspaceSwitch, "show_on_workspace_switch"),
         field(&BarConfig::reserveSpace, "reserve_space"),
         barLayerField(),
@@ -2049,6 +2002,7 @@ namespace noctalia::config::schema {
         optionalStringField(&BarMonitorOverride::position, "position"),
         optionalBoolField(&BarMonitorOverride::enabled, "enabled"),
         optionalBoolField(&BarMonitorOverride::autoHide, "auto_hide"),
+        optionalBoolField(&BarMonitorOverride::smartAutoHide, "smart_auto_hide"),
         optionalBoolField(&BarMonitorOverride::showOnWorkspaceSwitch, "show_on_workspace_switch"),
         optionalBoolField(&BarMonitorOverride::reserveSpace, "reserve_space"),
         // layer accepts top|overlay; anything else warns and leaves it unset.
@@ -2131,6 +2085,14 @@ namespace noctalia::config::schema {
             [](toml::table&, const BarMonitorOverride&) {}
         ),
         subTable(&BarMonitorOverride::deadZone, "dead_zone", barDeadZoneOverrideSchema()),
+    };
+    return s;
+  }
+
+  const Schema<AccessibilityConfig>& accessibilitySchema() {
+    static const Schema<AccessibilityConfig> s = {
+        field(&AccessibilityConfig::uiScale, "ui_scale", kScaleRange),
+        field(&AccessibilityConfig::highContrast, "high_contrast"),
     };
     return s;
   }

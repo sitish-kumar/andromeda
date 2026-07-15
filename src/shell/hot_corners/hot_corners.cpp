@@ -62,10 +62,20 @@ void HotCorners::ensureSurfaces() {
     auto instance = std::make_unique<OutputInstance>();
     instance->output = out.output;
 
-    buildCorner(instance->topLeft, 0, out.output);
-    buildCorner(instance->topRight, 1, out.output);
-    buildCorner(instance->bottomLeft, 2, out.output);
-    buildCorner(instance->bottomRight, 3, out.output);
+    const auto& config = m_config->config().hotCorners;
+
+    if (config.topLeft.action != "none" && !config.topLeft.action.empty()) {
+      buildCorner(instance->topLeft, 0, out.output);
+    }
+    if (config.topRight.action != "none" && !config.topRight.action.empty()) {
+      buildCorner(instance->topRight, 1, out.output);
+    }
+    if (config.bottomLeft.action != "none" && !config.bottomLeft.action.empty()) {
+      buildCorner(instance->bottomLeft, 2, out.output);
+    }
+    if (config.bottomRight.action != "none" && !config.bottomRight.action.empty()) {
+      buildCorner(instance->bottomRight, 3, out.output);
+    }
 
     m_instances.push_back(std::move(instance));
   }
@@ -76,7 +86,7 @@ void HotCorners::destroySurfaces() { m_instances.clear(); }
 void HotCorners::triggerAction(const std::string& action, const std::string& command, wl_output* output) {
   if (action == "command") {
     if (!command.empty()) {
-      m_app->runUserCommand(command);
+      m_app->runShellCommand(command);
     }
   } else if (action != "none" && !action.empty()) {
     m_app->triggerShellAction(action, output);

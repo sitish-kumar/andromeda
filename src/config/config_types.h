@@ -59,6 +59,7 @@ struct BarMonitorOverride {
   std::optional<std::string> position;
   std::optional<bool> enabled;
   std::optional<bool> autoHide;
+  std::optional<bool> smartAutoHide;
   std::optional<bool> showOnWorkspaceSwitch;
   std::optional<bool> reserveSpace;
   std::optional<std::string> layer; // top | overlay
@@ -118,6 +119,7 @@ struct BarConfig {
   std::string position = "top";
   bool enabled = true;
   bool autoHide = false;             // slide out when the pointer leaves; reveal on edge approach
+  bool smartAutoHide = false;        // hide while the active workspace has windows; show when it is empty
   bool showOnWorkspaceSwitch = true; // with auto_hide: briefly reveal when the active workspace changes
   bool reserveSpace = true;          // reserve compositor exclusive zone; applies with or without auto_hide
   std::string layer = "top";         // top | overlay — attached panels use the same layer
@@ -214,6 +216,10 @@ struct SessionPanelActionConfig {
 
 struct ShellSessionConfig {
   std::vector<SessionPanelActionConfig> actions;
+  // Lay the session panel actions out over multiple rows of `gridColumns` instead of
+  // fitting them on a single row.
+  bool grid = false;
+  std::int32_t gridColumns = 3;
   // Optional overrides for built-in session power commands. Empty = auto-detect at runtime.
   struct ShellSessionPowerConfig {
     // Shell strings run with `/bin/sh -lc` (shell=True).
@@ -304,6 +310,7 @@ struct IdleActionRequest {
 struct ResolvedIdleBehavior {
   IdleActionRequest idleAction;
   IdleActionRequest resumeAction;
+  std::string resumeCommand;
 
   bool operator==(const ResolvedIdleBehavior&) const = default;
 };
@@ -348,6 +355,7 @@ struct WidgetBarCapsuleSpec {
   std::optional<float> radius;
   // Capsule background opacity multiplier (0.0–1.0).
   float opacity = 1.0f;
+  bool hoverHighlight = true;
 
   bool operator==(const WidgetBarCapsuleSpec&) const = default;
 };
@@ -554,7 +562,8 @@ struct DockConfig {
   std::int32_t marginEdge = 0;         // distance from the nearest screen edge (floats the dock when > 0)
   bool shadow = true;                  // use the global shell shadow
   bool showRunning = true;             // also show running apps not in pinned list
-  bool autoHide = false;               // fade out when not hovered (overlay mode)
+  bool autoHide = false;               // slide out when not hovered (overlay mode)
+  bool smartAutoHide = false;          // hide while the active workspace has windows; show when it is empty
   bool reserveSpace = true;            // reserve compositor exclusive zone; applies with or without auto_hide
   float activeScale = 1.0f;            // focused app icon scale
   float inactiveScale = 0.85f;         // non-focused app icon scale
@@ -825,7 +834,8 @@ struct DmenuEntryConfig {
   // When set, the activated line is substituted into {selection} and run detached.
   // When unset, the selection is copied to the clipboard.
   std::optional<std::string> exec;
-  // Launcher prefix routing (e.g. "/ssh"). Empty leaves the entry reachable only via
+  // Launcher trigger word (e.g. "ssh"), combined with shell.launcher.provider_prefix like
+  // the built-in providers (-> "/ssh"). Empty leaves the entry reachable only via
   // global = true, otherwise it is unreachable (surfaced as a config warning).
   std::optional<std::string> prefix;
   std::optional<std::string> label; // Provider overview title; defaults to the id.
@@ -834,6 +844,14 @@ struct DmenuEntryConfig {
   bool freeform = false;            // Let typed query text become an activatable result.
 
   bool operator==(const DmenuEntryConfig&) const = default;
+};
+
+struct LauncherProviderConfig {
+  std::string name;
+  std::string prefix;
+  std::optional<bool> global;
+
+  bool operator==(const LauncherProviderConfig&) const = default;
 };
 
 struct ShellConfig {
@@ -887,14 +905,16 @@ struct ShellConfig {
     bool showIcons = true;
     bool compact = false;
     bool appGrid = false;
-    bool sessionSearch = false;
     bool sortByUsage = true;
+    std::string providerPrefix = "/";
 
     struct DmenuConfig {
       std::vector<DmenuEntryConfig> entries;
 
       bool operator==(const DmenuConfig&) const = default;
     } dmenu;
+
+    std::vector<LauncherProviderConfig> providers;
 
     bool operator==(const LauncherConfig&) const = default;
   };
@@ -933,8 +953,8 @@ struct ShellConfig {
     bool operator==(const PrivacyConfig&) const = default;
   };
 
-  float uiScale = 1.0f;
   float cornerRadiusScale = 1.0f;
+  bool buttonBorders = true;
   std::string fontFamily = "sans-serif";
   std::string lang; // empty = auto-detect from $LC_ALL/$LC_MESSAGES/$LANG
   std::string timeFormat = "{:%H:%M}";
@@ -1158,12 +1178,14 @@ struct NightLightConfig {
 
 struct LocationConfig {
   // Single source of truth for "where am I". Resolution priority:
-  //   auto_locate (IP) -> address (geocoded) -> manual latitude/longitude -> manual sunrise/sunset.
+  //   auto_locate (IP) -> address (geocoded) -> manual latitude/longitude.
+  // When customSchedule is true, explicit sunset/sunrise times override coordinates.
   // Consumed by the weather service, night light, and theme auto mode.
-  bool autoLocate = false; // resolve coordinates from IP geolocation
-  std::string address;     // geocoded when auto_locate is off and this is non-empty
-  std::string sunset;      // HH:MM night start, used only when no coordinates resolve
-  std::string sunrise;     // HH:MM day start, used only when no coordinates resolve
+  bool autoLocate = false;     // resolve coordinates from IP geolocation
+  std::string address;         // geocoded when auto_locate is off and this is non-empty
+  bool customSchedule = false; // when true, use sunset/sunrise times instead of coordinates
+  std::string sunset;          // HH:MM night start, used only when customSchedule is true
+  std::string sunrise;         // HH:MM day start, used only when customSchedule is true
   std::optional<double> latitude;
   std::optional<double> longitude;
 
@@ -1278,6 +1300,8 @@ struct ThemeConfig {
   struct TemplateColorConfig {
     std::string name;
     std::string color;
+    std::string color_dark = "";
+    std::string color_light = "";
     bool blend = true;
 
     bool operator==(const TemplateColorConfig&) const = default;
@@ -1330,6 +1354,7 @@ struct ThemeConfig {
   std::string customPalette;
   std::string wallpaperScheme = "m3-content";
   ThemeMode mode = ThemeMode::Dark;
+  bool pureBlackDark = false;
   TemplatesConfig templates;
 
   bool operator==(const ThemeConfig&) const = default;
@@ -1395,6 +1420,13 @@ struct PluginsConfig {
 // Source names are stable user-facing handles and git source storage directory names.
 // Keep them flat so they can never escape the plugin source cache.
 [[nodiscard]] bool isValidPluginSourceName(std::string_view name);
+
+struct AccessibilityConfig {
+  float uiScale = 1.0f;
+  bool highContrast = false;
+  bool operator==(const AccessibilityConfig&) const = default;
+};
+
 struct HotCornersConfig {
   bool enabled = false;
 
@@ -1439,6 +1471,7 @@ struct Config {
   ThemeConfig theme;
   ControlCenterConfig controlCenter;
   PluginsConfig plugins;
+  AccessibilityConfig accessibility;
 };
 // Which top-level config sections changed across a reload. Default-constructed
 // to all-true (conservative: "assume everything changed") so any path that does
@@ -1470,6 +1503,7 @@ struct ConfigChangeSet {
   bool controlCenter = true;
   bool plugins = true;
   bool hotCorners = true;
+  bool accessibility = true;
 
   [[nodiscard]] bool any() const noexcept {
     return bars
@@ -1497,7 +1531,8 @@ struct ConfigChangeSet {
         || theme
         || controlCenter
         || plugins
-        || hotCorners;
+        || hotCorners
+        || accessibility;
   }
 };
 

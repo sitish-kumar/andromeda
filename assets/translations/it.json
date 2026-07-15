@@ -687,6 +687,8 @@
       "calendar-google-connect-start-failed": "Impossibile avviare l'autorizzazione Google. Controlla la connessione di rete e riprova.",
       "calendar-google-connect-start-http": "Impossibile avviare l'autorizzazione Google. Il broker OAuth ha restituito HTTP {status}.",
       "calendar-google-connect-timeout": "Autorizzazione Google scaduta. Avvia di nuovo la connessione quando sei pronto ad accedere.",
+      "config-migration-body": "È in corso la migrazione della configurazione legacy in memoria, incluso {path}. Aggiorna la configurazione di origine; Le impostazioni e la convalida della configurazione di noctalia mostrano la sostituzione richiesta.",
+      "config-migration-title": "È necessario l'aggiornamento della configurazione",
       "dbus-disabled": "Notifiche DBus disabilitate",
       "desktop-widgets-editor": "Editor widget",
       "desktop-widgets-editor-enabled": "L'editor dei widget desktop è attivo. Passa a uno spazio di lavoro vuoto per visualizzarlo.",
@@ -918,6 +920,16 @@
           "border": "Bordo",
           "border-description": "Ruolo colore del contorno capsula; lascia Predefinito per nessun contorno",
           "clear": "Cancella",
+          "drawer-columns": "Colonne cassetto",
+          "drawer-columns-description": "Numero di widget per riga nel pannello del cassetto",
+          "drawer-detached": "Pannello staccato",
+          "drawer-detached-description": "Apri il cassetto come un pannello mobile con il proprio sfondo invece di unirlo alla barra",
+          "drawer-enabled": "Cassetto",
+          "drawer-enabled-description": "Sposta i widget del gruppo in un pannello a cassetto attivato da un pulsante",
+          "drawer-glyph-closed": "Icona chiuso",
+          "drawer-glyph-closed-description": "Glifo mostrato sul pulsante di attivazione/disattivazione del cassetto quando il pannello è chiuso",
+          "drawer-glyph-opened": "Icona aperto",
+          "drawer-glyph-opened-description": "Glifo mostrato sul pulsante di attivazione/disattivazione del cassetto quando il pannello è aperto",
           "edit": "Modifica stile",
           "fill": "Sfondo",
           "fill-description": "Ruolo colore dello sfondo capsula; sono supportati anche codici colore in formato esadecimale",
@@ -981,7 +993,17 @@
             "grouping": "Raggruppamento",
             "presentation": "Visualizzazione",
             "runtime": "Runtime",
-            "widget": "Widget"
+            "taskbar": {
+              "grouping": "Raggruppamento",
+              "windows": "Finestre",
+              "workspace-labels": "Etichette dell'area di lavoro"
+            },
+            "widget": "Widget",
+            "workspaces": {
+              "colors": "Colori",
+              "list": "Spazi di lavoro",
+              "pills": "Stile pillola"
+            }
           }
         }
       }
@@ -998,6 +1020,7 @@
         "rename": "Impossibile rinominare la barra."
       },
       "batch-write": "Alcune impostazioni non sono state salvate.",
+      "custom-schedule-times": "Una pianificazione personalizzata richiede sia l'ora dell'alba che quella del tramonto nel formato HH:MM.",
       "export-config": "Salvataggio esportazione configurazione non riuscito.",
       "export-wallpaper-palette": "Impossibile salvare la palette dello sfondo come palette personalizzata.",
       "monitor-override": {
@@ -1040,8 +1063,8 @@
         "kind-section-label": "Azione",
         "name-label": "Nome",
         "name-placeholder": "comportamento-inattività",
-        "resume-command-label": "Comando ripresa",
-        "resume-command-placeholder": "noctalia:dpms-on",
+        "resume-command-label": "Comando resume",
+        "resume-command-placeholder": "notify-send 'Ripresa da inattività'",
         "summary": "{name} · {seconds}s",
         "summary-disabled-timeout": "{name} · timeout disabilitato",
         "timeout-label": "Secondi timeout",
@@ -1055,6 +1078,7 @@
     },
     "navigation": {
       "groups": {
+        "accessibility": "Accessibilità",
         "audio": "Audio",
         "authentication": "Autenticazione",
         "automation": "Automazione",
@@ -1071,6 +1095,7 @@
         "control-center": "Centro di controllo",
         "dead-zone": "Zona morta",
         "directories": "Directory",
+        "display": "Mostra",
         "effects": "Effetti",
         "filtering": "Filtri",
         "focus-styling": "Stile focus",
@@ -1122,6 +1147,7 @@
         "widgets": "Widget"
       },
       "sections": {
+        "accessibility": "Accessibilità",
         "appearance": "Aspetto",
         "backdrop": "Sfondo pannelli",
         "bar": "Barra",
@@ -1160,8 +1186,11 @@
           "toast": "toast"
         },
         "flags-label": "Quando corrisponde",
+        "match-content-label": "Espressione regolare contenuto",
+        "match-content-placeholder": "Espressione regolare per il riepilogo o il body...",
         "match-label": "App",
         "match-placeholder": "Nome app, voce desktop o categoria...",
+        "override-duration": "Override durata",
         "play-sound": "Riproduci suono",
         "save-history": "Salva nella cronologia",
         "show-toast": "Mostra toast",
@@ -1172,6 +1201,13 @@
       }
     },
     "options": {
+      "bar": {
+        "auto-hide": {
+          "off": "Off",
+          "on": "On",
+          "smart": "Smart"
+        }
+      },
       "clipboard": {
         "auto-paste": {
           "ctrl-shift-v": "Ctrl+Shift+V",
@@ -1231,6 +1267,10 @@
       "orientation": {
         "horizontal": "Orizzontale",
         "vertical": "Verticale"
+      },
+      "panel-bar-alignment": {
+        "centered": "Centrato",
+        "near-trigger": "Vicino al click"
       },
       "panel-position": {
         "auto": "Segui la barra"
@@ -1392,6 +1432,12 @@
       }
     },
     "schema": {
+      "accessibility": {
+        "high-contrast": {
+          "description": "Aumenta il contrasto spingendo i colori della superficie e dello sfondo verso valori estremi",
+          "label": "Alto contrasto"
+        }
+      },
       "appearance": {
         "animation-speed": {
           "description": "Moltiplicatore di velocità per le animazioni",
@@ -1412,6 +1458,10 @@
         "builtin-palette": {
           "description": "Scegli una palette dal catalogo incluso",
           "label": "Palette integrata"
+        },
+        "button-borders": {
+          "description": "Disegna i contorni attorno ai pulsanti in tutta la shell",
+          "label": "Bordi dei pulsanti"
         },
         "community-palette": {
           "description": "Scegli una palette dal catalogo community",
@@ -1449,6 +1499,10 @@
         "palette-source": {
           "description": "Da dove ricavare la palette colori",
           "label": "Sorgente palette"
+        },
+        "pure-black-dark": {
+          "description": "Ancora le superfici scure al nero assoluto, prevenendo il banding sui pannelli OLED (solo modalità scura)",
+          "label": "Nero puro"
         },
         "theme-mode": {
           "description": "Scegli scuro, chiaro o automatico in base all'ora del giorno",
@@ -1522,6 +1576,10 @@
         "center-widgets": {
           "description": "Widget al centro della barra",
           "label": "Widget centrali"
+        },
+        "concave-edge-corners": {
+          "description": "Intagliare delle tacche concave in due degli angoli della barra. È necessario che il margine del bordo sia impostato su 0. Se il margine delle estremità è impostato su 0, vengono intagliati gli angoli sul bordo interno della barra; in caso contrario, vengono intagliati gli angoli che toccano il bordo dello schermo.",
+          "label": "Angoli del bordo concavi"
         },
         "contact-shadow": {
           "description": "Gradiente scuro tra un pannello attaccato e la barra per suggerire profondità nel punto di contatto"
@@ -2218,6 +2276,10 @@
           "description": "Frequenza di sincronizzazione degli eventi calendario (minuti)",
           "label": "Intervallo aggiornamento"
         },
+        "custom-schedule": {
+          "description": "Utilizza gli orari di alba/tramonto manuali invece di calcolare in base alle coordinate",
+          "label": "Programmazione personalizzata"
+        },
         "day-temperature": {
           "description": "Temperatura colore durante il giorno (Kelvin)",
           "label": "Temperatura giorno"
@@ -2572,16 +2634,16 @@
           "label": "Agente Polkit"
         },
         "privacy-cam-filter-regex": {
-          "description": "Regex per le app della fotocamera da ignorare negli indicatori di privacy e OSD",
-          "label": "Filtro Regex camera"
+          "description": "Espressione regolare per le app della fotocamera da ignorare negli indicatori di privacy e OSD",
+          "label": "Filtro Espressione regolare camera"
         },
         "privacy-mic-filter-regex": {
-          "description": "Regex per le app del microfono da ignorare negli indicatori di privacy e OSD",
-          "label": "Filtro Regex microfono"
+          "description": "Espressione regolare per le app del microfono da ignorare negli indicatori di privacy e OSD",
+          "label": "Filtro espressione regolare microfono"
         },
         "privacy-screen-filter-regex": {
-          "description": "Regex per ignorare le app di condivisione dello schermo negli indicatori di privacy e OSD",
-          "label": "Filtro Regex condivisone schermo"
+          "description": "Espressione regolare per ignorare le app di condivisione dello schermo negli indicatori di privacy e OSD",
+          "label": "Filtro espressione regolare condivisone schermo"
         },
         "screen-time-enabled": {
           "description": "Monitora l'uso per app e lo mostra nel centro di controllo",
@@ -2862,7 +2924,7 @@
         },
         "cam-filter-regex": {
           "description": "Espressione regolare per i nomi dei processi della camera da ignorare",
-          "label": "Filtro Regex camera"
+          "label": "Filtro espressione regolare camera"
         },
         "capsule": {
           "description": "Disegna una capsula dietro il widget",
@@ -3012,6 +3074,10 @@
           "description": "Nasconde la copertina dell'album",
           "label": "Nascondi copertina album"
         },
+        "hide-artist": {
+          "description": "Nascondi il nome dell'artista e mostra solo il titolo della traccia",
+          "label": "Nascondi artista"
+        },
         "hide-empty-workspaces": {
           "description": "Quando si raggruppa per workspace, omette le capsule senza finestre in esecuzione nell'elenco taskbar.",
           "label": "Nascondi workspace vuoti"
@@ -3086,6 +3152,10 @@
           "label": "Dimensione pillola inattiva",
           "workspaces-description": "Lunghezza minima della pillola dell'area di lavoro inattiva lungo la barra, come multiplo dello spessore; le etichette potrebbero espandersi oltre questo limite"
         },
+        "interactive": {
+          "description": "Consenti il ​​passaggio del puntatore, i clic, gli scroll e le descrizioni comandi per questo widget",
+          "label": "Interattivo"
+        },
         "interface": {
           "description": "Interfaccia di rete da monitorare; lasciare vuoto per riportare il totale su tutte le interfacce",
           "label": "Interfaccia"
@@ -3122,7 +3192,7 @@
         },
         "mic-filter-regex": {
           "description": "Espressione regolare per i nomi dei processi microfono da ignorare",
-          "label": "Filtro Regex microfono"
+          "label": "Filtro espressione regolare microfono"
         },
         "middle-command": {
           "description": "Comando shell eseguito al click centrale su questo pulsante. Se impostato, il click centrale apre questo comando invece delle impostazioni widget.",
@@ -3135,6 +3205,7 @@
         "minimal": {
           "description": "Mostra solo etichette ID o nome workspace, senza pillole animate",
           "label": "Stile minimale",
+          "taskbar-description": "Etichette dell'area di lavoro di solo testo senza sfondi colorati nei cerchi",
           "workspaces-description": "Etichette workspace solo testo senza sfondi pillola o animazione di scorrimento"
         },
         "mirrored": {
@@ -3270,6 +3341,10 @@
           "description": "Budget larghezza totale in pixel; i titoli finestra si riducono per adattarsi e si nascondono quando troppo stretti",
           "label": "Larghezza max taskbar"
         },
+        "timezone": {
+          "description": "Identificatore fuso orario (ad esempio Europe/Berlin) da utilizzare per questo orologio; lasciare vuoto per utilizzare l'ora locale del sistema",
+          "label": "Fuso orario"
+        },
         "title-scroll": {
           "description": "Quando deve scorrere il titolo del widget",
           "label": "Scorrimento titolo"
@@ -3351,6 +3426,7 @@
       "export-config": "Esporta configurazione...",
       "export-config-saved": "Esportazione configurazione salvata.",
       "filter-modified": "Modificate",
+      "legacy-config-warning": "È in corso la migrazione della configurazione legacy in memoria: {issue}. Esegui la convalida della configurazione di noctalia per tutte le modifiche richieste.",
       "native-title": "Impostazioni Noctalia",
       "no-results": "Nessuna impostazione trovata",
       "no-results-hint": "Prova un nome impostazione o una chiave configurazione diversa.",

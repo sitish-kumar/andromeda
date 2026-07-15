@@ -456,6 +456,31 @@ void MangoWorkspaceBackend::syncFocusedClientTags() {
         }
       }
     }
+
+    // In Mango, the overview mode is equivalent to viewing all tags. If all tags are active, this messes with tag merge
+    // view, so we only show active client when all tags are "active".
+    bool allActive = !state.tags.empty();
+    for (const auto& tag : state.tags) {
+      if (!tag.active) {
+        allActive = false;
+        break;
+      }
+    }
+
+    if (allActive) {
+      bool foundFocused = false;
+      for (auto& tag : state.tags) {
+        if (tag.hasFocusedClient) {
+          tag.active = true;
+          foundFocused = true;
+        } else {
+          tag.active = false;
+        }
+      }
+      if (!foundFocused && !state.tags.empty()) {
+        state.tags.front().active = true;
+      }
+    }
   }
 }
 

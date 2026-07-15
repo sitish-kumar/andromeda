@@ -64,6 +64,7 @@
 #include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_registry.h"
 #include "scripting/plugin_runtime_context.h"
+#include "scripting/script_runtime.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
 #include "shell/control_center/control_center_panel.h"
@@ -112,6 +113,7 @@ namespace {
 
   void signal_handler(int signum) {
     if (signum == SIGTERM || signum == SIGINT) {
+      scripting::ScriptRuntime::setShutdownSignal(signum);
       Application::s_shutdownRequested = true;
     }
   }
@@ -357,6 +359,7 @@ void Application::initStyleThemeAndWayland() {
     const bool cornerChanged =
         std::isfinite(lastCornerRadiusScale) && std::abs(corner - lastCornerRadiusScale) > 1.0e-4f;
     Style::setCornerRadiusScale(corner);
+    Style::setButtonBordersEnabled(m_configService.config().shell.buttonBorders);
     lastCornerRadiusScale = corner;
     if (cornerChanged) {
       m_notificationToast.requestLayout();
@@ -475,17 +478,20 @@ void Application::initStyleThemeAndWayland() {
     const std::string configuredMode(enumToKey(kThemeModes, m_themeService.configuredMode()));
     m_scriptApi.setDarkMode(resolvedMode != "light");
     syncScriptApiWallpaperDirectory();
-    m_templateApplyService.apply(generated, mode);
-    m_hookManager.fire(HookKind::ColorsChanged);
-    if (lastResolvedThemeMode.has_value() && *lastResolvedThemeMode != resolvedMode) {
-      m_hookManager.fire(
-          HookKind::ThemeModeChanged,
-          {{"NOCTALIA_THEME_MODE", resolvedMode},
-           {"NOCTALIA_THEME_MODE_PREVIOUS", *lastResolvedThemeMode},
-           {"NOCTALIA_THEME_MODE_CONFIGURED", configuredMode}}
-      );
-    }
+    const std::optional<std::string> previousMode = lastResolvedThemeMode;
     lastResolvedThemeMode = resolvedMode;
+    m_templateApplyService.setAfterApplyCallback([this, resolvedMode, previousMode, configuredMode]() {
+      m_hookManager.fire(HookKind::ColorsChanged);
+      if (previousMode.has_value() && *previousMode != resolvedMode) {
+        m_hookManager.fire(
+            HookKind::ThemeModeChanged,
+            {{"NOCTALIA_THEME_MODE", resolvedMode},
+             {"NOCTALIA_THEME_MODE_PREVIOUS", *previousMode},
+             {"NOCTALIA_THEME_MODE_CONFIGURED", configuredMode}}
+        );
+      }
+    });
+    m_templateApplyService.apply(generated, mode);
   });
   m_themeService.apply();
   syncScriptApiWallpaperDirectory();
@@ -604,6 +610,7 @@ void Application::initWaylandCallbacks() {
       (void)m_compositorPlatform.clearActiveWorkspaceAlerts();
     }
     m_bar.onWorkspaceChanged();
+    m_dock.onWorkspaceChanged();
     m_bar.refresh();
     m_windowSwitcher.onToplevelChange();
   });
@@ -618,6 +625,8 @@ void Application::initWaylandCallbacks() {
   });
   m_compositorPlatform.setToplevelChangeCallback([this]() {
     m_screenTimeService.onFocusChange();
+    m_bar.scheduleSmartAutoHideReevaluation();
+    m_dock.scheduleSmartAutoHideReevaluation();
     m_bar.refresh();
     m_dock.refresh();
     m_windowSwitcher.onToplevelChange();
@@ -662,9 +671,9 @@ void Application::initWaylandCallbacks() {
 void Application::initAuxServicesAndHooks() {
   auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
 
-  m_hookManager.setCommandRunner([this](const std::string& command) { return runUserCommand(command); });
+  m_hookManager.setCommandRunner([this](const std::string& command) { return runShellCommand(command); });
   m_hookManager.setBlockingCommandRunner([this](const std::string& command) {
-    return runUserCommandBlocking(command);
+    return runShellCommandBlocking(command);
   });
   m_hookManager.reload(m_configService.config().hooks);
   m_configService.addReloadCallback(
@@ -1257,8 +1266,8 @@ void Application::triggerShellAction(const std::string& action, wl_output* outpu
   } else if (action == "overview") {
     // There is no public toggle for overview in OverviewLauncherCapture.
     // Try to execute a generic compositor action, or use niri directly if using niri.
-    runUserCommand("niri msg action toggle-overview");
+    runShellCommand("niri msg action toggle-overview");
   } else if (action == "window_switcher") {
-    runUserCommand("noctalia:window-switcher");
+    m_windowSwitcher.show(output);
   }
 }

@@ -22,7 +22,7 @@ if is_libcxx
 endif
 
 # Sanitizers are enabled via meson's built-in -Db_sanitize=address,undefined.
-# pipewire_lsan.cpp is only needed when address sanitizer is active.
+# lsan_suppressions.cpp is only needed when address sanitizer is active.
 sanitize = get_option('b_sanitize') != 'none'
 
 # Hardened standard-library assertions in debug builds only. A std::clamp(v, lo, hi)
@@ -413,12 +413,14 @@ _noctalia_sources = files(
   'src/config/atomic_file.cpp',
   'src/config/config_export.cpp',
   'src/config/config_merge.cpp',
+  'src/config/config_migrations.cpp',
   'src/config/config_overrides.cpp',
   'src/config/config_service.cpp',
   'src/config/config_types.cpp',
   'src/config/config_validate.cpp',
   'src/config/widget_config.cpp',
   'src/config/schema/config_schema.cpp',
+  'src/config/schema/config_sections.cpp',
   'src/config/state_store.cpp',
   'src/config/cli.cpp',
   'src/core/build_info.cpp',
@@ -741,6 +743,7 @@ _noctalia_sources = files(
   'src/system/rfkill_helper.cpp',
   'src/system/screen_time_service.cpp',
   'src/system/cpu_temp_sensor.cpp',
+  'src/system/intel_gpu.cpp',
   'src/system/system_monitor_service.cpp',
   'src/system/weather_service.cpp',
   'src/time/time_format.cpp',
@@ -853,6 +856,7 @@ _noctalia_sources = files(
   'src/theme/contrast.cpp',
   'src/theme/image_loader.cpp',
   'src/theme/palette_generator.cpp',
+  'src/theme/palette_transform.cpp',
   'src/theme/m3_schemes.cpp',
   'src/theme/custom_schemes.cpp',
   'src/theme/builtin_palettes.cpp',
@@ -870,7 +874,7 @@ _noctalia_sources = files(
 )
 
 if sanitize
-  _noctalia_sources += files('src/pipewire/pipewire_lsan.cpp')
+  _noctalia_sources += files('src/core/lsan_suppressions.cpp')
 endif
 
 git_program = find_program('git', required: false)
@@ -1129,6 +1133,18 @@ ical_recurrence_test = executable('ical_recurrence_test',
 
 test('ical_recurrence', ical_recurrence_test)
 
+google_client_calendar_list_test = executable('google_client_calendar_list_test',
+  sources: files(
+    'tests/google_client_calendar_list_test.cpp',
+  ),
+  dependencies: [
+    nlohmann_dep,
+  ],
+  include_directories: _noctalia_inc,
+)
+
+test('google_client_calendar_list', google_client_calendar_list_test)
+
 time_format_test = executable('time_format_test',
   sources: files(
     'tests/time_format_test.cpp',
@@ -1356,6 +1372,7 @@ config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
   sources: files(
     'tests/config_schema_roundtrip_test.cpp',
     'src/config/schema/config_schema.cpp',
+    'src/config/schema/config_sections.cpp',
     'src/config/config_export.cpp',
     'src/config/config_types.cpp',
     'src/notification/notification_filter.cpp',
@@ -1375,6 +1392,19 @@ config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
 )
 
 test('config_schema_roundtrip', config_schema_roundtrip_test)
+
+config_migration_test = executable('config_migration_test',
+  sources: files(
+    'tests/config_migration_test.cpp',
+    'src/config/config_migrations.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [
+    tomlplusplus_dep,
+  ],
+)
+
+test('config_migration', config_migration_test)
 
 config_widget_test = executable('config_widget_test',
   sources: files(
@@ -1402,6 +1432,7 @@ config_path_resolution_test = executable('config_path_resolution_test',
   sources: files(
     'tests/config_path_resolution_test.cpp',
     'src/config/schema/config_schema.cpp',
+    'src/config/schema/config_sections.cpp',
     'src/config/config_types.cpp',
     'src/notification/notification_filter.cpp',
     'src/render/core/color.cpp',

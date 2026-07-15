@@ -687,6 +687,8 @@
       "calendar-google-connect-start-failed": "Kunne ikkje byrja Google-sanninga. Sjå etter nettverktilkoplinga og prøv å nyo.",
       "calendar-google-connect-start-http": "Kunne ikkje byrja Google-sanninga. OAuth-handsamaren svara med HTTP {status}.",
       "calendar-google-connect-timeout": "Google-sanning gjekk ut. Byrja koplinga å nyo når du vil skriva deg inn.",
+      "config-migration-body": "Utdatert tilmåting vert flytta i minnet, medrekna {path}. Oppdater brunntilmåtinga; Innstillingar og noctalia config validate vis det som må bytast ut.",
+      "config-migration-title": "Tilmåtinga krev oppdatering",
       "dbus-disabled": "DBus-varsel avslegne",
       "desktop-widgets-editor": "Nøytelbrigdar",
       "desktop-widgets-editor-enabled": "Skrivebordsnøytelbrigdaren er på. Gå til eit tomt arbeidsrom for å sjå brigdaroverlaget.",
@@ -918,6 +920,16 @@
           "border": "Rand",
           "border-description": "Leten for pilleomritet; lat vera på Vanleg for inkje omrit",
           "clear": "Rydd",
+          "drawer-columns": "Ilåtssøyler",
+          "drawer-columns-description": "Kor mange nøytlar det er i kvar rad i ilåtsfjøla",
+          "drawer-detached": "Ubunden fjøl",
+          "drawer-detached-description": "Opna ilåtet som ei flytande fjøl med eigen bakgrunn heller enn å vera bunde til stonga.",
+          "drawer-enabled": "Ilåt",
+          "drawer-enabled-description": "Flytta nøytlar i grupper inn i ei ilåtsfjøl som du slår av og på med ein knapp",
+          "drawer-glyph-closed": "Attlatenmerke",
+          "drawer-glyph-closed-description": "Symbol som du ser på knappen til å opna og lata att ilåtet når fjøla er attlaten",
+          "drawer-glyph-opened": "Opna merke",
+          "drawer-glyph-opened-description": "Symbol som du ser på knappen til å opna og lata att ilåtet når fjøla er open",
           "edit": "Brigda på stil",
           "fill": "Bakgrunn",
           "fill-description": "Leten for pillebakgrunnen; hex-leter er stødde òg.",
@@ -981,7 +993,17 @@
             "grouping": "Gruppering",
             "presentation": "Framsyning",
             "runtime": "Køyretid",
-            "widget": "Nøytel"
+            "taskbar": {
+              "grouping": "Gruppering",
+              "windows": "Ruter",
+              "workspace-labels": "Arbeidsromnamn"
+            },
+            "widget": "Nøytel",
+            "workspaces": {
+              "colors": "Leter",
+              "list": "Arbeidsrom",
+              "pills": "Pillestil"
+            }
           }
         }
       }
@@ -1041,7 +1063,7 @@
         "name-label": "Namn",
         "name-placeholder": "Inaktiv-åtburd",
         "resume-command-label": "Framhaldkommando",
-        "resume-command-placeholder": "noctalia:dpms-on",
+        "resume-command-placeholder": "notify-send 'Ute frå dvale'",
         "summary": "{name} · {seconds} s",
         "summary-disabled-timeout": "{name} · timeout avslege",
         "timeout-label": "Timeout sekund",
@@ -1055,6 +1077,7 @@
     },
     "navigation": {
       "groups": {
+        "accessibility": "Tilgjenge",
         "audio": "Ljod",
         "authentication": "Sanning",
         "automation": "Automatisering",
@@ -1071,6 +1094,7 @@
         "control-center": "Styrerom",
         "dead-zone": "Daudsone",
         "directories": "Mapper",
+        "display": "Vising",
         "effects": "Verknader",
         "filtering": "Søkjevilkår",
         "focus-styling": "Åtgaumstil",
@@ -1122,6 +1146,7 @@
         "widgets": "Nøytlar"
       },
       "sections": {
+        "accessibility": "Tilgjenge",
         "appearance": "Utsjånad",
         "backdrop": "Bakgrunn",
         "bar": "Stong",
@@ -1160,8 +1185,11 @@
           "toast": "skjermvarsel"
         },
         "flags-label": "Når samsvar",
+        "match-content-label": "Innhald-regex",
+        "match-content-placeholder": "Regex mønster som finn samandrag eller hovudtekst...",
         "match-label": "App",
         "match-placeholder": "Appnamn, skrivebordsoppslag eller klasse ...",
+        "override-duration": "Overstyringsvaring",
         "play-sound": "Spel av ljod",
         "save-history": "Lagra i historikken",
         "show-toast": "Vis skjermvarsel",
@@ -1231,6 +1259,10 @@
       "orientation": {
         "horizontal": "Vassrett",
         "vertical": "Loddrett"
+      },
+      "panel-bar-alignment": {
+        "centered": "I midten",
+        "near-trigger": "Nær utløysar"
       },
       "panel-position": {
         "auto": "Fylg stonga"
@@ -1380,6 +1412,7 @@
       },
       "store": {
         "add": "Legg til i Noctalia",
+        "categories": "Klasser",
         "category-all": "Alle",
         "empty": "Ingen utvidingar funne",
         "incompatible": "Usemjande",
@@ -1391,6 +1424,12 @@
       }
     },
     "schema": {
+      "accessibility": {
+        "high-contrast": {
+          "description": "Auka ljosskilnaden gjennom å skyva flate- og bakgrunnsleter mot endeverda",
+          "label": "Stor ljosskilnad"
+        }
+      },
       "appearance": {
         "animation-speed": {
           "description": "Multiplikator for animasjonsfart",
@@ -1411,6 +1450,10 @@
         "builtin-palette": {
           "description": "Vel ein palett frå den innebygde katalogen",
           "label": "Innebygd palett"
+        },
+        "button-borders": {
+          "description": "Teikna omrit kring knappar gjennom heile skalet",
+          "label": "Knappeomrit"
         },
         "community-palette": {
           "description": "Vel ein palett frå samfunnskatalogen",
@@ -1448,6 +1491,10 @@
         "palette-source": {
           "description": "Kvar Noctalia tek letpaletten frå",
           "label": "Palettbrunn"
+        },
+        "pure-black-dark": {
+          "description": "Gjer mørke flater heilsvart, som hindrar bandleggjing på OLED-fjøler (einast i mørkham)",
+          "label": "Heilsvart"
         },
         "theme-mode": {
           "description": "Vel mørk, ljos eller automatisk alt etter tida",
@@ -1521,6 +1568,10 @@
         "center-widgets": {
           "description": "Nøytlar midt i stonga",
           "label": "Nøytlar i midten"
+        },
+        "concave-edge-corners": {
+          "description": "Skòra runde skard i to av stonghyrno (krev randmarg = 0); med endemarg = 0 vert hyrno på den indre randa skòra, elles er det hyrno som råkar skjermranda.",
+          "label": "Innvendes randhyrno"
         },
         "contact-shadow": {
           "description": "Mørk letgradient mellom ei bunden fjøl og stonga for å ymta på djupn i saumen"
@@ -3011,6 +3062,10 @@
           "description": "Gøym platekunst",
           "label": "Gøym platekunst"
         },
+        "hide-artist": {
+          "description": "Gøym artistnamnet og vis berre spornamn",
+          "label": "Gøym artist"
+        },
         "hide-empty-workspaces": {
           "description": "Når Noctalia delar etter arbeidsrom, ikkje tak med piller utan køyrande ruter i lista på oppgåvelina.",
           "label": "Gøym tome arbeidsrom"
@@ -3085,6 +3140,10 @@
           "label": "Inaktiv-pilletjukn",
           "workspaces-description": "Minste tillaten lengd for piller som viser inaktive arbeidsrom langs med stonga, som multiplikator på pilletjukn; merkelappar kan gå utover dette"
         },
+        "interactive": {
+          "description": "Tillata peikarsviv, trykk, blading og hjelpetekst på denne nøytelen",
+          "label": "Interaktiv"
+        },
         "interface": {
           "description": "Nettverkgrensesnitt til skjerm; haldt dette tomt for å bruka summen over alle grensesnitt",
           "label": "Grensesnitt"
@@ -3134,6 +3193,7 @@
         "minimal": {
           "description": "Vis einast arbeidsrom-id eller namnemerkelappar, utan animerte piller",
           "label": "Måtehalden stil",
+          "taskbar-description": "Einast tekst på arbeidsrommerkelappar, utan leta bakgrunnar",
           "workspaces-description": "Merkelappar for arbeidsrom viser berre tekst utan pillebakgrunn eller animasjonar "
         },
         "mirrored": {
@@ -3269,6 +3329,10 @@
           "description": "Kor breid alt i hop kan vera; rutenamn minskar seg for å høva seg og gøymer seg når dei er for smale ",
           "label": "Oppgåvelina størst breidd"
         },
+        "timezone": {
+          "description": "Tidssone (e.g. Europe/Berlin) å bruka for denne klokka; haldt dette tomt for å nytta systemklokka. Må vera på engelsk.",
+          "label": "Tidssone"
+        },
         "title-scroll": {
           "description": "Når nøytelnamnet skal rulla",
           "label": "Namnerull"
@@ -3350,6 +3414,7 @@
       "export-config": "Før ut tilmåting ...",
       "export-config-saved": "Tilmåtingsutførsle lagra.",
       "filter-modified": "Brigda",
+      "legacy-config-warning": "Utdatert tilmåting flyttar i minnet: {issue}. Køyr noctalia config validate for å sjå kva du må brigda.",
       "native-title": "Noctalia-innstillingar",
       "no-results": "Ingen innstillingar funne",
       "no-results-hint": "Prøv med eit anna innstillingsnamn eller config-lykel.",

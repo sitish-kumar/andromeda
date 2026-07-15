@@ -156,6 +156,35 @@ namespace settings {
       return SelectSetting{std::move(opts), std::string(selected)};
     }
 
+    [[nodiscard]] std::string barAutoHideMode(bool autoHide, bool smartAutoHide) {
+      if (smartAutoHide) {
+        return "smart";
+      }
+      if (autoHide) {
+        return "on";
+      }
+      return "off";
+    }
+
+    [[nodiscard]] SelectSetting autoHideModeSelect(std::string_view mode, std::vector<std::string> smartPath) {
+      auto select = asSegmented(plainSelect(
+          {{"off", "settings.options.bar.auto-hide.off"},
+           {"on", "settings.options.bar.auto-hide.on"},
+           {"smart", "settings.options.bar.auto-hide.smart"}},
+          mode
+      ));
+      select.linkedPath = std::move(smartPath);
+      select.groupedCommit = [](std::string_view value, const std::vector<std::string>& primaryPath) {
+        auto companionPath = primaryPath;
+        companionPath.back() = "smart_auto_hide";
+        return std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>{
+            {primaryPath, ConfigOverrideValue{value == "on"}},
+            {std::move(companionPath), ConfigOverrideValue{value == "smart"}},
+        };
+      };
+      return select;
+    }
+
     ColorSwatchPreview palettePreviewFromPalette(const ::Palette& palette) {
       return ColorSwatchPreview{
           .surface = fixedColorSpec(palette.surface),
@@ -458,15 +487,20 @@ namespace settings {
       ));
     }
     entries.push_back(makeEntry(
-        SettingsSection::Appearance, "interface", tr("settings.schema.appearance.ui-scale.label"),
-        tr("settings.schema.appearance.ui-scale.description"), {"shell", "ui_scale"},
-        sliderFor(cfg.shell.uiScale, noctalia::config::schema::kScaleRange, false), "size"
+        SettingsSection::Appearance, "theme", tr("settings.schema.appearance.pure-black-dark.label"),
+        tr("settings.schema.appearance.pure-black-dark.description"), {"theme", "pure_black_dark"},
+        ToggleSetting{cfg.theme.pureBlackDark}, "oled amoled true black background contrast"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Appearance, "interface", tr("settings.schema.appearance.corner-roundness.label"),
         tr("settings.schema.appearance.corner-roundness.description"), {"shell", "corner_radius_scale"},
         sliderFor(cfg.shell.cornerRadiusScale, noctalia::config::schema::kCornerRadiusScaleRange, false),
         "rounded corners radius"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Appearance, "interface", tr("settings.schema.appearance.button-borders.label"),
+        tr("settings.schema.appearance.button-borders.description"), {"shell", "button_borders"},
+        ToggleSetting{cfg.shell.buttonBorders}, "button outline border flat minimal"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Appearance, "interface", tr("settings.schema.appearance.app-icon-colorize.label"),
@@ -509,6 +543,16 @@ namespace settings {
         SettingsSection::Appearance, "interface", tr("settings.schema.appearance.language.label"),
         tr("settings.schema.appearance.language.description"), {"shell", "lang"}, languageSelect(cfg.shell.lang),
         "locale translation", true
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Appearance, "accessibility", tr("settings.schema.appearance.ui-scale.label"),
+        tr("settings.schema.appearance.ui-scale.description"), {"accessibility", "ui_scale"},
+        sliderFor(cfg.accessibility.uiScale, noctalia::config::schema::kScaleRange, false), "size scale text panels"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Appearance, "accessibility", tr("settings.schema.accessibility.high-contrast.label"),
+        tr("settings.schema.accessibility.high-contrast.description"), {"accessibility", "high_contrast"},
+        ToggleSetting{cfg.accessibility.highContrast}, "accessibility high contrast visually impaired"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Appearance, "motion", tr("settings.schema.appearance.animations.label"),
@@ -803,8 +847,12 @@ namespace settings {
     ));
     entries.push_back(makeEntry(
         SettingsSection::Dock, "behavior", tr("settings.schema.shared.auto-hide.label"),
-        tr("settings.schema.dock.auto-hide.description"), {"dock", "auto_hide"}, ToggleSetting{cfg.dock.autoHide},
-        "autohide"
+        tr("settings.schema.dock.auto-hide.description"), {"dock", "auto_hide"},
+        autoHideModeSelect(
+            barAutoHideMode(cfg.dock.autoHide, cfg.dock.smartAutoHide),
+            std::vector<std::string>{"dock", "smart_auto_hide"}
+        ),
+        "autohide smart workspace"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Dock, "behavior", tr("settings.schema.shared.reserve-space.label"),
@@ -1041,6 +1089,30 @@ namespace settings {
       return e;
     };
 
+    const auto panelBarAlignmentEntry = [](SettingsSection section, std::string group, std::string_view panelKey,
+                                           std::string_view labelKey, std::string_view descKey, bool nearTrigger,
+                                           PanelPlacement ShellConfig::PanelConfig::* placement,
+                                           std::string ShellConfig::PanelConfig::* position) {
+      auto alignment = plainSelect(
+          {{"false", "settings.options.panel-bar-alignment.centered"},
+           {"true", "settings.options.panel-bar-alignment.near-trigger"}},
+          nearTrigger ? "true" : "false"
+      );
+      alignment.segmented = true;
+      alignment.valueType = SelectValueType::Boolean;
+      auto e = makeEntry(
+          section, std::move(group), tr(labelKey), tr(descKey),
+          {"shell", "panel", std::string("open_near_click_") + std::string(panelKey)}, std::move(alignment),
+          "along bar centered near trigger widget click position anchor"
+      );
+      e.visibleWhen = [placement, position](const Config& c) {
+        const auto& panel = c.shell.panel;
+        return panel.*placement == PanelPlacement::Attached
+            || (panel.*placement == PanelPlacement::Floating && panel.*position == "auto");
+      };
+      return e;
+    };
+
     entries.push_back(makeEntry(
         SettingsSection::Launcher, "launcher", tr("settings.schema.panels.placement-launcher.label"),
         tr("settings.schema.panels.placement-launcher.description"), {"shell", "panel", "launcher_placement"},
@@ -1052,16 +1124,11 @@ namespace settings {
         "settings.schema.panels.position-launcher.description", cfg.shell.panel.launcherPosition,
         &ShellConfig::PanelConfig::launcherPlacement
     ));
-    {
-      auto e = makeEntry(
-          SettingsSection::Launcher, "launcher", tr("settings.schema.panels.open-near-click-launcher.label"),
-          tr("settings.schema.panels.open-near-click-launcher.description"),
-          {"shell", "panel", "open_near_click_launcher"}, ToggleSetting{cfg.shell.panel.openNearClickLauncher},
-          "open near click position anchor"
-      );
-      e.visibleWhen = [](const Config& c) { return c.shell.panel.launcherPlacement == PanelPlacement::Attached; };
-      entries.push_back(std::move(e));
-    }
+    entries.push_back(panelBarAlignmentEntry(
+        SettingsSection::Launcher, "launcher", "launcher", "settings.schema.panels.open-near-click-launcher.label",
+        "settings.schema.panels.open-near-click-launcher.description", cfg.shell.panel.openNearClickLauncher,
+        &ShellConfig::PanelConfig::launcherPlacement, &ShellConfig::PanelConfig::launcherPosition
+    ));
     entries.push_back(makeEntry(
         SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-categories.label"),
         tr("settings.schema.panels.launcher-categories.description"), {"shell", "launcher", "categories"},
@@ -1088,11 +1155,80 @@ namespace settings {
         ToggleSetting{cfg.shell.launcher.sortByUsage}, "launcher sort usage recently used frequency"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-session-search.label"),
-        tr("settings.schema.panels.launcher-session-search.description"), {"shell", "launcher", "session_search"},
-        ToggleSetting{cfg.shell.launcher.sessionSearch},
-        "launcher session search power menu lock suspend reboot shutdown logout"
+        SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-character.label"),
+        tr("settings.schema.panels.launcher-prefix-character.description"), {"shell", "launcher", "provider_prefix"},
+        TextSetting{.value = cfg.shell.launcher.providerPrefix, .placeholder = "/"}, "launcher common prefix character"
     ));
+    {
+      auto storedPrefix = [&](std::string_view name) -> std::string {
+        auto it = std::ranges::find(cfg.shell.launcher.providers, name, &LauncherProviderConfig::name);
+        return it != cfg.shell.launcher.providers.end() ? it->prefix : std::string();
+      };
+      auto storedGlobal = [&](std::string_view name, bool defaultValue) -> bool {
+        auto it = std::ranges::find(cfg.shell.launcher.providers, name, &LauncherProviderConfig::name);
+        return it != cfg.shell.launcher.providers.end() ? it->global.value_or(defaultValue) : defaultValue;
+      };
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-calculator.label"),
+          tr("settings.schema.panels.launcher-prefix-calculator.description"),
+          {"shell", "launcher", "providers", "calculator", "prefix"},
+          TextSetting{.value = storedPrefix("calculator"), .placeholder = ""}, "launcher calculator prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-calculator.label"),
+          tr("settings.schema.panels.launcher-global-calculator.description"),
+          {"shell", "launcher", "providers", "calculator", "global"}, ToggleSetting{storedGlobal("calculator", true)},
+          "launcher calculator global search unprefixed"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-emoji.label"),
+          tr("settings.schema.panels.launcher-prefix-emoji.description"),
+          {"shell", "launcher", "providers", "emoji", "prefix"},
+          TextSetting{.value = storedPrefix("emoji"), .placeholder = "emo"}, "launcher emoji prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-emoji.label"),
+          tr("settings.schema.panels.launcher-global-emoji.description"),
+          {"shell", "launcher", "providers", "emoji", "global"}, ToggleSetting{storedGlobal("emoji", false)},
+          "launcher emoji global search unprefixed"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-session.label"),
+          tr("settings.schema.panels.launcher-prefix-session.description"),
+          {"shell", "launcher", "providers", "session", "prefix"},
+          TextSetting{.value = storedPrefix("session"), .placeholder = "session"}, "launcher session prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-session.label"),
+          tr("settings.schema.panels.launcher-global-session.description"),
+          {"shell", "launcher", "providers", "session", "global"}, ToggleSetting{storedGlobal("session", false)},
+          "launcher session global search unprefixed"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-wallpaper.label"),
+          tr("settings.schema.panels.launcher-prefix-wallpaper.description"),
+          {"shell", "launcher", "providers", "wallpaper", "prefix"},
+          TextSetting{.value = storedPrefix("wallpaper"), .placeholder = "wall"}, "launcher wallpaper prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-wallpaper.label"),
+          tr("settings.schema.panels.launcher-global-wallpaper.description"),
+          {"shell", "launcher", "providers", "wallpaper", "global"}, ToggleSetting{storedGlobal("wallpaper", false)},
+          "launcher wallpaper global search unprefixed"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-windows.label"),
+          tr("settings.schema.panels.launcher-prefix-windows.description"),
+          {"shell", "launcher", "providers", "windows", "prefix"},
+          TextSetting{.value = storedPrefix("windows"), .placeholder = "win"}, "launcher windows prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-windows.label"),
+          tr("settings.schema.panels.launcher-global-windows.description"),
+          {"shell", "launcher", "providers", "windows", "global"}, ToggleSetting{storedGlobal("windows", false)},
+          "launcher windows global search unprefixed"
+      ));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "clipboard", tr("settings.schema.panels.placement-clipboard.label"),
         tr("settings.schema.panels.placement-clipboard.description"), {"shell", "panel", "clipboard_placement"},
@@ -1104,16 +1240,11 @@ namespace settings {
         "settings.schema.panels.position-clipboard.description", cfg.shell.panel.clipboardPosition,
         &ShellConfig::PanelConfig::clipboardPlacement
     ));
-    {
-      auto e = makeEntry(
-          SettingsSection::Panels, "clipboard", tr("settings.schema.panels.open-near-click-clipboard.label"),
-          tr("settings.schema.panels.open-near-click-clipboard.description"),
-          {"shell", "panel", "open_near_click_clipboard"}, ToggleSetting{cfg.shell.panel.openNearClickClipboard},
-          "open near click position anchor"
-      );
-      e.visibleWhen = [](const Config& c) { return c.shell.panel.clipboardPlacement == PanelPlacement::Attached; };
-      entries.push_back(std::move(e));
-    }
+    entries.push_back(panelBarAlignmentEntry(
+        SettingsSection::Panels, "clipboard", "clipboard", "settings.schema.panels.open-near-click-clipboard.label",
+        "settings.schema.panels.open-near-click-clipboard.description", cfg.shell.panel.openNearClickClipboard,
+        &ShellConfig::PanelConfig::clipboardPlacement, &ShellConfig::PanelConfig::clipboardPosition
+    ));
     entries.push_back(makeEntry(
         SettingsSection::Panels, "polkit", tr("settings.schema.panels.placement-polkit.label"),
         tr("settings.schema.panels.placement-polkit.description"), {"shell", "panel", "polkit_placement"},
@@ -1126,27 +1257,6 @@ namespace settings {
         &ShellConfig::PanelConfig::polkitPlacement
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "session-panel", tr("settings.schema.panels.placement-session.label"),
-        tr("settings.schema.panels.placement-session.description"), {"shell", "panel", "session_placement"},
-        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.sessionPlacement)),
-        "attached floating bar panel power menu position"
-    ));
-    entries.push_back(panelPositionEntry(
-        SettingsSection::Panels, "session-panel", "session", "settings.schema.panels.position-session.label",
-        "settings.schema.panels.position-session.description", cfg.shell.panel.sessionPosition,
-        &ShellConfig::PanelConfig::sessionPlacement
-    ));
-    {
-      auto e = makeEntry(
-          SettingsSection::Panels, "session-panel", tr("settings.schema.panels.open-near-click-session.label"),
-          tr("settings.schema.panels.open-near-click-session.description"),
-          {"shell", "panel", "open_near_click_session"}, ToggleSetting{cfg.shell.panel.openNearClickSession},
-          "open near click position anchor"
-      );
-      e.visibleWhen = [](const Config& c) { return c.shell.panel.sessionPlacement == PanelPlacement::Attached; };
-      entries.push_back(std::move(e));
-    }
-    entries.push_back(makeEntry(
         SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.placement-wallpaper.label"),
         tr("settings.schema.panels.placement-wallpaper.description"), {"shell", "panel", "wallpaper_placement"},
         asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.wallpaperPlacement)),
@@ -1157,16 +1267,11 @@ namespace settings {
         "settings.schema.panels.position-wallpaper.description", cfg.shell.panel.wallpaperPosition,
         &ShellConfig::PanelConfig::wallpaperPlacement
     ));
-    {
-      auto e = makeEntry(
-          SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.open-near-click-wallpaper.label"),
-          tr("settings.schema.panels.open-near-click-wallpaper.description"),
-          {"shell", "panel", "open_near_click_wallpaper"}, ToggleSetting{cfg.shell.panel.openNearClickWallpaper},
-          "open near click position anchor"
-      );
-      e.visibleWhen = [](const Config& c) { return c.shell.panel.wallpaperPlacement == PanelPlacement::Attached; };
-      entries.push_back(std::move(e));
-    }
+    entries.push_back(panelBarAlignmentEntry(
+        SettingsSection::Panels, "wallpaper", "wallpaper", "settings.schema.panels.open-near-click-wallpaper.label",
+        "settings.schema.panels.open-near-click-wallpaper.description", cfg.shell.panel.openNearClickWallpaper,
+        &ShellConfig::PanelConfig::wallpaperPlacement, &ShellConfig::PanelConfig::wallpaperPosition
+    ));
 
     // Control Center
     entries.push_back(makeEntry(
@@ -1182,16 +1287,12 @@ namespace settings {
         "settings.schema.panels.position-control-center.description", cfg.shell.panel.controlCenterPosition,
         &ShellConfig::PanelConfig::controlCenterPlacement
     ));
-    {
-      auto e = makeEntry(
-          SettingsSection::ControlCenter, "general", tr("settings.schema.panels.open-near-click-control-center.label"),
-          tr("settings.schema.panels.open-near-click-control-center.description"),
-          {"shell", "panel", "open_near_click_control_center"},
-          ToggleSetting{cfg.shell.panel.openNearClickControlCenter}, "open near click position anchor"
-      );
-      e.visibleWhen = [](const Config& c) { return c.shell.panel.controlCenterPlacement == PanelPlacement::Attached; };
-      entries.push_back(std::move(e));
-    }
+    entries.push_back(panelBarAlignmentEntry(
+        SettingsSection::ControlCenter, "general", "control_center",
+        "settings.schema.panels.open-near-click-control-center.label",
+        "settings.schema.panels.open-near-click-control-center.description", cfg.shell.panel.openNearClickControlCenter,
+        &ShellConfig::PanelConfig::controlCenterPlacement, &ShellConfig::PanelConfig::controlCenterPosition
+    ));
     {
       SliderSetting width =
           sliderFor(cfg.controlCenter.width, noctalia::config::schema::kControlCenterWidthRange, true);
@@ -1487,16 +1588,6 @@ namespace settings {
         TextSetting{.value = cfg.shell.dateFormat, .placeholder = "%A, %x", .browseFileExtensions = {}},
         "calendar date format strftime chrono"
     ));
-    const SettingVisibility weatherOn = [](const Config& c) { return c.weather.enabled; };
-    {
-      auto e = makeEntry(
-          SettingsSection::Shell, "general", tr("settings.schema.shell.show-location.label"),
-          tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
-          ToggleSetting{cfg.shell.showLocation}, "weather"
-      );
-      e.visibleWhen = weatherOn;
-      entries.push_back(std::move(e));
-    }
     entries.push_back(makeEntry(
         SettingsSection::Shell, "general", tr("settings.schema.shell.middle-click-opens-widget-settings.label"),
         tr("settings.schema.shell.middle-click-opens-widget-settings.description"),
@@ -2062,31 +2153,11 @@ namespace settings {
       e.visibleWhen = autoLocateOff;
       entries.push_back(std::move(e));
     }
-    // Manual schedule fallback: shown only when no network location is configured (auto-locate off
+    // Manual coordinates: shown only when no network location is configured (auto-locate off
     // and no address). The address gate is build-time; the auto-locate gate is evaluated live.
     const SettingVisibility manualLocationHidden = [](const Config&) { return false; };
     const SettingVisibility& manualLocationControlsVisible =
         cfg.location.address.empty() ? autoLocateOff : manualLocationHidden;
-    {
-      auto e = makeEntry(
-          SettingsSection::Location, "location", tr("settings.schema.services.sunset.label"),
-          tr("settings.schema.services.sunset.description"), {"location", "sunset"},
-          TextSetting{.value = cfg.location.sunset, .placeholder = "20:30", .browseFileExtensions = {}},
-          "time schedule sunset"
-      );
-      e.visibleWhen = manualLocationControlsVisible;
-      entries.push_back(std::move(e));
-    }
-    {
-      auto e = makeEntry(
-          SettingsSection::Location, "location", tr("settings.schema.services.sunrise.label"),
-          tr("settings.schema.services.sunrise.description"), {"location", "sunrise"},
-          TextSetting{.value = cfg.location.sunrise, .placeholder = "07:30", .browseFileExtensions = {}},
-          "time schedule sunrise"
-      );
-      e.visibleWhen = manualLocationControlsVisible;
-      entries.push_back(std::move(e));
-    }
     {
       auto e = makeEntry(
           SettingsSection::Location, "location", tr("settings.schema.services.latitude.label"),
@@ -2108,12 +2179,51 @@ namespace settings {
       entries.push_back(std::move(e));
     }
 
+    // Custom scheduling — explicit sunrise/sunset times for night light and theme auto mode.
+    {
+      auto e = makeEntry(
+          SettingsSection::Location, "location", tr("settings.schema.services.custom-schedule.label"),
+          tr("settings.schema.services.custom-schedule.description"), {"location", "custom_schedule"},
+          ToggleSetting{cfg.location.customSchedule}, "schedule custom time sunrise sunset"
+      );
+      entries.push_back(std::move(e));
+    }
+    // Keep both required times editable before activation so the schedule can be valid when enabled.
+    {
+      auto e = makeEntry(
+          SettingsSection::Location, "location", tr("settings.schema.services.sunset.label"),
+          tr("settings.schema.services.sunset.description"), {"location", "sunset"},
+          TextSetting{.value = cfg.location.sunset, .placeholder = "20:30", .browseFileExtensions = {}},
+          "time schedule sunset"
+      );
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          SettingsSection::Location, "location", tr("settings.schema.services.sunrise.label"),
+          tr("settings.schema.services.sunrise.description"), {"location", "sunrise"},
+          TextSetting{.value = cfg.location.sunrise, .placeholder = "07:30", .browseFileExtensions = {}},
+          "time schedule sunrise"
+      );
+      entries.push_back(std::move(e));
+    }
+
     // Weather — consumes the resolved location.
     entries.push_back(makeEntry(
         SettingsSection::Location, "weather", tr("settings.schema.services.weather.label"),
         tr("settings.schema.services.weather.description"), {"weather", "enabled"}, ToggleSetting{cfg.weather.enabled},
         "forecast"
     ));
+    const SettingVisibility weatherOn = [](const Config& c) { return c.weather.enabled; };
+    {
+      auto e = makeEntry(
+          SettingsSection::Location, "weather", tr("settings.schema.shell.show-location.label"),
+          tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
+          ToggleSetting{cfg.shell.showLocation}, "weather"
+      );
+      e.visibleWhen = weatherOn;
+      entries.push_back(std::move(e));
+    }
     {
       auto e = makeEntry(
           SettingsSection::Location, "weather", tr("settings.schema.services.weather-unit.label"),
@@ -2321,6 +2431,42 @@ namespace settings {
     ));
 
     // Power
+    entries.push_back(makeEntry(
+        SettingsSection::Power, "session-panel", tr("settings.schema.panels.placement-session.label"),
+        tr("settings.schema.panels.placement-session.description"), {"shell", "panel", "session_placement"},
+        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.sessionPlacement)),
+        "attached floating bar panel power menu position"
+    ));
+    entries.push_back(panelPositionEntry(
+        SettingsSection::Power, "session-panel", "session", "settings.schema.panels.position-session.label",
+        "settings.schema.panels.position-session.description", cfg.shell.panel.sessionPosition,
+        &ShellConfig::PanelConfig::sessionPlacement
+    ));
+    entries.push_back(panelBarAlignmentEntry(
+        SettingsSection::Power, "session-panel", "session", "settings.schema.panels.open-near-click-session.label",
+        "settings.schema.panels.open-near-click-session.description", cfg.shell.panel.openNearClickSession,
+        &ShellConfig::PanelConfig::sessionPlacement, &ShellConfig::PanelConfig::sessionPosition
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Power, "session-panel", tr("settings.schema.power.session-grid.label"),
+        tr("settings.schema.power.session-grid.description"), {"shell", "session", "grid"},
+        ToggleSetting{.checked = cfg.shell.session.grid}, "session panel grid layout rows columns"
+    ));
+    {
+      auto e = makeEntry(
+          SettingsSection::Power, "session-panel", tr("settings.schema.power.session-grid-columns.label"),
+          tr("settings.schema.power.session-grid-columns.description"), {"shell", "session", "grid_columns"},
+          StepperSetting{
+              .value = static_cast<int>(cfg.shell.session.gridColumns),
+              .minValue = static_cast<int>(noctalia::config::schema::kSessionGridColumnsRange.min.value()),
+              .maxValue = static_cast<int>(noctalia::config::schema::kSessionGridColumnsRange.max.value()),
+              .step = static_cast<int>(noctalia::config::schema::kSessionGridColumnsRange.step.value()),
+          },
+          "session panel grid columns per row"
+      );
+      e.visibleWhen = [](const Config& c) { return c.shell.session.grid; };
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Power, "session-panel", tr("settings.schema.power.session-actions.label"),
         tr("settings.schema.power.session-actions.description"), {"shell", "session", "actions"},
@@ -2530,9 +2676,14 @@ namespace settings {
       ));
       entries.push_back(makeEntry(
           section, "general", tr("settings.schema.shared.auto-hide.label"),
-          tr("settings.schema.bar.auto-hide.description"), path("auto_hide"), ToggleSetting{bar.autoHide}, "autohide"
+          tr("settings.schema.bar.auto-hide.description"), path("auto_hide"),
+          autoHideModeSelect(barAutoHideMode(bar.autoHide, bar.smartAutoHide), path("smart_auto_hide")),
+          "autohide smart workspace"
       ));
-      const SettingVisibility autoHideOn = [on = bar.autoHide](const Config&) { return on; };
+      const SettingVisibility autoHideOn = [barName = bar.name](const Config& c) {
+        const BarConfig* b = findBar(c, barName);
+        return b != nullptr && b->autoHide && !b->smartAutoHide;
+      };
       {
         auto e = makeEntry(
             section, "general", tr("settings.schema.bar.show-on-workspace-switch.label"),
@@ -2679,7 +2830,7 @@ namespace settings {
           fontWeightOptions.push_back(SelectOption{option.value, tr(option.labelKey)});
         }
         SelectSetting fontWeightSelect{std::move(fontWeightOptions), std::to_string(bar.fontWeight)};
-        fontWeightSelect.integerValue = true;
+        fontWeightSelect.valueType = SelectValueType::Integer;
         entries.push_back(makeEntry(
             section, "widgets", tr("settings.schema.bar.font-weight.label"),
             tr("settings.schema.bar.font-weight.description"), path("font_weight"), std::move(fontWeightSelect),
@@ -2860,10 +3011,21 @@ namespace settings {
         entries.push_back(makeEntry(
             section, "general", tr("settings.schema.shared.auto-hide.label"),
             tr("settings.schema.bar.auto-hide.description"), monitorPath("auto_hide"),
-            ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"
+            autoHideModeSelect(
+                barAutoHideMode(ovr.autoHide.value_or(bar.autoHide), ovr.smartAutoHide.value_or(bar.smartAutoHide)),
+                monitorPath("smart_auto_hide")
+            ),
+            "autohide smart workspace"
         ));
-        const SettingVisibility monitorAutoHideOn = [on = ovr.autoHide.value_or(bar.autoHide)](const Config&) {
-          return on;
+        const SettingVisibility monitorAutoHideOn = [barName = bar.name, match = ovr.match](const Config& c) {
+          const BarConfig* b = findBar(c, barName);
+          if (b == nullptr) {
+            return false;
+          }
+          const BarMonitorOverride* o = findMonitorOverride(*b, match);
+          const bool autoHide = o != nullptr && o->autoHide.has_value() ? *o->autoHide : b->autoHide;
+          const bool smart = o != nullptr && o->smartAutoHide.has_value() ? *o->smartAutoHide : b->smartAutoHide;
+          return autoHide && !smart;
         };
         {
           auto e = makeEntry(

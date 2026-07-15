@@ -5,7 +5,7 @@
       "error": "指纹验证错误",
       "no-match": "指纹不匹配",
       "not-centered": "请将手指放在感应区中央后重试",
-      "present": "正在识别指纹...",
+      "present": "正在识别指纹…",
       "ready": "请将手指放在识别器上",
       "remove-and-retry": "请移开手指后重试",
       "retry": "请重新扫描指纹",
@@ -19,7 +19,7 @@
     },
     "polkit": {
       "authenticate": "身份验证",
-      "authenticating": "正在验证身份...",
+      "authenticating": "正在验证身份…",
       "default-message": "需要身份验证",
       "invalid-password": "密码无效",
       "password-placeholder": "密码",
@@ -110,7 +110,7 @@
       "weather": {
         "default": "天气",
         "error": "天气错误",
-        "loading": "天气...",
+        "loading": "天气…",
         "no-location": "无位置信息",
         "off": "天气已关闭"
       }
@@ -140,13 +140,13 @@
       "image": "图片",
       "title": "剪贴板条目"
     },
-    "filter-placeholder": "筛选剪贴板...",
+    "filter-placeholder": "筛选剪贴板…",
     "preview": {
       "empty-text-payload": "（空文本内容）",
       "image-title": "图片剪贴板条目",
-      "loading": "正在加载预览...",
+      "loading": "正在加载预览…",
       "text-title": "文本剪贴板条目",
-      "truncated": "...已截断"
+      "truncated": "…已截断"
     },
     "title": "剪贴板"
   },
@@ -239,7 +239,7 @@
       "weather": {
         "data-unavailable": "天气数据不可用。",
         "disabled": "天气已在配置中禁用。",
-        "fetching": "正在获取天气预报..."
+        "fetching": "正在获取天气预报…"
       }
     },
     "media": {
@@ -294,7 +294,7 @@
       "unknown-device": "未知设备"
     },
     "screen-time": {
-      "disabled": "屏幕使用时间追踪已关闭。在设置中启用以记录各应用的使用情况。",
+      "disabled": "屏幕时间追踪已关闭。在设置中启用以记录各应用的使用情况。",
       "empty": "暂无应用使用记录。聚焦窗口以开始追踪。",
       "hour-0": "12 AM",
       "hour-12": "12 PM",
@@ -329,7 +329,7 @@
       },
       "notification": "勿扰模式",
       "power-profile": "电源配置",
-      "screen-time": "屏幕使用时间",
+      "screen-time": "屏幕时间",
       "session": "会话",
       "system": "系统",
       "wallpaper": "壁纸",
@@ -366,7 +366,7 @@
       "network": "网络",
       "notifications": "通知",
       "power": "电源",
-      "screen-time": "屏幕使用时间",
+      "screen-time": "屏幕时间",
       "system": "系统",
       "weather": "天气"
     },
@@ -392,7 +392,7 @@
         "wind": "风速"
       },
       "disabled": "请在 config.toml 中启用 [weather]",
-      "fetching": "正在获取天气预报...",
+      "fetching": "正在获取天气预报…",
       "forecast-placeholder": {
         "day": "星期日",
         "description": "天气",
@@ -414,7 +414,7 @@
       "location-unavailable": "位置不可用",
       "no-location-body": "请填写地址或启用自动定位。",
       "no-location-title": "未设置位置",
-      "refreshing": "正在刷新天气...",
+      "refreshing": "正在刷新天气…",
       "waiting": "正在等待天气数据"
     }
   },
@@ -449,7 +449,7 @@
         "bloom-intensity": "泛光",
         "center-text": "文字居中",
         "centered": "居中",
-        "change-image": "更改...",
+        "change-image": "更改…",
         "circle": "圆形",
         "clock-style": "时钟样式",
         "clock-style-analog": "指针",
@@ -459,7 +459,7 @@
         "color-2": "颜色 2",
         "color2": "颜色 2",
         "command": "命令",
-        "custom-color": "自定义...",
+        "custom-color": "自定义",
         "description": "描述",
         "display": "显示",
         "display-gauge": "仪表",
@@ -559,7 +559,7 @@
     },
     "weather": {
       "error": "错误",
-      "loading": "正在加载",
+      "loading": "正在加载…",
       "no-location": "无位置信息",
       "off": "天气已关闭"
     }
@@ -610,7 +610,7 @@
     },
     "empty": {
       "no-results": "未找到结果",
-      "type-to-search": "输入以搜索..."
+      "type-to-search": "输入以搜索…"
     },
     "providers": {
       "applications": {
@@ -634,7 +634,7 @@
         "title": "窗口"
       }
     },
-    "search-placeholder": "搜索应用..."
+    "search-placeholder": "搜索应用…"
   },
   "location": {
     "errors": {
@@ -652,14 +652,14 @@
     }
   },
   "lockscreen": {
-    "authenticating": "正在验证身份...",
+    "authenticating": "正在验证身份…",
     "authentication-failed": "身份验证失败",
     "caps-lock-on": "大写锁定已开启",
     "password-cleared": "密码已清除",
     "password-placeholder": "密码",
     "ready": "请输入密码并按下 Enter 键。",
     "unlocked": "已解锁",
-    "waiting": "正在等待锁定确认..."
+    "waiting": "正在等待锁定确认…"
   },
   "notifications": {
     "actions": {
@@ -668,7 +668,7 @@
     },
     "inline-reply": {
       "button": "回复",
-      "placeholder": "输入回复..."
+      "placeholder": "输入回复…"
     },
     "internal": {
       "battery": "电池",
@@ -687,16 +687,18 @@
       "calendar-google-connect-start-failed": "无法启动 Google 授权。请检查网络连接并重试。",
       "calendar-google-connect-start-http": "无法启动 Google 授权。OAuth 代理返回了 HTTP {status}。",
       "calendar-google-connect-timeout": "Google 授权超时。准备好登录时，请重新发起连接。",
+      "config-migration-body": "旧版配置项已在内存中临时转换，包括 {path}。请更新源配置文件；可在设置界面或执行 noctalia config validate 命令查看所需的替换方案。",
+      "config-migration-title": "需要更新配置",
       "dbus-disabled": "DBus 通知已禁用",
       "desktop-widgets-editor": "桌面小组件编辑器",
       "desktop-widgets-editor-enabled": "桌面小组件编辑器已开启。请切换到空的工作区查看编辑器图层。",
       "greeter-sync": "Noctalia Greeter",
       "greeter-sync-pending": "正在等待管理员授权以写入 Greeter 配置。",
-      "greeter-sync-pending-console": "正在等待管理员授权。请在 Noctalia 的 Polkit 弹窗、TTY 或控制台中确认，或手动运行 pkexec。",
-      "greeter-sync-pending-manual": "同步文件已就绪。请在终端运行：pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\" 或设置 shell.greeter_sync.privilege_command（例如 ghostty -e pkexec）后重新同步。",
+      "greeter-sync-pending-console": "正在等待管理员授权。请在 Noctalia 的 Polkit 弹窗、TTY 或控制台中确认，或手动执行 pkexec。",
+      "greeter-sync-pending-manual": "同步文件已准备就绪。请在终端执行：pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\" 或设置 shell.greeter_sync.privilege_command（例如 ghostty -e pkexec）后重新同步。",
       "greeter-sync-success": "外观已同步。更改将在下次登录时生效。",
-      "greeter-sync-timeout": "Greeter 同步仍在等待管理员授权。请检查 TTY 或控制台中的 Polkit 提示，在“安全”设置中启用 Polkit 代理，或手动运行 pkexec。",
-      "greeter-sync-timeout-manual": "Greeter 同步仍需要管理员授权。请在终端运行：pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
+      "greeter-sync-timeout": "Greeter 同步仍在等待管理员授权。请检查 TTY 或控制台中的 Polkit 提示，在“安全”设置中启用 Polkit 代理，或手动执行 pkexec。",
+      "greeter-sync-timeout-manual": "Greeter 同步仍需要管理员授权。请在终端执行：pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "此快捷键仅接受不带修饰键的单键。",
       "keybind-invalid-printable": "字母、数字和符号键需要配合 Ctrl 或 Alt 等修饰键使用。",
@@ -710,7 +712,7 @@
       "mpris-disabled": "MPRIS 已禁用",
       "polkit-agent": "Polkit 代理",
       "polkit-no-session": "Polkit 代理需要 logind、elogind 或 XDG_SESSION_ID。在仅使用 seatd 的环境中无法注册图形化认证提示。请使用终端 pkexec 完成 greeter 同步，或安装 elogind 以支持会话内身份验证。",
-      "screen-time-reset": "屏幕使用时间",
+      "screen-time-reset": "屏幕时间",
       "screen-time-reset-success": "使用记录已清除。",
       "session-bus-unavailable": "会话总线不可用",
       "wallpaper-palette-export": "自定义配色方案",
@@ -719,28 +721,28 @@
   },
   "osd": {
     "bluetooth": {
-      "off": "蓝牙关闭",
-      "on": "蓝牙开启"
+      "off": "蓝牙已关闭",
+      "on": "蓝牙已开启"
     },
     "caffeine": {
-      "off": "保持唤醒关闭",
-      "on": "保持唤醒开启"
+      "off": "保持唤醒已关闭",
+      "on": "保持唤醒已开启"
     },
     "dnd": {
-      "off": "勿扰模式关闭",
-      "on": "勿扰模式开启"
+      "off": "勿扰模式已关闭",
+      "on": "勿扰模式已开启"
     },
     "effects": {
       "input": "输入效果",
       "output": "输出效果"
     },
     "lock-keys": {
-      "caps-off": "大写锁定关闭",
-      "caps-on": "大写锁定开启",
-      "num-off": "数字锁定关闭",
-      "num-on": "数字锁定开启",
-      "scroll-off": "滚动锁定关闭",
-      "scroll-on": "滚动锁定开启"
+      "caps-off": "大写锁定已关闭",
+      "caps-on": "大写锁定已开启",
+      "num-off": "数字锁定已关闭",
+      "num-on": "数字锁定已开启",
+      "scroll-off": "滚动锁定已关闭",
+      "scroll-on": "滚动锁定已开启"
     },
     "nightlight": {
       "forced": "始终开启",
@@ -757,8 +759,8 @@
       "screen-on": "屏幕共享已开启"
     },
     "wifi": {
-      "off": "Wi-Fi 关闭",
-      "on": "Wi-Fi 开启"
+      "off": "Wi-Fi 已关闭",
+      "on": "Wi-Fi 已开启"
     }
   },
   "plugins": {
@@ -858,11 +860,11 @@
     "controls": {
       "keybind": {
         "add": "点击添加快捷键",
-        "recording-placeholder": "按下组合键...",
-        "unset-placeholder": "点击绑定..."
+        "recording-placeholder": "按下组合键…",
+        "unset-placeholder": "点击绑定…"
       },
       "list": {
-        "add-entry-placeholder": "添加项目..."
+        "add-entry-placeholder": "添加项目…"
       },
       "path-browse": {
         "file-title": "选择文件",
@@ -918,12 +920,22 @@
           "border": "边框",
           "border-description": "将颜色应用于胶囊轮廓；保持“默认”则不显示轮廓",
           "clear": "清除",
+          "drawer-columns": "抽屉列数",
+          "drawer-columns-description": "抽屉面板中每行显示的小组件数量",
+          "drawer-detached": "独立面板",
+          "drawer-detached-description": "以带有独立背景的悬浮面板打开抽屉，而非吸附状态栏",
+          "drawer-enabled": "抽屉",
+          "drawer-enabled-description": "将组内小组件移入由按钮切换的抽屉面板",
+          "drawer-glyph-closed": "关闭图标",
+          "drawer-glyph-closed-description": "面板关闭时显示在抽屉切换按钮上的图标",
+          "drawer-glyph-opened": "打开图标",
+          "drawer-glyph-opened-description": "面板打开时显示在抽屉切换按钮上的图标",
           "edit": "编辑样式",
           "fill": "背景",
           "fill-description": "胶囊背景的颜色；也支持固定的十六进制颜色值",
           "foreground": "前景",
           "foreground-description": "将颜色应用于组内小组件图标和标签",
-          "hide": "隐藏此分组",
+          "hide": "隐藏此组合",
           "hide-widget": "隐藏此小组件",
           "hint": "属于胶囊组",
           "members": "{count} 个小组件",
@@ -935,7 +947,7 @@
           "radius": "半径",
           "radius-description": "胶囊的圆角半径（像素）；“自动”将继承状态栏的胶囊圆角设置",
           "selected": "已选择 {count} 项",
-          "show": "显示此分组",
+          "show": "显示此组合",
           "show-widget": "显示此小组件",
           "style": "样式",
           "title": "胶囊组",
@@ -949,7 +961,7 @@
         "instance": {
           "create-save": "创建",
           "delete": "删除",
-          "delete-confirm-desc": "此具名小组件将从所有状态栏中移除，且不再保留其配置项。",
+          "delete-confirm-desc": "该具名小组件将从所有状态栏中移除，且不再保留其配置项。",
           "delete-confirm-title": "删除“{name}”？",
           "id-description": "仅限字母、数字、下划线或连字符；不能包含空格；必须唯一",
           "id-placeholder": "小组件 ID",
@@ -968,12 +980,12 @@
           "empty": "未找到小组件",
           "instance-description": "类型为“{type}”的具名小组件",
           "instance-toggle": "具名小组件",
-          "placeholder": "搜索小组件..."
+          "placeholder": "搜索小组件…"
         },
         "raw": {
           "delete": "删除",
-          "description": "此小组件配置中保留的不受支持键。",
-          "title": "原始设置"
+          "description": "从小组件配置中保留的不再支持的键。",
+          "title": "旧版配置项"
         },
         "settings": {
           "empty": "没有符合当前筛选条件的设置。",
@@ -981,7 +993,17 @@
             "grouping": "组合",
             "presentation": "外观",
             "runtime": "运行时",
-            "widget": "小组件"
+            "taskbar": {
+              "grouping": "分组",
+              "windows": "窗口",
+              "workspace-labels": "工作区标签"
+            },
+            "widget": "小组件",
+            "workspaces": {
+              "colors": "颜色",
+              "list": "工作区",
+              "pills": "胶囊样式"
+            }
           }
         }
       }
@@ -998,6 +1020,7 @@
         "rename": "无法重命名状态栏。"
       },
       "batch-write": "部分设置无法保存。",
+      "custom-schedule-times": "自定义时间表必须同时设置日出和日落时间，且格式为 HH:MM。",
       "export-config": "配置导出保存失败。",
       "export-wallpaper-palette": "无法将壁纸配色方案保存为自定义配色方案。",
       "monitor-override": {
@@ -1008,8 +1031,8 @@
       "reset-page": "部分设置重置失败。",
       "support-report": "诊断报告保存失败。",
       "sync-greeter": "无法将外观同步至 Noctalia Greeter。",
-      "sync-greeter-timeout": "Greeter 同步仍在等待管理员授权。请检查 TTY 或控制台中的 Polkit 提示，在“安全”设置中启用 Polkit 代理，或手动运行 pkexec。",
-      "sync-greeter-timeout-manual": "Greeter 同步仍需要管理员授权。请在终端运行：pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
+      "sync-greeter-timeout": "Greeter 同步仍在等待管理员授权。请检查 TTY 或控制台中的 Polkit 提示，在“安全”设置中启用 Polkit 代理，或手动执行 pkexec。",
+      "sync-greeter-timeout-manual": "Greeter 同步仍需要管理员授权。请在终端执行：pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "widget": {
         "rename": "无法重命名此具名小组件。"
       },
@@ -1041,7 +1064,7 @@
         "name-label": "名称",
         "name-placeholder": "idle-behavior",
         "resume-command-label": "恢复命令",
-        "resume-command-placeholder": "noctalia:dpms-on",
+        "resume-command-placeholder": "notify-send 'Back from idle'",
         "summary": "{name} · {seconds}s",
         "summary-disabled-timeout": "{name} · 超时已禁用",
         "timeout-label": "超时秒数",
@@ -1055,6 +1078,7 @@
     },
     "navigation": {
       "groups": {
+        "accessibility": "辅助功能",
         "audio": "音频",
         "authentication": "身份验证",
         "automation": "自动",
@@ -1071,6 +1095,7 @@
         "control-center": "控制中心",
         "dead-zone": "空白区域",
         "directories": "目录",
+        "display": "显示",
         "effects": "效果",
         "filtering": "过滤",
         "focus-styling": "焦点样式",
@@ -1106,10 +1131,10 @@
         "privacy": "隐私",
         "profile": "个人资料",
         "screen-corners": "屏幕圆角",
-        "screen-time": "屏幕使用时间",
+        "screen-time": "屏幕时间",
         "screenshot": "截图",
         "security": "安全",
-        "session-panel": "会话",
+        "session-panel": "会话面板",
         "shape": "形状",
         "system": "系统",
         "theme": "主题",
@@ -1122,6 +1147,7 @@
         "widgets": "小组件"
       },
       "sections": {
+        "accessibility": "辅助功能",
         "appearance": "外观",
         "backdrop": "Backdrop",
         "bar": "状态栏",
@@ -1160,8 +1186,11 @@
           "toast": "Toast 通知"
         },
         "flags-label": "当匹配时",
+        "match-content-label": "内容正则",
+        "match-content-placeholder": "用于匹配通知标题或正文的正则表达式…",
         "match-label": "应用",
-        "match-placeholder": "应用名称、桌面项或类别...",
+        "match-placeholder": "应用名称、桌面项或类别…",
+        "override-duration": "自定义持续时间",
         "play-sound": "播放提示音",
         "save-history": "保存到历史记录",
         "show-toast": "显示 Toast 通知",
@@ -1172,6 +1201,13 @@
       }
     },
     "options": {
+      "bar": {
+        "auto-hide": {
+          "off": "关闭",
+          "on": "开启",
+          "smart": "智能"
+        }
+      },
       "clipboard": {
         "auto-paste": {
           "ctrl-shift-v": "Ctrl+Shift+V",
@@ -1213,7 +1249,7 @@
         "ultra-light": "Ultra Light"
       },
       "hot-corners": {
-        "command": "运行命令",
+        "command": "执行命令",
         "control-center": "控制中心",
         "launcher": "启动器",
         "none": "无",
@@ -1231,6 +1267,10 @@
       "orientation": {
         "horizontal": "水平",
         "vertical": "垂直"
+      },
+      "panel-bar-alignment": {
+        "centered": "居中",
+        "near-trigger": "靠近触发位置"
       },
       "panel-position": {
         "auto": "跟随状态栏"
@@ -1285,7 +1325,7 @@
         }
       },
       "theme-role": {
-        "custom": "自定义...",
+        "custom": "自定义",
         "default": "默认"
       },
       "wallpaper": {
@@ -1321,8 +1361,8 @@
       "browse-store": "浏览插件",
       "panels": {
         "open-near-click": {
-          "description": "在触发该面板的状态栏小组件附近打开",
-          "label": "在点击位置附近打开"
+          "description": "从状态栏打开面板时，将其显示在小组件附近；其他方式打开时居中显示",
+          "label": "沿状态栏打开"
         },
         "placement": {
           "description": "将面板附着于状态栏，或在状态栏边缘附近浮动",
@@ -1340,8 +1380,8 @@
         "delete-confirm-title": "删除“{name}”？",
         "deprecated": "已弃用",
         "empty": "未启用任何插件。",
-        "loading": "正在加载插件...",
-        "refreshing": "正在刷新插件...",
+        "loading": "正在加载插件…",
+        "refreshing": "正在刷新插件…",
         "remove": "移除插件",
         "requires": "依赖：{dependencies}",
         "requires-newer-noctalia": "需要更高版本的 Noctalia",
@@ -1384,14 +1424,20 @@
         "category-all": "全部",
         "empty": "未找到插件",
         "incompatible": "不兼容",
-        "loading": "正在加载目录...",
+        "loading": "正在加载目录…",
         "no-readme": "没有可用的描述。",
         "results-count": "共 {count} 个插件",
-        "search-placeholder": "搜索插件...",
+        "search-placeholder": "搜索插件…",
         "title": "插件商店"
       }
     },
     "schema": {
+      "accessibility": {
+        "high-contrast": {
+          "description": "使表面色和背景色更趋近极值以提高对比度",
+          "label": "高对比度"
+        }
+      },
       "appearance": {
         "animation-speed": {
           "description": "所有动画的速度倍率",
@@ -1413,10 +1459,14 @@
           "description": "从内置目录中选择配色方案",
           "label": "内置配色方案"
         },
+        "button-borders": {
+          "description": "为 Shell 中的所有按钮绘制轮廓",
+          "label": "按钮边框"
+        },
         "community-palette": {
           "description": "从社区目录中选择配色方案",
           "label": "社区配色方案",
-          "search-placeholder": "搜索配色方案..."
+          "search-placeholder": "搜索配色方案…"
         },
         "corner-roundness": {
           "description": "缩放 Shell UI 容器和控件的圆角半径",
@@ -1425,7 +1475,7 @@
         "custom-palette": {
           "description": "从 ~/.config/noctalia/palettes/ 中选择配色方案",
           "label": "自定义配色方案",
-          "search-placeholder": "搜索自定义配色方案..."
+          "search-placeholder": "搜索自定义配色方案…"
         },
         "export-wallpaper-palette": {
           "button": "保存为自定义配色方案",
@@ -1449,6 +1499,10 @@
         "palette-source": {
           "description": "选择配色方案的来源",
           "label": "配色方案来源"
+        },
+        "pure-black-dark": {
+          "description": "将深色界面固定为纯黑色，避免 OLED 屏幕出现色带（仅限深色模式）",
+          "label": "纯黑"
         },
         "theme-mode": {
           "description": "选择深色、浅色，或根据时段自动切换",
@@ -1478,7 +1532,7 @@
       },
       "bar": {
         "auto-hide": {
-          "description": "闲置时自动隐藏状态栏"
+          "description": "“关闭”时保持状态栏可见；“开启”时隐藏，直到将指针移至屏幕边缘。“智能”模式会在空工作区显示，并在有窗口时隐藏。"
         },
         "background-opacity": {
           "description": "状态栏的背景不透明度"
@@ -1524,7 +1578,7 @@
           "label": "中央小组件"
         },
         "concave-edge-corners": {
-          "description": "在状态栏的其中两个角切出凹型缺口；需要“边缘间距”为 0；当“两端间距”为 0 时，将切出状态栏内侧边缘的角，否则将切出贴近屏幕边缘的角",
+          "description": "将状态栏的两个角转为内凹圆角（要求“边缘边距”为 0）。当“两端边距”为 0 时，将状态栏内侧边缘的两个角转为内凹；非 0 时，将外侧边缘（贴近屏幕边缘）的两个角转为内凹",
           "label": "边缘内凹圆角"
         },
         "contact-shadow": {
@@ -1574,7 +1628,7 @@
           "label": "向上滚动"
         },
         "edge-margin": {
-          "description": "状态栏与其所在屏幕边缘的间距；设为 0 时紧贴屏幕边缘。"
+          "description": "状态栏与其所在屏幕边缘的间距；设为 0 时紧贴屏幕边缘"
         },
         "enabled": {
           "description": "显示或隐藏此状态栏"
@@ -1584,10 +1638,10 @@
           "label": "末端小组件"
         },
         "ends-margin": {
-          "description": "状态栏两端与屏幕边缘的距离；设为 0 时显示为全宽或全高。"
+          "description": "状态栏两端与屏幕边缘的距离；设为 0 时显示为全宽或全高"
         },
         "font-family": {
-          "description": "状态栏上小组件的字体；留空则继承全局字体。单独设置的小组件字体将覆盖此项。",
+          "description": "状态栏上小组件的字体；留空则继承全局字体（单独设置的小组件字体将覆盖此项）",
           "label": "字体"
         },
         "font-weight": {
@@ -1599,7 +1653,7 @@
           "label": "悬停高亮"
         },
         "layer": {
-          "description": "使用 Overlay 可让状态栏显示在全屏应用上方；Top 则在全屏时被覆盖。吸附面板会跟随状态栏。",
+          "description": "使用 Overlay 可让状态栏显示在全屏应用上方，Top 则在全屏时被覆盖；吸附面板会跟随状态栏",
           "label": "Wayland 层级"
         },
         "opposite-edge-margin": {
@@ -1704,11 +1758,11 @@
       },
       "dock": {
         "active-icon-opacity": {
-          "description": "当前聚焦的 Dock 图标的不透明度",
+          "description": "焦点 Dock 图标的不透明度",
           "label": "焦点图标不透明度"
         },
         "active-icon-scale": {
-          "description": "当前聚焦的 Dock 图标的缩放比例",
+          "description": "焦点 Dock 图标的缩放比例",
           "label": "焦点图标缩放"
         },
         "active-monitor-only": {
@@ -1716,13 +1770,13 @@
           "label": "仅当前屏幕应用"
         },
         "auto-hide": {
-          "description": "不使用时自动隐藏 Dock"
+          "description": "“关闭”时保持 Dock 可见；“开启”时隐藏，直到将指针移至屏幕边缘。“智能”模式会在空工作区显示，并在有窗口时隐藏。"
         },
         "background-opacity": {
           "description": "Dock 的背景不透明度"
         },
         "concave-edge-corners": {
-          "description": "在 Dock 的其中两个角切出凹型（向内弯曲的）缺口；需要“边缘间距”为 0；当“两端间距”为 0 时，将切出 Dock 内侧边缘的角，否则将切出贴近屏幕边缘的角",
+          "description": "在贴近屏幕边缘的一侧形成内凹圆角；要求“边缘边距”为 0",
           "label": "边缘内凹圆角"
         },
         "corner-bottom-left": {
@@ -1862,7 +1916,7 @@
             "label": "注销时"
           },
           "power-profile-changed": {
-            "description": "当前 UPower/PPD 电源配置切换时执行的命令",
+            "description": "UPower/PPD 电源配置切换时执行的命令",
             "label": "电源配置切换时"
           },
           "rebooting": {
@@ -1949,7 +2003,7 @@
       },
       "lockscreen": {
         "allow-empty-password": {
-          "description": "允许按下 Enter 键提交空密码；适用于安全密钥或无密码 PAM 验证；保持关闭可避免误操作导致锁屏问题。",
+          "description": "允许按下 Enter 键提交空密码；适用于安全密钥或无密码 PAM 验证；保持关闭可避免误操作导致锁屏问题",
           "label": "允许空密码提交"
         },
         "blur-intensity": {
@@ -1977,7 +2031,7 @@
           "label": "着色强度"
         },
         "wallpaper": {
-          "description": "锁屏背景的自定义图片。留空则使用桌面壁纸。",
+          "description": "锁屏背景的自定义图片；留空则使用桌面壁纸",
           "label": "壁纸",
           "placeholder": "使用桌面壁纸"
         },
@@ -2016,7 +2070,7 @@
           "label": "通知过滤器"
         },
         "layer": {
-          "description": "使用 Overlay 可让 Toast 通知显示在全屏应用上方；Top 则在全屏时被覆盖。",
+          "description": "使用 Overlay 可让 Toast 通知显示在全屏应用上方，Top 则在全屏时被覆盖",
           "label": "Wayland 层级"
         },
         "monitors": {
@@ -2086,7 +2140,7 @@
           "label": "应用网格视图"
         },
         "launcher-categories": {
-          "description": "在启动器中显示类别筛选；按 F6 显示，之后用 F6 和 Shift+F6 切换",
+          "description": "在启动器中显示类别筛选；按 F6 显示和切换，Shift+F6 反向切换",
           "label": "显示类别"
         },
         "launcher-compact": {
@@ -2111,24 +2165,24 @@
           "label": "按使用情况排序"
         },
         "open-near-click-clipboard": {
-          "description": "在状态栏点击位置附近打开剪贴板面板，而非居中显示",
-          "label": "在点击位置附近打开"
+          "description": "从状态栏打开剪贴板面板时，将其显示在小组件附近；其他方式打开时居中显示",
+          "label": "沿状态栏打开"
         },
         "open-near-click-control-center": {
-          "description": "在状态栏点击位置附近打开控制中心面板，而非居中显示",
-          "label": "在点击位置附近打开"
+          "description": "从状态栏打开控制中心时，将其显示在小组件附近；其他方式打开时居中显示",
+          "label": "沿状态栏打开"
         },
         "open-near-click-launcher": {
-          "description": "在状态栏点击位置附近打开启动器面板，而非居中显示",
-          "label": "在点击位置附近打开"
+          "description": "从状态栏打开启动器时，将其显示在小组件附近；其他方式打开时居中显示",
+          "label": "沿状态栏打开"
         },
         "open-near-click-session": {
-          "description": "在状态栏点击位置附近打开会话菜单面板，而非居中显示",
-          "label": "在点击位置附近打开"
+          "description": "从状态栏打开会话面板时，将其显示在小组件附近；其他方式打开时居中显示",
+          "label": "沿状态栏打开"
         },
         "open-near-click-wallpaper": {
-          "description": "在状态栏点击位置附近打开壁纸选择器面板，而非居中显示",
-          "label": "在点击位置附近打开"
+          "description": "从状态栏打开壁纸选择器时，将其显示在小组件附近；其他方式打开时居中显示",
+          "label": "沿状态栏打开"
         },
         "placement-clipboard": {
           "description": "选择剪贴板是附着于状态栏，还是在指定屏幕位置浮动",
@@ -2147,7 +2201,7 @@
           "label": "显示模式"
         },
         "placement-session": {
-          "description": "选择会话菜单是附着于状态栏，还是在指定屏幕位置浮动",
+          "description": "选择会话面板是附着于状态栏，还是在指定屏幕位置浮动",
           "label": "显示模式"
         },
         "placement-wallpaper": {
@@ -2171,7 +2225,7 @@
           "label": "屏幕位置"
         },
         "position-session": {
-          "description": "会话菜单在屏幕上悬浮的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "description": "会话面板在屏幕上悬浮的位置；选择“跟随状态栏”可使其保持在状态栏附近",
           "label": "屏幕位置"
         },
         "position-wallpaper": {
@@ -2188,7 +2242,7 @@
       },
       "power": {
         "session-actions": {
-          "description": "电源菜单项、排列顺序、自定义命令及图标配置",
+          "description": "会话面板项、排列顺序、自定义命令及图标配置",
           "label": "项目"
         },
         "session-grid": {
@@ -2221,6 +2275,10 @@
         "calendar-refresh-interval": {
           "description": "同步日历事件的频率（分钟）",
           "label": "刷新间隔"
+        },
+        "custom-schedule": {
+          "description": "使用自定义的日出/日落时间，而不是根据位置坐标计算",
+          "label": "自定义时间表"
         },
         "day-temperature": {
           "description": "白天时段的色温（开尔文）",
@@ -2296,25 +2354,25 @@
         },
         "system-monitor": {
           "cpu-poll": {
-            "description": "CPU 使用率、CPU 温度和平均负载的采样间隔秒数（0 为禁用）",
+            "description": "CPU 使用率、CPU 温度和平均负载的采样间隔秒数（设为 0 时禁用）",
             "label": "CPU 轮询间隔"
           },
           "description": "采样 CPU、内存、网络、负载、温度和磁盘统计数据",
           "disk-poll": {
-            "description": "磁盘使用率和 Swap 使用率的采样间隔秒数（0 为禁用）",
+            "description": "磁盘使用率和 Swap 使用率的采样间隔秒数（设为 0 时禁用）",
             "label": "磁盘轮询间隔"
           },
           "gpu-poll": {
-            "description": "GPU 温度和显存的采样间隔秒数。设为 0 时禁用（默认），可避免唤醒独立显卡；如果需要启用，5 秒是一个合理的间隔",
+            "description": "GPU 温度和显存的采样间隔秒数（设为 0 时禁用，可避免唤醒独立显卡；如需启用，建议为 5 秒）",
             "label": "GPU 轮询间隔"
           },
           "label": "系统监视器",
           "memory-poll": {
-            "description": "内存使用率的采样间隔秒数（0 为禁用）",
+            "description": "内存使用率的采样间隔秒数（设为 0 时禁用）",
             "label": "内存轮询间隔"
           },
           "network-poll": {
-            "description": "网络吞吐量的采样间隔秒数（0 为禁用）",
+            "description": "网络吞吐量的采样间隔秒数（设为 0 时禁用）",
             "label": "网络轮询间隔"
           },
           "stats": {
@@ -2417,7 +2475,7 @@
       },
       "shell": {
         "avatar-path": {
-          "description": "自定义头像图片的路径。较大的图片会自动裁剪并调整大小。",
+          "description": "自定义头像图片的路径；较大的图片将自动裁剪并调整大小",
           "label": "头像路径",
           "placeholder": "/path/to/avatar.png"
         },
@@ -2455,7 +2513,7 @@
           "label": "自动同步 Greeter"
         },
         "greeter-sync-privilege-command": {
-          "description": "用于替代 pkexec/run0 执行 Greeter 同步。应用路径和暂存目录将自动追加。例如：ghostty -e pkexec",
+          "description": "用于替换 Greeter 同步提权的 pkexec/run0 命令；同步辅助程序和暂存目录将自动追加（例如：ghostty -e pkexec）",
           "label": "Greeter 同步提权命令"
         },
         "launch-apps-as-systemd-services": {
@@ -2589,12 +2647,12 @@
         },
         "screen-time-enabled": {
           "description": "追踪记录每个应用的使用时长并显示在控制中心",
-          "label": "屏幕使用时间"
+          "label": "屏幕时间"
         },
         "screen-time-reset": {
           "button": "重置",
           "description": "清除已保存的应用前台使用记录",
-          "label": "重置屏幕使用时间数据"
+          "label": "重置屏幕时间数据"
         },
         "screenshot-confirm-region": {
           "description": "绘制区域后，保持 Overlay 开启，直到按下 Enter 或 Space 键确认",
@@ -2840,7 +2898,7 @@
           "label": "活动颜色"
         },
         "active-opacity": {
-          "description": "活动（焦点）窗口图标的不透明度。",
+          "description": "活动（焦点）窗口图标的不透明度",
           "label": "焦点图标不透明度"
         },
         "active-pill-size": {
@@ -2919,12 +2977,12 @@
           "label": "左键点击命令"
         },
         "custom-image": {
-          "description": "自定义图片的路径。留空则使用图标。",
+          "description": "自定义图片的路径；留空则使用图标",
           "dialog-title": "选择自定义图片",
           "label": "自定义图片"
         },
         "custom-image-colorize": {
-          "description": "使用小组件的“图标颜色”设置为自定义图片着色",
+          "description": "使用小组件的“图标颜色”为自定义图片着色",
           "label": "自定义图片着色"
         },
         "custom-labels": {
@@ -2936,7 +2994,7 @@
           "label": "切换命令"
         },
         "detached-panel": {
-          "description": "以带独立背景的悬浮面板打开抽屉，而非吸附状态栏",
+          "description": "以带有独立背景的悬浮面板打开抽屉，而非吸附状态栏",
           "label": "独立面板"
         },
         "device": {
@@ -2944,7 +3002,7 @@
           "label": "设备"
         },
         "display": {
-          "active-window-description": "在水平状态栏上显示图标、标题或两者同时显示。垂直状态栏仅显示图标。",
+          "active-window-description": "在水平状态栏上显示图标、标题或两者同时显示；垂直状态栏仅显示图标",
           "description": "小组件的显示模式",
           "label": "显示"
         },
@@ -2993,7 +3051,7 @@
         "glyph": {
           "description": "图标名称",
           "label": "图标",
-          "sysmon-description": "自定义图标；留空则使用当前所选统计项的默认图标。",
+          "sysmon-description": "自定义图标；留空则使用所选统计项对应的图标",
           "volume-description": "自定义图标；留空则使用内置的动态图标"
         },
         "group-by-workspace": {
@@ -3086,13 +3144,17 @@
           "label": "未活动颜色"
         },
         "inactive-opacity": {
-          "description": "非活动（非焦点）窗口图标的不透明度。",
+          "description": "非活动（非焦点）窗口图标的不透明度",
           "label": "非焦点图标不透明度"
         },
         "inactive-pill-size": {
           "description": "非活动工作区胶囊沿状态栏方向的最小长度，以胶囊厚度为单位",
           "label": "非活动胶囊长度",
           "workspaces-description": "非活动工作区胶囊沿状态栏方向的最小长度，以胶囊厚度为单位；标签可能会超出此长度"
+        },
+        "interactive": {
+          "description": "允许小组件的鼠标悬停、点击和滚动操作，并显示文字提示",
+          "label": "交互"
         },
         "interface": {
           "description": "监视的网络接口；留空则统计所有接口的总流量",
@@ -3133,7 +3195,7 @@
           "label": "麦克风过滤正则"
         },
         "middle-command": {
-          "description": "中键点击按钮时执行的 Shell 命令。设置后，中键点击将执行此命令而非打开小组件设置。",
+          "description": "中键点击按钮时执行的 Shell 命令。设置后，中键点击将不再打开小组件设置。",
           "label": "中键点击命令"
         },
         "min-length": {
@@ -3143,6 +3205,7 @@
         "minimal": {
           "description": "仅显示工作区 ID 或名称标签，不显示动画胶囊",
           "label": "简约样式",
+          "taskbar-description": "仅显示工作区文字标签，不显示彩色圆形背景",
           "workspaces-description": "仅显示工作区文字标签，不显示胶囊背景和滑动动画"
         },
         "mirrored": {
@@ -3207,7 +3270,7 @@
           "label": "脚本"
         },
         "scroll-down-command": {
-          "description": "在按钮上向下滚动时执行的 Shell 命令",
+          "description": "向下滚动按钮时执行的 Shell 命令",
           "label": "向下滚动命令"
         },
         "scroll-step": {
@@ -3215,11 +3278,11 @@
           "label": "滚动步长"
         },
         "scroll-up-command": {
-          "description": "在按钮上向上滚动时执行的 Shell 命令",
+          "description": "向上滚动按钮时执行的 Shell 命令",
           "label": "向上滚动命令"
         },
         "show-active-indicator": {
-          "description": "在任务栏中活动窗口图标下方显示小圆点。",
+          "description": "在任务栏中活动窗口图标下方显示小圆点",
           "label": "活动窗口指示器"
         },
         "show-all-outputs": {
@@ -3267,7 +3330,7 @@
           "label": "显示窗口标题"
         },
         "show-workspace-label": {
-          "description": "在分组胶囊上显示工作区标签。关闭后仅显示图标分组。",
+          "description": "在分组胶囊上显示工作区标签；关闭后仅显示图标分组",
           "label": "工作区胶囊标签"
         },
         "stat": {
@@ -3278,16 +3341,20 @@
           "description": "总宽度限制（像素）；窗口标题会自适应缩小，过窄时隐藏",
           "label": "任务栏最大宽度"
         },
+        "timezone": {
+          "description": "时钟的时区标识符（例如 Europe/Berlin）；留空则使用系统本地时间",
+          "label": "时区"
+        },
         "title-scroll": {
           "description": "何时滚动显示小组件标题",
           "label": "标题滚动"
         },
         "tooltip": {
-          "description": "悬停按钮时显示的提示信息",
-          "label": "提示"
+          "description": "悬停按钮时显示的文字提示",
+          "label": "文字提示"
         },
         "tooltip-format": {
-          "description": "可选的提示信息格式",
+          "description": "可选的文字提示格式",
           "label": "提示格式"
         },
         "type": {
@@ -3295,7 +3362,7 @@
           "label": "类型"
         },
         "vertical-format": {
-          "description": "垂直状态栏的可选格式",
+          "description": "可选的垂直状态栏格式",
           "label": "垂直格式"
         },
         "warning-color": {
@@ -3315,7 +3382,7 @@
           "label": "工作区分组胶囊"
         },
         "workspace-label-placement": {
-          "description": "显示在角落、边缘居中或胶囊内部。",
+          "description": "显示在角落、边缘居中或胶囊内部",
           "label": "工作区标签位置"
         }
       },
@@ -3356,15 +3423,16 @@
       }
     },
     "window": {
-      "export-config": "导出配置...",
+      "export-config": "导出配置…",
       "export-config-saved": "配置导出已保存。",
       "filter-modified": "已修改",
+      "legacy-config-warning": "旧版配置项已在内存中临时转换：{issue}。请执行 noctalia config validate 命令查看所有需要的更改。",
       "native-title": "Noctalia 设置",
       "no-results": "未找到相关设置",
       "no-results-hint": "请尝试使用其他设置名称或配置键。",
       "reset-page": "重置页面",
       "reset-page-confirm": "确认重置",
-      "search-placeholder": "搜索设置...",
+      "search-placeholder": "搜索设置…",
       "search-truncated": "仅显示前 {count} 个匹配项。请缩小搜索范围以减少结果。",
       "support-report": "诊断报告",
       "support-report-saved": "诊断报告已保存。",
@@ -3375,7 +3443,7 @@
   "setup-wizard": {
     "browse": "浏览",
     "builtin-palette": "内置配色方案",
-    "footer-note": "之后可以在设置中更改这些选项。",
+    "footer-note": "稍后可以在设置中更改这些选项。",
     "get-started": "开始使用",
     "mode": "模式",
     "no-wallpaper-selected": "未选择壁纸",
@@ -3441,7 +3509,7 @@
   },
   "tray": {
     "menu": {
-      "empty": "无菜单项...",
+      "empty": "无菜单项…",
       "pin": "固定",
       "unpin": "取消固定"
     }
@@ -3450,7 +3518,7 @@
     "controls": {
       "search-picker": {
         "empty": "无结果",
-        "placeholder": "搜索..."
+        "placeholder": "搜索…"
       },
       "select": {
         "placeholder": "选择一个选项"
@@ -3471,7 +3539,7 @@
           "folder": "文件夹"
         },
         "filename-placeholder": "文件名",
-        "filter-placeholder": "筛选...",
+        "filter-placeholder": "筛选…",
         "sort": {
           "ascending": "↑",
           "date": "日期",
@@ -3488,7 +3556,7 @@
       },
       "glyph-picker": {
         "all-categories": "全部",
-        "search-placeholder": "搜索图标...",
+        "search-placeholder": "搜索图标…",
         "title": "选择图标"
       }
     }
@@ -3497,9 +3565,9 @@
     "panel": {
       "all-monitors": "全部",
       "color-title": "壁纸颜色",
-      "filter-placeholder": "筛选...",
+      "filter-placeholder": "筛选…",
       "flatten": "展开嵌套",
-      "loading": "正在加载壁纸...",
+      "loading": "正在加载壁纸…",
       "sort-date-asc": "按日期排序（最旧优先）",
       "sort-date-desc": "按日期排序（最新优先）",
       "sort-name-asc": "按名称排序（A-Z）",

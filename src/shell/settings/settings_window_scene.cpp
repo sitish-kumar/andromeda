@@ -1251,59 +1251,33 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
     );
   }
 
-  if (m_focusSearchOnRebuild && searchInputPtr != nullptr && searchInputPtr->inputArea() != nullptr) {
-    m_inputDispatcher.setFocus(searchInputPtr->inputArea());
-    m_focusSearchOnRebuild = false;
-  }
-
   return filters;
 }
 
 std::unique_ptr<Flex> SettingsWindow::buildStatusRow(float scale) {
-  if (m_statusMessage.empty()) {
+  const auto* legacyIssue = m_config != nullptr && !m_config->legacyConfigIssues().empty()
+      ? &m_config->legacyConfigIssues().front()
+      : nullptr;
+  if (m_statusMessage.empty() && legacyIssue == nullptr) {
     return nullptr;
   }
 
-  const auto requestRebuild = [this]() { requestSceneRebuild(); };
-  const auto clearStatus = [this]() { clearStatusMessage(); };
+  const bool transientStatus = !m_statusMessage.empty();
+  const bool statusIsError = transientStatus ? m_statusIsError : true;
+  const std::string messageText = transientStatus
+      ? m_statusMessage
+      : i18n::tr("settings.window.legacy-config-warning", "issue", legacyIssue->path + ": " + legacyIssue->message);
 
-  auto status = ui::row({
-      .align = FlexAlign::Center,
-      .gap = Style::spaceSm * scale,
-      .configure = [this, scale](Flex& row) {
-        row.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-        row.setRadius(Style::scaledRadiusMd(scale));
-        row.setFill(colorSpecFromRole(m_statusIsError ? ColorRole::Error : ColorRole::Secondary, 0.14f));
-        row.setBorder(
-            colorSpecFromRole(m_statusIsError ? ColorRole::Error : ColorRole::Secondary, 0.45f), Style::borderWidth
-        );
-      },
+  return settings::makeSettingsStatusBanner({
+      .message = messageText,
+      .error = statusIsError,
+      .scale = scale,
+      .onDismiss = transientStatus ? std::function<void()>{[this]() {
+        clearStatusMessage();
+        requestSceneRebuild();
+      }}
+                                   : std::function<void()>{},
   });
-
-  auto message = makeLabel(
-      m_statusMessage, Style::fontSizeCaption * scale,
-      colorSpecFromRole(m_statusIsError ? ColorRole::Error : ColorRole::Secondary), FontWeight::Bold
-  );
-  message->setFlexGrow(1.0f);
-  status->addChild(std::move(message));
-
-  status->addChild(
-      ui::button({
-          .glyph = "close",
-          .glyphSize = Style::fontSizeCaption * scale,
-          .variant = ButtonVariant::Ghost,
-          .minWidth = Style::controlHeightSm * scale,
-          .minHeight = Style::controlHeightSm * scale,
-          .padding = Style::spaceXs * scale,
-          .radius = Style::scaledRadiusSm(scale),
-          .onClick = [clearStatus, requestRebuild]() {
-            clearStatus();
-            requestRebuild();
-          },
-      })
-  );
-
-  return status;
 }
 
 std::unique_ptr<Flex> SettingsWindow::buildBody(
@@ -1634,11 +1608,21 @@ std::vector<std::vector<std::string>> SettingsWindow::currentPageResetPaths() co
     return resetPagePaths;
   }
   for (const auto& entry : m_settingsRegistry) {
-    if (!entry.path.empty()
-        && settingEntryBelongsToPage(entry, m_selectedSection, m_selectedBarName, m_selectedMonitorOverride)
-        && m_config->hasEffectiveOverride(entry.path)
-        && !containsPath(resetPagePaths, entry.path)) {
-      resetPagePaths.push_back(entry.path);
+    if (!settingEntryBelongsToPage(entry, m_selectedSection, m_selectedBarName, m_selectedMonitorOverride)) {
+      continue;
+    }
+
+    const auto appendIfOverridden = [this, &resetPagePaths](const std::vector<std::string>& path) {
+      if (!path.empty() && m_config->hasEffectiveOverride(path) && !containsPath(resetPagePaths, path)) {
+        resetPagePaths.push_back(path);
+      }
+    };
+    appendIfOverridden(entry.path);
+    if (const auto* range = std::get_if<settings::RangeSliderSetting>(&entry.control)) {
+      appendIfOverridden(range->highPath);
+    }
+    if (const auto* select = std::get_if<settings::SelectSetting>(&entry.control)) {
+      appendIfOverridden(select->linkedPath);
     }
   }
   return resetPagePaths;
@@ -1714,6 +1698,9 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   const float scale = uiScale();
   m_actionsMenuButton = nullptr;
   m_contentScrollView = nullptr;
+  m_sidebarScrollView = nullptr;
+  m_sidebarNav = nullptr;
+  m_settingsSearchInput = nullptr;
 
   const Config fallbackCfg{};
   const Config& cfg = m_config != nullptr ? m_config->config() : fallbackCfg;

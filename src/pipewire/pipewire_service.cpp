@@ -1475,6 +1475,9 @@ void PipeWireService::onMixerVolumeChanged(std::uint32_t id, float volume, bool 
   }
 
   const float clamped = std::clamp(volume, 0.0f, 1.5f);
+  kLog.debug(
+      "mixer echo node {} vol {:.6f} muted {} (local vol {:.6f} swMute {})", id, clamped, muted, nd.volume, nd.swMute
+  );
   bool changed = false;
   if (std::abs(nd.volume - clamped) >= kVolumeChangeEpsilon) {
     nd.volume = clamped;
@@ -1604,12 +1607,15 @@ void PipeWireService::rebuildState() {
     // explicitly unavailable and no available alternative is hidden. Cards that report "unknown"
     // (many HDA/HiFi setups) stay visible.
     const std::uint32_t wantDir = routeDirectionForMediaClass(nd->mediaClass);
-    const DeviceRouteData* activeRoute = wantDir != 0 ? activeRouteForDirection(nd->routes, wantDir) : nullptr;
+    // SPA_DIRECTION_INPUT == 0, so `wantDir != 0` would wrongly exclude every Audio/Source; guard on the
+    // media class being a device node instead (matches the isDeviceNode check used during route parsing).
+    const bool isDeviceNode = nd->mediaClass == "Audio/Sink" || nd->mediaClass == "Audio/Source";
+    const DeviceRouteData* activeRoute = isDeviceNode ? activeRouteForDirection(nd->routes, wantDir) : nullptr;
     const DeviceData* device = nullptr;
     if (nd->deviceId != 0) {
       if (const auto devIt = m_devices.find(nd->deviceId); devIt != m_devices.end()) {
         device = &devIt->second;
-        if (activeRoute == nullptr && wantDir != 0) {
+        if (activeRoute == nullptr && isDeviceNode) {
           activeRoute = activeRouteForDirection(device->routes, wantDir);
         }
       }
@@ -1674,9 +1680,11 @@ void PipeWireService::rebuildState() {
 
 void PipeWireService::recomputeEffectiveMute(NodeData& nd) {
   const std::uint32_t wantDir = routeDirectionForMediaClass(nd.mediaClass);
-  const DeviceRouteData* nodeRoute = wantDir != 0 ? activeRouteForDirection(nd.routes, wantDir) : nullptr;
+  // SPA_DIRECTION_INPUT == 0, so guard on the media class rather than `wantDir != 0` (which would skip sources).
+  const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
+  const DeviceRouteData* nodeRoute = isDeviceNode ? activeRouteForDirection(nd.routes, wantDir) : nullptr;
   const DeviceRouteData* deviceRoute = nullptr;
-  if (nd.deviceId != 0 && wantDir != 0) {
+  if (nd.deviceId != 0 && isDeviceNode) {
     const auto it = m_devices.find(nd.deviceId);
     if (it != m_devices.end()) {
       deviceRoute = activeRouteForDirection(it->second.routes, wantDir);
@@ -1767,12 +1775,14 @@ bool PipeWireService::applyNodeVolume(std::uint32_t id, float volume) {
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
   if (isDeviceNode) {
     if (std::abs(nd.volume - volume) >= kVolumeChangeEpsilon) {
+      kLog.debug("volume write node {} {:.6f} (was {:.6f})", id, volume, nd.volume);
       if (m_wpMixer != nullptr) {
         m_wpMixer->setVolume(id, volume);
       }
       nd.volume = volume;
       return true;
     }
+    kLog.debug("volume write node {} {:.6f} skipped, optimistic already {:.6f}", id, volume, nd.volume);
     return false;
   }
 
@@ -2034,6 +2044,7 @@ void PipeWireService::emitVolumePreview(bool isInput, std::uint32_t id, float vo
   }
   const auto it = m_nodes.find(id);
   const bool muted = (it != m_nodes.end()) ? it->second->muted : false;
+  kLog.debug("osd preview node {} vol {:.6f} muted {}", id, std::clamp(volume, 0.0f, 1.5f), muted);
   m_volumePreviewCallback(isInput, id, std::clamp(volume, 0.0f, 1.5f), muted);
 }
 

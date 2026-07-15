@@ -84,6 +84,14 @@ void TrayDrawerPanel::create() {
       }
   );
   m_drawerWidget->setContentScale(contentScale());
+  if (m_config != nullptr && !m_config->config().bars.empty()) {
+    const auto& barConfig = m_config->config().bars.front();
+    const WidgetConfig* trayConf = nullptr;
+    if (const auto it = m_config->config().widgets.find("tray"); it != m_config->config().widgets.end()) {
+      trayConf = &it->second;
+    }
+    m_drawerWidget->setBarCapsuleSpec(resolveWidgetBarCapsuleSpec(barConfig, trayConf));
+  }
   m_drawerWidget->setAnimationManager(m_animations);
   m_drawerWidget->setUpdateCallback([]() { PanelManager::instance().requestUpdateOnly(); });
   m_drawerWidget->setRedrawCallback([]() { PanelManager::instance().requestRedraw(); });
