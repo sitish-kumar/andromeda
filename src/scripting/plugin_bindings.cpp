@@ -242,7 +242,6 @@ namespace {
       {"outputName", luau_outputName},
       {"setVisible", luau_setVisible},
       {"render", luau_ui_render},
-      {"getConfig", scripting::luau_getConfig},
       {nullptr, nullptr},
   };
 
@@ -366,7 +365,6 @@ namespace {
   const luaL_Reg kLauncherLib[] = {
       {"setResults", luau_launcher_setResults},
       {"setQuery", luau_launcher_setQuery},
-      {"getConfig", scripting::luau_getConfig},
       {nullptr, nullptr},
   };
 
@@ -539,7 +537,6 @@ namespace {
       {"render", luau_ui_render},
       {"setWantsSecondTicks", luau_desktop_setWantsSecondTicks},
       {"setNeedsFrameTick", luau_desktop_setNeedsFrameTick},
-      {"getConfig", scripting::luau_getConfig},
       {nullptr, nullptr},
   };
 
@@ -565,7 +562,6 @@ namespace {
       {"render", luau_ui_render},
       {"close", luau_panel_close},
       {"setWantsSecondTicks", luau_panel_setWantsSecondTicks},
-      {"getConfig", scripting::luau_getConfig},
       {nullptr, nullptr},
   };
 
