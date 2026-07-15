@@ -30,6 +30,8 @@ namespace settings {
 
   namespace {
 
+    constexpr float kSourceBadgeMaxWidth = 120.0F;
+
     bool containsIgnoreCase(std::string_view haystack, std::string_view needle) {
       if (needle.empty()) {
         return true;
@@ -325,19 +327,28 @@ namespace settings {
 
     auto header = ui::row({.align = FlexAlign::Stretch, .gap = Style::spaceMd * scale, .fillWidth = true});
 
-    auto pill = [&](const std::string& text, ColorRole fg, ColorRole bg, float bgAlpha) {
-      return ui::row(
+    auto pill = [&](const std::string& text, ColorRole fg, ColorRole bg, float bgAlpha, float maxWidth = 0.0F) {
+      Label* label = nullptr;
+      auto badge = ui::row(
           {.align = FlexAlign::Center,
            .paddingH = Style::spaceXs * scale,
            .fill = colorSpecFromRole(bg, bgAlpha),
            .radius = Style::scaledRadiusSm(scale)},
           ui::label({
+              .out = &label,
               .text = text,
               .fontSize = Style::fontSizeMini * scale,
               .fontWeight = FontWeight::Bold,
               .color = colorSpecFromRole(fg),
           })
       );
+      if (maxWidth > 0.0F) {
+        badge->setMaxWidth(maxWidth * scale);
+        label->setMaxWidth((maxWidth - (Style::spaceXs * 2.0F)) * scale);
+        label->setMaxLines(1);
+        label->setEllipsize(TextEllipsize::End);
+      }
+      return badge;
     };
 
     // Left side: plugin thumbnail (Contain-fit so it shows uncropped), or glyph fallback.
@@ -410,9 +421,15 @@ namespace settings {
       );
     }
     if (storeEntry.source == "official") {
-      meta->addChild(pill(i18n::tr("settings.badges.official"), ColorRole::Primary, ColorRole::Primary, 0.15f));
+      meta->addChild(pill(
+          i18n::tr("settings.badges.official"), ColorRole::Primary, ColorRole::Primary, 0.15f, kSourceBadgeMaxWidth
+      ));
     } else if (storeEntry.source == "community") {
-      meta->addChild(pill(i18n::tr("settings.badges.community"), ColorRole::Secondary, ColorRole::Secondary, 0.15f));
+      meta->addChild(pill(
+          i18n::tr("settings.badges.community"), ColorRole::Secondary, ColorRole::Secondary, 0.15f, kSourceBadgeMaxWidth
+      ));
+    } else {
+      meta->addChild(pill(storeEntry.source, ColorRole::Tertiary, ColorRole::Tertiary, 0.15f, kSourceBadgeMaxWidth));
     }
     if (entry.deprecated) {
       meta->addChild(pill(i18n::tr("settings.badges.deprecated"), ColorRole::Error, ColorRole::Error, 0.15f));
