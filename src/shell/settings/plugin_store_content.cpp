@@ -306,7 +306,7 @@ namespace settings {
 
     auto grid = std::make_unique<VirtualGridView>();
     grid->setMinCellWidth(200.0f * scale);
-    grid->setCellHeight(260.0f * scale);
+    grid->setCellHeight(215.0f * scale);
     grid->setSquareCells(false);
     grid->setColumnGap(Style::spaceSm * scale);
     grid->setRowGap(Style::spaceSm * scale);

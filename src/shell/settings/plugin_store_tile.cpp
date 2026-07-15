@@ -34,7 +34,7 @@ namespace settings {
             .fit = ImageFit::Cover,
             .radius = Style::scaledRadiusSm(scale),
             .width = -1.0f,
-            .height = 100.0f * scale,
+            .height = 80.0f * scale,
             .visible = false,
         })
     );
@@ -44,7 +44,7 @@ namespace settings {
             {.out = &m_iconContainer,
              .align = FlexAlign::Center,
              .justify = FlexJustify::Center,
-             .height = 100.0f * scale},
+             .height = 80.0f * scale},
             ui::glyph({
                 .out = &m_icon,
                 .glyph = "apps",
