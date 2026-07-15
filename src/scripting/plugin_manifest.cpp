@@ -173,7 +173,11 @@ namespace scripting {
           return false;
         }
         if (optTable->contains("label")) {
-          error = "setting '" + out.key + "' option '" + opt.value + "' uses 'label'; use 'label_key' instead";
+          error = "setting '"
+              + out.key
+              + "' option '"
+              + opt.value
+              + "' uses 'label'; use 'label_key' that points to translation key instead";
           return false;
         }
         opt.labelKey = tableString(*optTable, "label_key");
@@ -227,11 +231,13 @@ namespace scripting {
       }
       out.type = parseFieldType(tableString(field, "type", "string"));
       if (field.contains("label")) {
-        error = "setting '" + out.key + "' uses 'label'; use 'label_key' instead";
+        error = "setting '" + out.key + "' uses 'label'; use 'label_key' that points to translation key instead";
         return std::nullopt;
       }
       if (field.contains("description")) {
-        error = "setting '" + out.key + "' uses 'description'; use 'description_key' instead";
+        error = "setting '"
+            + out.key
+            + "' uses 'description'; use 'description_key' that points to translation key instead";
         return std::nullopt;
       }
       out.labelKey = tableString(field, "label_key");
