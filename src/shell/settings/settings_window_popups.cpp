@@ -1536,10 +1536,12 @@ void SettingsWindow::openPluginSourceCreateEditor(std::optional<PluginSourceConf
         m_pluginManager->removeSource(name);
         markPluginListDirty();
         markSettingsWriteSuccess(false);
-        if (m_editorSheetPopup != nullptr) {
-          m_editorSheetPopup->close();
-        }
-        requestSceneRebuild();
+        DeferredCall::callLater([this]() {
+          if (m_editorSheetPopup != nullptr) {
+            m_editorSheetPopup->close();
+          }
+          requestSceneRebuild();
+        });
       };
     }
 
@@ -1727,10 +1729,12 @@ void SettingsWindow::openPluginSourceCreateEditor(std::optional<PluginSourceConf
                     );
                     markPluginListDirty();
                     markSettingsWriteSuccess(false);
-                    if (m_editorSheetPopup != nullptr) {
-                      m_editorSheetPopup->close();
-                    }
-                    requestSceneRebuild();
+                    DeferredCall::callLater([this]() {
+                      if (m_editorSheetPopup != nullptr) {
+                        m_editorSheetPopup->close();
+                      }
+                      requestSceneRebuild();
+                    });
                   },
               })
           );
