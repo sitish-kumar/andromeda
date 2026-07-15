@@ -129,9 +129,8 @@ location = "https://example.invalid/bad"
       }
     }
 
-    const std::string invalid[] = {
-        "", "hello", "me/", "/hello", "me/foo/bar", "me/../hello", "me/foo bar", "../foo", "me/.hidden"
-    };
+    const std::string invalid[] = {"",           "hello",  "me/",       "/hello", "me/foo/bar", "me/../hello",
+                                   "me/foo bar", "../foo", "me/.hidden"};
     for (const auto& id : invalid) {
       if (scripting::isValidPluginId(id)) {
         fail("plugins: accepted invalid plugin id " + id);
@@ -283,9 +282,8 @@ location = "https://example.invalid/bad"
     c.osd.kinds.lockKeys = false;
     c.osd.kinds.keyboardLayout = false;
     c.backdrop = BackdropConfig{true, 0.8f, 0.2f};
-    c.lockscreen = LockscreenConfig{
-        .blurredDesktop = true, .blurIntensity = 0.6f, .tintIntensity = 0.25f, .monitors = {"DP-1"}
-    };
+    c.lockscreen =
+        LockscreenConfig{.blurredDesktop = true, .blurIntensity = 0.6f, .tintIntensity = 0.25f, .monitors = {"DP-1"}};
     c.system.monitor.enabled = false;
     c.system.monitor.cpuTempSensorPath = "/sys/class/hwmon/hwmon3/temp1_input";
     c.system.monitor.cpuPollSeconds = 5.0f;
@@ -424,8 +422,9 @@ location = "https://example.invalid/bad"
     c.theme.mode = ThemeMode::Light;
     c.theme.templates.enableBuiltinTemplates = false;
     c.theme.templates.builtinIds = {"a", "b"};
-    c.theme.templates.customColors = {{"accent", "#112233", "#112233", "#332211", true},
-        {"bg", "#000000", "#000000", "#000000", false}};
+    c.theme.templates.customColors = {
+        {"accent", "#112233", "#112233", "#332211", true}, {"bg", "#000000", "#000000", "#000000", false}
+    };
     c.theme.templates.userTemplates = {
         ThemeConfig::UserTemplateConfig{
             "tmpl1",
@@ -487,6 +486,48 @@ location = "https://example.invalid/bad"
       if (s.clipboardHistoryMaxEntries != 10000) {
         fail("shell.clipboard_history_max_entries clamp: expected 10000");
       }
+    }
+  }
+
+  // color falls back to color_dark then color_light so a single-mode entry survives
+  // the name+color keep-predicate and carries a usable comparison color.
+  void checkCustomColorFallback() {
+    auto root = toml::parse(R"(
+[templates.custom_colors]
+onlydark = { color_dark = "#111111" }
+onlylight = { color_light = "#222222" }
+bare = { color = "#333333" }
+both = { color_dark = "#444444", color_light = "#555555" }
+)");
+    ThemeConfig theme{};
+    Diagnostics d;
+    readInto(root, theme, themeSchema(), "theme", d);
+
+    auto find = [&](std::string_view name) -> const ThemeConfig::TemplateColorConfig* {
+      for (const auto& c : theme.templates.customColors)
+        if (c.name == name)
+          return &c;
+      return nullptr;
+    };
+
+    const auto* onlydark = find("onlydark");
+    if (onlydark == nullptr || onlydark->color != "#111111" || onlydark->color_dark != "#111111") {
+      fail("custom_colors onlydark: color should fall back to color_dark");
+    }
+    const auto* onlylight = find("onlylight");
+    if (onlylight == nullptr || onlylight->color != "#222222" || onlylight->color_light != "#222222") {
+      fail("custom_colors onlylight: color should fall back to color_light");
+    }
+    const auto* bare = find("bare");
+    if (bare == nullptr || bare->color != "#333333" || !bare->color_dark.empty() || !bare->color_light.empty()) {
+      fail("custom_colors bare: color set, no dark/light overrides");
+    }
+    const auto* both = find("both");
+    if (both == nullptr
+        || both->color != "#444444"
+        || both->color_dark != "#444444"
+        || both->color_light != "#555555") {
+      fail("custom_colors both: color prefers color_dark, both overrides retained");
     }
   }
 
@@ -681,6 +722,7 @@ widget_spacing = 8
   checkPluginIdValidation();
   checkPluginSourceNameValidation();
   checkClamps();
+  checkCustomColorFallback();
 
   if (g_failures == 0) {
     std::puts("config_schema_roundtrip: all checks passed");

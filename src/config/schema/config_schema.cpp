@@ -945,8 +945,8 @@ namespace noctalia::config::schema {
 
     // [theme.templates.custom_colors]: a name-keyed map whose value is either a
     // bare color string or a { color, color_dark, color_light, blend } table.
-    // Kept only when name+color are non-empty (color is set to color_dark if not provided);
-    // emitted only when the list is non-empty.
+    // Kept only when name+color are non-empty (color falls back to color_dark then
+    // color_light when not provided); emitted only when the list is non-empty.
     Field<ThemeConfig::TemplatesConfig> customColorsField() {
       return custom<ThemeConfig::TemplatesConfig>(
           "custom_colors",
@@ -970,8 +970,10 @@ namespace noctalia::config::schema {
                 }
                 if (auto c = t->get_as<std::string>("color")) {
                   color.color = c->get();
-                } else {
+                } else if (!color.color_dark.empty()) {
                   color.color = color.color_dark;
+                } else {
+                  color.color = color.color_light;
                 }
                 if (auto b = t->get_as<bool>("blend")) {
                   color.blend = b->get();
