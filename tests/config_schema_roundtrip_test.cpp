@@ -491,14 +491,14 @@ location = "https://example.invalid/bad"
     c.hotCorners.bottomRight = {.action = "command", .command = "notify-send corner"};
 
     // pluginSettings is not part of pluginsSchema ([plugin_settings] is its own root
-    // key), so the section round-trip covers sources + enabled only.
+    // key), so the section round-trip covers sources + enabled + auto_update only.
     c.plugins.sources = {
         {.kind = PluginSourceKind::Git,
          .name = "official",
-         .location = "https://github.com/noctalia-dev/official-plugins",
-         .autoUpdate = true},
+         .location = "https://github.com/noctalia-dev/official-plugins"},
     };
     c.plugins.enabled = {"noctalia/notes"};
+    c.plugins.autoUpdate = false; // non-default (default is true) so the round-trip exercises it
 
     c.bars = {makeProbeBar()};
     return c;

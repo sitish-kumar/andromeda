@@ -548,7 +548,6 @@ namespace noctalia::config::schema {
           field(&PluginSourceConfig::name, "name"),
           enumField(&PluginSourceConfig::kind, "kind", kPluginSourceKinds),
           field(&PluginSourceConfig::location, "location"),
-          field(&PluginSourceConfig::autoUpdate, "auto_update"),
           field(&PluginSourceConfig::enabled, "enabled"),
           finalize<PluginSourceConfig>([](PluginSourceConfig& src, std::string_view parentPath, Diagnostics& diag) {
             if (!src.name.empty() && !isValidPluginSourceName(src.name)) {
@@ -570,6 +569,7 @@ namespace noctalia::config::schema {
             [](const PluginSourceConfig& src) { return isValidPluginSourceName(src.name); }
         ),
         field(&PluginsConfig::enabled, "enabled"),
+        field(&PluginsConfig::autoUpdate, "auto_update"),
         finalize<PluginsConfig>([](PluginsConfig& plugins, std::string_view parentPath, Diagnostics& diag) {
           for (auto it = plugins.enabled.begin(); it != plugins.enabled.end();) {
             if (scripting::isValidPluginId(*it)) {

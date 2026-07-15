@@ -244,6 +244,13 @@ namespace scripting {
       }
       return manifest->version == entry.version && manifest->minNoctalia == entry.minNoctalia;
     }
+
+    // Version string of the exported (installed) copy on disk, or empty if absent.
+    std::string materializedPluginVersion(const PluginSourceConfig& source, std::string_view pluginId) {
+      std::string error;
+      const auto manifest = parsePluginManifest(materializedPluginDir(source, pluginId) / "plugin.toml", &error);
+      return manifest.has_value() ? manifest->version : std::string{};
+    }
   } // namespace
 
   void applyPluginSourcesToRegistry(PluginRegistry& registry, const PluginsConfig& plugins) {
@@ -594,11 +601,28 @@ namespace scripting {
             onDisk = !root.empty() && std::filesystem::exists(root / *subdir);
           }
         }
+        const bool isEnabled = enabledSet.contains(entry.id);
+        // For git sources, `entry` reflects the fetched catalog (FETCH_HEAD); an
+        // enabled+exported plugin whose on-disk manifest no longer matches it has a
+        // newer release waiting to be applied via update().
+        const bool updateAvailable = source.kind == PluginSourceKind::Git
+            && isEnabled
+            && onDisk
+            && entry.compatible
+            && !materializedPluginMatchesCatalog(source, entry.id, entry);
+        // Show the installed version on the row; the catalog version is the target we'd
+        // update to. Not-yet-installed rows have no exported copy, so fall back to the
+        // catalog version.
+        std::string installedVersion;
+        if (source.kind == PluginSourceKind::Git && onDisk) {
+          installedVersion = materializedPluginVersion(source, entry.id);
+        }
         out.push_back(
             PluginStatus{
                 .id = entry.id,
                 .name = entry.name,
-                .version = entry.version,
+                .version = installedVersion.empty() ? entry.version : installedVersion,
+                .availableVersion = updateAvailable ? entry.version : std::string{},
                 .icon = entry.icon,
                 .description = entry.description,
                 .license = entry.license,
@@ -606,8 +630,9 @@ namespace scripting {
                 .source = sourceName,
                 .compatible = entry.compatible,
                 .deprecated = entry.deprecated,
-                .enabled = enabledSet.contains(entry.id),
+                .enabled = isEnabled,
                 .materialized = onDisk,
+                .updateAvailable = updateAvailable,
             }
         );
       }
@@ -772,6 +797,45 @@ namespace scripting {
       });
     }).detach();
   }
+
+  void PluginManager::fetchStaleCatalogs(const PluginsConfig& plugins) {
+    // Newly published plugins only become browsable after a fetch advances FETCH_HEAD;
+    // throttle so repeated store opens don't hit the network every time.
+    constexpr auto kThrottle = std::chrono::minutes(15);
+    const auto now = std::chrono::steady_clock::now();
+    std::error_code ec;
+    for (const auto& source : plugins.sources) {
+      if (source.kind != PluginSourceKind::Git || !source.enabled) {
+        continue;
+      }
+      {
+        const std::scoped_lock lock(m_browseFetchMutex);
+        const auto it = m_lastBrowseFetch.find(source.name);
+        if (it != m_lastBrowseFetch.end() && now - it->second < kThrottle) {
+          continue;
+        }
+        m_lastBrowseFetch[source.name] = now;
+      }
+      const std::filesystem::path repoRoot = plugin_paths::gitRepoRoot(source);
+      if (repoRoot.empty() || !std::filesystem::exists(repoRoot / ".git", ec)) {
+        continue; // nothing cloned yet; discoverCatalog clones on first browse
+      }
+      auto sourceLock = plugin_source_locks::acquire(source.name);
+      if (const auto fetched = plugin_git::fetch(repoRoot); !fetched) {
+        kLog.warn("browse fetch '{}' failed: {}", source.name, fetched.err);
+      }
+    }
+  }
+
+  void PluginManager::updateAll() {
+    for (const auto& source : m_config.config().plugins.sources) {
+      if (source.kind == PluginSourceKind::Git && source.enabled) {
+        update(source.name);
+      }
+    }
+  }
+
+  void PluginManager::setAutoUpdateEnabled(bool enabled) { m_config.setPluginsAutoUpdate(enabled); }
 
   void PluginManager::removeSource(std::string sourceName) {
     if (isDefaultPluginSourceName(sourceName)) {

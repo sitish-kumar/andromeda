@@ -1387,7 +1387,10 @@
         "remove": "Remove plugin",
         "requires": "Requires: {dependencies}",
         "requires-newer-noctalia": "requires newer Noctalia",
-        "title": "Plugins"
+        "title": "Plugins",
+        "update-all": "Update all ({count})",
+        "update-available": "update available",
+        "update-to": "update to {version}"
       },
       "settings": {
         "empty": "No settings available."
@@ -1395,6 +1398,8 @@
       "sources": {
         "add": "Add source",
         "add-title": "Add plugin source",
+        "auto-update": "Auto-update plugins",
+        "auto-update-desc": "Check enabled sources for new versions in the background and keep installed plugins current.",
         "edit": "Edit source",
         "edit-title": "Edit plugin source",
         "empty": "No sources configured.",
@@ -1417,8 +1422,7 @@
         "remove": "Remove source",
         "save": "Save",
         "title": "Sources",
-        "update": "Update",
-        "update-on-startup": "Update on startup"
+        "update": "Update this source"
       },
       "store": {
         "add": "Add to Noctalia",

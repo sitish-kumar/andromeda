@@ -188,7 +188,22 @@ namespace scripting {
         return {.ok = false, .error = "clone failed: " + cloned.err, .entries = {}};
       }
     }
-    auto shown = plugin_git::showFile(dest, "catalog.toml");
+    // Browse the freshest catalog: when a prior fetch left FETCH_HEAD ahead of the
+    // applied HEAD, read the catalog there so newly published plugins are listed
+    // before they are exported. HEAD (what actually runs) is untouched. The fetch
+    // itself is throttled and off-thread in PluginManager::fetchStaleCatalogs.
+    std::string rev = "HEAD";
+    if (const auto fetched = plugin_git::remoteHead(dest); fetched && !fetched.out.empty()) {
+      const auto head = plugin_git::headRevision(dest);
+      if (!head || head.out != fetched.out) {
+        rev = fetched.out;
+      }
+    }
+    auto shown = plugin_git::showFile(dest, "catalog.toml", rev);
+    if (!shown && rev != "HEAD") {
+      // Fetched blob unreachable (e.g. offline); fall back to the applied HEAD.
+      shown = plugin_git::showFile(dest, "catalog.toml", "HEAD");
+    }
     if (!shown) {
       return {.ok = false, .error = "no catalog.toml in source '" + source.name + "'", .entries = {}};
     }

@@ -1394,10 +1394,9 @@ constexpr EnumOption<PluginSourceKind> kPluginSourceKinds[] = {
 
 struct PluginSourceConfig {
   PluginSourceKind kind = PluginSourceKind::Git;
-  std::string name;        // stable handle (also the clone subdir for git sources)
-  std::string location;    // git URL or local path
-  bool autoUpdate = false; // git-only, opt-in
-  bool enabled = true;     // disabled sources are not scanned; their clone is kept
+  std::string name;     // stable handle (also the clone subdir for git sources)
+  std::string location; // git URL or local path
+  bool enabled = true;  // disabled sources are not scanned; their clone is kept
   bool operator==(const PluginSourceConfig&) const = default;
 };
 
@@ -1406,6 +1405,7 @@ struct PluginSourceConfig {
 struct PluginsConfig {
   std::vector<PluginSourceConfig> sources;
   std::vector<std::string> enabled; // active plugin ids ("author/plugin"); opt-in for every source
+  bool autoUpdate = true;           // background auto-update of all git sources (startup + every 6h)
   // Plugin-level setting overrides, keyed by plugin id then setting key. Seeded
   // into every entry runtime of the plugin (widget/shortcut/service). Open-ended
   // (validated against the manifest schema), so compared via configEqual rather
