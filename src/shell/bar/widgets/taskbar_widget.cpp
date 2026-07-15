@@ -422,10 +422,11 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   // If the title text is too narrow, all it shows is "..." which isn't useful, so we hide it instead.
   const auto metric = renderer.measureText("...", Style::fontSizeCaption * m_contentScale, fontWeight);
   const float minWindowTitleWidth = (metric.right - metric.left) * 2;
+  const float windowTitleGap = Style::spaceXs * m_contentScale;
   const float windowTitleWidth =
-      std::min(m_windowTitleMaxWidth * m_contentScale, std::max(0.0f, maxTileWidth - tileSize - tilePadding));
+      std::min(m_windowTitleMaxWidth * m_contentScale, std::max(0.0f, maxTileWidth - tileSize - windowTitleGap));
   const bool showWindowTitle = m_showWindowTitle && windowTitleWidth > minWindowTitleWidth;
-  const float tileWidthWithTitle = tileSize + (showWindowTitle ? windowTitleWidth + tilePadding : 0.0f);
+  const float tileWidthWithTitle = tileSize + (showWindowTitle ? windowTitleWidth + windowTitleGap : 0.0f);
 
   const auto workspaceAxisHandler = [this](const InputArea::PointerData& data) -> bool {
     if (!m_groupByWorkspace) {
@@ -567,7 +568,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         {
             .align = FlexAlign::Center,
             .justify = showWindowTitle ? FlexJustify::Start : FlexJustify::Center,
-            .gap = tilePadding,
+            .gap = showWindowTitle ? windowTitleGap : tilePadding,
             .width = tileWidthWithTitle,
             .height = tileSize,
         }
