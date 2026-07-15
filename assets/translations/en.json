@@ -1428,6 +1428,8 @@
         "incompatible": "Incompatible",
         "loading": "Loading catalog…",
         "no-readme": "No description available.",
+        "open-page": "Open plugin page on noctalia.dev",
+        "open-source": "Open plugin source repository",
         "results-count": "{count} plugins",
         "search-placeholder": "Search plugins…",
         "title": "Plugin Store"
