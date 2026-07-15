@@ -279,8 +279,10 @@ namespace noctalia::theme {
       }
     }
 
-    if (request.templates.userTemplates.empty() || requestSuperseded(request.generation))
+    if ((request.templates.userTemplates.empty() && request.templates.customColors.empty())
+        || requestSuperseded(request.generation)) {
       return;
+    }
 
     const toml::table userTemplateRoot = buildUserTemplateRoot(request.templates);
     const std::filesystem::path configPath = userTemplateConfigPath();

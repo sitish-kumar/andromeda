@@ -1667,6 +1667,16 @@ void ConfigService::parseConfigTable(
     }
   }
 
+  // Template config files (e.g. user-templates.toml) store palette extensions under
+  // [config.custom_colors]; lift them into the canonical theme.templates slot.
+  if (const auto* configTbl = tbl["config"].as_table()) {
+    if (const auto* customColors = (*configTbl)["custom_colors"].as_table()) {
+      std::vector<ThemeConfig::TemplateColorConfig> lifted;
+      schema::parseCustomColorsMap(*customColors, lifted);
+      schema::appendUniqueCustomColors(config.theme.templates.customColors, std::move(lifted));
+    }
+  }
+
   // Default seeding must apply even when the section is absent, so it runs after the
   // registry pass. A schema read can't tell an explicitly empty list from a missing
   // one, so these probe the raw table for the list key.

@@ -926,6 +926,36 @@ namespace noctalia::config::schema {
     // bare color string or a { color, color_dark, color_light, blend } table.
     // Kept only when name+color are non-empty (color falls back to color_dark then
     // color_light when not provided); emitted only when the list is non-empty.
+    void parseCustomColorsMapImpl(const toml::table& map, std::vector<TemplateColor>& out) {
+      for (const auto& [name, value] : map) {
+        TemplateColor color;
+        color.name = std::string(name.str());
+        if (const auto* str = value.as_string()) {
+          color.color = str->get();
+        } else if (const auto* t = value.as_table()) {
+          if (auto c = t->get_as<std::string>("color_dark")) {
+            color.color_dark = c->get();
+          }
+          if (auto c = t->get_as<std::string>("color_light")) {
+            color.color_light = c->get();
+          }
+          if (auto c = t->get_as<std::string>("color")) {
+            color.color = c->get();
+          } else if (!color.color_dark.empty()) {
+            color.color = color.color_dark;
+          } else {
+            color.color = color.color_light;
+          }
+          if (auto b = t->get_as<bool>("blend")) {
+            color.blend = b->get();
+          }
+        }
+        if (!StringUtils::trim(color.name).empty() && !StringUtils::trim(color.color).empty()) {
+          out.push_back(std::move(color));
+        }
+      }
+    }
+
     Field<ThemeConfig::TemplatesConfig> customColorsField() {
       return custom<ThemeConfig::TemplatesConfig>(
           "custom_colors",
@@ -935,33 +965,7 @@ namespace noctalia::config::schema {
               return;
             }
             out.customColors.clear();
-            for (const auto& [name, value] : *map) {
-              TemplateColor color;
-              color.name = std::string(name.str());
-              if (const auto* str = value.as_string()) {
-                color.color = str->get();
-              } else if (const auto* t = value.as_table()) {
-                if (auto c = t->get_as<std::string>("color_dark")) {
-                  color.color_dark = c->get();
-                }
-                if (auto c = t->get_as<std::string>("color_light")) {
-                  color.color_light = c->get();
-                }
-                if (auto c = t->get_as<std::string>("color")) {
-                  color.color = c->get();
-                } else if (!color.color_dark.empty()) {
-                  color.color = color.color_dark;
-                } else {
-                  color.color = color.color_light;
-                }
-                if (auto b = t->get_as<bool>("blend")) {
-                  color.blend = b->get();
-                }
-              }
-              if (!StringUtils::trim(color.name).empty() && !StringUtils::trim(color.color).empty()) {
-                out.customColors.push_back(std::move(color));
-              }
-            }
+            parseCustomColorsMapImpl(*map, out.customColors);
           },
           [](toml::table& tbl, const ThemeConfig::TemplatesConfig& in) {
             if (in.customColors.empty()) {
@@ -1099,6 +1103,21 @@ namespace noctalia::config::schema {
       return s;
     }
   } // namespace
+
+  void parseCustomColorsMap(const toml::table& map, std::vector<ThemeConfig::TemplateColorConfig>& out) {
+    parseCustomColorsMapImpl(map, out);
+  }
+
+  void appendUniqueCustomColors(
+      std::vector<ThemeConfig::TemplateColorConfig>& into, std::vector<ThemeConfig::TemplateColorConfig> additional
+  ) {
+    for (auto& color : additional) {
+      const bool exists = std::ranges::any_of(into, [&](const auto& existing) { return existing.name == color.name; });
+      if (!exists) {
+        into.push_back(std::move(color));
+      }
+    }
+  }
 
   const Schema<ThemeConfig>& themeSchema() {
     static const Schema<ThemeConfig> s = {

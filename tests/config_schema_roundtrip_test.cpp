@@ -11,6 +11,7 @@
 //   - clamp goldens — pin parse-time range behavior.
 
 #include "config/config_export.h"
+#include "config/config_service.h"
 #include "config/config_types.h"
 #include "config/schema/config_schema.h"
 #include "config/schema/config_sections.h"
@@ -591,6 +592,33 @@ both = { color_dark = "#444444", color_light = "#555555" }
     }
   }
 
+  // Template palette files use [config.custom_colors]; export must emit the canonical
+  // [theme.templates.custom_colors] table after parse.
+  void checkTemplateConfigCustomColorsExport() {
+    const auto root = toml::parse(R"(
+[config.custom_colors.red]
+color = "#FF0000"
+blend = true
+
+[config.custom_colors.blue]
+color = "#0000FF"
+blend = false
+)");
+    Config config;
+    ConfigService::parseConfigTable(root, config, false, false);
+    if (config.theme.templates.customColors.size() != 2) {
+      fail("config.custom_colors lift: expected two custom colors in config");
+    }
+
+    const toml::table exported = config_export::serialize(config);
+    const auto* theme = exported["theme"].as_table();
+    const auto* templates = theme != nullptr ? (*theme)["templates"].as_table() : nullptr;
+    const auto* customColors = templates != nullptr ? (*templates)["custom_colors"].as_table() : nullptr;
+    if (customColors == nullptr || !customColors->contains("red") || !customColors->contains("blue")) {
+      fail("config.custom_colors lift: export missing theme.templates.custom_colors entries");
+    }
+  }
+
 } // namespace
 
 int main() {
@@ -813,6 +841,7 @@ widget_spacing = 8
   checkPluginSourceNameValidation();
   checkClamps();
   checkCustomColorFallback();
+  checkTemplateConfigCustomColorsExport();
 
   if (g_failures == 0) {
     std::println("config_schema_roundtrip: all checks passed");
