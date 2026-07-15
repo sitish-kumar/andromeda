@@ -48,20 +48,20 @@
 ;; expects them in include/stb/stb_x.h
 (define* (wrap-stb-header stb-package name #:key deprecated?)
   (package
-    (inherit stb-package)
-    (arguments
-     (list
-      #:modules '((guix build utils))
-      #:builder
-      #~(begin
-          (use-modules (guix build utils))
-          (let ((headers-dir #$(file-append (this-package-input "stb")
-                                            (if deprecated? "/deprecated" "")))
-                (lib (string-join (string-split #$name #\-) "_"))
-                (out #$output))
-            (install-file (string-append headers-dir "/" lib ".h")
-                          (string-append out "/include/stb/"))
-            #t))))))
+   (inherit stb-package)
+   (arguments
+    (list
+     #:modules '((guix build utils))
+     #:builder
+     #~(begin
+         (use-modules (guix build utils))
+         (let ((headers-dir #$(file-append (this-package-input "stb")
+                                           (if deprecated? "/deprecated" "")))
+               (lib (string-join (string-split #$name #\-) "_"))
+               (out #$output))
+           (install-file (string-append headers-dir "/" lib ".h")
+                         (string-append out "/include/stb/"))
+           #t))))))
 (define stb-image-resize2-wrapped
   (wrap-stb-header stb-image-resize2 "stb-image-resize2"))
 (define stb-image-write-wrapped
