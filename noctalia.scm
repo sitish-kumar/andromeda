@@ -24,12 +24,11 @@
   #:use-module (guix build-system meson)
   #:use-module (guix build-system gnu)
   ;; Guix packages
-  #:use-module (gnu packages curl)
   #:use-module (gnu packages cpp)
+  #:use-module (gnu packages curl)
   #:use-module (gnu packages fontutils)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gl)
-  #:use-module (gnu packages stb)
   #:use-module (gnu packages glib)
   #:use-module (gnu packages gnome)
   #:use-module (gnu packages gtk)
@@ -41,6 +40,7 @@
   #:use-module (gnu packages multiprecision)
   #:use-module (gnu packages pkg-config)
   #:use-module (gnu packages polkit)
+  #:use-module (gnu packages stb)
   #:use-module (gnu packages xdisorg)
   #:use-module (gnu packages xml))
 
@@ -117,27 +117,27 @@
            freetype
            glib
            gmp
-           mpfr
            harfbuzz
            jemalloc
+           mpfr
            (librsvg-for-system)
            libqalculate
            libwebp
            libxkbcommon
-           nlohmann-json
-           tomlplusplus
            libxml2
            linux-pam
+           md4c
            mesa
+           nlohmann-json
            pango
-           stb-image-resize2-wrapped
-           stb-image-write-wrapped
            pipewire
            polkit
            sdbus-c++
+           stb-image-resize2-wrapped
+           stb-image-write-wrapped
+           tomlplusplus
            wayland
            wayland-protocols-1.48
-           md4c
            wireplumber))
     (home-page "https://noctalia.dev/")
     (synopsis "Wayland shell and bar")
