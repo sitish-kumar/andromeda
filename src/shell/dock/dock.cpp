@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <format>
 #include <optional>
 #include <wayland-client-core.h>
@@ -50,10 +51,12 @@ namespace {
   }
 
   desktop_entry_launch::LaunchOptions
-  dockLaunchOptions(const CompositorPlatform& platform, const ConfigService& config, wl_surface* activationSurface) {
+  dockLaunchOptions(const CompositorPlatform& platform, const ConfigService& config) {
     std::string token;
     if (platform.hasXdgActivation()) {
-      token = platform.requestActivationToken(activationSurface);
+      // Match launcher/taskbar: no layer-shell surface. Binding the dock surface can misplace
+      // first launches on Hyprland multi-monitor setups (see issue #3451).
+      token = platform.requestActivationToken(nullptr);
     }
     return desktop_entry_launch::LaunchOptions{
         .activationToken = std::move(token),
@@ -102,6 +105,17 @@ namespace {
     return window.handle != nullptr
         || !window.identifier.empty()
         || (compositors::isKde() && (!window.title.empty() || !window.appId.empty()));
+  }
+
+  [[nodiscard]] const ToplevelInfo* newestActivatableWindow(const std::vector<ToplevelInfo>& windows) {
+    const ToplevelInfo* best = nullptr;
+    for (const auto& window : windows) {
+      if (!canActivateWindow(window)) {
+        continue;
+      }
+      best = &window;
+    }
+    return best;
   }
 
   [[nodiscard]] bool matchesActiveWindow(
@@ -428,6 +442,8 @@ void Dock::refresh() {
     }
     inst->surface->requestUpdateOnly();
   }
+
+  tryFulfillPendingLaunchFocus();
 }
 
 void Dock::toggleVisibility() {
@@ -1018,6 +1034,32 @@ void Dock::closeItemMenu() {
   }
 }
 
+void Dock::tryFulfillPendingLaunchFocus() {
+  if (m_platform == nullptr || !m_pendingLaunchFocus.has_value()) {
+    return;
+  }
+
+  PendingLaunchFocus pending = *m_pendingLaunchFocus;
+  if (std::chrono::steady_clock::now() > pending.deadline) {
+    m_pendingLaunchFocus.reset();
+    return;
+  }
+
+  auto windows =
+      shell::dock::windowsForDockItem(*m_platform, pending.idLower, pending.wmClassLower, pending.outputFilter);
+  if (windows.empty() && pending.outputFilter != nullptr) {
+    windows = shell::dock::windowsForDockItem(*m_platform, pending.idLower, pending.wmClassLower, nullptr);
+  }
+
+  const ToplevelInfo* window = newestActivatableWindow(windows);
+  if (window == nullptr) {
+    return;
+  }
+
+  m_pendingLaunchFocus.reset();
+  m_platform->activateToplevelInfo(*window);
+}
+
 void Dock::activateOrLaunchItem(shell::dock::DockInstance& instance, const shell::dock::DockItemAction& action) {
   assertDockInitialized(m_platform, m_config, m_renderContext);
 
@@ -1029,8 +1071,13 @@ void Dock::activateOrLaunchItem(shell::dock::DockInstance& instance, const shell
   );
 
   if (windows.empty()) {
-    wl_surface* const activationSurface = instance.surface != nullptr ? instance.surface->wlSurface() : nullptr;
-    (void)desktop_entry_launch::launchEntry(action.entry, dockLaunchOptions(*m_platform, *m_config, activationSurface));
+    m_pendingLaunchFocus = PendingLaunchFocus{
+        .idLower = action.windowLookupIdLower,
+        .wmClassLower = action.windowLookupWmClassLower,
+        .outputFilter = shell::dock::dockFilterOutput(m_config->config().dock, instance.output),
+        .deadline = std::chrono::steady_clock::now() + std::chrono::seconds(8),
+    };
+    (void)desktop_entry_launch::launchEntry(action.entry, dockLaunchOptions(*m_platform, *m_config));
     return;
   }
 
@@ -1102,8 +1149,7 @@ void Dock::openItemMenu(shell::dock::DockInstance& instance, const shell::dock::
       .launchAction =
           [this, entryId, entryWorkingDir, entryTerminal](const DesktopAction& desktopAction) {
             (void)desktop_entry_launch::launchAction(
-                desktopAction, entryId, entryWorkingDir, entryTerminal,
-                dockLaunchOptions(*m_platform, *m_config, nullptr)
+                desktopAction, entryId, entryWorkingDir, entryTerminal, dockLaunchOptions(*m_platform, *m_config)
             );
           },
       .setEntryPinned =
