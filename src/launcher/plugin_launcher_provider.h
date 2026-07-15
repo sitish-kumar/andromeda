@@ -68,6 +68,10 @@ private:
   void teardownScriptWatch();
   void reloadScript();
   void handleResult(const scripting::ScriptResult& result);
+  // Prepend this provider's resolved prefix to a plugin-supplied sub-query, so a
+  // rewritten launcher input keeps the provider active regardless of the configured
+  // prefix. An empty prefix (global provider) yields the sub-query verbatim.
+  [[nodiscard]] std::string buildProviderInput(std::string_view sub) const;
   // Enqueue onQuery for `text` on the runtime (skips a duplicate of the last send).
   void dispatchQuery(const std::string& text) const;
   // Restart the debounce timer; it fires dispatchQuery(m_pendingQuery) when idle.
