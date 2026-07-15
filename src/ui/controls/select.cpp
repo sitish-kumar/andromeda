@@ -1,6 +1,6 @@
 #include "ui/controls/select.h"
 
-#include "core/keybind_matcher.h"
+#include "core/input/keybind_matcher.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "render/animation/animation_manager.h"
@@ -48,6 +48,7 @@ Select::Select() {
   m_triggerPreview = static_cast<ColorSwatchPreviewStrip*>(addChild(std::move(triggerPreview)));
 
   auto triggerLabel = std::make_unique<Label>();
+  triggerLabel->setMaxLines(1);
   m_triggerLabel = static_cast<Label*>(addChild(std::move(triggerLabel)));
 
   auto triggerGlyph = std::make_unique<Glyph>();
@@ -117,12 +118,16 @@ void Select::setOptions(std::vector<std::string> options) {
   markLayoutDirty();
 }
 
-void Select::setSelectedIndex(std::size_t index) {
+void Select::setSelectedIndex(std::size_t index) { setSelectedIndexInternal(index, true); }
+
+void Select::setSelectedIndexSilently(std::size_t index) { setSelectedIndexInternal(index, false); }
+
+void Select::setSelectedIndexInternal(std::size_t index, bool notify) {
   if (index >= m_options.size()) {
     return;
   }
   if (m_selectedIndex == index) {
-    if (m_notifyOnReselect && m_onSelectionChanged) {
+    if (notify && m_notifyOnReselect && m_onSelectionChanged) {
       m_onSelectionChanged(m_selectedIndex, selectedText());
     }
     return;
@@ -131,7 +136,7 @@ void Select::setSelectedIndex(std::size_t index) {
   syncTriggerText();
   applyVisualState();
   markLayoutDirty();
-  if (m_onSelectionChanged) {
+  if (notify && m_onSelectionChanged) {
     m_onSelectionChanged(m_selectedIndex, selectedText());
   }
 }

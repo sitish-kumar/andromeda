@@ -64,6 +64,7 @@ public:
   [[nodiscard]] bool isVisible() const noexcept;
   void onOutputChange();
   void onWorkspaceChanged();
+  void scheduleSmartAutoHideReevaluation();
   void onSecondTick();
   void refresh();
   void requestLayout();
@@ -92,6 +93,9 @@ public:
   setAttachedPanelGeometry(wl_output* output, std::string_view barName, std::optional<AttachedPanelGeometry> geometry);
   [[nodiscard]] bool canAttachPanelToBar(wl_output* output, std::string_view barName) const noexcept;
   [[nodiscard]] std::optional<std::string> layerForBar(wl_output* output, std::string_view barName) const noexcept;
+  // Highest layer-shell layer occupied by any enabled bar on the given output (defaults to Top when no bar is present).
+  // Hot corners use this to sit on the highest bar's layer so they are always activable.
+  [[nodiscard]] LayerShellLayer highestLayerForOutput(wl_output* output) const noexcept;
   // True when an attached panel may start its reveal animation: non-autohide bars, or autohide
   // bars that have finished sliding into their resting position.
   [[nodiscard]] bool isAttachedPanelBarSettled(wl_output* output, std::string_view barName) const noexcept;
@@ -114,6 +118,8 @@ private:
   void destroyInstance(std::uint32_t outputName);
   void populateWidgets(BarInstance& instance);
   void attachWidgetsToSections(BarInstance& instance);
+  void updateWidgetHoverHighlight(BarInstance& instance, InputArea* hoveredArea);
+  void animateWidgetHoverHighlight(BarInstance& instance, Widget& widget, bool hovered);
   void rebuildInstanceContents(BarInstance& instance, const BarConfig& newConfig);
   [[nodiscard]] BarServices services() const;
   void buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t height);
@@ -130,15 +136,17 @@ private:
   [[nodiscard]] bool barContentVisuallyShown(const BarInstance& instance) const noexcept;
   void revealAutoHideBar(BarInstance& instance);
   void applyPendingWorkspaceReveal();
+  void reevaluateSmartAutoHide();
   void startHideFadeOut(BarInstance& instance);
   static void applyBackgroundPalette(BarInstance& instance);
   [[nodiscard]] std::string showBarIpc(std::string_view args);
   [[nodiscard]] std::string hideBarIpc(std::string_view args);
   [[nodiscard]] std::string toggleBarIpc(std::string_view args);
+  [[nodiscard]] std::string toggleBarReserveSpaceIpc(std::string_view args);
   [[nodiscard]] std::string setBarAutoHideIpc(std::string_view args);
   [[nodiscard]] std::string setBarLayerIpc(std::string_view args);
   [[nodiscard]] std::optional<std::string> collectBarIpcInstances(
-      std::optional<std::string_view> barName, std::optional<std::string_view> monitorSelector,
+      std::optional<std::string> barName, std::optional<std::string> monitorSelector,
       std::vector<BarInstance*>& instancesOut
   );
   [[nodiscard]] BarInstance* instanceForSurface(wl_surface* surface) const noexcept;
@@ -193,4 +201,5 @@ private:
   std::unordered_map<std::uint32_t, std::string> m_lastActiveWorkspaceByOutput;
   bool m_overlayDisplaySuppressed = false;
   bool m_wasVisibleBeforeOverlaySuppress = false;
+  bool m_smartAutoHideReevalQueued = false;
 };

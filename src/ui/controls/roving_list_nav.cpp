@@ -1,7 +1,7 @@
 #include "ui/controls/roving_list_nav.h"
 
-#include "core/key_symbols.h"
-#include "core/keybind_matcher.h"
+#include "core/input/key_symbols.h"
+#include "core/input/keybind_matcher.h"
 #include "render/scene/input_area.h"
 #include "ui/controls/button.h"
 
@@ -142,14 +142,22 @@ std::optional<std::size_t> RovingListNavController::findNavigableIndex(std::size
   for (std::size_t step = 0; step < m_items.size(); ++step) {
     if (direction > 0) {
       if (index + 1 >= m_items.size()) {
-        return std::nullopt;
+        if (!m_options.wrap) {
+          return std::nullopt;
+        }
+        index = 0;
+      } else {
+        ++index;
       }
-      ++index;
     } else {
       if (index == 0) {
-        return std::nullopt;
+        if (!m_options.wrap) {
+          return std::nullopt;
+        }
+        index = m_items.size() - 1;
+      } else {
+        --index;
       }
-      --index;
     }
     if (isNavigable(m_items[index])) {
       return index;

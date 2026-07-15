@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <sdbus-c++/sdbus-c++.h>
 #include <unordered_set>
 
@@ -489,6 +489,43 @@ for (const window of workspace.windowList()) {{
     const std::string label = std::format("noctalia-activate-{}", ++m_transientScriptSerial);
     if (!runTransientScript(script, label)) {
       kLog.warn(R"(failed to activate kde window class="{}" title="{}")", appId, title);
+    }
+  }
+
+  void KwinActiveWindow::closeWindow(const std::string& title, const std::string& appId, const std::string& uuid) {
+    if (!m_scriptInstalled) {
+      return;
+    }
+
+    const std::string script = std::format(
+        R"js(
+const targetUuid = {};
+const targetClass = {};
+const targetCaption = {};
+for (const window of workspace.windowList()) {{
+  if (!window || !window.normalWindow) {{
+    continue;
+  }}
+  const uuid = window.internalId === undefined ? "" : String(window.internalId);
+  const byUuid = targetUuid && uuid === targetUuid;
+  const byClassAndCaption = window.resourceClass === targetClass && window.caption === targetCaption;
+  if (!byUuid && !byClassAndCaption) {{
+    continue;
+  }}
+  if (typeof window.closeWindow === "function") {{
+    window.closeWindow();
+  }} else {{
+    window.minimized = true;
+  }}
+  break;
+}}
+)js",
+        jsStringLiteral(uuid), jsStringLiteral(appId), jsStringLiteral(title)
+    );
+
+    const std::string label = std::format("noctalia-close-{}", ++m_transientScriptSerial);
+    if (!runTransientScript(script, label)) {
+      kLog.warn(R"(failed to close kde window class="{}" title="{}")", appId, title);
     }
   }
 

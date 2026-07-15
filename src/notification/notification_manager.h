@@ -53,7 +53,7 @@ struct NotificationRequest {
   int32_t timeout = kDefaultNotificationTimeout;
   NotificationOrigin origin = NotificationOrigin::External;
   bool transient = false;
-  std::vector<std::string> actions = {};
+  std::vector<std::string> actions;
   std::optional<std::string> icon = std::nullopt;
   std::optional<NotificationImageData> imageData = std::nullopt;
   std::optional<std::string> category = std::nullopt;
@@ -153,10 +153,11 @@ private:
     bool saveHistory = true;
     bool playSound = true;
     bool disallowPermanent = false;
+    std::optional<std::int32_t> overrideDuration;
   };
   [[nodiscard]] ExternalNotificationDispatch evaluateExternalDispatch(
       Urgency urgency, std::string_view appName, const std::optional<std::string>& category,
-      const std::optional<std::string>& desktopEntry, bool transient
+      const std::optional<std::string>& desktopEntry, std::string_view summary, std::string_view body, bool transient
   ) const;
   uint32_t suppressExternal(std::string_view appName, Urgency urgency);
 

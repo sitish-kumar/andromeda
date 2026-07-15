@@ -27,6 +27,9 @@ public:
 
   void initialize(GlSharedContext& shared);
   void cleanup();
+  void prepareForGraphicsReset();
+  void restoreAfterGraphicsReset(GlSharedContext& shared);
+  void finishGraphicsResetRecovery() noexcept { m_graphicsResetPending = false; }
 
   void renderScene(RenderTarget& target, Node* sceneRoot);
   void setGraphicsResetCallback(std::function<void(RenderGraphicsResetStatus)> callback) {
@@ -58,12 +61,16 @@ public:
   [[nodiscard]] TextMetrics measureText(
       std::string_view text, float fontSize, FontWeight fontWeight = FontWeight::Normal, float maxWidth = 0.0f,
       int maxLines = 0, TextAlign align = TextAlign::Start, std::string_view fontFamily = {},
-      TextEllipsize ellipsize = TextEllipsize::End
+      TextEllipsize ellipsize = TextEllipsize::End, bool useMarkup = false
   ) override;
   [[nodiscard]] TextMetrics measureFont(float fontSize, FontWeight fontWeight) override;
   void measureTextCursorStops(
       std::string_view text, float fontSize, const std::vector<std::size_t>& byteOffsets, std::vector<float>& outStops,
       FontWeight fontWeight = FontWeight::Normal
+  ) override;
+  void measureTextCursorStopsWrapped(
+      std::string_view text, float fontSize, const std::vector<std::size_t>& byteOffsets, float maxWidth,
+      std::vector<TextCursorStop>& outStops, FontWeight fontWeight = FontWeight::Normal
   ) override;
   [[nodiscard]] TextMetrics measureGlyph(char32_t codepoint, float fontSize) override;
   [[nodiscard]] TextureManager& textureManager() override;
@@ -71,7 +78,7 @@ public:
   [[nodiscard]] std::uint64_t textMetricsGeneration() const noexcept override { return m_textMetricsGeneration; }
 
 private:
-  void makeCurrentNoSurface();
+  bool makeCurrentNoSurface();
   void handleGraphicsReset(RenderGraphicsResetStatus status);
   void renderNode(
       const Node* node, const Mat3& parentTransform, float parentOpacity, float sw, float sh, float bw, float bh,
@@ -86,5 +93,6 @@ private:
   std::uint64_t m_textMetricsGeneration = 1;
   std::uint64_t m_gpuResourceGeneration = 0;
   bool m_glyphTexturesDirty = false;
+  bool m_graphicsResetPending = false;
   std::function<void(RenderGraphicsResetStatus)> m_graphicsResetCallback;
 };

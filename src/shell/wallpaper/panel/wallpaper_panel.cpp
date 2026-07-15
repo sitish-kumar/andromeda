@@ -1,7 +1,7 @@
 #include "shell/wallpaper/panel/wallpaper_panel.h"
 
 #include "config/config_service.h"
-#include "core/keybind_matcher.h"
+#include "core/input/keybind_matcher.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
@@ -405,8 +405,8 @@ void WallpaperPanel::create() {
           .out = &m_title,
           .text = i18n::tr("wallpaper.panel.title"),
           .fontSize = Style::fontSizeTitle * scale,
-          .color = colorSpecFromRole(ColorRole::Primary),
           .fontWeight = FontWeight::Bold,
+          .color = colorSpecFromRole(ColorRole::Primary),
       })
   );
 
@@ -418,7 +418,7 @@ void WallpaperPanel::create() {
           .controlHeight = Style::controlHeightSm * scale,
           .horizontalPadding = Style::spaceMd * scale,
           .surfaceOpacity = panelCardOpacity(),
-          .width = 360.0f * scale,
+          .width = 210.0f * scale,
           .height = 0.0f,
           .onChange =
               [this](const std::string& text) {
@@ -717,6 +717,9 @@ void WallpaperPanel::create() {
           .flexGrow = 1.0f,
           .onSelectionChanged =
               [this](std::optional<std::size_t> idx) {
+                if (m_syncingGridSelectionVisual) {
+                  return;
+                }
                 if (idx.has_value() && *idx < m_visibleEntries.size()) {
                   m_selectedVisibleIndex = *idx;
                 } else {
@@ -727,6 +730,25 @@ void WallpaperPanel::create() {
           .configure = [](VirtualGridView& grid) { grid.setFillWidth(true); },
       })
   );
+
+  if (m_grid != nullptr && m_grid->focusArea() != nullptr) {
+    m_grid->focusArea()->setOnFocusGain([this]() {
+      m_gridKeyboardActive = true;
+      if (m_grid != nullptr && hasVisibleSelection()) {
+        m_syncingGridSelectionVisual = true;
+        m_grid->setSelectedIndex(m_selectedVisibleIndex);
+        m_syncingGridSelectionVisual = false;
+      }
+    });
+    m_grid->focusArea()->setOnFocusLoss([this]() {
+      m_gridKeyboardActive = false;
+      if (m_grid != nullptr) {
+        m_syncingGridSelectionVisual = true;
+        m_grid->setSelectedIndex(std::nullopt);
+        m_syncingGridSelectionVisual = false;
+      }
+    });
+  }
 
   // Loading state shown while the directory scan runs on the worker thread.
   // Occupies the body in place of the grid (only one is visible at a time).
@@ -900,6 +922,30 @@ bool WallpaperPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers,
 
   auto& dispatcher = PanelManager::instance().inputDispatcher();
   InputArea* focused = dispatcher.focusedArea();
+
+  if (m_favoriteThemeSegmented != nullptr && focused == m_favoriteThemeSegmented->focusArea()) {
+    const bool moveIntoGrid = KeybindMatcher::matches(KeybindAction::Down, sym, modifiers)
+        || KeybindMatcher::matches(KeybindAction::TabNext, sym, modifiers);
+    if (moveIntoGrid && m_grid != nullptr && m_grid->focusArea() != nullptr) {
+      dispatcher.setFocus(m_grid->focusArea());
+      if (!hasVisibleSelection() && !m_visibleEntries.empty()) {
+        selectVisibleIndex(0);
+      }
+      return true;
+    }
+  }
+
+  if (m_favoritePaletteSourceSegmented != nullptr && focused == m_favoritePaletteSourceSegmented->focusArea()) {
+    const bool moveIntoGrid = KeybindMatcher::matches(KeybindAction::Down, sym, modifiers);
+    if (moveIntoGrid && m_grid != nullptr && m_grid->focusArea() != nullptr) {
+      dispatcher.setFocus(m_grid->focusArea());
+      if (!hasVisibleSelection() && !m_visibleEntries.empty()) {
+        selectVisibleIndex(0);
+      }
+      return true;
+    }
+  }
+
   if (focused != nullptr && !isDescendantOf(focused, m_grid)) {
     return false;
   }
@@ -1309,7 +1355,7 @@ void WallpaperPanel::rebindGrid(bool resetScroll) {
   if (resetScroll || m_visibleEntries.empty()) {
     m_grid->scrollView().setScrollOffset(0.0f);
   }
-  if (m_visibleEntries.empty() || !hasVisibleSelection()) {
+  if (m_visibleEntries.empty() || !hasVisibleSelection() || !m_gridKeyboardActive) {
     m_grid->setSelectedIndex(std::nullopt);
   } else {
     m_grid->setSelectedIndex(m_selectedVisibleIndex);

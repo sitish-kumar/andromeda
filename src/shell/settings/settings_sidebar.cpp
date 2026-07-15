@@ -175,8 +175,8 @@ namespace settings {
 
     auto sidebarNav = std::make_unique<RovingListNavHost>(RovingListNavController::Options{
         .axis = RovingListNavAxis::Vertical,
-        .mode = RovingListNavMode::Roving,
-        .keepItemsInTabOrder = true,
+        .mode = RovingListNavMode::FollowFocus,
+        .keepItemsInTabOrder = false,
         .scrollIntoView = std::move(ctx.scrollSidebarNodeIntoView),
         .syncIndexFromSelection = {},
     });

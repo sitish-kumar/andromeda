@@ -87,6 +87,9 @@ namespace lockscreen_login_box {
 
     [[nodiscard]] float screenWidthForOutput(const WaylandConnection& wayland, std::string_view outputName) {
       for (const auto& output : wayland.outputs()) {
+        if (!output.done || output.output == nullptr || !output.hasUsableGeometry()) {
+          continue;
+        }
         if (desktop_widgets::outputKey(output) == outputName) {
           return desktop_widgets::outputLogicalWidth(output);
         }
@@ -116,7 +119,7 @@ namespace lockscreen_login_box {
 
   float resolvePanelWidth(float screenWidth, float boxWidth) {
     if (boxWidth > 0.0f) {
-      return std::clamp(boxWidth, kMinPanelWidth, screenWidth - Style::spaceLg * 2.0f);
+      return std::clamp(boxWidth, kMinPanelWidth, std::max(kMinPanelWidth, screenWidth - Style::spaceLg * 2.0f));
     }
     return defaultPanelWidth(screenWidth);
   }
@@ -141,9 +144,11 @@ namespace lockscreen_login_box {
   PanelContentLayout panelContentLayout(float panelWidth, float panelHeight, bool showLoginButton) {
     PanelContentLayout layout;
     layout.contentLeft = Style::spaceLg;
+    // Center the input row vertically so the free space above and below the input is equal.
     layout.controlHeight = std::min(Style::controlHeight, panelHeight - Style::spaceSm * 2.0f);
     layout.contentTop = std::max(Style::spaceSm, (panelHeight - layout.controlHeight) * 0.5f);
-    const float rightInset = Style::spaceLg + Style::spaceSm;
+    // Match the left inset so the padding left of the first control equals the padding right of the last.
+    const float rightInset = Style::spaceLg;
     const float contentWidth = panelWidth - Style::spaceLg - rightInset;
     const float buttonWidth = layout.controlHeight;
     const float gap = Style::spaceSm;
@@ -186,14 +191,19 @@ namespace lockscreen_login_box {
 
   LoginBoxStyle resolveStyle(const std::unordered_map<std::string, WidgetSettingValue>& settings) {
     LoginBoxStyle style;
+    style.panelOpacity = std::clamp(readFloat(settings, "background_opacity", style.panelOpacity), 0.0f, 1.0f);
     ColorSpec panelFill =
         colorSpecFromConfigString(readString(settings, "background_color", "surface_variant"), "background_color");
-    panelFill.alpha *= std::clamp(readFloat(settings, "background_opacity", 0.88f), 0.0f, 1.0f);
+    panelFill.alpha *= style.panelOpacity;
     style.panelFill = panelFill;
     style.panelRadius = std::clamp(readFloat(settings, "background_radius", style.panelRadius), 0.0f, 32.0f);
     style.inputOpacity = std::clamp(readFloat(settings, kInputOpacityKey, style.inputOpacity), 0.0f, 1.0f);
     style.inputRadius = std::clamp(readFloat(settings, kInputRadiusKey, style.inputRadius), 0.0f, 32.0f);
+    style.centerPasswordText = readBool(settings, kCenterPasswordTextKey, style.centerPasswordText);
     style.showLoginButton = readBool(settings, kShowLoginButtonKey, style.showLoginButton);
+    style.showPasswordHint = readBool(settings, kShowPasswordHintKey, style.showPasswordHint);
+    style.showCapsLock = readBool(settings, kShowCapsLockKey, style.showCapsLock);
+    style.showKeyboardLayout = readBool(settings, kShowKeyboardLayoutKey, style.showKeyboardLayout);
     return style;
   }
 
@@ -202,8 +212,12 @@ namespace lockscreen_login_box {
   ) {
     if (scope == desktop_settings::DesktopWidgetSettingsScope::Widget) {
       settings.insert_or_assign(std::string(kShowLoginButtonKey), true);
+      settings.insert_or_assign(std::string(kShowPasswordHintKey), true);
+      settings.insert_or_assign(std::string(kShowCapsLockKey), true);
+      settings.insert_or_assign(std::string(kShowKeyboardLayoutKey), true);
       settings.insert_or_assign(std::string(kInputOpacityKey), 1.0);
       settings.insert_or_assign(std::string(kInputRadiusKey), 6.0);
+      settings.insert_or_assign(std::string(kCenterPasswordTextKey), false);
     }
     if (scope == desktop_settings::DesktopWidgetSettingsScope::Background) {
       settings.insert_or_assign("background_color", std::string("surface_variant"));
@@ -220,6 +234,18 @@ namespace lockscreen_login_box {
   void normalizeSettings(std::unordered_map<std::string, WidgetSettingValue>& settings) {
     if (!settings.contains(std::string(kShowLoginButtonKey))) {
       settings.insert_or_assign(std::string(kShowLoginButtonKey), true);
+    }
+    if (!settings.contains(std::string(kShowPasswordHintKey))) {
+      settings.insert_or_assign(std::string(kShowPasswordHintKey), true);
+    }
+    if (!settings.contains(std::string(kShowCapsLockKey))) {
+      settings.insert_or_assign(std::string(kShowCapsLockKey), true);
+    }
+    if (!settings.contains(std::string(kShowKeyboardLayoutKey))) {
+      settings.insert_or_assign(std::string(kShowKeyboardLayoutKey), true);
+    }
+    if (!settings.contains(std::string(kCenterPasswordTextKey))) {
+      settings.insert_or_assign(std::string(kCenterPasswordTextKey), false);
     }
     clampOpacitySetting(settings, "background_opacity");
     clampRadiusSetting(settings, "background_radius");
@@ -245,7 +271,6 @@ namespace lockscreen_login_box {
         continue;
       }
       widget.rotationRad = 0.0f;
-      widget.enabled = true;
       widget.type = std::string(kWidgetType);
       normalizeSettings(widget.settings);
       const float screenWidth = screenWidthForOutput(wayland, widget.outputName);
@@ -254,6 +279,7 @@ namespace lockscreen_login_box {
       } else {
         clampPanelSize(screenWidth, widget.boxWidth, widget.boxHeight);
       }
+      desktop_widgets::clampStateToOutput(wayland, widget, widget.boxWidth, widget.boxHeight);
     }
 
     for (const auto& output : wayland.outputs()) {
@@ -278,6 +304,22 @@ namespace lockscreen_login_box {
       applyDefaultSettings(widget.settings, desktop_settings::DesktopWidgetSettingsScope::Background);
       widgets.insert(widgets.begin(), std::move(widget));
       outputsWithLoginBox.insert(outputKey);
+    }
+
+    bool anyEnabled = false;
+    for (const auto& widget : widgets) {
+      if (isLoginBoxWidget(widget) && widget.enabled) {
+        anyEnabled = true;
+        break;
+      }
+    }
+    if (!anyEnabled) {
+      for (auto& widget : widgets) {
+        if (isLoginBoxWidget(widget)) {
+          widget.enabled = true;
+          break;
+        }
+      }
     }
   }
 

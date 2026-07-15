@@ -23,6 +23,7 @@ namespace noctalia::config::schema {
   const Schema<BatteryConfig>& batterySchema();
   const Schema<ControlCenterConfig>& controlCenterSchema();
   const Schema<PluginsConfig>& pluginsSchema();
+  const Schema<HotCornersConfig>& hotCornersSchema();
   const Schema<CalendarConfig>& calendarSchema();
   const Schema<KeybindsConfig>& keybindsSchema();
   const Schema<HooksConfig>& hooksSchema();
@@ -30,6 +31,7 @@ namespace noctalia::config::schema {
   const Schema<WallpaperConfig>& wallpaperSchema();
   const Schema<ThemeConfig>& themeSchema();
   const Schema<ShellConfig>& shellSchema();
+  const Schema<AccessibilityConfig>& accessibilitySchema();
 
   // Bar is handled at the config root (named [bar.<name>] tables + an `order`
   // array live on Config::bars directly, not in a section struct), so its

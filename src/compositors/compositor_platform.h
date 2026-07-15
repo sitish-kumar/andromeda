@@ -11,6 +11,7 @@
 #include <optional>
 #include <poll.h>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -22,6 +23,7 @@ struct zdwl_ipc_manager_v2;
 struct hyprland_toplevel_mapping_manager_v1;
 struct zwlr_foreign_toplevel_handle_v1;
 struct ext_foreign_toplevel_handle_v1;
+class OutputProbe;
 class SessionBus;
 class WaylandWorkspaces;
 
@@ -42,14 +44,7 @@ namespace compositors {
   }
 } // namespace compositors
 
-struct WorkspaceWindowAssignment {
-  std::string windowId;
-  std::string workspaceKey;
-  std::string appId;
-  std::string title;
-  std::int32_t x = 0;
-  std::int32_t y = 0;
-};
+class WorkspaceAlertService;
 
 class CompositorPlatform {
 public:
@@ -76,6 +71,7 @@ public:
   [[nodiscard]] const WaylandOutput* findOutputByWl(wl_output* output) const;
   [[nodiscard]] wl_output* outputForSurface(wl_surface* surface) const noexcept;
   [[nodiscard]] FocusGrabService* focusGrabService() const noexcept;
+  [[nodiscard]] bool hasPointerPosition() const noexcept;
   [[nodiscard]] wl_surface* lastPointerSurface() const noexcept;
   [[nodiscard]] wl_surface* lastKeyboardSurface() const noexcept;
   [[nodiscard]] double lastPointerX() const noexcept;
@@ -85,8 +81,22 @@ public:
   void stopKeyRepeat();
   void setCursorShape(std::uint32_t serial, std::uint32_t shape);
 
+  // Output resolved from a real focus source (compositor IPC, focused-output
+  // backend, active toplevel, keyboard/fresh-pointer surface). Returns nullptr
+  // when no such source is available — callers that need an output regardless
+  // should use preferredInteractiveOutput() or probeFocusedOutput().
+  [[nodiscard]] wl_output*
+  focusedInteractiveOutput(std::chrono::milliseconds pointerMaxAge = std::chrono::milliseconds(1200)) const;
+
   [[nodiscard]] wl_output*
   preferredInteractiveOutput(std::chrono::milliseconds pointerMaxAge = std::chrono::milliseconds(1200)) const;
+
+  // Asks the compositor which output a NULL-output layer surface lands on (the
+  // focused one) by mapping a throwaway 1x1 probe surface, then reports it. For
+  // compositors with no focus source, where focusedInteractiveOutput() is null.
+  // The callback receives the probed output, or nullptr on timeout. Only one
+  // probe runs at a time; a new call cancels any in-flight probe.
+  void probeFocusedOutput(std::function<void(wl_output*)> callback, std::chrono::milliseconds timeout);
 
   [[nodiscard]] std::optional<ActiveToplevel> activeToplevel() const;
   [[nodiscard]] wl_output* activeToplevelOutput() const;
@@ -97,6 +107,7 @@ public:
   void activateToplevel(zwlr_foreign_toplevel_handle_v1* handle);
   void activateToplevelInfo(const ToplevelInfo& window);
   void closeToplevel(zwlr_foreign_toplevel_handle_v1* handle);
+  void closeToplevelInfo(const ToplevelInfo& window);
   void focusCompositorWindow(const std::string& windowId) const;
 
   void activateKdeWindow(const std::string& title, const std::string& appId, const std::string& uuid = {});
@@ -127,6 +138,14 @@ public:
   [[nodiscard]] std::vector<std::string> workspaceDisplayKeys(wl_output* outputFilter = nullptr) const;
   [[nodiscard]] std::vector<WorkspaceWindowAssignment>
   workspaceWindowAssignments(wl_output* outputFilter = nullptr) const;
+
+  // Workspace alerts: user-requested "attention" markers overlaid onto the
+  // workspace model by reusing Workspace::id (no new per-backend identifier).
+  void setWorkspaceAlertService(WorkspaceAlertService* service) noexcept;
+  [[nodiscard]] bool isKnownWorkspaceAlertKey(std::string_view workspaceId) const;
+  [[nodiscard]] std::optional<std::string> workspaceAlertKeyForWindow(std::string_view windowId) const;
+  [[nodiscard]] std::size_t clearActiveWorkspaceAlerts(wl_output* output);
+  [[nodiscard]] std::size_t clearActiveWorkspaceAlerts();
   [[nodiscard]] TaskbarAssignmentMode taskbarAssignmentMode() const noexcept;
   [[nodiscard]] bool supportsTaskbarWorkspaceGrouping() const noexcept;
   [[nodiscard]] std::unordered_map<std::uintptr_t, WorkspaceWindow>
@@ -174,6 +193,7 @@ private:
   );
 
   WaylandConnection& m_wayland;
+  WorkspaceAlertService* m_workspaceAlertService = nullptr;
   std::unique_ptr<compositors::CompositorRuntimeRegistry> m_runtimeRegistry;
   std::unique_ptr<WaylandWorkspaces> m_workspaces;
   std::unique_ptr<compositors::WorkspaceMetadataBackend> m_workspaceMetadataBackend;
@@ -187,6 +207,7 @@ private:
   ChangeCallback m_toplevelChangeCallback;
   std::unique_ptr<compositors::hyprland::HyprlandToplevelMapping> m_hyprlandToplevelMapping;
   std::unique_ptr<compositors::kde::KwinActiveWindow> m_kwinActiveWindow;
+  std::unique_ptr<OutputProbe> m_outputProbe;
   std::vector<WorkspaceModelSnapshot> m_lastWorkspaceModelSnapshot;
   bool m_initialized = false;
 };

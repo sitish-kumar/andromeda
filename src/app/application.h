@@ -6,9 +6,10 @@
 #include "calendar/calendar_service.h"
 #include "capture/screenshot_service.h"
 #include "compositors/compositor_platform.h"
+#include "compositors/workspace_alert_service.h"
 #include "config/config_poll_source.h"
 #include "config/config_service.h"
-#include "core/file_watcher.h"
+#include "core/files/file_watcher.h"
 #include "core/timer_manager.h"
 #include "dbus/notification/notification_poll_source.h"
 #include "hooks/battery_hook_state.h"
@@ -34,6 +35,7 @@
 #include "shell/bar/bar.h"
 #include "shell/desktop/desktop_widgets_controller.h"
 #include "shell/dock/dock.h"
+#include "shell/hot_corners/hot_corners.h"
 #include "shell/lockscreen/lock_screen.h"
 #include "shell/lockscreen/lockscreen_widgets_controller.h"
 #include "shell/notification/notification_toast.h"
@@ -105,6 +107,7 @@ class BrightnessService;
 class DebugService;
 class EasyEffectsService;
 class INetworkService;
+class IwdSecretAgent;
 class LogindService;
 class MainLoop;
 class MprisService;
@@ -112,6 +115,7 @@ class NetworkSecretAgent;
 class NotificationDBusHost;
 class PipeWirePollSource;
 class PipeWireService;
+class WirePlumberMixer;
 class PipeWireSpectrum;
 class PipeWireSpectrumPollSource;
 class PolkitAgent;
@@ -144,9 +148,34 @@ public:
   // Public for signal handler
   static std::atomic<bool> s_shutdownRequested;
 
+  bool runShellCommand(const std::string& command);
+  void triggerShellAction(const std::string& action, wl_output* output = nullptr);
+  // Highest layer-shell layer occupied by any bar on the given output. Hot
+  // corners place their trigger surfaces on this layer.
+  [[nodiscard]] LayerShellLayer hotCornerLayerForOutput(wl_output* output) const noexcept;
+
 private:
   void initServices();
+  // Sub-phases of initServices(), called in order.
+  void initStyleThemeAndWayland();
+  void initWaylandCallbacks();
+  void initAuxServicesAndHooks();
+  void initSystemBusServices();
+  void initBrightnessAndPipewire();
+  void initSessionBusServices();
   void initUi();
+  // Sub-phases of initUi(), called in order.
+  void initUiRenderSurfacesAndSettings();
+  void initLockScreenAndSession();
+  void initInputDispatch();
+  void initPanelManagerAndPanels();
+  void initNotificationAndOsd();
+  void initBarDockAndLayout();
+  void initWidgetControllersAndCallbacks();
+  // Single source of truth for surface (re)creation order: (re)builds every
+  // per-output layer surface bottom-to-top. Called once after initUi() wiring
+  // and on every output change so first-run stacking matches hot reload.
+  void reconcileOutputSurfaces();
   void initIpc();
   // (Re)register plugin-backed launcher providers from the enabled plugin set.
   void reloadPluginLauncherProviders();
@@ -154,6 +183,9 @@ private:
   void reloadDmenuProviders();
   // (Re)register plugin-backed panels from the enabled plugin set.
   void reloadPluginPanels();
+  // Pull every git source flagged auto_update. Run once at startup and on a 6h
+  // repeating timer so long-lived sessions pick up new plugin versions.
+  void runPluginAutoUpdate();
   void startTrayService();
   void syncNotificationDaemon();
   void installNotificationBusNameWatch();
@@ -162,11 +194,13 @@ private:
   [[nodiscard]] bool likelySupportsInSessionPolkit() const noexcept;
   void syncClipboardService();
   void syncScreenTimeService();
-  bool runUserCommand(const std::string& command);
-  bool runUserCommandBlocking(const std::string& command);
+  void performGreeterSync(bool quiet = false);
+  void scheduleGreeterAutoSync();
+  bool runShellCommandBlocking(const std::string& command);
   bool runIdleAction(const IdleActionRequest& action);
   void onIconThemeChanged();
   void onGraphicsReset(RenderGraphicsResetStatus status);
+  void recoverGraphicsAfterReset();
   void requestAllSurfacesRedraw();
   void onUpowerStateChangedForHooks();
   void onNetworkStateChangedForEvents(const NetworkState& state, NetworkChangeOrigin origin);
@@ -176,6 +210,7 @@ private:
   [[nodiscard]] std::vector<PollSource*> buildPollSources();
 
   WaylandConnection m_wayland;
+  WorkspaceAlertService m_workspaceAlertService;
   CompositorPlatform m_compositorPlatform{m_wayland};
   ClipboardService m_clipboardService;
   TextInputService m_textInputService;
@@ -213,6 +248,7 @@ private:
   std::unique_ptr<PowerProfilesService> m_powerProfilesService;
   std::unique_ptr<INetworkService> m_networkService;
   std::unique_ptr<NetworkSecretAgent> m_networkSecretAgent;
+  std::unique_ptr<IwdSecretAgent> m_iwdSecretAgent;
   std::unique_ptr<BluetoothService> m_bluetoothService;
   std::unique_ptr<BluetoothAgent> m_bluetoothAgent;
   Timer m_bluetoothResumeTimer;
@@ -232,6 +268,7 @@ private:
   std::unique_ptr<sdbus::IProxy> m_notificationBusNameWatchProxy;
   bool m_notificationBusNameWatchInstalled = false;
   std::unique_ptr<PipeWireService> m_pipewireService;
+  std::unique_ptr<WirePlumberMixer> m_wirePlumberMixer;
   std::unique_ptr<EasyEffectsService> m_easyEffectsService;
   std::unique_ptr<PipeWireSpectrum> m_pipewireSpectrum;
   std::unique_ptr<SoundPlayer> m_soundPlayer;
@@ -266,6 +303,7 @@ private:
   KeyboardLayoutOsd m_keyboardLayoutOsd;
   PrivacyOsd m_privacyOsd;
   OsdOverlay m_osdOverlay;
+  HotCorners m_hotCorners{this};
   ScreenCorners m_screenCorners;
   TrayMenu m_trayMenu;
   Wallpaper m_wallpaper;
@@ -310,8 +348,13 @@ private:
   Timer m_trayInitTimer;
   Timer m_polkitInitTimer;
   Timer m_greeterSyncTimeoutTimer;
+  Timer m_greeterAutoSyncTimer;
   Timer m_clipboardAutoPasteTimer;
+  Timer m_pluginAutoUpdateTimer;
+  Timer m_graphicsRecoveryTimer;
   std::uint64_t m_greeterSyncGeneration = 0;
+  int m_graphicsRecoveryAttempts = 0;
+  bool m_graphicsRecoveryScheduled = false;
 
   std::unique_ptr<MainLoop> m_mainLoop;
 };

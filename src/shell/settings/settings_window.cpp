@@ -3,10 +3,11 @@
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "core/deferred_call.h"
-#include "core/key_modifiers.h"
-#include "core/key_symbols.h"
-#include "core/keybind_matcher.h"
+#include "core/input/key_modifiers.h"
+#include "core/input/key_symbols.h"
+#include "core/input/keybind_matcher.h"
 #include "core/log.h"
+#include "core/scoped_timer.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
 #include "idle/idle_manager.h"
@@ -31,6 +32,7 @@
 #include <linux/input-event-codes.h>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <xkbcommon/xkbcommon-keysyms.h>
@@ -41,7 +43,7 @@ namespace {
 
   constexpr float kWindowWidth = 1280.0f;
   constexpr float kWindowHeight = 600.0f;
-  constexpr float kWindowMinWidth = 900.0f;
+  constexpr float kWindowMinWidth = 1020.0f;
   constexpr float kWindowMinHeight = 500.0f;
 
   // How many frames to wait for the settings window to gain keyboard focus before opening a pending
@@ -71,7 +73,7 @@ namespace {
   }
 
   void focusExistingSettingsWindow(WaylandConnection& wayland, wl_surface* surface) {
-    static constexpr std::string_view kSettingsAppId = "dev.noctalia.Noctalia.Settings";
+    static constexpr std::string_view kSettingsAppId = "dev.noctalia.Noctalia";
     wayland.activateSurface(surface);
     wayland.activateToplevelForAppId(kSettingsAppId);
   }
@@ -110,6 +112,33 @@ namespace {
     }
   }
 
+  class SettingsProfileWatch {
+  public:
+    SettingsProfileWatch() {
+      if (noctalia::profiling::enabled()) {
+        m_watch.emplace();
+      }
+    }
+
+    void reset() {
+      if (m_watch.has_value()) {
+        m_watch->reset();
+      }
+    }
+
+    [[nodiscard]] bool active() const noexcept { return m_watch.has_value(); }
+    [[nodiscard]] double elapsedMs() const { return m_watch.has_value() ? m_watch->elapsedMs() : 0.0; }
+
+  private:
+    std::optional<noctalia::profiling::StopWatch> m_watch;
+  };
+
+  void logSettingsProfile(std::string_view label, const SettingsProfileWatch& watch) {
+    if (watch.active()) {
+      kLog.info("profile {}: {:.1f}ms", label, watch.elapsedMs());
+    }
+  }
+
 } // namespace
 
 SettingsWindow::~SettingsWindow() { destroyWindow(); }
@@ -133,7 +162,7 @@ float SettingsWindow::uiScale() const {
   if (m_config == nullptr) {
     return 1.0f;
   }
-  return std::max(0.1f, m_config->config().shell.uiScale);
+  return std::max(0.1f, m_config->config().accessibility.uiScale);
 }
 
 bool SettingsWindow::headerDragRegionContains(float sceneX, float sceneY) const {
@@ -315,7 +344,11 @@ std::optional<LayerPopupParentContext> SettingsWindow::popupParentContextForSurf
   return std::nullopt;
 }
 
-void SettingsWindow::open() {
+void SettingsWindow::open(std::string context) {
+  if (!context.empty()) {
+    m_selectedSection = std::move(context);
+  }
+
   if (m_wayland == nullptr || m_renderContext == nullptr || !m_wayland->hasXdgShell()) {
     return;
   }
@@ -376,7 +409,7 @@ void SettingsWindow::open() {
       .minWidth = minWidth,
       .minHeight = minHeight,
       .title = i18n::tr("settings.window.native-title"),
-      .appId = "dev.noctalia.Noctalia.Settings",
+      .appId = "dev.noctalia.Noctalia",
   };
 
   if (!m_surface->initialize(output, cfg)) {
@@ -429,6 +462,7 @@ void SettingsWindow::destroyWindow() {
   m_idleLiveStatusLabel = nullptr;
   m_mainContainer = nullptr;
   m_headerRow = nullptr;
+  m_filterRow = nullptr;
   m_contentContainer = nullptr;
   m_contentScrollView = nullptr;
   m_sidebarScrollView = nullptr;
@@ -466,6 +500,8 @@ void SettingsWindow::destroyWindow() {
   m_settingsRegistry.clear();
   m_rebuildRequested = false;
   m_contentRebuildRequested = false;
+  m_settingsRegistryRefreshRequested = false;
+  m_filterRowRefreshRequested = false;
   m_focusSearchOnRebuild = false;
   m_scrollToPendingContentTarget = false;
   m_pendingContentScrollTarget = nullptr;
@@ -501,6 +537,7 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
   if (m_renderContext == nullptr || m_surface == nullptr) {
     return;
   }
+  SettingsProfileWatch totalProfileWatch;
 
   const auto width = m_surface->width();
   const auto height = m_surface->height();
@@ -508,7 +545,9 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
     return;
   }
 
+  SettingsProfileWatch phaseProfileWatch;
   m_renderContext->makeCurrent(m_surface->renderTarget());
+  logSettingsProfile("prepareFrame makeCurrent", phaseProfileWatch);
 
   // Rebuild the entire scene only on first build or when something explicitly
   // requested it (config change, nav click, etc.). Pure size changes — which
@@ -521,20 +560,33 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
   const bool needRebuild = firstBuild || m_rebuildRequested;
 
   if (needRebuild) {
+    phaseProfileWatch.reset();
     UiPhaseScope layoutPhase(UiPhase::Layout);
     m_inputDispatcher.stashTabFocus();
     buildScene(width, height);
     m_inputDispatcher.restoreStashedTabFocus();
+    if (m_focusSearchOnRebuild) {
+      if (m_settingsSearchInput != nullptr && m_settingsSearchInput->inputArea() != nullptr) {
+        m_inputDispatcher.setFocus(m_settingsSearchInput->inputArea());
+      }
+      m_focusSearchOnRebuild = false;
+    }
+    logSettingsProfile("prepareFrame buildScene", phaseProfileWatch);
     m_lastSceneWidth = width;
     m_lastSceneHeight = height;
     m_rebuildRequested = false;
     m_contentRebuildRequested = false;
+    m_settingsRegistryRefreshRequested = false;
+    m_filterRowRefreshRequested = false;
+    phaseProfileWatch.reset();
     const float scale = uiScale();
     const auto newMinW = static_cast<std::uint32_t>(std::round(kWindowMinWidth * scale));
     const auto newMinH = static_cast<std::uint32_t>(std::round(kWindowMinHeight * scale));
     m_surface->setMinSize(newMinW, newMinH);
     m_surface->clampToMinSize(newMinW, newMinH);
+    logSettingsProfile("prepareFrame updateMinSize", phaseProfileWatch);
   } else if ((m_contentRebuildRequested || sizeChanged || needsLayout) && m_sceneRoot != nullptr) {
+    phaseProfileWatch.reset();
     UiPhaseScope layoutPhase(UiPhase::Layout);
     const auto w = static_cast<float>(width);
     const auto h = static_cast<float>(height);
@@ -547,17 +599,35 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
     }
     if (m_contentRebuildRequested) {
       m_inputDispatcher.stashTabFocus();
+      if (m_settingsRegistryRefreshRequested) {
+        const Config fallbackCfg{};
+        const Config& cfg = m_config != nullptr ? m_config->config() : fallbackCfg;
+        refreshSettingsRegistry(cfg);
+        m_settingsRegistryRefreshRequested = false;
+      }
+      if (m_filterRowRefreshRequested) {
+        rebuildFilterRow(uiScale());
+        m_filterRowRefreshRequested = false;
+      }
       rebuildSettingsContent();
+      m_deferFocusScrollToLayout = true;
       m_inputDispatcher.restoreStashedTabFocus();
+      m_deferFocusScrollToLayout = false;
       m_contentRebuildRequested = false;
     }
+    logSettingsProfile("prepareFrame rebuildContent", phaseProfileWatch);
+    phaseProfileWatch.reset();
     m_sceneRoot->layout(*m_renderContext);
+    logSettingsProfile("prepareFrame layout", phaseProfileWatch);
+    phaseProfileWatch.reset();
     applyPendingContentScrollTarget(Style::spaceMd * uiScale());
+    logSettingsProfile("prepareFrame scrollTarget", phaseProfileWatch);
     m_lastSceneWidth = width;
     m_lastSceneHeight = height;
   }
 
   maybeOpenPendingWidgetInspector();
+  logSettingsProfile("prepareFrame total", totalProfileWatch);
 }
 
 void SettingsWindow::maybeOpenPendingWidgetInspector() {
@@ -593,6 +663,8 @@ void SettingsWindow::requestSceneRebuild() {
     }
     m_rebuildRequested = true;
     m_contentRebuildRequested = false;
+    m_settingsRegistryRefreshRequested = false;
+    m_filterRowRefreshRequested = false;
     m_surface->requestLayout();
     // The editor sheet edits the same config: rebuild its body so override/reset controls track
     // value changes in place, the way the inline inspector did when the whole scene rebuilt.
@@ -602,17 +674,28 @@ void SettingsWindow::requestSceneRebuild() {
   });
 }
 
-void SettingsWindow::requestContentRebuild() {
-  DeferredCall::callLater([this]() {
+void SettingsWindow::requestContentRebuild(bool refreshRegistry, bool refreshFilterRow, bool rebuildEditorSheet) {
+  DeferredCall::callLater([this, refreshRegistry, refreshFilterRow, rebuildEditorSheet]() {
     if (m_surface == nullptr) {
       return;
     }
+    if (refreshRegistry) {
+      m_settingsRegistryRefreshRequested = true;
+    }
+    if (refreshFilterRow) {
+      m_filterRowRefreshRequested = true;
+    }
     if (m_sceneRoot == nullptr || m_contentContainer == nullptr) {
       m_rebuildRequested = true;
+      m_settingsRegistryRefreshRequested = false;
+      m_filterRowRefreshRequested = false;
     } else if (!m_rebuildRequested) {
       m_contentRebuildRequested = true;
     }
     m_surface->requestLayout();
+    if (rebuildEditorSheet && m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+      m_editorSheetPopup->rebuildBody();
+    }
   });
 }
 
@@ -1018,6 +1101,10 @@ void SettingsWindow::onPluginsChanged() {
   if (isOpen() && m_selectedSection == "plugins") {
     requestContentRebuild();
   }
+}
+
+void SettingsWindow::invalidatePluginSourceCache(const std::string& sourceName) {
+  m_pluginFileCache.invalidateSource(sourceName);
 }
 
 void SettingsWindow::refreshIdleLiveStatusText() {

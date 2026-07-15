@@ -4,12 +4,13 @@
 #include "render/animation/animation_manager.h"
 #include "render/scene/input_dispatcher.h"
 #include "render/scene/node.h"
+#include "scripting/plugin_file_cache.h"
 #include "scripting/plugin_manager.h"
 #include "shell/settings/config_export_dialog_popup.h"
 #include "shell/settings/search_picker_popup.h"
 #include "shell/settings/settings_control_factory.h"
-#include "shell/settings/settings_editor_sheet_popup.h"
 #include "shell/settings/settings_registry.h"
+#include "shell/settings/settings_sheet_popup.h"
 #include "shell/settings/widget_add_popup.h"
 #include "ui/controls/context_menu_popup.h"
 #include "ui/controls/roving_list_nav.h"
@@ -58,7 +59,7 @@ public:
       UPowerService* upower, IdleManager* idleManager, CompositorPlatform* platform, AccountsService* accounts = nullptr
   );
 
-  void open();
+  void open(std::string context = "");
   void openToBarWidget(std::string barName, std::string widgetName);
   void close();
   [[nodiscard]] bool isOpen() const noexcept { return m_surface != nullptr && m_surface->isRunning(); }
@@ -76,6 +77,8 @@ public:
   void requestRedraw();
   void onExternalOptionsChanged();
   void onPluginsChanged();
+  // Drop cached plugin-store files for a source that just advanced its git revision.
+  void invalidatePluginSourceCache(const std::string& sourceName);
   void setOpenDesktopWidgetEditor(std::function<void()> callback) { m_openDesktopWidgetEditor = std::move(callback); }
   void setOpenLockscreenWidgetEditor(std::function<void()> callback) {
     m_openLockscreenWidgetEditor = std::move(callback);
@@ -96,6 +99,7 @@ public:
   void onIdleLiveStatusChanged();
   void markSettingsWriteSuccess(bool requestRebuild = true);
   void markSettingsWriteError(std::string message);
+  void warnOnUnusableCustomSchedule(const std::vector<std::string>& path);
   void showTransientStatus(std::string message, bool isError = false);
 
 private:
@@ -104,6 +108,7 @@ private:
   void buildScene(std::uint32_t width, std::uint32_t height);
   void rebuildSettingsContent();
   [[nodiscard]] settings::RegistryEnvironment buildRegistryEnvironment() const;
+  void refreshSettingsRegistry(const Config& cfg);
   void syncSelectedBarState(const Config& cfg, const std::vector<std::string>& availableBars);
   [[nodiscard]] std::unique_ptr<Flex> buildHeaderRow(float scale);
   [[nodiscard]] std::unique_ptr<Flex>
@@ -117,8 +122,17 @@ private:
   [[nodiscard]] settings::SettingsContentContext makeContentContext(
       const Config& cfg, const BarConfig* selectedBar, const BarMonitorOverride* selectedMonitorOverride
   );
+  [[nodiscard]] std::vector<std::vector<std::string>> currentPageResetPaths() const;
+  [[nodiscard]] bool
+  tryPatchSettingsRegistryValue(const std::vector<std::string>& path, const ConfigOverrideValue& value);
+  [[nodiscard]] bool tryPatchSettingsRegistryOverrides(
+      const std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>& overrides
+  );
+  [[nodiscard]] bool tryPatchSettingsRegistryResetValues(const std::vector<std::vector<std::string>>& paths);
+  void rebuildFilterRow(float scale);
   void requestSceneRebuild();
-  void requestContentRebuild();
+  void
+  requestContentRebuild(bool refreshRegistry = false, bool refreshFilterRow = false, bool rebuildEditorSheet = false);
   void markPluginListDirty();
   void refreshPluginListIfNeeded();
   void maybeOpenPendingWidgetInspector();
@@ -127,6 +141,10 @@ private:
   void scrollSidebarNodeIntoView(const Node* node);
   void clearStatusMessage();
   void clearTransientSettingsState();
+  void finishSettingsWrite(
+      bool changed, bool forceSceneRebuild, bool pageResetPathsChanged, bool registryAlreadyCurrent,
+      bool rebuildWhenUnchanged = false
+  );
   void openActionsMenu();
   void openConfigExportDialog();
   void openBarWidgetAddPopup(const std::vector<std::string>& lanePath);
@@ -143,6 +161,7 @@ private:
   void openCapsuleGroupEditor(std::vector<std::string> laneListPath, std::string groupId);
   void openPluginSourceCreateEditor(std::optional<PluginSourceConfig> existing = std::nullopt);
   void openPluginSettingsEditor(std::string pluginId);
+  void openPluginStore();
   void openBarWidgetEditorSheet(
       std::string title, std::function<void(Flex&)> populate, std::function<void()> removeAction = nullptr
   );
@@ -181,6 +200,7 @@ private:
   bool m_pluginListDirty = true;
   bool m_pluginListRefreshInFlight = false;
   std::uint64_t m_pluginListRefreshGeneration = 0;
+  scripting::PluginFileCache m_pluginFileCache;
   RenderContext* m_renderContext = nullptr;
   DependencyService* m_dependencies = nullptr;
   UPowerService* m_upower = nullptr;
@@ -196,6 +216,7 @@ private:
   Flex* m_mainContainer = nullptr; // Outer Flex inside m_sceneRoot, sized to the window
   Box* m_panelBackground = nullptr;
   Node* m_headerRow = nullptr;
+  Node* m_filterRow = nullptr;
   Button* m_actionsMenuButton = nullptr;
   Flex* m_contentContainer = nullptr;
   ScrollView* m_contentScrollView = nullptr;
@@ -205,7 +226,7 @@ private:
   std::unique_ptr<settings::WidgetAddPopup> m_widgetAddPopup;
   std::unique_ptr<settings::ConfigExportDialogPopup> m_configExportDialogPopup;
   std::unique_ptr<settings::SearchPickerPopup> m_searchPickerPopup;
-  std::unique_ptr<settings::SettingsEditorSheetPopup> m_editorSheetPopup;
+  std::unique_ptr<settings::SettingsSheetPopup> m_editorSheetPopup;
   std::unique_ptr<settings::SettingsControlFactory> m_editorSheetFactory;
   std::vector<std::string> m_editorSheetListPath;
   InputDispatcher m_inputDispatcher;
@@ -220,9 +241,14 @@ private:
   std::vector<settings::SettingEntry> m_settingsRegistry;
   bool m_rebuildRequested = false;
   bool m_contentRebuildRequested = false;
+  bool m_settingsRegistryRefreshRequested = false;
+  bool m_filterRowRefreshRequested = false;
   bool m_focusSearchOnRebuild = false;
   Input* m_settingsSearchInput = nullptr;
   bool m_scrollToPendingContentTarget = false;
+  // While restoring focus after a content rebuild, defer scroll-into-view until the scene is laid
+  // out; applying it against un-positioned nodes would collapse the scroll offset to the top.
+  bool m_deferFocusScrollToLayout = false;
   Node* m_pendingContentScrollTarget = nullptr;
   std::string m_searchQuery;
   Timer m_searchDebounceTimer;
@@ -248,6 +274,7 @@ private:
   std::string m_renamingMonitorOverrideMatch;
   std::string m_pendingDeleteMonitorOverrideBarName;
   std::string m_pendingDeleteMonitorOverrideMatch;
+  std::string m_pendingDeletePluginId;
   std::string m_selectedBarName;
   std::string m_selectedMonitorOverride;
   std::string m_selectedSection;

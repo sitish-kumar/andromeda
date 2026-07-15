@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config/config_types.h"
-#include "core/key_chord.h"
+#include "core/input/key_chord.h"
 #include "ui/controls/color_swatch_preview.h"
 #include "ui/palette.h"
 
@@ -29,6 +29,7 @@ namespace settings {
     Desktop,
     Dock,
     Panels,
+    Launcher,
     ControlCenter,
     Notifications,
     Osd,
@@ -62,17 +63,29 @@ namespace settings {
   struct SelectOption {
     std::string value;
     std::string label;
-    std::string description = {};
+    std::string description;
     ColorSwatchPreview preview = {};
+    std::string tooltip;
+  };
+
+  enum class SelectValueType : std::uint8_t {
+    String,
+    Integer,
+    Boolean,
   };
 
   struct SelectSetting {
     std::vector<SelectOption> options;
     std::string selectedValue;
     bool clearOnEmpty = false;
-    bool segmented = false;      // render as Segmented pill group instead of dropdown Select
-    bool integerValue = false;   // option values are numeric strings; write as int64_t to config
-    float preferredWidth = 0.0f; // 0 = default settings dropdown width
+    bool segmented = false;                              // render as Segmented pill group instead of dropdown Select
+    SelectValueType valueType = SelectValueType::String; // storage type for option values
+    float preferredWidth = 0.0f;                         // 0 = default settings dropdown width
+    std::vector<std::string> linkedPath;                 // companion path for groupedCommit / override reset
+    std::function<std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>(
+        std::string_view selectedValue, const std::vector<std::string>& primaryPath
+    )>
+        groupedCommit;
   };
 
   struct SearchPickerSetting {
@@ -96,12 +109,19 @@ namespace settings {
         : value(static_cast<double>(valueIn)), minValue(static_cast<double>(minValueIn)),
           maxValue(static_cast<double>(maxValueIn)), step(static_cast<double>(stepIn)), integerValue(integerValueIn) {}
 
+    // Trailing invert control for signed radius-style sliders: the slider shows the
+    // magnitude (0..max) and an inline toggle carries the sign (negative = concave).
+    // Reserve renders an equal-width empty slot so sibling sliders stay column-aligned.
+    enum class InvertSlot : std::uint8_t { None, Reserve, Toggle };
+
     double value = 0.0;
     double minValue = 0.0;
     double maxValue = 1.0;
     double step = 0.01;
     bool integerValue = false;
-    std::string valueSuffix = {};
+    InvertSlot invertSlot = InvertSlot::None;
+    bool invertEnabled = true; // only meaningful when invertSlot == Toggle
+    std::string valueSuffix;
     // Optional: when set, called with the user's just-committed value and returns extra overrides
     // to commit atomically alongside it. Use for cross-field constraints (e.g. linked sliders).
     std::function<std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>(double committedValue)>
@@ -117,7 +137,7 @@ namespace settings {
     double maxValue = 1.0;
     double step = 0.01;
     bool integerValue = false;
-    std::string valueSuffix = {};
+    std::string valueSuffix;
     std::vector<std::string> highPath;
   };
 
@@ -135,7 +155,7 @@ namespace settings {
     /// When browseMode == OpenFile, optional filter (e.g. `{".wav", ".ogg"}`); empty allows any file.
     std::vector<std::string> browseFileExtensions;
     /// When the current value is empty, open the file picker here if the path exists.
-    std::string browseFallbackDirectory = {};
+    std::string browseFallbackDirectory;
   };
 
   struct OptionalNumberSetting {
@@ -162,7 +182,7 @@ namespace settings {
     int maxValue = 100;
     int step = 1;
     /// Appended to the value display (e.g. `"s"` → `5s`). Empty = plain number.
-    std::string valueSuffix = {};
+    std::string valueSuffix;
   };
 
   struct ListSetting {
@@ -170,7 +190,7 @@ namespace settings {
     // When non-empty, the add UI presents a Select limited to these options (minus already-added values)
     // instead of a free-form text input, and row labels resolve to the option's friendly label.
     // Useful when the catalog of valid values is known.
-    std::vector<SelectOption> suggestedOptions = {};
+    std::vector<SelectOption> suggestedOptions;
   };
 
   struct StringMapSetting {
@@ -182,7 +202,7 @@ namespace settings {
 
   struct ShortcutListSetting {
     std::vector<ShortcutConfig> items;
-    std::vector<SelectOption> suggestedOptions = {};
+    std::vector<SelectOption> suggestedOptions;
     std::size_t maxItems = 0;
   };
 
@@ -207,6 +227,7 @@ namespace settings {
     std::vector<SelectOption> options;
     std::vector<std::string> selectedValues;
     bool requireAtLeastOne = false; // disable removing the last selected entry
+    bool persistUnselected = false; // persist the unchecked complement (denylist) instead of the selection
   };
 
   struct TemplateGridSetting {
@@ -235,19 +256,10 @@ namespace settings {
       SessionPanelActionsSetting, IdleBehaviorsSetting, NotificationFiltersSetting, MultiSelectSetting,
       TemplateGridSetting, ButtonSetting, ColorSpecPickerSetting, SearchPickerSetting>;
 
-  struct SettingVisibilityCondition {
-    std::vector<std::string> path;
-    std::vector<std::string> values;
-  };
-
-  struct SettingVisibility {
-    SettingVisibility() = default;
-    SettingVisibility(std::vector<std::string> pathIn, std::vector<std::string> valuesIn)
-        : all{SettingVisibilityCondition{std::move(pathIn), std::move(valuesIn)}} {}
-    explicit SettingVisibility(std::vector<SettingVisibilityCondition> conditions) : all(std::move(conditions)) {}
-
-    std::vector<SettingVisibilityCondition> all;
-  };
+  // Visibility predicate, evaluated against the same Config the registry was built from
+  // (the registry rebuilds on every config change). Capture snapshot values or read the
+  // passed Config; never capture references.
+  using SettingVisibility = std::function<bool(const Config&)>;
 
   struct SettingEntry {
     SettingsSection section = SettingsSection::Appearance;
@@ -258,7 +270,7 @@ namespace settings {
     SettingControl control;
     bool advanced = false;
     std::string searchText;
-    std::optional<SettingVisibility> visibleWhen;
+    SettingVisibility visibleWhen; // empty = always visible
   };
 
   // Runtime conditions that gate optional sections (e.g. compositor-specific features).
@@ -322,7 +334,7 @@ namespace settings {
       rankOf[i] = it->second;
     }
     std::vector<std::size_t> order(count);
-    std::iota(order.begin(), order.end(), std::size_t{0});
+    std::ranges::iota(order, std::size_t{0});
     std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) { return rankOf[a] < rankOf[b]; });
     return order;
   }

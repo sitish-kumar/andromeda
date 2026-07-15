@@ -53,11 +53,11 @@ void ActiveWindowWidget::create() {
       ui::label({
           .out = &m_title,
           .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontWeight = labelFontWeight(),
           .fontFamily = labelFontFamily(),
           .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
           .maxWidth = m_maxWidth * m_contentScale,
           .maxLines = 1,
-          .fontWeight = labelFontWeight(),
           .autoScroll = false,
       })
   );
@@ -196,6 +196,10 @@ void ActiveWindowWidget::syncState(Renderer& renderer) {
     m_lastAppId = {};
     m_lastEmptyState = emptyState;
     m_lastIconPath = {};
+    m_lastTooltipTitle.clear();
+    if (m_area != nullptr) {
+      m_area->clearTooltip();
+    }
     if (m_icon != nullptr) {
       m_icon->clear(renderer);
     }
@@ -216,6 +220,18 @@ void ActiveWindowWidget::syncState(Renderer& renderer) {
   m_lastTitle = title;
   m_lastAppId = appId;
   m_lastEmptyState = emptyState;
+
+  const std::string tooltipText = emptyState ? std::string{} : title;
+  if (tooltipText != m_lastTooltipTitle) {
+    m_lastTooltipTitle = tooltipText;
+    if (m_area != nullptr) {
+      if (tooltipText.empty()) {
+        m_area->clearTooltip();
+      } else {
+        m_area->setTooltip(tooltipText);
+      }
+    }
+  }
 
   std::string iconPath = emptyState ? std::string{} : resolveIconPath(appId);
 
@@ -247,10 +263,7 @@ std::string ActiveWindowWidget::resolveIconPath(const std::string& appId) {
     return internal->iconPath;
   }
 
-  const app_identity::DesktopEntryLookupOptions lookupOptions = appId.starts_with("steam_app_")
-      ? app_identity::DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true}
-      : app_identity::DesktopEntryLookupOptions{};
-  if (const auto entry = app_identity::findDesktopEntry(appId, desktopEntries(), lookupOptions);
+  if (const auto entry = app_identity::findDesktopEntry(appId, desktopEntries());
       entry.has_value() && !entry->icon.empty()) {
     const int iconTargetSize = static_cast<int>(std::round(48.0f * m_contentScale));
     const std::string& resolved = m_iconResolver.resolve(entry->icon, iconTargetSize);

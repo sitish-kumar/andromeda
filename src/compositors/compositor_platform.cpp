@@ -22,8 +22,10 @@
 #include "compositors/triad/triad_output_backend.h"
 #include "compositors/triad/triad_runtime.h"
 #include "compositors/triad/triad_workspace_backend.h"
+#include "compositors/workspace_alert_service.h"
 #include "core/log.h"
-#include "core/process.h"
+#include "core/process/process.h"
+#include "wayland/output_probe.h"
 #include "wayland/wayland_connection.h"
 #include "wayland/wayland_workspaces.h"
 
@@ -32,7 +34,7 @@
 #include <csignal>
 #include <cstdlib>
 #include <functional>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <sys/types.h>
@@ -626,6 +628,8 @@ wl_output* CompositorPlatform::outputForSurface(wl_surface* surface) const noexc
 
 FocusGrabService* CompositorPlatform::focusGrabService() const noexcept { return m_wayland.focusGrabService(); }
 
+bool CompositorPlatform::hasPointerPosition() const noexcept { return m_wayland.hasPointerPosition(); }
+
 wl_surface* CompositorPlatform::lastPointerSurface() const noexcept { return m_wayland.lastPointerSurface(); }
 
 wl_surface* CompositorPlatform::lastKeyboardSurface() const noexcept { return m_wayland.lastKeyboardSurface(); }
@@ -646,7 +650,7 @@ void CompositorPlatform::setCursorShape(std::uint32_t serial, std::uint32_t shap
   m_wayland.setCursorShape(serial, shape);
 }
 
-wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseconds pointerMaxAge) const {
+wl_output* CompositorPlatform::focusedInteractiveOutput(std::chrono::milliseconds pointerMaxAge) const {
   const auto outputReady = [this](wl_output* output) {
     const auto* info = m_wayland.findOutputByWl(output);
     return info != nullptr && info->done && info->output != nullptr && info->hasUsableGeometry();
@@ -710,11 +714,28 @@ wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseco
     }
   }
 
+  return nullptr;
+}
+
+wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseconds pointerMaxAge) const {
+  if (wl_output* focused = focusedInteractiveOutput(pointerMaxAge); focused != nullptr) {
+    return focused;
+  }
+
   const auto& outputs = m_wayland.outputs();
   const auto it = std::ranges::find_if(outputs, [](const WaylandOutput& output) {
     return output.done && output.output != nullptr && output.hasUsableGeometry();
   });
   return it != outputs.end() ? it->output : nullptr;
+}
+
+void CompositorPlatform::probeFocusedOutput(
+    std::function<void(wl_output*)> callback, std::chrono::milliseconds timeout
+) {
+  // Replace any in-flight probe; only the latest request matters. A finished
+  // probe goes inert (surface torn down, timer stopped) and lingers here until
+  // the next probe or destruction replaces it.
+  m_outputProbe = std::make_unique<OutputProbe>(m_wayland, timeout, std::move(callback));
 }
 
 std::optional<ActiveToplevel> CompositorPlatform::activeToplevel() const {
@@ -834,6 +855,16 @@ void CompositorPlatform::activateToplevelInfo(const ToplevelInfo& window) {
 }
 
 void CompositorPlatform::closeToplevel(zwlr_foreign_toplevel_handle_v1* handle) { m_wayland.closeToplevel(handle); }
+
+void CompositorPlatform::closeToplevelInfo(const ToplevelInfo& window) {
+  if (window.handle != nullptr) {
+    closeToplevel(window.handle);
+    return;
+  }
+  if (compositors::isKde() && m_kwinActiveWindow != nullptr && m_kwinActiveWindow->isAvailable()) {
+    m_kwinActiveWindow->closeWindow(window.title, window.appId, window.identifier);
+  }
+}
 
 bool CompositorPlatform::containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const {
   return m_wayland.containsWlrToplevelHandle(handle);
@@ -1063,6 +1094,9 @@ std::vector<Workspace> CompositorPlatform::workspaces() const {
   if (compositors::isKde() && m_kwinActiveWindow != nullptr && m_kwinActiveWindow->isAvailable()) {
     applyKdeWorkspaceOccupancy(current, m_kwinActiveWindow->trackedWorkspaceWindows(), {});
   }
+  if (m_workspaceAlertService != nullptr) {
+    m_workspaceAlertService->applyOverlay(current);
+  }
   return current;
 }
 
@@ -1074,7 +1108,79 @@ std::vector<Workspace> CompositorPlatform::workspaces(wl_output* output) const {
   if (compositors::isKde() && m_kwinActiveWindow != nullptr && m_kwinActiveWindow->isAvailable()) {
     applyKdeWorkspaceOccupancy(current, m_kwinActiveWindow->trackedWorkspaceWindows(), connectorNameForOutput(output));
   }
+  if (m_workspaceAlertService != nullptr) {
+    m_workspaceAlertService->applyOverlay(current);
+  }
   return current;
+}
+
+void CompositorPlatform::setWorkspaceAlertService(WorkspaceAlertService* service) noexcept {
+  m_workspaceAlertService = service;
+}
+
+bool CompositorPlatform::isKnownWorkspaceAlertKey(std::string_view workspaceId) const {
+  if (workspaceId.empty()) {
+    return false;
+  }
+  const auto& outputs = m_wayland.outputs();
+  if (outputs.empty()) {
+    return WorkspaceAlertService::isKnownWorkspaceToken(workspaceId, workspaces());
+  }
+  for (const auto& output : outputs) {
+    if (WorkspaceAlertService::isKnownWorkspaceToken(workspaceId, workspaces(output.output))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::optional<std::string> CompositorPlatform::workspaceAlertKeyForWindow(std::string_view windowId) const {
+  if (windowId.empty()) {
+    return std::nullopt;
+  }
+  // The assignment key is the backend's own workspace handle; the alert overlay
+  // matches it against a workspace's id/name/index, so store it directly once
+  // it resolves to a current workspace.
+  const auto resolveForOutput = [this, windowId](wl_output* output) -> std::optional<std::string> {
+    const auto token = WorkspaceAlertService::workspaceTokenForWindow(windowId, workspaceWindowAssignments(output));
+    if (token.has_value() && WorkspaceAlertService::isKnownWorkspaceToken(*token, workspaces(output))) {
+      return token;
+    }
+    return std::nullopt;
+  };
+
+  const auto& outputs = m_wayland.outputs();
+  if (outputs.empty()) {
+    return resolveForOutput(nullptr);
+  }
+  for (const auto& output : outputs) {
+    if (auto token = resolveForOutput(output.output); token.has_value()) {
+      return token;
+    }
+  }
+  return std::nullopt;
+}
+
+std::size_t CompositorPlatform::clearActiveWorkspaceAlerts(wl_output* output) {
+  if (m_workspaceAlertService == nullptr || m_workspaceAlertService->empty()) {
+    return 0;
+  }
+  return m_workspaceAlertService->clearActive(workspaces(output));
+}
+
+std::size_t CompositorPlatform::clearActiveWorkspaceAlerts() {
+  if (m_workspaceAlertService == nullptr || m_workspaceAlertService->empty()) {
+    return 0;
+  }
+  std::size_t cleared = 0;
+  const auto& outputs = m_wayland.outputs();
+  if (outputs.empty()) {
+    return m_workspaceAlertService->clearActive(workspaces());
+  }
+  for (const auto& output : outputs) {
+    cleared += m_workspaceAlertService->clearActive(workspaces(output.output));
+  }
+  return cleared;
 }
 
 std::unordered_map<std::string, std::vector<std::string>>

@@ -5,6 +5,8 @@
 #include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/version.h"
+#include "i18n/i18n.h"
+#include "notification/notifications.h"
 #include "scripting/plugin_catalog.h"
 #include "scripting/plugin_git.h"
 #include "scripting/plugin_id.h"
@@ -507,10 +509,23 @@ namespace scripting {
               "cannot enable '{}': requires noctalia >= {} (running {})", id, requiredNoctalia,
               noctalia::build_info::version()
           );
+          notify::error(
+              "Noctalia", i18n::tr("plugins.enable-failed.title"),
+              i18n::tr("plugins.enable-failed.body-incompatible", "plugin", id, "version", requiredNoctalia)
+          );
         } else if (timedOut) {
           kLog.warn("cannot enable '{}': export timed out", id);
+          notify::error(
+              "Noctalia", i18n::tr("plugins.enable-failed.title"),
+              i18n::tr("plugins.enable-failed.body-timeout", "plugin", id)
+          );
         } else {
-          kLog.warn("cannot enable '{}': {}", id, error.empty() ? "export failed" : error);
+          const std::string reason = error.empty() ? "export failed" : error;
+          kLog.warn("cannot enable '{}': {}", id, reason);
+          notify::error(
+              "Noctalia", i18n::tr("plugins.enable-failed.title"),
+              i18n::tr("plugins.enable-failed.body-error", "plugin", id, "error", reason)
+          );
         }
         if (m_onEnablingChanged) {
           m_onEnablingChanged();
@@ -528,6 +543,32 @@ namespace scripting {
     refresh();
   }
 
+  void PluginManager::remove(std::string_view pluginId) {
+    const auto subdir = pluginSubdirFromId(pluginId);
+    if (!subdir.has_value()) {
+      return;
+    }
+    kLog.info("removing plugin '{}'", pluginId);
+    m_config.setPluginEnabled(pluginId, false);
+
+    const auto& plugins = m_config.config().plugins;
+    for (const auto& source : plugins.sources) {
+      if (!source.enabled || source.kind != PluginSourceKind::Git) {
+        continue;
+      }
+      const auto materializedRoot = plugin_paths::gitMaterializedRoot(source);
+      if (materializedRoot.empty()) {
+        continue;
+      }
+      const auto pluginDir = materializedRoot / *subdir;
+      if (std::filesystem::exists(pluginDir)) {
+        auto sourceLock = plugin_source_locks::acquire(source.name);
+        (void)plugin_paths::removeTreeUnder(pluginDir, materializedRoot);
+      }
+    }
+    refresh();
+  }
+
   std::vector<PluginStatus> PluginManager::list() const { return list(m_config.config().plugins); }
 
   std::vector<PluginStatus> PluginManager::list(const PluginsConfig& plugins) const {
@@ -539,10 +580,19 @@ namespace scripting {
     // > built-in default), so the catalog shows one row per id from that same source.
     // Visit highest precedence first and keep the first seen; the GUI re-sorts anyway.
     std::unordered_set<std::string> seen;
-    const auto collect = [&](const std::string& sourceName, const CatalogResult& catalog) {
+    const auto collect = [&](const std::string& sourceName, const CatalogResult& catalog,
+                             const PluginSourceConfig& source) {
       for (const auto& entry : catalog.entries) {
         if (!seen.insert(entry.id).second) {
           continue;
+        }
+        bool onDisk = source.kind == PluginSourceKind::Path;
+        if (source.kind == PluginSourceKind::Git) {
+          const auto subdir = pluginSubdirFromId(entry.id);
+          if (subdir.has_value()) {
+            const auto root = plugin_paths::gitMaterializedRoot(source);
+            onDisk = !root.empty() && std::filesystem::exists(root / *subdir);
+          }
         }
         out.push_back(
             PluginStatus{
@@ -557,6 +607,7 @@ namespace scripting {
                 .compatible = entry.compatible,
                 .deprecated = entry.deprecated,
                 .enabled = enabledSet.contains(entry.id),
+                .materialized = onDisk,
             }
         );
       }
@@ -568,14 +619,14 @@ namespace scripting {
           .name = "local",
           .location = (std::filesystem::path(data) / "plugins").string()
       };
-      collect("local", discoverCatalog(localSource));
+      collect("local", discoverCatalog(localSource), localSource);
     }
     // Reverse config order: a later user source outranks earlier ones and the defaults.
     for (const auto& source : std::views::reverse(plugins.sources)) {
       if (!source.enabled) {
         continue;
       }
-      collect(source.name, discoverCatalog(source));
+      collect(source.name, discoverCatalog(source), source);
     }
     return out;
   }
@@ -704,6 +755,9 @@ namespace scripting {
         }
         if (sourceRevisionChanged) {
           kLog.info("updated source '{}' -> {}", sourceName, newRev);
+          if (m_onSourceUpdated) {
+            m_onSourceUpdated(sourceName); // stale store thumbnails/READMEs re-fetch at the new HEAD
+          }
         } else if (materialized) {
           kLog.info("reconciled source '{}' at {}", sourceName, newRev);
         } else {

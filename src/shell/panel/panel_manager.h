@@ -41,8 +41,8 @@ struct PanelOpenRequest {
   float anchorY = 0.0f;
   bool hasExplicitAnchor = false;
   bool hasAnchorPosition = false;
-  std::string_view context = {};
-  std::string_view sourceBarName = {};
+  std::string_view context;
+  std::string_view sourceBarName;
 };
 
 class PanelManager : public PopupGrabHost {
@@ -59,13 +59,13 @@ public:
   void initialize(CompositorPlatform& platform, ConfigService* config, RenderContext* renderContext);
 
   // Optional: invoked from shell UI (e.g. control center) to spawn the standalone settings toplevel.
-  void setOpenSettingsWindowCallback(std::function<void()> callback);
+  void setOpenSettingsWindowCallback(std::function<void(std::string)> callback);
   void setCloseSettingsWindowCallback(std::function<void()> callback);
-  void setToggleSettingsWindowCallback(std::function<void()> callback);
+  void setToggleSettingsWindowCallback(std::function<void(std::string)> callback);
   void setCloseDesktopWidgetsEditorCallback(std::function<void()> callback);
-  void openSettingsWindow();
+  void openSettingsWindow(std::string context = "");
   void closeSettingsWindow();
-  void toggleSettingsWindow();
+  void toggleSettingsWindow(std::string context = "");
   void setAttachedPanelGeometryCallback(
       std::function<void(wl_output*, std::string_view, std::optional<AttachedPanelGeometry>)> callback
   );
@@ -151,6 +151,7 @@ private:
 
   void buildScene(std::uint32_t width, std::uint32_t height);
   void prepareFrame(bool needsUpdate, bool needsLayout);
+  void applyPendingPanelFocus();
   void destroyPanel();
   // Called BEFORE the panel surface commits so shields sit below the panel
   // within the layer-shell layer. No-op when the focus-grab path is in use.
@@ -173,9 +174,9 @@ private:
   CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
   RenderContext* m_renderContext = nullptr;
-  std::function<void()> m_openSettingsWindow;
+  std::function<void(std::string)> m_openSettingsWindow;
   std::function<void()> m_closeSettingsWindow;
-  std::function<void()> m_toggleSettingsWindow;
+  std::function<void(std::string)> m_toggleSettingsWindow;
   std::function<void()> m_closeDesktopWidgetsEditor;
   std::function<void(wl_output*, std::string_view, std::optional<AttachedPanelGeometry>)>
       m_attachedPanelGeometryCallback;
@@ -219,6 +220,12 @@ private:
   std::int32_t m_panelInsetY = 0;
   std::uint32_t m_panelVisualWidth = 0;
   std::uint32_t m_panelVisualHeight = 0;
+  // Fill axes derive their visual size from the compositor-configured surface
+  // size in buildScene; that math also needs the trailing shadow bleed.
+  bool m_panelFillWidth = false;
+  bool m_panelFillHeight = false;
+  std::int32_t m_detachedBleedRight = 0;
+  std::int32_t m_detachedBleedBottom = 0;
   float m_attachedBackgroundOpacity = 1.0f;
   bool m_attachedContactShadow = false;
   float m_attachedRevealProgress = 1.0f;

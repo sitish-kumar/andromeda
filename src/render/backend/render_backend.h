@@ -30,6 +30,7 @@ public:
   [[nodiscard]] virtual TextureId colorTexture() const noexcept = 0;
   [[nodiscard]] virtual std::uint32_t width() const noexcept = 0;
   [[nodiscard]] virtual std::uint32_t height() const noexcept = 0;
+  virtual void abandon() noexcept = 0;
 };
 
 enum class RenderGraphicsResetStatus {
@@ -115,12 +116,16 @@ public:
   // Returns false if the surface could not be made current (e.g. invalidated
   // during compositor teardown); callers must skip the frame, not treat it as fatal.
   virtual bool makeCurrent(RenderTarget& target) = 0;
-  virtual void makeCurrentNoSurface() = 0;
+  // Returns false if the surfaceless context could not be made current (e.g. lost on resume);
+  // best-effort callers may ignore it, GPU paths must skip the work, not treat it as fatal.
+  virtual bool makeCurrentNoSurface() = 0;
   // Returns false if the frame could not begin; callers must skip drawing and endFrame.
   virtual bool beginFrame(RenderTarget& target) = 0;
   virtual void endFrame(RenderTarget& target) = 0;
   [[nodiscard]] virtual RenderGraphicsResetStatus graphicsResetStatus() = 0;
   virtual void invalidateGpuResources() = 0;
+  // Tear down a lost context without attempting to preserve its invalid GL objects.
+  virtual void abandonAfterGraphicsReset() noexcept = 0;
 
   [[nodiscard]] virtual std::unique_ptr<RenderSurfaceTarget> createSurfaceTarget(wl_surface* surface) = 0;
   [[nodiscard]] virtual std::unique_ptr<RenderFramebuffer>

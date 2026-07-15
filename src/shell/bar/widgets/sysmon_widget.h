@@ -3,7 +3,9 @@
 #include "core/frame_rate_limiter.h"
 #include "core/timer_manager.h"
 #include "shell/bar/widget.h"
+#include "shell/bar/widget_custom_image.h"
 #include "shell/tooltip/tooltip_content.h"
+#include "system/format_units.h"
 #include "ui/palette.h"
 #include "ui/signal.h"
 
@@ -18,6 +20,7 @@ class Box;
 class ConfigService;
 class Glyph;
 class Graph;
+class Image;
 class Label;
 class ProgressBar;
 class SystemMonitorService;
@@ -44,9 +47,12 @@ struct SysmonWidgetOptions {
   SysmonDisplayMode displayMode = SysmonDisplayMode::Gauge;
   ColorSpec highlightColor = colorSpecFromRole(ColorRole::Error);
   std::string networkInterface;
+  FormatUnits::DecimalByteRateUnit networkSpeedUnit = FormatUnits::DecimalByteRateUnit::Auto;
+  FormatUnits::ByteRateLabelStyle networkSpeedLabelStyle = FormatUnits::ByteRateLabelStyle::Full;
   bool showLabel = true;
   float labelMinWidth = 0.0f;
   std::string glyph;
+  WidgetCustomImage customImage;
 };
 
 class SysmonWidget : public Widget {
@@ -70,7 +76,11 @@ private:
   void clearGraph();
   void syncVisualPalette();
   void syncValueColor();
+  void syncIcon(Renderer& renderer);
   void updateGraph(Renderer& renderer);
+  [[nodiscard]] float iconWidth() const;
+  [[nodiscard]] float iconHeight() const;
+  void setIconPosition(float x, float y);
   [[nodiscard]] float scrollProgressForSample(std::chrono::steady_clock::time_point sampledAt) const;
   [[nodiscard]] Color currentValueColor(ColorSpec baseColor);
   [[nodiscard]] double currentGradientValue();
@@ -91,17 +101,21 @@ private:
   float m_labelMinWidth = 0.0f;
   std::string m_diskPath;
   std::string m_networkInterface;
+  FormatUnits::DecimalByteRateUnit m_networkSpeedUnit = FormatUnits::DecimalByteRateUnit::Auto;
+  FormatUnits::ByteRateLabelStyle m_networkSpeedLabelStyle = FormatUnits::ByteRateLabelStyle::Full;
   std::string m_glyphOverride;
+  WidgetCustomImage m_customImage;
   std::string m_lastRawValue;
   bool m_isVerticalBar = false;
   bool m_lastLabelVertical = false;
 
   Glyph* m_glyph = nullptr;
+  Image* m_image = nullptr;
   Label* m_label = nullptr;
 
   static constexpr int kHistorySamples = 30;
   bool m_graphInitialized = false;
-  std::chrono::steady_clock::time_point m_lastSampleAt{};
+  std::chrono::steady_clock::time_point m_lastSampleAt;
   double m_tempMin = 30.0;
   double m_tempMax = 80.0;
   Box* m_chartBg = nullptr;

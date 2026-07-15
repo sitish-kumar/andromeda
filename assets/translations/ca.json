@@ -187,7 +187,6 @@
       "unknown": "Desconegut",
       "uptime": "Temps actiu - {uptime}",
       "weather": {
-        "configure-location": "Afegeix [weather].address o activa auto_locate.",
         "data-unavailable": "Dades meteorològiques no disponibles.",
         "disabled": "El temps està desactivat a la configuració.",
         "fetching": "S'està obtenint la previsió..."
@@ -296,9 +295,9 @@
       "audio": "Àudio",
       "bluetooth": "Bluetooth",
       "calendar": "Calendari",
-      "display": "Monitor",
       "home": "Inici",
       "media": "Multimèdia",
+      "monitor": "Monitor",
       "network": "Xarxa",
       "notifications": "Notificacions",
       "screen-time": "Temps de pantalla",
@@ -306,7 +305,6 @@
       "weather": "Temps"
     },
     "weather": {
-      "configure-location": "Configura [weather].address o activa auto_locate",
       "data-unavailable": "Dades meteorològiques no disponibles",
       "details": {
         "elevation": "Elevació",
@@ -890,7 +888,7 @@
         "name-label": "Nom",
         "name-placeholder": "comportament-inactivitat",
         "resume-command-label": "Ordre de represa",
-        "resume-command-placeholder": "noctalia:dpms-on",
+        "resume-command-placeholder": "",
         "summary": "{name} · {seconds}s",
         "summary-disabled-timeout": "{name} · temps d'espera desactivat",
         "timeout-label": "Temps d'espera en segons",
@@ -947,7 +945,6 @@
         "overview": "Vista general",
         "pinned-apps": "Aplicacions fixades",
         "power": "Energia",
-        "privacy-security": "Privadesa i seguretat",
         "profile": "Perfil",
         "screen-corners": "Cantonades de pantalla",
         "screen-time": "Temps de pantalla",

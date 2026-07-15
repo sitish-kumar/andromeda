@@ -39,6 +39,7 @@ namespace scripting {
     bool compatible = true;
     bool deprecated = false;
     bool enabled = false;
+    bool materialized = false;
   };
 
   // Owns the plugin distribution lifecycle: resolves the configured sources into
@@ -61,6 +62,13 @@ namespace scripting {
     // set queried by isEnabling() changed). Lets the settings UI redraw the row spinner.
     void setOnEnablingChanged(std::function<void()> cb) { m_onEnablingChanged = std::move(cb); }
 
+    // Called when update() advances a git source to a new revision. Lets the plugin store
+    // drop its cached thumbnail/README copies for that source so they re-fetch at the new
+    // HEAD instead of showing the previous revision's files.
+    void setOnSourceUpdated(std::function<void(const std::string& sourceName)> cb) {
+      m_onSourceUpdated = std::move(cb);
+    }
+
     // Resolve source roots + enabled filter from config and (re)scan the registry.
     // No-op when the plugins config is unchanged since the last applied refresh.
     void refresh();
@@ -79,6 +87,9 @@ namespace scripting {
 
     // Disable a plugin by id and persist. Code stays on disk; settings are retained.
     void disable(std::string_view pluginId);
+
+    // Disable and remove a plugin's materialized files from disk.
+    void remove(std::string_view pluginId);
 
     // Every plugin offered by the local dev source + each configured source, with
     // its compatibility and active state. For the management CLI / settings browser.
@@ -122,6 +133,7 @@ namespace scripting {
     ConfigService& m_config;
     std::function<void()> m_onChanged;
     std::function<void()> m_onEnablingChanged;
+    std::function<void(const std::string& sourceName)> m_onSourceUpdated;
     // Git-source plugins whose runtime export is running on a worker thread. Touched
     // only on the main thread (enable() inserts, the DeferredCall completion erases).
     std::unordered_set<std::string> m_enabling;

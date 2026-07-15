@@ -8,7 +8,6 @@ Noctalia is made possible by the incredible work of many open-source projects an
 - **[SaberJ2X](https://www.reddit.com/user/SaberJ64/)** — Creator of Talia, the Noctalia mascot
 - **[Tabler Icons](https://tabler.io/icons)** — Icon set used throughout the shell
 - **[Riyan Resdian on Noun Project](https://thenounproject.com/creator/yaicon/)** — Plug icon
-- **[@StrayRogue](https://x.com/StrayRogue)** — Creator of the original Bongo Cat artwork used by the bongocat widget
 
 ## Audio Assets
 
@@ -45,6 +44,7 @@ Bundled in `third_party/` and built from source:
 
 - **[dr_wav](https://github.com/mackron/dr_libs)** — Single-file WAV decoder (MIT-0 / public domain)
 - **[fzy](https://github.com/jhawthorn/fzy)** — Fuzzy matching algorithm used by the launcher, search pickers, and other shell ranking (MIT)
+- **[md4c](https://github.com/mity/md4c)** — CommonMark parser used to render plugin README files (MIT)
 - **[Luau](https://luau.org/)** — Lua dialect used for scripting (MIT)
 - **[Material Color Utilities](https://github.com/material-foundation/material-color-utilities)** — Material 3 palette generation (Apache-2.0)
 - **[nlohmann/json](https://github.com/nlohmann/json)** — JSON for Modern C++ (MIT)
@@ -57,7 +57,6 @@ Bundled in `third_party/` and built from source:
 External tools Noctalia integrates with at runtime when present:
 
 - **[ddcutil](https://www.ddcutil.com/)** — External display brightness control
-- **[gpu-screen-recorder](https://git.dec05eba.com/gpu-screen-recorder/about/)** — Hardware-accelerated screen recording
 
 ## Special Thanks
 

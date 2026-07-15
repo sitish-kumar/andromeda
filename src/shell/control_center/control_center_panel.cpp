@@ -9,7 +9,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
-#include "shell/control_center/screen_time_tab.h"
+#include "shell/control_center/tabs/screen_time_tab.h"
 #include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
 #include "system/dependency_service.h"
@@ -21,9 +21,11 @@
 #include "ui/scroll_into_view.h"
 #include "ui/split_pane_focus.h"
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <wayland-client-protocol.h>
 
 using namespace control_center;
@@ -31,17 +33,6 @@ using namespace control_center;
 namespace {
 
   constexpr auto kMprisRefreshMinInterval = std::chrono::milliseconds(750);
-
-  [[nodiscard]] float normalizedScrollDelta(const InputArea::PointerData& data) {
-    float delta = data.scrollDelta(1.0f);
-    if (delta == 0.0f && data.axisValue120 != 0) {
-      delta = static_cast<float>(data.axisValue120) / 120.0f;
-    }
-    if (delta == 0.0f && data.axisDiscrete != 0) {
-      delta = static_cast<float>(data.axisDiscrete);
-    }
-    return delta;
-  }
 
 } // namespace
 
@@ -64,9 +55,10 @@ ControlCenterPanel::ControlCenterPanel(const ControlCenterServices& services) {
   m_tabs[tabIndex(TabId::Weather)] = std::make_unique<WeatherTab>(services.weather, services.config);
   m_tabs[tabIndex(TabId::Calendar)] = std::make_unique<CalendarTab>(services.config, services.calendar);
   m_tabs[tabIndex(TabId::Notifications)] = std::make_unique<NotificationsTab>(services.notifications);
-  m_tabs[tabIndex(TabId::Network)] = std::make_unique<NetworkTab>(services.network, services.networkSecrets);
+  m_tabs[tabIndex(TabId::Network)] =
+      std::make_unique<NetworkTab>(services.network, services.networkSecrets, services.httpClient, services.config);
   m_tabs[tabIndex(TabId::Bluetooth)] = std::make_unique<BluetoothTab>(services.bluetooth, services.bluetoothAgent);
-  m_tabs[tabIndex(TabId::Display)] = std::make_unique<DisplayTab>(services.brightness, services.config);
+  m_tabs[tabIndex(TabId::Monitor)] = std::make_unique<MonitorTab>(services.brightness, services.config);
   m_tabs[tabIndex(TabId::System)] = std::make_unique<SystemTab>(services.sysmon);
   m_tabs[tabIndex(TabId::ScreenTime)] = std::make_unique<ScreenTimeTab>(services.screenTime);
   m_tabs[tabIndex(TabId::Power)] = std::make_unique<PowerTab>(services.upower, services.powerProfiles);
@@ -158,7 +150,9 @@ void ControlCenterPanel::create() {
 
     auto sidebarNav = std::make_unique<RovingListNavHost>(RovingListNavController::Options{
         .axis = RovingListNavAxis::Vertical,
-        .mode = RovingListNavMode::Roving,
+        .mode = RovingListNavMode::FollowFocus,
+        .keepItemsInTabOrder = false,
+        .wrap = true,
         .scrollIntoView = [this](const Node* node) { scrollSidebarNodeIntoView(node); },
         .syncIndexFromSelection = {},
     });
@@ -248,8 +242,8 @@ void ControlCenterPanel::create() {
           .out = &m_contentTitle,
           .text = i18n::tr("control-center.tabs.home"),
           .fontSize = Style::fontSizeTitle * scale,
-          .color = colorSpecFromRole(ColorRole::Primary),
           .fontWeight = FontWeight::Bold,
+          .color = colorSpecFromRole(ColorRole::Primary),
           .flexGrow = 1.0f,
       })
   );
@@ -479,7 +473,7 @@ bool ControlCenterPanel::deferExternalRefresh() const {
 
 bool ControlCenterPanel::deferPointerRelayout() const { return deferExternalRefresh(); }
 
-bool ControlCenterPanel::isTabVisible(TabId tab) const {
+bool ControlCenterPanel::isTabFeatureAvailable(TabId tab) const {
   if (m_config == nullptr) {
     switch (tab) {
     case TabId::ScreenTime:
@@ -503,6 +497,39 @@ bool ControlCenterPanel::isTabVisible(TabId tab) const {
   default:
     return true;
   }
+}
+
+bool ControlCenterPanel::isTabVisible(TabId tab) const {
+  if (!isTabFeatureAvailable(tab)) {
+    return false;
+  }
+  // Home is always shown so the panel never opens to an empty surface.
+  if (tab == TabId::Home || m_config == nullptr) {
+    return true;
+  }
+  const auto& hidden = m_config->config().controlCenter.hiddenTabs;
+  return !std::ranges::contains(hidden, tabKey(tab));
+}
+
+std::vector<ControlCenterPanel::TabCatalogEntry> ControlCenterPanel::hideableTabCatalog() {
+  std::vector<TabCatalogEntry> out;
+  out.reserve(kTabCount - 1);
+  for (const auto& meta : kTabs) {
+    if (meta.id == TabId::Home) {
+      continue;
+    }
+    out.push_back({.key = meta.key, .titleKey = meta.titleKey});
+  }
+  return out;
+}
+
+std::string_view ControlCenterPanel::tabKey(TabId tab) {
+  for (const auto& meta : kTabs) {
+    if (meta.id == tab) {
+      return meta.key;
+    }
+  }
+  return {};
 }
 
 ControlCenterPanel::TabId ControlCenterPanel::firstVisibleTab() const {
@@ -698,11 +725,11 @@ void ControlCenterPanel::wireSidebarScroll(InputArea* area) {
     if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL) {
       return;
     }
-    const float delta = normalizedScrollDelta(data);
-    if (delta == 0.0f) {
+    const float steps = data.scrollSteps();
+    if (steps == 0.0f) {
       return;
     }
-    selectAdjacentVisibleTab(delta > 0.0f ? 1 : -1);
+    selectAdjacentVisibleTab(steps > 0.0f ? 1 : -1);
   });
 }
 

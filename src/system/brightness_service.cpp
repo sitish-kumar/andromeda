@@ -3,7 +3,7 @@
 #include "compositors/compositor_platform.h"
 #include "config/config_types.h"
 #include "core/log.h"
-#include "core/process.h"
+#include "core/process/process.h"
 #include "dbus/system_bus.h"
 #include "ipc/ipc_arg_parse.h"
 #include "ipc/ipc_service.h"
@@ -200,7 +200,7 @@ namespace {
         continue;
       }
       if (override.backlightDevice.has_value()) {
-        return *override.backlightDevice;
+        return override.backlightDevice;
       }
       break;
     }
@@ -879,11 +879,6 @@ struct BrightnessService::Impl {
         }
       }
 
-      if (sessionProxy == nullptr) {
-        kLog.debug("skipping backlight '{}' because logind brightness control is unavailable", name);
-        continue;
-      }
-
       DisplayInternal display;
       display.backend = RuntimeBackend::Backlight;
       display.maxRaw = maxBrightness;
@@ -1016,12 +1011,7 @@ struct BrightnessService::Impl {
     }
   }
 
-  void setBrightness(const std::string& displayId, float value) {
-    DisplayInternal* display = findInternal(displayId);
-    if (display == nullptr) {
-      return;
-    }
-
+  void setBrightness(DisplayInternal* display, float value) {
     value = std::clamp(value, activeConfig.minimumBrightness, 1.0f);
     switch (display->backend) {
     case RuntimeBackend::Backlight:
@@ -1033,20 +1023,65 @@ struct BrightnessService::Impl {
     }
   }
 
-  void setBacklightBrightness(DisplayInternal& display, float value) {
-    if (sessionProxy == nullptr) {
+  void setBrightness(const std::string& displayId, float value) {
+    if (activeConfig.syncBrightnessOfAllMonitors) {
+      setAllBrightness(value);
       return;
     }
 
+    DisplayInternal* display = findInternal(displayId);
+    if (display == nullptr) {
+      return;
+    }
+    setBrightness(display, value);
+  }
+
+  void setAllBrightness(float value) {
+    for (auto& display : internals) {
+      setBrightness(&display, value);
+    }
+  }
+
+  void setBacklightBrightness(DisplayInternal& display, float value) {
     const auto rawValue = static_cast<std::uint32_t>(std::round(value * static_cast<float>(display.maxRaw)));
     const std::string& backlightName = display.backlightName.empty() ? display.pub.id : display.backlightName;
-    try {
-      sessionProxy->callMethod("SetBrightness")
-          .onInterface(kLogindSessionInterface)
-          .withArguments(std::string("backlight"), backlightName, rawValue);
-    } catch (const sdbus::Error& e) {
-      kLog.warn("SetBrightness failed for '{}' via '{}': {}", display.pub.id, backlightName, e.what());
+    if (sessionProxy != nullptr) {
+      try {
+        sessionProxy->callMethod("SetBrightness")
+            .onInterface(kLogindSessionInterface)
+            .withArguments(std::string("backlight"), backlightName, rawValue);
+        display.pub.brightness = value;
+        syncPublicDisplay(display);
+        if (changeCallback) {
+          changeCallback();
+        }
+        return;
+      } catch (const sdbus::Error& e) {
+        kLog.warn("SetBrightness failed for '{}' via '{}': {}", display.pub.id, backlightName, e.what());
+      }
     }
+    writeSysfsBacklight(display, rawValue);
+  }
+
+  bool writeSysfsBacklight(DisplayInternal& display, std::uint32_t rawValue) {
+    const std::string brightnessPath = display.sysfsPath + "/brightness";
+    std::ofstream file(brightnessPath);
+    if (!file.is_open()) {
+      kLog.warn("cannot open sysfs brightness file '{}'", brightnessPath);
+      return false;
+    }
+    file << rawValue;
+    file.close();
+    if (file.fail()) {
+      kLog.warn("failed to write brightness to '{}'", brightnessPath);
+      return false;
+    }
+    display.pub.brightness = static_cast<float>(rawValue) / static_cast<float>(display.maxRaw);
+    syncPublicDisplay(display);
+    if (changeCallback) {
+      changeCallback();
+    }
+    return true;
   }
 
   void setDdcBrightness(DisplayInternal& display, float value) {
@@ -1471,6 +1506,8 @@ bool BrightnessService::available() const noexcept {
 void BrightnessService::setBrightness(const std::string& displayId, float value) {
   m_impl->setBrightness(displayId, value);
 }
+
+void BrightnessService::setAllBrightness(float value) { m_impl->setAllBrightness(value); }
 
 void BrightnessService::requestDdcRefresh() { m_impl->queueDdcRefreshes(); }
 

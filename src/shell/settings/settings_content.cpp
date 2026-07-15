@@ -28,6 +28,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -199,10 +200,12 @@ namespace settings {
         [&](double value, double minValue, double maxValue, double step, std::vector<std::string> path,
             bool integerValue = false, std::string valueSuffix = {},
             std::function<std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>(double)> linkedCommit =
-                {}) -> std::unique_ptr<Node> {
+                {},
+            SliderSetting::InvertSlot invertSlot = SliderSetting::InvertSlot::None,
+            bool invertEnabled = true) -> std::unique_ptr<Node> {
       return factory.makeSlider(
           value, minValue, maxValue, step, std::move(path), integerValue, std::move(linkedCommit),
-          std::move(valueSuffix)
+          std::move(valueSuffix), invertSlot, invertEnabled
       );
     };
 
@@ -239,7 +242,7 @@ namespace settings {
       auto browse = ui::button({
           .glyph = selectFolder ? "folder" : "file-text",
           .glyphSize = Style::fontSizeBody * scale,
-          .variant = ButtonVariant::Outline,
+          .variant = ButtonVariant::Default,
           .minWidth = Style::controlHeight * scale,
           .minHeight = Style::controlHeight * scale,
           .paddingV = Style::spaceXs * scale,
@@ -304,7 +307,7 @@ namespace settings {
       auto pickerButton = ui::button({
           .glyph = "apps",
           .glyphSize = Style::fontSizeBody * scale,
-          .variant = ButtonVariant::Outline,
+          .variant = ButtonVariant::Default,
           .minWidth = Style::controlHeight * scale,
           .minHeight = Style::controlHeight * scale,
           .paddingV = Style::spaceXs * scale,
@@ -366,14 +369,17 @@ namespace settings {
 
       auto checkRow = ui::row(
           {.align = FlexAlign::Center,
+           .wrap = true,
            .gap = Style::spaceMd * scale,
            .paddingV = Style::spaceXs * scale,
-           .paddingH = 0.0f}
+           .paddingH = 0.0f,
+           .fillWidth = true}
       );
 
       auto options = setting.options;
       auto selected = setting.selectedValues;
       const bool requireAtLeastOne = setting.requireAtLeastOne;
+      const bool persistUnselected = setting.persistUnselected;
       auto path = entry.path;
 
       for (const auto& option : options) {
@@ -385,7 +391,7 @@ namespace settings {
             .checked = isSelected,
             .scale = scale,
             .onChange = [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path, options, selected,
-                         optionValue, requireAtLeastOne](bool checked) mutable {
+                         optionValue, requireAtLeastOne, persistUnselected](bool checked) mutable {
               auto it = std::ranges::find(selected, optionValue);
               if (checked) {
                 if (it == selected.end()) {
@@ -400,11 +406,12 @@ namespace settings {
                   selected.erase(it);
                 }
               }
-              // Preserve the option order so the override file is stable.
+              // Preserve the option order so the override file is stable. When
+              // persistUnselected is set, store the unchecked complement (denylist).
               std::vector<std::string> ordered;
-              ordered.reserve(selected.size());
+              ordered.reserve(options.size());
               for (const auto& opt : options) {
-                if (std::ranges::contains(selected, opt.value)) {
+                if (std::ranges::contains(selected, opt.value) != persistUnselected) {
                   ordered.push_back(opt.value);
                 }
               }
@@ -559,9 +566,9 @@ namespace settings {
                 .out = &titleLabel,
                 .text = option.label,
                 .fontSize = Style::fontSizeBody * scale,
+                .fontWeight = FontWeight::Medium,
                 .color = colorSpecFromRole(checked ? ColorRole::OnPrimary : ColorRole::OnSurface),
                 .maxLines = 1,
-                .fontWeight = FontWeight::Medium,
             })
         );
         if (!option.description.empty()) {
@@ -634,6 +641,9 @@ namespace settings {
           syncPressedText();
         });
         card->setOnClick([checkedState, setTileActive]() mutable { setTileActive(!*checkedState); });
+        if (!option.tooltip.empty()) {
+          card->setTooltip(option.tooltip);
+        }
 
         row->addChild(std::move(cardNode));
         ++countInRow;
@@ -734,15 +744,13 @@ namespace settings {
             .maxHeight = Style::controlHeightSm * scale,
             .padding = Style::spaceXs * scale,
             .radius = Style::scaledRadiusSm(scale),
-            .onClick =
-                [commitItems, items = keybinds.items, i]() mutable {
-                  if (i >= items.size()) {
-                    return;
-                  }
-                  items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
-                  commitItems(std::move(items));
-                },
-            .configure = [](Button& button) { button.setTabStop(false); },
+            .onClick = [commitItems, items = keybinds.items, i]() mutable {
+              if (i >= items.size()) {
+                return;
+              }
+              items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
+              commitItems(std::move(items));
+            },
         });
         row->addChild(std::move(removeBtn));
 
@@ -1204,7 +1212,7 @@ namespace settings {
             } else if constexpr (std::is_same_v<T, SliderSetting>) {
               return makeSlider(
                   control.value, control.minValue, control.maxValue, control.step, entry.path, control.integerValue,
-                  control.valueSuffix, control.linkedCommit
+                  control.valueSuffix, control.linkedCommit, control.invertSlot, control.invertEnabled
               );
             } else if constexpr (std::is_same_v<T, RangeSliderSetting>) {
               return makeRangeSlider(control, entry.path);
@@ -1245,7 +1253,7 @@ namespace settings {
                 return ui::button({
                     .text = control.label,
                     .fontSize = Style::fontSizeBody * scale,
-                    .variant = ButtonVariant::Outline,
+                    .variant = ButtonVariant::Default,
                     .minHeight = Style::controlHeight * scale,
                     .paddingV = Style::spaceSm * scale,
                     .paddingH = Style::spaceMd * scale,
@@ -1258,7 +1266,7 @@ namespace settings {
                   .glyph = control.glyph,
                   .fontSize = Style::fontSizeBody * scale,
                   .glyphSize = Style::fontSizeBody * scale,
-                  .variant = ButtonVariant::Outline,
+                  .variant = ButtonVariant::Default,
                   .minHeight = Style::controlHeight * scale,
                   .paddingV = Style::spaceSm * scale,
                   .paddingH = Style::spaceMd * scale,
@@ -1280,41 +1288,15 @@ namespace settings {
     Flex* activeKeybindRow = nullptr;
     std::size_t activeKeybindRowCount = 0;
     std::size_t visibleEntries = 0;
+    // Very short queries (one or two letters) match hundreds of entries and building the subtree for every match is
+    // costly. Cap how many results we render and hint that the list was truncated.
+    constexpr std::size_t kMaxSearchResults = 50;
+    bool truncated = false;
     const std::string normalizedSearchQuery = normalizedSettingQuery(ctx.searchQuery);
 
     BarWidgetEditorContext barWidgetEditorCtx = makeBarWidgetEditorContext(factory);
 
-    auto visibilityConditionMatches = [&](const SettingVisibilityCondition& cond) -> bool {
-      for (const auto& other : registry) {
-        if (other.path == cond.path) {
-          std::string currentValue;
-          if (const auto* toggle = std::get_if<ToggleSetting>(&other.control)) {
-            currentValue = toggle->checked ? "true" : "false";
-          } else if (const auto* select = std::get_if<SelectSetting>(&other.control)) {
-            currentValue = select->selectedValue;
-          }
-          for (const auto& v : cond.values) {
-            if (v == currentValue) {
-              return true;
-            }
-          }
-          return false;
-        }
-      }
-      return true;
-    };
-
-    auto isEntryVisible = [&](const SettingEntry& e) -> bool {
-      if (!e.visibleWhen.has_value()) {
-        return true;
-      }
-      for (const auto& cond : e.visibleWhen->all) {
-        if (!visibilityConditionMatches(cond)) {
-          return false;
-        }
-      }
-      return true;
-    };
+    auto isEntryVisible = [&](const SettingEntry& e) -> bool { return !e.visibleWhen || e.visibleWhen(ctx.config); };
 
     const std::string_view selectedBarName =
         ctx.selectedBar != nullptr ? std::string_view{ctx.selectedBar->name} : std::string_view{};
@@ -1356,6 +1338,12 @@ namespace settings {
       }
       if (!matchesNormalizedSettingQuery(entry, normalizedSearchQuery)) {
         continue;
+      }
+      // Cap only once a genuinely-matching entry is about to be rendered, so the truncation hint never
+      // shows when exactly kMaxSearchResults entries matched and the remainder were filtered out anyway.
+      if (!ctx.searchQuery.empty() && visibleEntries >= kMaxSearchResults) {
+        truncated = true;
+        break;
       }
 
       const std::string contentSectionKey = barSettingContentSectionKey(entry);
@@ -1465,6 +1453,18 @@ namespace settings {
           ui::row(
               {.align = FlexAlign::Center, .fillWidth = true}, ui::box({.flexGrow = 0.5f}), std::move(emptyState),
               ui::box({.flexGrow = 0.5f})
+          )
+      );
+    }
+
+    if (truncated) {
+      content.addChild(
+          ui::row(
+              {.align = FlexAlign::Center, .justify = FlexJustify::Center, .fillWidth = true},
+              makeLabel(
+                  i18n::tr("settings.window.search-truncated", "count", std::to_string(kMaxSearchResults)),
+                  Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+              )
           )
       );
     }

@@ -28,10 +28,13 @@ public:
   [[nodiscard]] TextureHandle acquire(const std::string& path);
   [[nodiscard]] TextureHandle peek(const std::string& path) const;
   void release(TextureHandle& handle, const std::string& path);
+  void abandonGpuResources() noexcept;
   void reloadResidentTextures();
 
 private:
-  void makeCurrent();
+  // Returns false if no usable GL context could be bound (e.g. context lost on resume);
+  // callers skip the upload/unload and retry on the next graphics-reset rebuild.
+  [[nodiscard]] bool makeCurrent();
 
   struct Entry {
     TextureHandle handle;

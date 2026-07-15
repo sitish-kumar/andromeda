@@ -198,7 +198,7 @@ void LockscreenWidgetsHost::createInstance(
     return;
   }
 
-  const float baseUiScale = m_config != nullptr ? m_config->config().shell.uiScale : 1.0f;
+  const float baseUiScale = m_config != nullptr ? m_config->config().accessibility.uiScale : 1.0f;
   auto widget = m_factory->create(state.type, state.settings, desktop_widgets::widgetContentScale(baseUiScale));
   if (widget == nullptr) {
     return;
@@ -341,7 +341,7 @@ void LockscreenWidgetsHost::prepareFrame(LockSurface& surface, bool needsUpdate,
 
   m_renderContext->makeCurrent(surface.renderTarget());
 
-  const float baseUiScale = m_config != nullptr ? m_config->config().shell.uiScale : 1.0f;
+  const float baseUiScale = m_config != nullptr ? m_config->config().accessibility.uiScale : 1.0f;
   const auto surfaceW = static_cast<float>(surface.width());
   const auto surfaceH = static_cast<float>(surface.height());
 
@@ -372,22 +372,6 @@ void LockscreenWidgetsHost::prepareFrame(LockSurface& surface, bool needsUpdate,
       DesktopWidgetState currentState = instance->state;
       if (const DesktopWidgetState* origState = findStateById(m_snapshot, instance->state.id); origState != nullptr) {
         currentState = *origState;
-      }
-      if (const WaylandOutput* output = desktop_widgets::resolveStateOutput(*m_wayland, currentState);
-          output != nullptr) {
-        float curW = surfaceW;
-        float curH = surfaceH;
-        bool isRotated90or270 =
-            (output->transform == WL_OUTPUT_TRANSFORM_90
-             || output->transform == WL_OUTPUT_TRANSFORM_270
-             || output->transform == WL_OUTPUT_TRANSFORM_FLIPPED_90
-             || output->transform == WL_OUTPUT_TRANSFORM_FLIPPED_270);
-        float refW = isRotated90or270 ? curH : curW;
-        float refH = isRotated90or270 ? curW : curH;
-        if (refW > 0.0f && refH > 0.0f) {
-          currentState.cx = currentState.cx * (curW / refW);
-          currentState.cy = currentState.cy * (curH / refH);
-        }
       }
       desktop_widgets::clampStateToOutput(
           *m_wayland, currentState, instance->intrinsicWidth, instance->intrinsicHeight

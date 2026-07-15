@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
@@ -160,24 +161,27 @@ namespace scripting {
         return true;
       }
       for (const auto& node : *options) {
-        if (const auto* optTable = node.as_table()) {
-          ManifestSelectOption opt;
-          opt.value = tableString(*optTable, "value");
-          opt.label = tableString(*optTable, "label");
-          opt.labelKey = tableString(*optTable, "label_key");
-          if (!opt.label.empty() && !opt.labelKey.empty()) {
-            error = "setting '" + out.key + "' option '" + opt.value + "' declares both label and label_key";
-            return false;
-          }
-          if (opt.label.empty() && opt.labelKey.empty()) {
-            opt.label = opt.value;
-          }
-          if (!opt.value.empty()) {
-            out.options.push_back(std::move(opt));
-          }
-        } else if (auto value = node.value<std::string>()) {
-          out.options.push_back(ManifestSelectOption{.value = *value, .label = *value, .labelKey = {}});
+        const auto* optTable = node.as_table();
+        if (optTable == nullptr) {
+          error = "setting '" + out.key + "' option must be a table with value and label_key";
+          return false;
         }
+        ManifestSelectOption opt;
+        opt.value = tableString(*optTable, "value");
+        if (opt.value.empty()) {
+          error = "setting '" + out.key + "' option is missing 'value'";
+          return false;
+        }
+        if (optTable->contains("label")) {
+          error = "setting '" + out.key + "' option '" + opt.value + "' uses 'label'; use 'label_key' instead";
+          return false;
+        }
+        opt.labelKey = tableString(*optTable, "label_key");
+        if (opt.labelKey.empty()) {
+          error = "setting '" + out.key + "' option '" + opt.value + "' is missing 'label_key'";
+          return false;
+        }
+        out.options.push_back(std::move(opt));
       }
       return true;
     }
@@ -222,18 +226,20 @@ namespace scripting {
         return out;
       }
       out.type = parseFieldType(tableString(field, "type", "string"));
-      out.label = tableString(field, "label");
+      if (field.contains("label")) {
+        error = "setting '" + out.key + "' uses 'label'; use 'label_key' instead";
+        return std::nullopt;
+      }
+      if (field.contains("description")) {
+        error = "setting '" + out.key + "' uses 'description'; use 'description_key' instead";
+        return std::nullopt;
+      }
       out.labelKey = tableString(field, "label_key");
-      if (!out.label.empty() && !out.labelKey.empty()) {
-        error = "setting '" + out.key + "' declares both label and label_key";
+      if (out.labelKey.empty()) {
+        error = "setting '" + out.key + "' is missing 'label_key'";
         return std::nullopt;
       }
-      out.description = tableString(field, "description");
       out.descriptionKey = tableString(field, "description_key");
-      if (!out.description.empty() && !out.descriptionKey.empty()) {
-        error = "setting '" + out.key + "' declares both description and description_key";
-        return std::nullopt;
-      }
       out.advanced = tableBool(field, "advanced", false);
       out.minValue = tableNumber(field, "min");
       out.maxValue = tableNumber(field, "max");
@@ -247,6 +253,21 @@ namespace scripting {
       parseFieldExtensions(field, out);
       parseFieldVisibility(field, out);
       return out;
+    }
+
+    // Entry-level [[<entry>.setting]] is only honored for kinds that have a
+    // settings editor: bar widgets and desktop widgets edit per-instance, panels
+    // edit from the plugin page. Launcher providers, shortcuts, and services are
+    // singletons with no settings surface; use a plugin-level [[setting]] instead.
+    constexpr bool entryKindSupportsSettings(PluginEntryKind kind) {
+      switch (kind) {
+      case PluginEntryKind::Widget:
+      case PluginEntryKind::DesktopWidget:
+      case PluginEntryKind::Panel:
+        return true;
+      default:
+        return false;
+      }
     }
 
     bool parseEntries(
@@ -270,6 +291,17 @@ namespace scripting {
           continue;
         }
         if (const auto* settings = (*entryTable)["setting"].as_array()) {
+          if (!entryKindSupportsSettings(kind)) {
+            error = "entry '"
+                + entry.id
+                + "' of kind '"
+                + std::string(tableName)
+                + "' declares [["
+                + std::string(tableName)
+                + ".setting]], but entry-level settings are only supported for widget, desktop_widget, and panel "
+                  "entries; move it to a plugin-level [[setting]]";
+            return false;
+          }
           for (const auto& settingNode : *settings) {
             if (const auto* settingTable = settingNode.as_table()) {
               auto field = parseField(*settingTable, error);
@@ -283,10 +315,39 @@ namespace scripting {
           }
         }
         if (kind == PluginEntryKind::Panel) {
-          entry.panelWidth = std::max(0.0, tableNumber(*entryTable, "width").value_or(0.0));
-          entry.panelHeight = std::max(0.0, tableNumber(*entryTable, "height").value_or(0.0));
+          // width/height: absent = host default, positive number = logical px,
+          // the literal string "fill" = span the output's available extent on
+          // that axis. Anything else is a manifest error, never a default.
+          const auto parsePanelExtent = [&](const char* key, double& outSize, bool& outFill) -> bool {
+            const auto extentNode = (*entryTable)[key];
+            if (!extentNode) {
+              return true;
+            }
+            if (const auto* str = extentNode.as_string()) {
+              if (str->get() == "fill") {
+                outFill = true;
+                return true;
+              }
+            } else if (
+                const auto number = tableNumber(*entryTable, key);
+                number.has_value() && std::isfinite(*number) && *number > 0.0
+            ) {
+              outSize = *number;
+              return true;
+            }
+            error = "panel entry '" + entry.id + "': " + key + " must be a positive number or \"fill\"";
+            return false;
+          };
+          if (!parsePanelExtent("width", entry.panelWidth, entry.panelWidthFill)
+              || !parsePanelExtent("height", entry.panelHeight, entry.panelHeightFill)) {
+            return false;
+          }
           if (const std::string placement = tableString(*entryTable, "placement"); !placement.empty()) {
             entry.panelPlacementDefault = placement;
+          }
+          if ((entry.panelWidthFill || entry.panelHeightFill) && entry.panelPlacementDefault != "floating") {
+            error = "panel entry '" + entry.id + R"(': width/height "fill" requires placement = "floating")";
+            return false;
           }
           if (const std::string position = tableString(*entryTable, "position"); !position.empty()) {
             entry.panelPositionDefault = position;

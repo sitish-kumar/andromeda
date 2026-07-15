@@ -7,6 +7,7 @@
 #include "render/core/texture_manager.h"
 #include "render/scene/input_dispatcher.h"
 #include "render/scene/node.h"
+#include "shell/lockscreen/lockscreen_login_box.h"
 #include "wayland/surface.h"
 
 #include <cstdint>
@@ -21,6 +22,7 @@ struct wl_output;
 
 class Button;
 class Box;
+class Flex;
 class Input;
 class Label;
 class SharedTextureCache;
@@ -40,6 +42,7 @@ public:
   bool initialize(ext_session_lock_v1* lock, wl_output* output, std::int32_t scale);
   void setLockedState(bool locked);
   void setPromptState(std::string user, std::string password, std::string status, bool error, bool authenticating);
+  void setKeyboardIndicators(bool capsLock, bool hasMultipleLayouts, bool layoutSwitchable, std::string layoutLabel);
   void setTextureCache(SharedTextureCache* cache) noexcept { m_textureCache = cache; }
   void setWallpaperPath(std::string wallpaperPath);
   void setWallpaperFillMode(WallpaperFillMode fillMode);
@@ -49,11 +52,13 @@ public:
   void setBlackout(bool blackout);
   [[nodiscard]] bool isBlackout() const noexcept { return m_blackout; }
   void setOnLogin(std::function<void()> onLogin);
+  void setOnCycleLayout(std::function<void()> onCycleLayout);
   void setOnPasswordChanged(std::function<void(const std::string&)> onPasswordChanged);
   void selectAllPassword();
   void clearPasswordSelection();
   void onThemeChanged();
   void onGpuResourcesInvalidated();
+  void prepareForGraphicsReset() noexcept;
   void onPointerEvent(const PointerEvent& event);
   void onKeyboardEvent(const KeyboardEvent& event);
   [[nodiscard]] wl_output* output() const noexcept { return m_output; }
@@ -62,10 +67,16 @@ public:
   void setOutputKey(std::string outputKey) { m_outputKey = std::move(outputKey); }
   void setWidgetsHost(LockscreenWidgetsHost* host) noexcept { m_widgetsHost = host; }
 
+  [[nodiscard]] bool firstFrameRendered() const noexcept { return m_firstFrameRendered; }
+  void setRenderCallback(std::function<void()> callback) { m_renderCallback = std::move(callback); }
+
   static void handleConfigure(
       void* data, ext_session_lock_surface_v1* lockSurface, std::uint32_t serial, std::uint32_t width,
       std::uint32_t height
   );
+
+protected:
+  void render() override;
 
 private:
   void prepareFrame(bool needsUpdate, bool needsLayout);
@@ -75,6 +86,9 @@ private:
   void releaseCaptureTextures();
   void layoutScene(std::uint32_t width, std::uint32_t height);
   void updateCopy();
+  [[nodiscard]] lockscreen_login_box::LoginBoxStyle resolveLoginStyle() const;
+  [[nodiscard]] bool isLoginBoxEnabled() const;
+  [[nodiscard]] std::string resolveStatusText(const lockscreen_login_box::LoginBoxStyle& style, bool& isError) const;
   [[nodiscard]] bool passwordFieldContainsPoint(float sceneX, float sceneY) const;
   void focusPasswordField();
 
@@ -87,9 +101,11 @@ private:
   WallpaperNode* m_wallpaper = nullptr;
   Box* m_tintOverlay = nullptr;
   Box* m_backdrop = nullptr;
-  Box* m_loginPanel = nullptr;
+  Flex* m_loginPanel = nullptr;
+  Flex* m_loginContentRow = nullptr;
   Input* m_passwordField = nullptr;
   Button* m_loginButton = nullptr;
+  Button* m_layoutChip = nullptr;
   Label* m_statusLabel = nullptr;
   SharedTextureCache* m_textureCache = nullptr;
   TextureHandle m_wallpaperTexture{};
@@ -110,6 +126,7 @@ private:
   bool m_wallpaperDirty = false;
   InputDispatcher m_inputDispatcher;
   std::function<void()> m_onLogin;
+  std::function<void()> m_onCycleLayout;
   std::function<void(const std::string&)> m_onPasswordChanged;
   bool m_locked = false;
   std::string m_user;
@@ -117,6 +134,12 @@ private:
   std::string m_status;
   bool m_error = false;
   bool m_authenticating = false;
+  bool m_capsLock = false;
+  bool m_hasMultipleLayouts = false;
+  bool m_layoutSwitchable = false;
+  std::string m_layoutLabel;
   std::string m_outputKey;
   LockscreenWidgetsHost* m_widgetsHost = nullptr;
+  bool m_firstFrameRendered = false;
+  std::function<void()> m_renderCallback;
 };

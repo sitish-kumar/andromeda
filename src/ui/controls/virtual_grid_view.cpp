@@ -61,6 +61,7 @@ VirtualGridView::VirtualGridView() {
 
   auto inputArea = std::make_unique<InputArea>();
   inputArea->setZIndex(50);
+  inputArea->setFocusable(true);
   inputArea->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
   inputArea->setOnEnter([this](const InputArea::PointerData& data) { onPointerEnter(data.localX, data.localY); });
   inputArea->setOnMotion([this](const InputArea::PointerData& data) { onPointerMotion(data.localX, data.localY); });
@@ -173,6 +174,9 @@ void VirtualGridView::setSelectedIndex(std::optional<std::size_t> index) {
   if (m_selectedIndex.has_value()) {
     m_pendingScrollToIndex = true;
     m_pendingScrollIndex = *m_selectedIndex;
+  } else {
+    m_pendingScrollToIndex = false;
+    m_pendingScrollIndex = 0;
   }
   markLayoutDirty();
   if (m_onSelectionChanged) {

@@ -145,9 +145,9 @@ namespace settings {
             ui::label({
                 .text = title,
                 .fontSize = Style::fontSizeBody * m_scale,
+                .fontWeight = FontWeight::Bold,
                 .color = colorSpecFromRole(ColorRole::OnSurface),
                 .maxLines = 1,
-                .fontWeight = FontWeight::Bold,
             }),
             ui::label({
                 .text = description,
@@ -187,8 +187,8 @@ namespace settings {
             ui::label({
                 .text = i18n::tr("settings.export-config.title"),
                 .fontSize = Style::fontSizeTitle * m_scale,
-                .color = colorSpecFromRole(ColorRole::OnSurface),
                 .fontWeight = FontWeight::Bold,
+                .color = colorSpecFromRole(ColorRole::OnSurface),
                 .flexGrow = 1.0f,
             }),
             ui::button({
@@ -200,7 +200,15 @@ namespace settings {
                 .minHeight = Style::controlHeightSm * m_scale,
                 .padding = Style::spaceXs * m_scale,
                 .radius = Style::scaledRadiusMd(m_scale),
-                .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
+                .onClick = [this]() {
+                  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+                  DeferredCall::callLater([this, aliveGuard]() {
+                    if (aliveGuard.expired()) {
+                      return;
+                    }
+                    close();
+                  });
+                },
             })
         )
     );
@@ -238,7 +246,16 @@ namespace settings {
                 .paddingV = Style::spaceXs * m_scale,
                 .paddingH = Style::spaceMd * m_scale,
                 .radius = Style::scaledRadiusMd(m_scale),
-                .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
+                .onClick =
+                    [this]() {
+                      const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+                      DeferredCall::callLater([this, aliveGuard]() {
+                        if (aliveGuard.expired()) {
+                          return;
+                        }
+                        close();
+                      });
+                    },
             }),
             ui::button({
                 .text = i18n::tr("settings.export-config.export"),
@@ -249,7 +266,15 @@ namespace settings {
                 .paddingV = Style::spaceXs * m_scale,
                 .paddingH = Style::spaceMd * m_scale,
                 .radius = Style::scaledRadiusMd(m_scale),
-                .onClick = [this]() { DeferredCall::callLater([this]() { accept(); }); },
+                .onClick = [this]() {
+                  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+                  DeferredCall::callLater([this, aliveGuard]() {
+                    if (aliveGuard.expired()) {
+                      return;
+                    }
+                    accept();
+                  });
+                },
             })
         )
     );

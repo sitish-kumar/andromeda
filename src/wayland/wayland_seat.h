@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/key_modifiers.h"
+#include "core/input/key_modifiers.h"
 
 #include <chrono>
 #include <cstdint>
@@ -70,12 +70,14 @@ public:
   using PointerEventCallback = std::function<void(const PointerEvent&)>;
   using KeyboardEventCallback = std::function<void(const KeyboardEvent&)>;
   using KeyboardFocusCallback = std::function<void(wl_surface* surface, bool entered)>;
+  using LockKeysChangeCallback = std::function<void()>;
 
   void bind(wl_seat* seat);
   void setCursorShapeManager(wp_cursor_shape_manager_v1* manager);
   void setPointerEventCallback(PointerEventCallback callback);
   void setKeyboardEventCallback(KeyboardEventCallback callback);
   void setKeyboardFocusCallback(KeyboardFocusCallback callback);
+  void setLockKeysChangeCallback(LockKeysChangeCallback callback);
   void setCursorShape(std::uint32_t serial, std::uint32_t shape);
   void forgetSurface(wl_surface* surface) noexcept;
   void cleanup();
@@ -184,9 +186,11 @@ private:
   xkb_compose_state* m_composeState = nullptr;
   KeyboardEventCallback m_keyboardEventCallback;
   KeyboardFocusCallback m_keyboardFocusCallback;
+  LockKeysChangeCallback m_lockKeysChangeCallback;
+  LockKeysState m_lastLockKeysState;
 
   // Key repeat
-  SteadyClock::time_point m_lastUserActivitySteady{};
+  SteadyClock::time_point m_lastUserActivitySteady;
   std::int32_t m_repeatRate = 0;    // chars/sec; 0 = no repeat
   std::int32_t m_repeatDelayMs = 0; // initial delay in ms
   KeyboardEvent m_repeatKey;

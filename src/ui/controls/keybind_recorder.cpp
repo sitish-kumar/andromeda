@@ -1,10 +1,10 @@
 #include "ui/controls/keybind_recorder.h"
 
 #include "config/config_types.h"
-#include "core/key_chord.h"
-#include "core/key_modifiers.h"
-#include "core/key_symbols.h"
-#include "core/keybind_matcher.h"
+#include "core/input/key_chord.h"
+#include "core/input/key_modifiers.h"
+#include "core/input/key_symbols.h"
+#include "core/input/keybind_matcher.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "notification/notifications.h"
@@ -49,9 +49,21 @@ KeybindRecorder::KeybindRecorder() {
 
   auto area = std::make_unique<InputArea>();
   area->setFocusable(true);
-  area->setOnFocusLoss([this]() { exitRecording(false); });
+  area->setOnFocusGain([this]() {
+    if (!m_recording) {
+      applyVisualState(VisualState::Focused);
+      markPaintDirty();
+    }
+  });
+  area->setOnFocusLoss([this]() {
+    if (m_recording) {
+      exitRecording(false);
+    } else {
+      applyVisualState(VisualState::Idle);
+      markPaintDirty();
+    }
+  });
   area->setOnPress([this](const InputArea::PointerData& data) {
-    // Re-clicking when already focused does not refire focus gain.
     if (data.pressed && m_enabled && !m_recording) {
       enterRecording();
     }
@@ -307,6 +319,19 @@ void KeybindRecorder::applyVisualState(VisualState state) {
   case VisualState::Idle:
     setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
     setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
+    if (m_label != nullptr) {
+      const bool placeholder = !m_chord.has_value() || m_chord->sym == 0;
+      m_label->setColor(
+          placeholder ? colorSpecFromRole(ColorRole::OnSurfaceVariant) : colorSpecFromRole(ColorRole::OnSurface)
+      );
+    }
+    if (m_glyph != nullptr) {
+      m_glyph->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+    }
+    break;
+  case VisualState::Focused:
+    setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+    setBorder(focusRingColorSpec(), Style::focusRingWidth);
     if (m_label != nullptr) {
       const bool placeholder = !m_chord.has_value() || m_chord->sym == 0;
       m_label->setColor(

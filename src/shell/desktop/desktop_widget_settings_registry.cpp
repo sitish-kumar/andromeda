@@ -112,12 +112,14 @@ namespace desktop_settings {
     }
 
     // Resolve "author/plugin:entry" to its [[desktop_widget]] entry, or nullopt.
-    std::optional<scripting::ResolvedPluginEntry> resolvePluginDesktopWidget(std::string_view type) {
+    std::optional<scripting::ResolvedPluginEntry>
+    resolvePluginDesktopWidget(std::string_view type, scripting::PluginRegistry* pluginRegistry = nullptr) {
       if (!type.contains('/')) {
         return std::nullopt;
       }
-      scripting::PluginRegistry::instance().ensureScanned();
-      auto entry = scripting::PluginRegistry::instance().resolve(type);
+      auto& registry = pluginRegistry != nullptr ? *pluginRegistry : scripting::PluginRegistry::instance();
+      registry.ensureScanned();
+      auto entry = registry.resolve(type);
       if (entry.has_value() && entry->entry->kind == scripting::PluginEntryKind::DesktopWidget) {
         return entry;
       }
@@ -167,7 +169,7 @@ namespace desktop_settings {
   std::vector<WidgetSettingSpec> commonDesktopWidgetSettingSpecs(std::string_view type) {
     if (type == "login_box") {
       auto bgColor = colorSpec("background_color", "surface_variant");
-      auto bgRadius = doubleSpec("background_radius", 12.0, 0.0, 32.0, 1.0);
+      auto bgRadius = intSpec("background_radius", 12.0, 0.0, 32.0, 1.0);
       auto bgOpacity = doubleSpec("background_opacity", 0.88, 0.0, 1.0, 0.01);
       return {
           std::move(bgColor),
@@ -186,10 +188,10 @@ namespace desktop_settings {
     auto bgColor = colorSpec("background_color", "surface");
     bgColor.visibleWhen = backgroundOn;
 
-    auto bgRadius = doubleSpec("background_radius", 12.0, 0.0, 32.0, 1.0);
+    auto bgRadius = intSpec("background_radius", 12.0, 0.0, 32.0, 1.0);
     bgRadius.visibleWhen = backgroundOn;
 
-    auto bgPadding = doubleSpec("background_padding", 10.0, 0.0, 32.0, 1.0);
+    auto bgPadding = intSpec("background_padding", 10.0, 0.0, 32.0, 1.0);
     bgPadding.visibleWhen = backgroundOn;
 
     auto bgOpacity = doubleSpec("background_opacity", 0.8, 0.0, 1.0, 0.01);
@@ -228,6 +230,12 @@ namespace desktop_settings {
     };
     sysmonStatsWithNone.insert(sysmonStatsWithNone.end(), sysmonStats.begin(), sysmonStats.end());
 
+    const std::vector<WidgetSettingSelectOption> networkSpeedUnits = {
+        {"auto", "desktop-widgets.editor.settings.network-speed-unit-auto"},
+        {"kb", "desktop-widgets.editor.settings.network-speed-unit-kilobytes"},
+        {"mb", "desktop-widgets.editor.settings.network-speed-unit-megabytes"},
+    };
+
     std::vector<WidgetSettingSpec> specs;
     auto add = [&](WidgetSettingSpec spec) { specs.push_back(std::move(spec)); };
 
@@ -245,6 +253,10 @@ namespace desktop_settings {
       auto centerText = boolSpec("center_text", false);
       centerText.visibleWhen = digitalOnly;
       add(std::move(centerText));
+      auto timezone = stringSpec("timezone", "");
+      timezone.labelKey = "settings.widgets.settings.timezone.label";
+      timezone.descriptionKey = "settings.widgets.settings.timezone.description";
+      add(std::move(timezone));
       add(colorSpec("color", "on_surface"));
       add(fontFamilySpec());
       // Shadow is a text shadow on the digital label; analog mode has no shadow.
@@ -356,6 +368,17 @@ namespace desktop_settings {
             WidgetSettingVisibility{{{"stat", {"net_rx", "net_tx"}}, {"stat2", {"net_rx", "net_tx"}}}};
         add(std::move(interface));
       }
+      {
+        auto unit = selectSpec("network_speed_unit", "auto", networkSpeedUnits);
+        unit.visibleWhen = WidgetSettingVisibility{{{"stat", {"net_rx", "net_tx"}}, {"stat2", {"net_rx", "net_tx"}}}};
+        add(std::move(unit));
+      }
+      {
+        auto compact = boolSpec("network_speed_compact", false);
+        compact.visibleWhen =
+            WidgetSettingVisibility{{{"stat", {"net_rx", "net_tx"}}, {"stat2", {"net_rx", "net_tx"}}}};
+        add(std::move(compact));
+      }
       add(segmentedSpec("display", "graph", sysmonDisplay));
       {
         auto gaugeLayout = segmentedSpec(
@@ -394,17 +417,28 @@ namespace desktop_settings {
       add(boolSpec("shadow", true));
     } else if (type == "login_box") {
       add(boolSpec("show_login_button", true));
+      add(boolSpec("show_password_hint", true));
+      add(boolSpec("show_caps_lock", true));
+      add(boolSpec("show_keyboard_layout", true));
       add(doubleSpec("input_opacity", 1.0, 0.0, 1.0, 0.01));
-      add(doubleSpec("input_radius", 6.0, 0.0, 32.0, 1.0));
+      add(intSpec("input_radius", 6.0, 0.0, 32.0, 1.0));
+      add(boolSpec("center_password_text", false));
     }
 
     return specs;
   }
 
-  noctalia::config::schema::WidgetSettingSchema desktopWidgetSettingSchema(std::string_view type) {
+  noctalia::config::schema::WidgetSettingSchema
+  desktopWidgetSettingSchema(std::string_view type, scripting::PluginRegistry* pluginRegistry) {
     noctalia::config::schema::WidgetSettingSchema out;
-    for (const auto& spec : desktopWidgetSettingSpecs(type)) {
-      out.push_back(spec.schema);
+    if (auto pluginEntry = resolvePluginDesktopWidget(type, pluginRegistry)) {
+      for (const auto& spec : settings::manifestSettingSpecs(pluginEntry->entry->settings)) {
+        out.push_back(spec.schema);
+      }
+    } else {
+      for (const auto& spec : desktopWidgetSettingSpecs(type)) {
+        out.push_back(spec.schema);
+      }
     }
     for (const auto& spec : commonDesktopWidgetSettingSpecs(type)) {
       out.push_back(spec.schema);

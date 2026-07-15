@@ -94,6 +94,7 @@ namespace ui {
     Flex** out = nullptr;
     std::optional<FlexAlign> align = std::nullopt;
     std::optional<FlexJustify> justify = std::nullopt;
+    std::optional<bool> wrap = std::nullopt;
     std::optional<float> gap = std::nullopt;
     std::optional<float> padding = std::nullopt;  // uniform; overridden per-axis by paddingV/paddingH
     std::optional<float> paddingV = std::nullopt; // vertical (top+bottom)
@@ -200,20 +201,20 @@ namespace ui {
     Label** out = nullptr;
     std::optional<std::string> text = std::nullopt;
     std::optional<float> fontSize = std::nullopt;
+    std::optional<FontWeight> fontWeight = std::nullopt;
     std::optional<std::string> fontFamily = std::nullopt;
     std::optional<ColorSpec> color = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
     std::optional<float> minWidth = std::nullopt;
     std::optional<float> maxWidth = std::nullopt;
     std::optional<int> maxLines = std::nullopt;
-    std::optional<FontWeight> fontWeight = std::nullopt;
     std::optional<TextAlign> textAlign = std::nullopt;
     std::optional<TextEllipsize> ellipsize = std::nullopt;
     std::optional<LabelBaselineMode> baselineMode = std::nullopt;
     std::optional<bool> autoScroll = std::nullopt;
     std::optional<float> autoScrollSpeed = std::nullopt;
     std::optional<bool> autoScrollOnlyWhenHovered = std::nullopt;
-    std::optional<float> width = std::nullopt;
-    std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
     std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
@@ -354,9 +355,9 @@ namespace ui {
   };
 
   struct SegmentedOption {
-    std::string label = {};
-    std::string glyph = {};
-    std::string tooltip = {};
+    std::string label;
+    std::string glyph;
+    std::string tooltip;
   };
 
   struct SegmentedProps {
