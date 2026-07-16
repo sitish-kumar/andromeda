@@ -715,7 +715,6 @@ namespace settings {
       for (const auto& t : cfg.wallpaper.transitions) {
         transitions.selectedValues.emplace_back(enumToKey(kWallpaperTransitions, t));
       }
-      transitions.requireAtLeastOne = true;
       entries.push_back(makeEntry(
           SettingsSection::Wallpaper, "transition", tr("settings.schema.wallpaper.transitions.label"),
           tr("settings.schema.wallpaper.transitions.description"), {"wallpaper", "transition"}, std::move(transitions),

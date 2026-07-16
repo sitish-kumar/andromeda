@@ -1425,7 +1425,7 @@ namespace noctalia::config::schema {
         colorSpecField(&WallpaperConfig::fillColor, "fill_color", /*alwaysEmit=*/true),
         enumArrayField(
             &WallpaperConfig::transitions, "transition", kWallpaperTransitions,
-            std::optional<WallpaperTransition>{WallpaperTransition::Fade}
+            std::optional<WallpaperTransition>{}
         ),
         field(&WallpaperConfig::transitionDurationMs, "transition_duration", kWallpaperTransitionDurationRange),
         field(&WallpaperConfig::edgeSmoothness, "edge_smoothness", kUnitRange),
