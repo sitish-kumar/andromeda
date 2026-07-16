@@ -30,6 +30,15 @@ namespace {
     return {};
   }
 
+  std::string firstActiveVpnName(const std::vector<VpnConnectionInfo>& vpns) {
+    for (const auto& vpn : vpns) {
+      if (vpn.active && !vpn.name.empty()) {
+        return vpn.name;
+      }
+    }
+    return {};
+  }
+
   std::string onOffText(bool enabled) {
     return i18n::tr(enabled ? "bar.widgets.network.on" : "bar.widgets.network.off");
   }
@@ -204,11 +213,8 @@ void NetworkWidget::syncState(Renderer& renderer) {
     if (showLabel) {
       std::string text = labelForState(s);
       if (m_showVpnLabel && s.vpnActive) {
-        for (const auto& vpn : m_network->vpnConnections()) {
-          if (vpn.active && !vpn.name.empty()) {
-            text = vpn.name;
-            break;
-          }
+        if (std::string vpnName = firstActiveVpnName(m_network->vpnConnections()); !vpnName.empty()) {
+          text = std::move(vpnName);
         }
       }
       if (m_isVertical && text.size() > 3) {
