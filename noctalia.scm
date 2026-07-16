@@ -7,7 +7,7 @@
 ;;; (channel
 ;;;   (name 'noctalia)
 ;;;   (url "https://github.com/noctalia-dev/noctalia")
-;;;   (branch "v5"))
+;;;   (branch "main"))
 ;;; --8<---------------cut here---------------end--------------->8---
 ;;;
 ;;; It provides this (noctalia) module with the noctalia-git package.
