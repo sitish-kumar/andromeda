@@ -1818,6 +1818,11 @@ namespace settings {
         sliderFor(cfg.osd.backgroundOpacity, noctalia::config::schema::kUnitRange, false), "hud overlay popup opacity"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-border.label"),
+        tr("settings.schema.shell.osd-border.description"), {"osd", "border"}, ToggleSetting{cfg.osd.border},
+        "outline border"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-monitors.label"),
         tr("settings.schema.shell.osd-monitors.description"), {"osd", "monitors"},
         ListSetting{.items = cfg.osd.monitors, .suggestedOptions = env.availableOutputs},
@@ -2652,6 +2657,11 @@ namespace settings {
         SettingsSection::Notifications, "toasts", tr("settings.schema.notifications.toast-opacity.label"),
         tr("settings.schema.notifications.toast-opacity.description"), {"notification", "background_opacity"},
         sliderFor(cfg.notification.backgroundOpacity, noctalia::config::schema::kUnitRange, false), "popup"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Notifications, "toasts", tr("settings.schema.notifications.border.label"),
+        tr("settings.schema.notifications.border.description"), {"notification", "border"},
+        ToggleSetting{cfg.notification.border}, "outline border"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Notifications, "toasts", tr("settings.schema.notifications.monitors.label"),
