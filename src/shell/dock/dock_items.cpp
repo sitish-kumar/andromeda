@@ -907,6 +907,14 @@ namespace shell::dock {
         instance.launcherArea->setZIndex(0);
       }
     }
+
+    // Magnification owns active/inactive scale via updateHoverZoom; kick it on focus updates.
+    if (cfg.magnification && instance.surface != nullptr) {
+      if (updateHoverZoom(instance, deps, snapshot, kHoverZoomReferenceFrameMs)) {
+        instance.surface->requestFrameTick();
+        instance.surface->requestRedraw();
+      }
+    }
   }
 
   void clearHoverZoom(DockInstance& instance, DockItemSceneDependencies deps, const DockSnapshot& snapshot) {
