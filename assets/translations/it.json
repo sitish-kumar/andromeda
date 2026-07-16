@@ -1386,7 +1386,6 @@
         "refreshing": "Aggiornamento plugin...",
         "remove": "Rimuovi plugin",
         "requires": "Richiede: {dependencies}",
-        "requires-newer-noctalia": "Richiede Noctalia aggiornato",
         "title": "Elenco plugin",
         "update-all": "Aggiorna tutti ({count})",
         "update-available": "aggiornamento disponibile",

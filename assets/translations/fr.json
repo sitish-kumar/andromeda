@@ -1344,7 +1344,6 @@
         "loading": "Chargement des plugins…",
         "refreshing": "Actualisation des plugins…",
         "requires": "A besoins de : {dependencies}",
-        "requires-newer-noctalia": "Nécessite une version plus récente de Noctalia",
         "title": "Plugins"
       },
       "settings": {

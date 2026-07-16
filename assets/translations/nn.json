@@ -1376,7 +1376,6 @@
         "refreshing": "Lastar inn utvidingar å nyo ...",
         "remove": "Sletta utviding",
         "requires": "Krev: {dependencies}",
-        "requires-newer-noctalia": "krev nyare Noctalia",
         "title": "Utvidingar"
       },
       "settings": {

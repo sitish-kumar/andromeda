@@ -1323,7 +1323,6 @@
         "refreshing": "Obnovování pluginů...",
         "remove": "Odebrat plugin",
         "requires": "Vyžaduje: {dependencies}",
-        "requires-newer-noctalia": "vyžaduje novější Noctalii",
         "title": "Pluginy"
       },
       "settings": {

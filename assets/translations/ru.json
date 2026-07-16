@@ -1275,7 +1275,6 @@
         "refreshing": "Обновление плагинов...",
         "remove": "Удалить плагин",
         "requires": "Требуются: {dependencies}",
-        "requires-newer-noctalia": "требуется более новая версия Noctalia",
         "title": "Плагины"
       },
       "settings": {

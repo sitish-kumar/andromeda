@@ -1361,7 +1361,6 @@
         "refreshing": "Actualizando plugins...",
         "remove": "Eliminar plugin",
         "requires": "Requiere: {dependencies}",
-        "requires-newer-noctalia": "requiere una versión más reciente de Noctalia",
         "title": "Plugins"
       },
       "settings": {

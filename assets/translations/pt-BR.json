@@ -1387,7 +1387,6 @@
         "refreshing": "Atualizando plugins...",
         "remove": "Remover plugin",
         "requires": "Requer: {dependencies}",
-        "requires-newer-noctalia": "Requer Noctalia mais atualizado",
         "title": "Plugins",
         "update-all": "Atualizar todos({count})",
         "update-available": "atualização disponível",
@@ -2075,6 +2074,9 @@
         "placement-wallpaper": {
           "description": "Escolhe se o selecionador de papéis de parede se fixa a barra, flutua próximo ou abre centralizada",
           "label": "Posicionamento"
+        },
+        "position-clipboard": {
+          "label": "Posição"
         },
         "shadow": {
           "description": "Faz as superfícies dos painéis projetarem a sombra global da superfície"

@@ -1376,7 +1376,6 @@
         "refreshing": "Đang làm mới các plugin...",
         "remove": "Loại bỏ plugin",
         "requires": "Cần: {dependencies}",
-        "requires-newer-noctalia": "Yêu cầu phiên bản Noctalia mới hơn",
         "title": "Plugins"
       },
       "settings": {

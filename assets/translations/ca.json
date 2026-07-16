@@ -1148,7 +1148,6 @@
         "empty": "No s'han trobat plugins. Afegeix una font o comprova la xarxa.",
         "loading": "S'estan carregant els plugins...",
         "refreshing": "S'estan actualitzant els plugins...",
-        "requires-newer-noctalia": "requereix una versió més recent del Noctalia",
         "title": "Plugins"
       },
       "settings": {

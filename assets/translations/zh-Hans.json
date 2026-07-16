@@ -1386,7 +1386,6 @@
         "refreshing": "正在刷新插件…",
         "remove": "移除插件",
         "requires": "依赖：{dependencies}",
-        "requires-newer-noctalia": "需要更高版本的 Noctalia",
         "title": "插件",
         "update-all": "全部更新 ({count})",
         "update-available": "有可用更新",

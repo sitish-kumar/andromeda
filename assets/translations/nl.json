@@ -1204,7 +1204,6 @@
         "empty": "Er zijn geen plugins gevonden. Voeg een bron toe of controleer je netwerk.",
         "loading": "Plugins laden...",
         "refreshing": "Plugins herladen...",
-        "requires-newer-noctalia": "Heeft een nieuwere Noctalia nodig",
         "title": "Plugins"
       },
       "settings": {

@@ -1385,7 +1385,6 @@
         "refreshing": "Bővítmények frissítése…",
         "remove": "Bővítmény eltávolítása",
         "requires": "Szükséges: {dependencies}",
-        "requires-newer-noctalia": "újabb Noctalia szükséges",
         "title": "Bővítmények"
       },
       "settings": {

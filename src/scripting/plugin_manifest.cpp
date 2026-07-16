@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
@@ -459,10 +460,16 @@ namespace scripting {
     if (manifest.name.empty()) {
       return fail("missing mandatory key 'name'");
     }
-    manifest.minNoctalia = tableString(root, "min_noctalia");
-    if (manifest.minNoctalia.empty()) {
-      return fail("missing mandatory key 'min_noctalia'");
+    if (!root.contains("plugin_api")) {
+      return fail("missing mandatory key 'plugin_api'");
     }
+    const auto pluginApiVersion = root["plugin_api"].value<std::int64_t>();
+    if (!pluginApiVersion.has_value()
+        || *pluginApiVersion <= 0
+        || static_cast<std::uint64_t>(*pluginApiVersion) > std::numeric_limits<std::uint32_t>::max()) {
+      return fail("invalid 'plugin_api' (expected a positive integer)");
+    }
+    manifest.pluginApiVersion = static_cast<std::uint32_t>(*pluginApiVersion);
 
     manifest.version = tableString(root, "version");
     manifest.author = tableString(root, "author");

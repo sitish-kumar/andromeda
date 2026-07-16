@@ -1385,7 +1385,6 @@
         "refreshing": "Actualizando complementos...",
         "remove": "Eliminar complemento",
         "requires": "Require: {dependencies}",
-        "requires-newer-noctalia": "require unha versión máis nova de Noctalia",
         "title": "Complementos"
       },
       "settings": {

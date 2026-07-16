@@ -773,7 +773,7 @@
     },
     "enable-failed": {
       "body-error": "{plugin}: {error}",
-      "body-incompatible": "{plugin} requires Noctalia {version} or newer.",
+      "body-incompatible": "{plugin} targets plugin API {version}; this Noctalia supports API {oldest}–{current}.",
       "body-timeout": "{plugin} took too long to install.",
       "title": "Plugin not enabled"
     }
@@ -1383,11 +1383,11 @@
         "delete-confirm-title": "Delete \"{name}\"?",
         "deprecated": "deprecated",
         "empty": "No enabled plugins.",
+        "incompatible-plugin-api": "incompatible plugin API",
         "loading": "Loading plugins…",
         "refreshing": "Refreshing plugins…",
         "remove": "Remove plugin",
         "requires": "Requires: {dependencies}",
-        "requires-newer-noctalia": "requires newer Noctalia",
         "title": "Plugins",
         "update-all": "Update all ({count})",
         "update-available": "update available",

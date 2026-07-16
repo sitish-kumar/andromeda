@@ -1050,7 +1050,6 @@
         "empty": "Nie znaleziono wtyczek. Dodaj źródło, albo sprawdź swoją sieć.",
         "loading": "Ładowanie wtyczek...",
         "refreshing": "Odświeżanie wtyczek...",
-        "requires-newer-noctalia": "wymaga nowszej Noctalii",
         "title": "Wtyczki"
       },
       "settings": {

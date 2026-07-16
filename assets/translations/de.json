@@ -1386,7 +1386,6 @@
         "refreshing": "Plugins werden aktualisiert…",
         "remove": "Plugin entfernen",
         "requires": "Erfordert: {dependencies}",
-        "requires-newer-noctalia": "neueres Noctalia erforderlich",
         "title": "Plugins",
         "update-all": "Alle aktualisieren ({count})",
         "update-available": "Update verfügbar",

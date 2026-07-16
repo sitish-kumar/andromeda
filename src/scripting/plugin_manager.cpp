@@ -1,12 +1,11 @@
 #include "scripting/plugin_manager.h"
 
 #include "config/config_service.h"
-#include "core/build_info.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
-#include "core/version.h"
 #include "i18n/i18n.h"
 #include "notification/notifications.h"
+#include "scripting/plugin_api.h"
 #include "scripting/plugin_catalog.h"
 #include "scripting/plugin_git.h"
 #include "scripting/plugin_id.h"
@@ -128,7 +127,7 @@ namespace scripting {
       int exitCode = -1;
       bool timedOut = false;
       bool incompatible = false;
-      std::string requiredNoctalia;
+      std::uint32_t pluginApiVersion = 0;
       std::filesystem::path pluginDir;
       PluginManifest manifest;
 
@@ -137,14 +136,14 @@ namespace scripting {
 
     MaterializeResult materializeFailure(
         std::string error, int exitCode = -1, bool timedOut = false, bool incompatible = false,
-        std::string requiredNoctalia = {}
+        std::uint32_t pluginApiVersion = 0
     ) {
       MaterializeResult result;
       result.error = std::move(error);
       result.exitCode = exitCode;
       result.timedOut = timedOut;
       result.incompatible = incompatible;
-      result.requiredNoctalia = std::move(requiredNoctalia);
+      result.pluginApiVersion = pluginApiVersion;
       return result;
     }
 
@@ -190,17 +189,19 @@ namespace scripting {
         cleanupTmp();
         return materializeFailure("manifest id '" + manifest->id + "' does not match requested id");
       }
-      if (requireCompatible && !noctalia::version::atLeast(noctalia::build_info::version(), manifest->minNoctalia)) {
+      if (requireCompatible && !supportsPluginApiVersion(manifest->pluginApiVersion)) {
         std::string error = "plugin '"
             + manifest->id
-            + "' requires noctalia >= "
-            + manifest->minNoctalia
-            + " (running "
-            + std::string(noctalia::build_info::version())
+            + "' targets plugin API "
+            + std::to_string(manifest->pluginApiVersion)
+            + " (supported range "
+            + std::to_string(kOldestSupportedPluginApiVersion)
+            + "-"
+            + std::to_string(kCurrentPluginApiVersion)
             + ")";
-        const std::string required = manifest->minNoctalia;
+        const std::uint32_t pluginApiVersion = manifest->pluginApiVersion;
         cleanupTmp();
-        return materializeFailure(std::move(error), -1, false, true, required);
+        return materializeFailure(std::move(error), -1, false, true, pluginApiVersion);
       }
 
       const auto finalDir = materializedRoot / *subdir;
@@ -242,7 +243,7 @@ namespace scripting {
       if (!manifest.has_value() || manifest->id != pluginId) {
         return false;
       }
-      return manifest->version == entry.version && manifest->minNoctalia == entry.minNoctalia;
+      return manifest->version == entry.version && manifest->pluginApiVersion == entry.pluginApiVersion;
     }
 
     // Version string of the exported (installed) copy on disk, or empty if absent.
@@ -354,8 +355,9 @@ namespace scripting {
       if (catalogEntry != nullptr && !catalogEntry->compatible) {
         if (!hasMaterialized) {
           kLog.warn(
-              "plugin source '{}': cannot export enabled plugin '{}'; it requires noctalia >= {} (running {})",
-              source.name, id, catalogEntry->minNoctalia, noctalia::build_info::version()
+              "plugin source '{}': cannot export enabled plugin '{}'; it targets plugin API {} (supported range {}-{})",
+              source.name, id, catalogEntry->pluginApiVersion, kOldestSupportedPluginApiVersion,
+              kCurrentPluginApiVersion
           );
         }
         continue;
@@ -372,8 +374,9 @@ namespace scripting {
         materialized = true;
       } else if (materializedPlugin.incompatible) {
         kLog.warn(
-            "plugin source '{}': cannot export enabled plugin '{}'; it requires noctalia >= {} (running {})",
-            source.name, id, materializedPlugin.requiredNoctalia, noctalia::build_info::version()
+            "plugin source '{}': cannot export enabled plugin '{}'; it targets plugin API {} (supported range {}-{})",
+            source.name, id, materializedPlugin.pluginApiVersion, kOldestSupportedPluginApiVersion,
+            kCurrentPluginApiVersion
         );
       } else if (materializedPlugin.timedOut) {
         kLog.warn("plugin source '{}': exporting '{}' timed out", source.name, id);
@@ -472,7 +475,7 @@ namespace scripting {
       bool ok = false;
       bool incompatible = false;
       bool timedOut = false;
-      std::string requiredNoctalia;
+      std::uint32_t pluginApiVersion = 0;
       std::string error;
 
       if (offering.has_value() && offering->kind == PluginSourceKind::Git) {
@@ -481,17 +484,15 @@ namespace scripting {
         ok = materialized && materialized.manifest.id == id;
         incompatible = materialized.incompatible;
         timedOut = materialized.timedOut;
-        requiredNoctalia = std::move(materialized.requiredNoctalia);
+        pluginApiVersion = materialized.pluginApiVersion;
         error = std::move(materialized.error);
       } else if (offering.has_value()) {
         const auto manifest = parsePluginManifest(sourceRootFor(*offering) / subdir / "plugin.toml", &error);
         if (manifest.has_value() && manifest->id != id) {
           error = "manifest id '" + manifest->id + "' does not match requested id";
-        } else if (
-            manifest.has_value() && !noctalia::version::atLeast(noctalia::build_info::version(), manifest->minNoctalia)
-        ) {
+        } else if (manifest.has_value() && !supportsPluginApiVersion(manifest->pluginApiVersion)) {
           incompatible = true;
-          requiredNoctalia = manifest->minNoctalia;
+          pluginApiVersion = manifest->pluginApiVersion;
         } else {
           ok = manifest.has_value();
         }
@@ -504,8 +505,8 @@ namespace scripting {
       const double elapsedMs =
           std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
 
-      DeferredCall::callLater([this, id, ok, incompatible, timedOut, elapsedMs,
-                               requiredNoctalia = std::move(requiredNoctalia), error = std::move(error)]() mutable {
+      DeferredCall::callLater([this, id, ok, incompatible, timedOut, elapsedMs, pluginApiVersion,
+                               error = std::move(error)]() mutable {
         m_enabling.erase(id);
         if (ok) {
           kLog.info("enabling plugin '{}' (resolved + exported in {:.0f}ms)", id, elapsedMs);
@@ -513,12 +514,15 @@ namespace scripting {
           refresh();
         } else if (incompatible) {
           kLog.warn(
-              "cannot enable '{}': requires noctalia >= {} (running {})", id, requiredNoctalia,
-              noctalia::build_info::version()
+              "cannot enable '{}': targets plugin API {} (supported range {}-{})", id, pluginApiVersion,
+              kOldestSupportedPluginApiVersion, kCurrentPluginApiVersion
           );
           notify::error(
               "Noctalia", i18n::tr("plugins.enable-failed.title"),
-              i18n::tr("plugins.enable-failed.body-incompatible", "plugin", id, "version", requiredNoctalia)
+              i18n::tr(
+                  "plugins.enable-failed.body-incompatible", "plugin", id, "version", pluginApiVersion, "oldest",
+                  kOldestSupportedPluginApiVersion, "current", kCurrentPluginApiVersion
+              )
           );
         } else if (timedOut) {
           kLog.warn("cannot enable '{}': export timed out", id);
@@ -714,10 +718,10 @@ namespace scripting {
 
       const auto catalog = readGitCatalog(repoRoot, newRev);
       std::unordered_set<std::string> withheldIds;
-      std::vector<std::pair<std::string, std::string>> withheldUpdates;
-      const auto rememberWithheld = [&](std::string id, std::string minNoctalia) {
+      std::vector<std::pair<std::string, std::uint32_t>> withheldUpdates;
+      const auto rememberWithheld = [&](std::string id, std::uint32_t pluginApiVersion) {
         if (withheldIds.insert(id).second) {
-          withheldUpdates.emplace_back(std::move(id), std::move(minNoctalia));
+          withheldUpdates.emplace_back(std::move(id), pluginApiVersion);
         }
       };
 
@@ -729,7 +733,7 @@ namespace scripting {
         }
         const auto* catalogEntry = findCatalogEntry(catalog, id);
         if (catalogEntry != nullptr && !catalogEntry->compatible) {
-          rememberWithheld(id, catalogEntry->minNoctalia);
+          rememberWithheld(id, catalogEntry->pluginApiVersion);
           continue;
         }
         if (!plugin_git::hasPath(repoRoot, *sub + "/plugin.toml", newRev)) {
@@ -748,7 +752,7 @@ namespace scripting {
         }
         if (const auto m = materializeGitPlugin(source, repoRoot, newRev, id, true); !m) {
           if (m.incompatible) {
-            rememberWithheld(id, m.requiredNoctalia);
+            rememberWithheld(id, m.pluginApiVersion);
             continue;
           }
           DeferredCall::callLater([sourceName, id, err = m.error]() {
@@ -772,10 +776,10 @@ namespace scripting {
           kLog.warn("update '{}': set HEAD failed: {}", sourceName, err);
           return;
         }
-        for (const auto& [id, min] : withheldUpdates) {
+        for (const auto& [id, pluginApiVersion] : withheldUpdates) {
           kLog.warn(
-              "update '{}': kept previous '{}' export; new version requires noctalia >= {} (running {})", sourceName,
-              id, min, noctalia::build_info::version()
+              "update '{}': kept previous '{}' export; new version targets plugin API {} (supported range {}-{})",
+              sourceName, id, pluginApiVersion, kOldestSupportedPluginApiVersion, kCurrentPluginApiVersion
           );
         }
         if (sourceRevisionChanged) {
