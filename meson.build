@@ -1577,6 +1577,18 @@ dock_pinned_apps_test = executable('dock_pinned_apps_test',
 
 test('dock_pinned_apps', dock_pinned_apps_test)
 
+triad_workspace_backend_test = executable('triad_workspace_backend_test',
+  sources: files(
+    'tests/triad_workspace_backend_test.cpp',
+    'src/compositors/triad/triad_runtime.cpp',
+    'src/compositors/triad/triad_workspace_backend.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('triad_workspace_backend', triad_workspace_backend_test)
+
 wayland_toplevels_identity_test = executable('wayland_toplevels_identity_test',
   sources: files(
     'tests/wayland_toplevels_identity_test.cpp',
