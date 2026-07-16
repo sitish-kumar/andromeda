@@ -1387,7 +1387,10 @@
         "remove": "移除插件",
         "requires": "依赖：{dependencies}",
         "requires-newer-noctalia": "需要更高版本的 Noctalia",
-        "title": "插件"
+        "title": "插件",
+        "update-all": "全部更新 ({count})",
+        "update-available": "有可用更新",
+        "update-to": "更新至 {version}"
       },
       "settings": {
         "empty": "无可用设置。"
@@ -1395,6 +1398,8 @@
       "sources": {
         "add": "添加源",
         "add-title": "添加插件源",
+        "auto-update": "自动更新插件",
+        "auto-update-desc": "在后台检查已启用的源是否有新版本，并保持已安装的插件为最新版本",
         "edit": "编辑源",
         "edit-title": "编辑插件源",
         "empty": "未配置任何源。",
@@ -1417,7 +1422,7 @@
         "remove": "移除源",
         "save": "保存",
         "title": "源",
-        "update": "更新"
+        "update": "更新该源"
       },
       "store": {
         "add": "添加到 Noctalia",

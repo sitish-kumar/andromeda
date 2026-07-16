@@ -1386,8 +1386,11 @@
         "refreshing": "Plugins werden aktualisiert…",
         "remove": "Plugin entfernen",
         "requires": "Erfordert: {dependencies}",
-        "requires-newer-noctalia": "erfordert eine neuere Version von Noctalia",
-        "title": "Plugins"
+        "requires-newer-noctalia": "neueres Noctalia erforderlich",
+        "title": "Plugins",
+        "update-all": "Alle aktualisieren ({count})",
+        "update-available": "Update verfügbar",
+        "update-to": "auf {version} aktualisieren"
       },
       "settings": {
         "empty": "Keine Einstellungen verfügbar."
@@ -1395,6 +1398,8 @@
       "sources": {
         "add": "Quelle hinzufügen",
         "add-title": "Plugin-Quelle hinzufügen",
+        "auto-update": "Plugins automatisch aktualisieren",
+        "auto-update-desc": "Überprüfe aktivierte Quellen im Hintergrund auf neue Versionen und halte installierte Plugins aktuell",
         "edit": "Quelle bearbeiten",
         "edit-title": "Plugin-Quelle bearbeiten",
         "empty": "Keine Quellen konfiguriert.",
@@ -1417,7 +1422,7 @@
         "remove": "Quelle entfernen",
         "save": "Speichern",
         "title": "Quellen",
-        "update": "Aktualisieren"
+        "update": "Quelle aktualisieren"
       },
       "store": {
         "add": "Zu Noctalia hinzufügen",
@@ -2172,7 +2177,7 @@
         },
         "launcher-prefix-calculator": {
           "description": "Trigger-Präfix für Rechnerberechnungen",
-          "label": "Rechner-Präfix"
+          "label": "Rechnerpräfix"
         },
         "launcher-prefix-character": {
           "description": "Gemeinsames Präfixzeichen zum Auslösen aller Modul-Präfixe (z. B. /)",
@@ -2790,7 +2795,7 @@
           "label": "Automatische Rotation"
         },
         "automation-interval": {
-          "description": "Sekunden zwischen Hintergrundbildwechseln",
+          "description": "Sekunden zwischen dem Wechsel der Hintergrundbilder",
           "label": "Rotationsintervall"
         },
         "automation-order": {
@@ -2811,7 +2816,7 @@
           "placeholder": "~/Pictures/Wallpapers"
         },
         "directory-light": {
-          "description": "Hintergrundbild-Ordner für den hellen Modus",
+          "description": "Hintergrundbildordner für den hellen Modus",
           "label": "Verzeichnis für hellen Modus",
           "placeholder": "~/Pictures/Wallpapers"
         },

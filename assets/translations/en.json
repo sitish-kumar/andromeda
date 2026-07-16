@@ -503,9 +503,9 @@
         "show-forecast": "Show Forecast",
         "show-keyboard-layout": "Keyboard Layout",
         "show-label": "Show Label",
-        "show-vpn-label": "Show VPN Label",
         "show-login-button": "Login Button",
         "show-password-hint": "Password Hint",
+        "show-vpn-label": "Show VPN Label",
         "show-when-idle": "Show When Idle",
         "stat": "Stat",
         "stat-cpu-temp": "CPU Temp",
@@ -1400,7 +1400,7 @@
         "add": "Add source",
         "add-title": "Add plugin source",
         "auto-update": "Auto-update plugins",
-        "auto-update-desc": "Check enabled sources for new versions in the background and keep installed plugins current.",
+        "auto-update-desc": "Check enabled sources for new versions in the background and keep installed plugins current",
         "edit": "Edit source",
         "edit-title": "Edit plugin source",
         "empty": "No sources configured.",
@@ -1423,7 +1423,7 @@
         "remove": "Remove source",
         "save": "Save",
         "title": "Sources",
-        "update": "Update this source"
+        "update": "Update source"
       },
       "store": {
         "add": "Add to Noctalia",
@@ -3380,10 +3380,6 @@
           "description": "Show text next to the icon",
           "label": "Show Label"
         },
-        "show-vpn-label": {
-          "description": "Show VPN label instead of interface label next to the icon",
-          "label": "Show VPN Label"
-        },
         "show-num-lock": {
           "description": "Show Num Lock state",
           "label": "Show Num Lock"
@@ -3395,6 +3391,10 @@
         "show-temperature": {
           "description": "Show current temperature text",
           "label": "Show Temperature"
+        },
+        "show-vpn-label": {
+          "description": "Show VPN label instead of interface label next to the icon",
+          "label": "Show VPN Label"
         },
         "show-when-idle": {
           "description": "Keep the visualizer visible even when no media is playing",
