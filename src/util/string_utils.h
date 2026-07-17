@@ -249,13 +249,13 @@ namespace StringUtils {
       cp = lead;
     } else if ((lead & 0xE0) == 0xC0) {
       len = 2;
-      cp = lead & 0x1Fu;
+      cp = lead & 0x1FU;
     } else if ((lead & 0xF0) == 0xE0) {
       len = 3;
-      cp = lead & 0x0Fu;
+      cp = lead & 0x0FU;
     } else if ((lead & 0xF8) == 0xF0) {
       len = 4;
-      cp = lead & 0x07u;
+      cp = lead & 0x07U;
     } else {
       return false;
     }
@@ -267,7 +267,7 @@ namespace StringUtils {
       if ((byte & 0xC0) != 0x80) {
         return false;
       }
-      cp = (cp << 6) | (byte & 0x3Fu);
+      cp = (cp << 6) | (byte & 0x3FU);
     }
     return (cp >= 0xE000 && cp <= 0xF8FF) || (cp >= 0xF0000 && cp <= 0xFFFFD) || (cp >= 0x100000 && cp <= 0x10FFFD);
   }
@@ -489,8 +489,8 @@ namespace StringUtils {
     if (read != sizeof(bytes)) {
       return {};
     }
-    bytes[6] = (bytes[6] & 0x0Fu) | 0x40u;
-    bytes[8] = (bytes[8] & 0x3Fu) | 0x80u;
+    bytes[6] = (bytes[6] & 0x0FU) | 0x40U;
+    bytes[8] = (bytes[8] & 0x3FU) | 0x80U;
     return std::format(
         "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-"
         "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",

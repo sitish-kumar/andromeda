@@ -572,7 +572,7 @@ TooltipManager::Size TooltipManager::measureContent(const TooltipContent& conten
     auto metrics = m_renderContext->measureText(*text, fontSize, FontWeight::Normal, maxContentWidth, kMaxTextLines);
     auto w = static_cast<std::uint32_t>(std::ceil(metrics.width + padH * 2.0f + kBorder * 2.0f));
     auto h = static_cast<std::uint32_t>(std::ceil((metrics.bottom - metrics.top) + padV * 2.0f + kBorder * 2.0f));
-    return {std::max(w, 1u), std::max(h, 1u)};
+    return {std::max(w, 1U), std::max(h, 1U)};
   }
 
   if (const auto* rows = std::get_if<std::vector<TooltipRow>>(&content)) {
@@ -594,7 +594,7 @@ TooltipManager::Size TooltipManager::measureContent(const TooltipContent& conten
     float contentH = static_cast<float>(rows->size()) * rowH + static_cast<float>(rows->size() - 1) * tableGap;
     auto w = static_cast<std::uint32_t>(std::ceil(contentW + padH * 2.0f + kBorder * 2.0f));
     auto h = static_cast<std::uint32_t>(std::ceil(contentH + padV * 2.0f + kBorder * 2.0f));
-    return {std::max(w, 1u), std::max(h, 1u)};
+    return {std::max(w, 1U), std::max(h, 1U)};
   }
 
   return {};

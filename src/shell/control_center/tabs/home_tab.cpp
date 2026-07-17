@@ -662,7 +662,7 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     const float scale = contentScale();
     const float bottomRowGap = m_bottomRow != nullptr ? m_bottomRow->gap() : 0.0f;
     const bool stacked = m_shortcutPads.size() <= kHomeStackedShortcutMax;
-    const std::size_t cols = stacked ? 1u : kHomeShortcutGridColumns;
+    const std::size_t cols = stacked ? 1U : kHomeShortcutGridColumns;
     const std::size_t rows = (m_shortcutPads.size() + cols - 1) / cols;
     const float padH = m_shortcutsGrid->paddingLeft() + m_shortcutsGrid->paddingRight();
     const float padV = m_shortcutsGrid->paddingTop() + m_shortcutsGrid->paddingBottom();

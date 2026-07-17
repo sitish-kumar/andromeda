@@ -266,7 +266,7 @@ public:
     }
   }
 
-  [[nodiscard]] std::size_t itemCount() const override { return m_entries == nullptr ? 0u : m_entries->size(); }
+  [[nodiscard]] std::size_t itemCount() const override { return m_entries == nullptr ? 0U : m_entries->size(); }
 
   [[nodiscard]] std::unique_ptr<Node> createTile() override {
     auto tile = std::make_unique<WallpaperTile>(0.0f, 0.0f, m_scale);

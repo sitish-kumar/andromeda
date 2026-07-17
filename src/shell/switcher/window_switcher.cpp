@@ -443,7 +443,7 @@ namespace {
     void setOnClose(std::function<void(std::size_t)> callback) { m_onClose = std::move(callback); }
     void setOnInvalidate(std::function<void()> callback) { m_onInvalidate = std::move(callback); }
 
-    [[nodiscard]] std::size_t itemCount() const override { return m_entries == nullptr ? 0u : m_entries->size(); }
+    [[nodiscard]] std::size_t itemCount() const override { return m_entries == nullptr ? 0U : m_entries->size(); }
 
     [[nodiscard]] std::unique_ptr<Node> createTile() override {
       std::unique_ptr<WindowSwitcherTile> tile = std::make_unique<WindowSwitcherTile>(m_scale, m_cache);

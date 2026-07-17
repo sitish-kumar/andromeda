@@ -31,8 +31,8 @@ namespace settings {
 
   namespace {
 
-    constexpr float kSourceBadgeMaxWidth = 120.0F;
-    constexpr float kTagBadgeMaxWidth = 120.0F;
+    constexpr float kSourceBadgeMaxWidth = 120.0f;
+    constexpr float kTagBadgeMaxWidth = 120.0f;
 
     bool containsIgnoreCase(std::string_view haystack, std::string_view needle) {
       if (needle.empty()) {
@@ -359,7 +359,7 @@ namespace settings {
 
     auto header = ui::row({.align = FlexAlign::Stretch, .gap = Style::spaceMd * scale, .fillWidth = true});
 
-    auto pill = [&](const std::string& text, ColorRole fg, ColorRole bg, float bgAlpha, float maxWidth = 0.0F) {
+    auto pill = [&](const std::string& text, ColorRole fg, ColorRole bg, float bgAlpha, float maxWidth = 0.0f) {
       Label* label = nullptr;
       auto badge = ui::row(
           {.align = FlexAlign::Center,
@@ -374,9 +374,9 @@ namespace settings {
               .color = colorSpecFromRole(fg),
           })
       );
-      if (maxWidth > 0.0F) {
+      if (maxWidth > 0.0f) {
         badge->setMaxWidth(maxWidth * scale);
-        label->setMaxWidth((maxWidth - (Style::spaceXs * 2.0F)) * scale);
+        label->setMaxWidth((maxWidth - (Style::spaceXs * 2.0f)) * scale);
         label->setMaxLines(1);
         label->setEllipsize(TextEllipsize::End);
       }
@@ -428,7 +428,7 @@ namespace settings {
         })
     );
     for (const auto& tag : entry.tags) {
-      title->addChild(pill(tag, ColorRole::OnSurfaceVariant, ColorRole::SurfaceVariant, 1.0F, kTagBadgeMaxWidth));
+      title->addChild(pill(tag, ColorRole::OnSurfaceVariant, ColorRole::SurfaceVariant, 1.0f, kTagBadgeMaxWidth));
     }
     info->addChild(std::move(title));
     auto meta = ui::row({.align = FlexAlign::Center, .wrap = true, .gap = Style::spaceXs * scale, .fillWidth = true});

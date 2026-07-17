@@ -34,7 +34,7 @@ std::uint32_t InputArea::buttonMask(std::uint32_t button) noexcept {
   if (index >= kMaxTrackedMouseButtons) {
     return 0;
   }
-  return 1u << index;
+  return 1U << index;
 }
 
 std::uint32_t InputArea::buttonMask(std::initializer_list<std::uint32_t> buttons) noexcept {

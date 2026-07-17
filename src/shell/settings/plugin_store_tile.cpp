@@ -15,7 +15,7 @@ namespace settings {
 
   namespace {
 
-    constexpr float kSourceBadgeMaxWidth = 120.0F;
+    constexpr float kSourceBadgeMaxWidth = 120.0f;
 
   } // namespace
 
@@ -89,7 +89,7 @@ namespace settings {
                 .fontSize = Style::fontSizeMini * scale,
                 .fontWeight = FontWeight::Bold,
                 .color = colorSpecFromRole(ColorRole::Primary),
-                .maxWidth = (kSourceBadgeMaxWidth - (Style::spaceXs * 2.0F)) * scale,
+                .maxWidth = (kSourceBadgeMaxWidth - (Style::spaceXs * 2.0f)) * scale,
                 .maxLines = 1,
                 .ellipsize = TextEllipsize::End,
             })

@@ -590,7 +590,7 @@ public:
   void setOnActivate(ActivateCallback callback) { m_onActivate = std::move(callback); }
   void setOnSecondaryActivate(SecondaryActivateCallback callback) { m_onSecondaryActivate = std::move(callback); }
 
-  [[nodiscard]] std::size_t itemCount() const override { return m_results == nullptr ? 0u : m_results->size(); }
+  [[nodiscard]] std::size_t itemCount() const override { return m_results == nullptr ? 0U : m_results->size(); }
 
   [[nodiscard]] std::unique_ptr<Node> createTile() override {
     return std::make_unique<LauncherResultRow>(m_style, m_cache);
@@ -639,7 +639,7 @@ public:
   void setOnActivate(ActivateCallback callback) { m_onActivate = std::move(callback); }
   void setOnSecondaryActivate(SecondaryActivateCallback callback) { m_onSecondaryActivate = std::move(callback); }
 
-  [[nodiscard]] std::size_t itemCount() const override { return m_results == nullptr ? 0u : m_results->size(); }
+  [[nodiscard]] std::size_t itemCount() const override { return m_results == nullptr ? 0U : m_results->size(); }
 
   [[nodiscard]] std::unique_ptr<Node> createTile() override {
     return std::make_unique<LauncherAppGridTile>(m_style, m_cache);

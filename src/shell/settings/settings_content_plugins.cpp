@@ -144,7 +144,7 @@ namespace settings {
       auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
       Flex* r = row.get();
 
-      auto info = ui::column({.align = FlexAlign::Start, .gap = 2.0F * scale, .flexGrow = 1.0F});
+      auto info = ui::column({.align = FlexAlign::Start, .gap = 2.0f * scale, .flexGrow = 1.0f});
       info->addChild(makeLabel(
           pluginSourceDisplayName(source.name), Style::fontSizeBody * scale,
           source.enabled ? ColorRole::OnSurface : ColorRole::OnSurfaceVariant, FontWeight::Medium
@@ -233,7 +233,7 @@ namespace settings {
           })
       );
 
-      auto info = ui::column({.align = FlexAlign::Start, .gap = 2.0F * scale, .flexGrow = 1.0F});
+      auto info = ui::column({.align = FlexAlign::Start, .gap = 2.0f * scale, .flexGrow = 1.0f});
       auto title = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
       const std::string version = plugin.version.empty() ? std::string("?") : plugin.version;
       title->addChild(
@@ -653,7 +653,7 @@ namespace settings {
       // Separate from the source list so the toggle doesn't read as another source.
       section->addChild(ui::separator({.spacing = Style::spaceSm * scale}));
       auto autoRow = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
-      auto autoInfo = ui::column({.align = FlexAlign::Start, .gap = 2.0F * scale, .flexGrow = 1.0F});
+      auto autoInfo = ui::column({.align = FlexAlign::Start, .gap = 2.0f * scale, .flexGrow = 1.0f});
       autoInfo->addChild(makeLabel(
           i18n::tr("settings.plugins.sources.auto-update"), Style::fontSizeBody * scale, ColorRole::OnSurface,
           FontWeight::Medium

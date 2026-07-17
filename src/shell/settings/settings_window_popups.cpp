@@ -106,7 +106,7 @@ namespace {
     return std::ranges::contains(cfg.plugins.sources, name, &PluginSourceConfig::name);
   }
 
-  std::size_t pluginSourceKindIndex(PluginSourceKind kind) { return kind == PluginSourceKind::Path ? 1u : 0u; }
+  std::size_t pluginSourceKindIndex(PluginSourceKind kind) { return kind == PluginSourceKind::Path ? 1U : 0U; }
 
   const CalendarConfig::Account* findCalendarAccount(const Config& cfg, std::string_view id) {
     const auto it = std::ranges::find(cfg.calendar.accounts, id, &CalendarConfig::Account::id);
@@ -1451,7 +1451,7 @@ void SettingsWindow::openBarWidgetEditorSheet(
     output = m_output;
   }
 
-  const std::uint32_t grabSerial = m_pendingEditorSheetNoGrab ? 0u : m_wayland->lastInputSerial();
+  const std::uint32_t grabSerial = m_pendingEditorSheetNoGrab ? 0U : m_wayland->lastInputSerial();
   m_pendingEditorSheetNoGrab = false;
   m_editorSheetPopup->open(
       settings::SettingsSheetPopupRequest{
