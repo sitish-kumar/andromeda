@@ -781,6 +781,7 @@ bool MprisService::playPause(const std::string& busName) {
   if (!canInvoke(it->second, "PlayPause")) {
     return false;
   }
+  m_stoppedPlayers.erase(busName);
   return callPlayerMethod(busName, "PlayPause");
 }
 
@@ -795,6 +796,7 @@ bool MprisService::play(const std::string& busName) {
   if (!canInvoke(it->second, "Play")) {
     return false;
   }
+  m_stoppedPlayers.erase(busName);
   return callPlayerMethod(busName, "Play");
 }
 
@@ -1172,6 +1174,8 @@ bool MprisService::setPinnedPlayerPreference(const std::string& busName) {
 
   const auto previousActive = activePlayer();
   m_pinnedPlayerPreference = busName;
+  // Explicitly selecting a player brings it back after a stop-dismissal.
+  m_stoppedPlayers.erase(busName);
   syncSignals(previousActive);
   if (m_changeCallback) {
     m_changeCallback();
@@ -1411,6 +1415,11 @@ void MprisService::registerControlApi() {
               .withOutputParamNames("success")
               .implementedAs([this](const std::string& busName) { return onPlayPausePlayer(busName); }),
 
+          sdbus::registerMethod("PlayPlayer")
+              .withInputParamNames("player_bus_name")
+              .withOutputParamNames("success")
+              .implementedAs([this](const std::string& busName) { return onPlayPlayer(busName); }),
+
           sdbus::registerMethod("PausePlayer")
               .withInputParamNames("player_bus_name")
               .withOutputParamNames("success")
@@ -1433,6 +1442,10 @@ void MprisService::registerControlApi() {
 
           sdbus::registerMethod("PlayPauseActive").withOutputParamNames("success").implementedAs([this]() {
             return onPlayPauseActive();
+          }),
+
+          sdbus::registerMethod("PlayActive").withOutputParamNames("success").implementedAs([this]() {
+            return onPlayActive();
           }),
 
           sdbus::registerMethod("PauseActive").withOutputParamNames("success").implementedAs([this]() {
@@ -2322,22 +2335,21 @@ bool MprisService::canInvoke(const MprisPlayerInfo& player, const char* methodNa
 }
 
 void MprisService::dismissPlayer(const std::string& busName) {
-  if (busName.empty()) {
+  // Reached from the async Stop reply; the player may be gone by now. Bus names
+  // are well-known and recur across app restarts, so a stale entry would hide a
+  // relaunched player.
+  if (busName.empty() || !m_players.contains(busName)) {
     return;
   }
 
-  const auto previousActive = chooseActivePlayer();
+  const auto previousActive = activePlayer();
   m_stoppedPlayers.insert(busName);
   if (m_lastActivePlayer == busName) {
     m_lastActivePlayer.clear();
   }
 
-  if (!previousActive.has_value() || *previousActive != busName) {
-    return;
-  }
-
-  emitActivePlayerChanged();
-  if (m_changeCallback) {
+  syncSignals(previousActive);
+  if (previousActive.has_value() && previousActive->busName == busName && m_changeCallback) {
     m_changeCallback();
   }
 }
