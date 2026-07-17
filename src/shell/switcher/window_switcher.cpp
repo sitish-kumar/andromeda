@@ -182,16 +182,14 @@ namespace {
   }
 
   void activateWindowSwitcherEntry(CompositorPlatform& platform, const WindowSwitcherEntry& entry) {
-    if (compositors::isHyprland() && !entry.windowId.empty()) {
-      if (!compositors::hyprland::normalizeWindowId(entry.windowId).empty()) {
-        platform.focusCompositorWindow(entry.windowId);
-        return;
-      }
-    }
+    // Niri: foreign-toplevel activate does not reliably focus/scroll the column.
     if (compositors::isNiri() && !entry.windowId.empty()) {
       platform.focusCompositorWindow(entry.windowId);
       return;
     }
+    // Prefer wlr-foreign-toplevel activate (same path as the taskbar). On Hyprland this
+    // raises floating windows and respects cursor:no_warps / scrolling follow_focus;
+    // dispatch focuswindow alone does not.
     if (entry.closeHandle != 0) {
       auto* handle = reinterpret_cast<zwlr_foreign_toplevel_handle_v1*>(entry.closeHandle);
       if (platform.containsWlrToplevelHandle(handle)) {
