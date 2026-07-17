@@ -703,7 +703,13 @@ void WindowSwitcher::activateSelected() {
   if (m_platform == nullptr || m_windows.empty() || m_selectedIndex >= m_windows.size()) {
     return;
   }
-  activateWindowSwitcherEntry(*m_platform, m_windows[m_selectedIndex]);
+  // Hyprland ignores zwlr_foreign_toplevel_handle_v1.activate while an exclusive
+  // keyboard layer-shell surface is mapped (hyprwm/Hyprland#4829). Snapshot the
+  // selection, tear the overlay down, then activate on the next loop tick.
+  const WindowSwitcherEntry entry = m_windows[m_selectedIndex];
+  CompositorPlatform* platform = m_platform;
+  hide();
+  DeferredCall::callLater([platform, entry]() { activateWindowSwitcherEntry(*platform, entry); });
 }
 
 void WindowSwitcher::closeWindowAt(std::size_t index) {
