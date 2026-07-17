@@ -2,6 +2,7 @@
 
 #include "core/input/key_modifiers.h"
 
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -160,6 +161,15 @@ private:
   PointerEventCallback m_pointerEventCallback;
   std::vector<PointerEvent> m_pendingPointerEvents;
   std::uint32_t m_pendingAxisSource = 0;
+  // Detent info for an axis, received ahead of the axis event it belongs to.
+  struct AxisDetent {
+    bool valid = false;
+    std::int32_t discrete = 0;
+    std::int32_t value120 = 0;
+    float lines = 0.0f;
+  };
+  // Indexed by wl_pointer axis (vertical, horizontal).
+  std::array<AxisDetent, 2> m_pendingAxisDetents{};
   wl_surface* m_lastPointerSurface = nullptr;
   std::uint32_t m_pointerEnterSerial = 0;
   double m_lastPointerX = 0.0;
