@@ -2,6 +2,7 @@
 
 #include "config/config_service.h"
 #include "core/deferred_call.h"
+#include "core/input/key_symbols.h"
 #include "render/render_context.h"
 #include "render/scene/node.h"
 #include "shell/settings/settings_content_common.h"
@@ -82,6 +83,7 @@ namespace settings {
     m_fillParentHeight = request.fillParentHeight;
     m_scrollableBody = request.scrollableBody;
     m_onCloseRequested = std::move(request.onCloseRequested);
+    m_preDispatchKeyboard = std::move(request.preDispatchKeyboard);
     m_sheetTitle = std::move(request.sheetTitle);
     m_removeAction = std::move(request.removeAction);
     m_createHeaderAction = std::move(request.createHeaderAction);
@@ -138,6 +140,8 @@ namespace settings {
       if (!isOpen() || m_contentNode == nullptr) {
         return;
       }
+      // Keep keyboard focus on the same control across rebuilds (e.g. Segmented Left/Right).
+      inputDispatcher().stashTabFocus();
       inputDispatcher().setFocus(nullptr);
       while (!m_contentNode->children().empty()) {
         m_contentNode->removeChild(m_contentNode->children().front().get());
@@ -145,6 +149,7 @@ namespace settings {
       m_root = nullptr;
       populateContent(m_contentNode, width(), height());
       requestLayout();
+      inputDispatcher().restoreStashedTabFocus();
     });
   }
 
@@ -174,7 +179,21 @@ namespace settings {
       m_selectPopup->onKeyboardEvent(event);
       return;
     }
+    // Escape is handled in DialogPopupHost before preDispatch; mirror the close-button
+    // onCloseRequested hook so detail views can step back instead of dismissing the sheet.
+    if (event.pressed && !event.preedit && KeySymbol::isEscape(event.sym)) {
+      if (m_onCloseRequested && m_onCloseRequested()) {
+        return;
+      }
+    }
     DialogPopupHost::onKeyboardEvent(event);
+  }
+
+  bool SettingsSheetPopup::preDispatchKeyboard(const KeyboardEvent& event) {
+    if (!m_preDispatchKeyboard) {
+      return false;
+    }
+    return m_preDispatchKeyboard(event);
   }
 
   wl_surface* SettingsSheetPopup::wlSurface() const noexcept { return DialogPopupHost::wlSurface(); }
@@ -186,6 +205,8 @@ namespace settings {
   bool SettingsSheetPopup::isSelectDropdownOpen() const noexcept {
     return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen();
   }
+
+  InputArea* SettingsSheetPopup::focusedArea() noexcept { return inputDispatcher().focusedArea(); }
 
   void SettingsSheetPopup::populateContent(Node* contentParent, std::uint32_t /*width*/, std::uint32_t /*height*/) {
     const float popupPadding = Style::spaceSm * m_scale;

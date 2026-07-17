@@ -133,7 +133,7 @@ namespace settings {
   }
 
   void PluginStoreTile::bind(
-      const scripting::CatalogEntry& entry, std::string_view source, bool onDisk, bool hovered,
+      const scripting::CatalogEntry& entry, std::string_view source, bool onDisk, bool selected, bool hovered,
       const std::string& thumbnailPath, Renderer* renderer, AsyncTextureCache* textureCache
   ) {
     // Thumbnail vs icon fallback.
@@ -186,7 +186,8 @@ namespace settings {
     m_addedGlyph->setVisible(onDisk);
     m_addedGlyph->setParticipatesInLayout(onDisk);
 
-    setBorder(colorSpecFromRole(hovered ? ColorRole::Hover : ColorRole::Outline), Style::borderWidth);
+    const ColorRole borderRole = selected ? ColorRole::Primary : (hovered ? ColorRole::Hover : ColorRole::Outline);
+    setBorder(colorSpecFromRole(borderRole), selected ? Style::borderWidth * 2.0f : Style::borderWidth);
   }
 
 } // namespace settings

@@ -6,6 +6,7 @@
 #include "net/url_open.h"
 #include "notification/notification_filter.h"
 #include "render/render_context.h"
+#include "render/scene/input_area.h"
 #include "scripting/plugin_catalog.h"
 #include "scripting/plugin_registry.h"
 #include "shell/settings/bar_widget_editor.h"
@@ -22,11 +23,13 @@
 #include "ui/controls/context_menu.h"
 #include "ui/controls/context_menu_popup.h"
 #include "ui/controls/flex.h"
+#include "ui/controls/segmented.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/popup_parent.h"
 #include "util/string_utils.h"
 #include "wayland/toplevel_surface.h"
 #include "wayland/wayland_connection.h"
+#include "wayland/wayland_seat.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -1588,13 +1591,21 @@ void SettingsWindow::openPluginSourceCreateEditor(std::optional<PluginSourceConf
                   .scale = scale,
                   .enabled = !fieldsLocked,
                   .equalSegmentWidths = true,
-                  .onChange = [this, draft](std::size_t index) {
-                    draft->kind = index == 1 ? PluginSourceKind::Path : PluginSourceKind::Git;
-                    draft->error.clear();
-                    if (m_editorSheetPopup != nullptr) {
-                      m_editorSheetPopup->rebuildBody();
-                    }
-                  },
+                  .onChange =
+                      [this, draft](std::size_t index) {
+                        draft->kind = index == 1 ? PluginSourceKind::Path : PluginSourceKind::Git;
+                        draft->error.clear();
+                        if (m_editorSheetPopup != nullptr) {
+                          m_editorSheetPopup->rebuildBody();
+                        }
+                      },
+                  .configure =
+                      [](Segmented& seg) {
+                        if (seg.focusArea() != nullptr) {
+                          // Stable key so rebuildBody can restore Left/Right focus after kind changes.
+                          seg.focusArea()->setTabFocusKey("plugin-source-kind");
+                        }
+                      },
               })
           );
 
@@ -1941,6 +1952,13 @@ void SettingsWindow::openPluginStore() {
                 }
                 return false;
               },
+              .preDispatchKeyboard =
+                  [storeContent, this](const KeyboardEvent& event) {
+                    InputArea* focused = m_editorSheetPopup != nullptr ? m_editorSheetPopup->focusedArea() : nullptr;
+                    return storeContent->handleKeyEvent(
+                        event.sym, event.modifiers, event.pressed, event.preedit, focused
+                    );
+                  },
           }
       );
     });
