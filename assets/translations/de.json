@@ -505,6 +505,7 @@
         "show-label": "Beschriftung anzeigen",
         "show-login-button": "Login-Button",
         "show-password-hint": "Passworthinweis",
+        "show-vpn-label": "VPN-Beschriftung anzeigen",
         "show-when-idle": "Bei Inaktivität anzeigen",
         "stat": "Statistik",
         "stat-cpu-temp": "CPU-Temperatur",
@@ -1382,6 +1383,7 @@
         "delete-confirm-title": "\"{name}\" löschen?",
         "deprecated": "veraltet",
         "empty": "Keine aktivierten Plugins.",
+        "incompatible-plugin-api": "inkompatible Plugin-API",
         "loading": "Plugins werden geladen…",
         "refreshing": "Plugins werden aktualisiert…",
         "remove": "Plugin entfernen",
@@ -1512,7 +1514,7 @@
           "label": "Reines Schwarz"
         },
         "theme-mode": {
-          "description": "Dunkel oder hell, bzw. automatisch abhängig von der Tageszeit wählen..",
+          "description": "Wähle dunkel oder hell bzw. automatisch abhängig von der Tageszeit",
           "label": "Theme-Modus"
         },
         "ui-scale": {
@@ -1520,7 +1522,7 @@
           "label": "UI-Skalierung"
         },
         "wallpaper-generation-scheme": {
-          "description": "Festlegen wie aus den Hintergrundbildfarben eine Farbpalette erzeugt wird.",
+          "description": "Lege fest, wie aus den Hintergrundbildfarben eine Farbpalette erzeugt wird",
           "label": "Hintergrundbild-Generierungsschema"
         }
       },
@@ -1781,6 +1783,14 @@
         },
         "background-opacity": {
           "description": "Hintergrunddeckkraft des Docks"
+        },
+        "border": {
+          "description": "Farbe für den Dock-Umriss; feste Hex-Farben werden ebenfalls unterstützt",
+          "label": "Rahmen"
+        },
+        "border-width": {
+          "description": "Innere Umrissbreite des Docks",
+          "label": "Rahmenbreite"
         },
         "concave-edge-corners": {
           "description": "Erzeuge konkave Ecken auf der Seite, die den Bildschirmrand berührt; der Abstand zum Bildschirmrand muss 0 sein",
@@ -2063,6 +2073,10 @@
         },
         "blacklist-allow-critical": {
           "description": "Zeige kritische Benachrichtigungen von Absendern auf der Blacklist trotzdem"
+        },
+        "border": {
+          "description": "Zeichne einen Umriss um Benachrichtigungs-Toasts",
+          "label": "Rahmen"
         },
         "collapse-on-dismiss": {
           "description": "Verschiebe verbleibende Toasts, um Lücken zu schließen, wenn einer verworfen wird",
@@ -2591,6 +2605,10 @@
         "osd-background-opacity": {
           "description": "Hintergrunddeckkraft von OSD-Popups",
           "label": "Hintergrunddeckkraft"
+        },
+        "osd-border": {
+          "description": "Zeichne einen Umriss um OSD-Popups",
+          "label": "Rahmen"
         },
         "osd-kinds-bluetooth": {
           "description": "Zeige ein OSD-Popup, wenn Bluetooth umgeschaltet wird",
@@ -3359,7 +3377,7 @@
           "label": "Icon anzeigen"
         },
         "show-label": {
-          "description": "Zeige Text neben dem Symbol an",
+          "description": "Zeige Text neben dem Icon an",
           "label": "Beschriftung anzeigen"
         },
         "show-num-lock": {
@@ -3373,6 +3391,10 @@
         "show-temperature": {
           "description": "Zeige die aktuelle Temperatur als Text an",
           "label": "Temperatur anzeigen"
+        },
+        "show-vpn-label": {
+          "description": "Zeige VPN-Beschriftung statt Schnittstellen-Beschriftung neben dem Icon an",
+          "label": "VPN-Beschriftung anzeigen"
         },
         "show-when-idle": {
           "description": "Lasse den Visualizer auch dann sichtbar, wenn keine Medien wiedergegeben werden",
