@@ -1504,6 +1504,7 @@ sh_program = find_program('sh')
 test('config_validate_cli',
   sh_program,
   args: ['tests/config_validate_cli_test.sh', noctalia_exe.full_path()],
+  depends: noctalia_exe,
   workdir: meson.current_source_dir(),
   env: config_validate_env,
 )
