@@ -819,6 +819,9 @@ void Application::initSystemBusServices() {
       try {
         m_logindService = std::make_unique<LogindService>(*m_systemBus);
         m_logindService->setPrepareForSleepCallback([this](bool sleeping) {
+          // Idle grace overlay must not survive suspend; hide on both edges as a fallback when
+          // fade-complete cleanup races with process freeze.
+          m_idleGraceOverlay.hide();
           if (sleeping) {
             return;
           }

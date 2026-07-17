@@ -692,14 +692,15 @@ void Application::initNotificationAndOsd() {
         });
       },
       [this](bool userCancelled, bool willLockSession) {
-        DeferredCall::callLater([this, userCancelled, willLockSession]() {
-          if (userCancelled || !willLockSession) {
-            m_idleGraceOverlay.hide();
-          }
-          if (userCancelled) {
-            m_lockScreen.clearPrimedDesktopCaptures();
-          }
-        });
+        // Keep the overlay only when handing off to Noctalia's lock screen (avoids a flash).
+        // External lockers never take ownership; deferred hide also races with suspend.
+        const bool handoffToLockScreen = !userCancelled && willLockSession && m_configService.isLockScreenEnabled();
+        if (!handoffToLockScreen) {
+          m_idleGraceOverlay.hide();
+        }
+        if (userCancelled) {
+          m_lockScreen.clearPrimedDesktopCaptures();
+        }
       }
   );
   m_idleManager.setActionRunner(
