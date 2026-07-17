@@ -24,7 +24,7 @@ public:
   VolumeWidget(
       PipeWireService* audio, EasyEffectsService* easyEffects, const Config* config, wl_output* output, bool showLabel,
       VolumeWidgetTarget target, int scrollStepPercent, ColorSpec muteColor, std::string glyphOverride,
-      std::string muteGlyphOverride, WidgetCustomImage customImage = {}
+      std::string muteGlyphOverride, WidgetCustomImage customImage = {}, bool enableScroll = true
   );
 
   void create() override;
@@ -39,6 +39,7 @@ private:
   EasyEffectsService* m_easyEffects = nullptr;
   const Config* m_config = nullptr;
   bool m_showLabel = true;
+  bool m_enableScroll = true;
   float m_scrollStep = 0.05f;
   VolumeWidgetTarget m_target = VolumeWidgetTarget::Output;
   ColorSpec m_muteColor;

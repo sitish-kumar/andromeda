@@ -210,9 +210,10 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "brightness") {
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
+    const bool enableScroll = wc != nullptr ? wc->getBool("enable_scroll", true) : true;
     const int scrollStep =
         static_cast<int>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("scroll_step", 5) : 5, 1, 25));
-    auto widget = std::make_unique<BrightnessWidget>(m_brightness, output, showLabel, scrollStep);
+    auto widget = std::make_unique<BrightnessWidget>(m_brightness, output, showLabel, scrollStep, enableScroll);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -266,6 +267,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .middleCommand = trimSetting("middle_command"),
         .scrollUpCommand = trimSetting("scroll_up_command"),
         .scrollDownCommand = trimSetting("scroll_down_command"),
+        .enableScroll = wc != nullptr ? wc->getBool("enable_scroll", true) : true,
         .customImage = customImageFor(wc),
     });
     widget->setContentScale(contentScale);
@@ -365,7 +367,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
   }
 
   if (type == "power_profile") {
-    auto widget = std::make_unique<PowerProfileWidget>(m_powerProfiles);
+    const bool enableScroll = wc != nullptr ? wc->getBool("enable_scroll", true) : true;
+    auto widget = std::make_unique<PowerProfileWidget>(m_powerProfiles, enableScroll);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -418,7 +421,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
             .audioSpectrum = m_audioSpectrum,
             .mpris = m_mpris,
         },
-        barName, outputName
+        barName, outputName, wc != nullptr ? wc->getBool("enable_scroll", true) : true
     );
     widget->setContentScale(contentScale);
     return widget;
@@ -550,6 +553,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .focusedOutputOnly = wc != nullptr ? wc->getBool("focused_output_only", false) : false,
         .minimal = wc != nullptr ? wc->getBool("minimal", false) : false,
         .groupSingleIconPerApp = wc != nullptr ? wc->getBool("group_single_icon_per_app", false) : false,
+        .enableScroll = wc != nullptr ? wc->getBool("enable_scroll", true) : true,
         .showActiveIndicator = wc != nullptr ? wc->getBool("show_active_indicator", true) : true,
         .activeOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("active_opacity", 1.0)) : 1.0f,
         .inactiveOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("inactive_opacity", 1.0)) : 1.0f,
@@ -616,6 +620,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "volume") {
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
+    const bool enableScroll = wc != nullptr ? wc->getBool("enable_scroll", true) : true;
     const int scrollStep =
         static_cast<int>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("scroll_step", 5) : 5, 1, 25));
     const std::string target = wc != nullptr ? wc->getString("device", "output") : std::string("output");
@@ -627,7 +632,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
     std::string muteGlyphOverride = wc != nullptr ? wc->getString("mute_glyph", "") : std::string{};
     auto widget = std::make_unique<VolumeWidget>(
         m_audio, m_easyEffects, &m_config, output, showLabel, volumeTarget, scrollStep, muteColor,
-        std::move(glyphOverride), std::move(muteGlyphOverride), customImageFor(wc)
+        std::move(glyphOverride), std::move(muteGlyphOverride), customImageFor(wc), enableScroll
     );
     widget->setContentScale(contentScale);
     return widget;
@@ -692,6 +697,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .minimal = workspaceStyle == "minimal",
         .focusedPill = workspaceStyle == "focus_hint",
         .focusedOutputOnly = wc != nullptr ? wc->getBool("focused_output_only", false) : false,
+        .enableScroll = wc != nullptr ? wc->getBool("enable_scroll", true) : true,
     };
     auto widget = std::make_unique<WorkspacesWidget>(m_platform, m_configService, output, options);
     widget->setContentScale(contentScale);

@@ -712,7 +712,12 @@ namespace settings {
       add(boolSpec("show_label", false));
       add(boolSpec("hide_when_no_connected_device", false));
     } else if (type == "brightness") {
-      add(stepperIntSpec("scroll_step", 5, 1.0, 25.0, 1.0, "%"));
+      add(boolSpec("enable_scroll", true));
+      {
+        auto scrollStep = stepperIntSpec("scroll_step", 5, 1.0, 25.0, 1.0, "%");
+        scrollStep.visibleWhen = WidgetSettingVisibility{"enable_scroll", {"true"}};
+        add(std::move(scrollStep));
+      }
       add(boolSpec("show_label", true));
     } else if (type == "clock") {
       add(stringSpec("format", "{:%H:%M}"));
@@ -781,8 +786,17 @@ namespace settings {
       add(stringSpec("command"));
       add(stringSpec("right_command"));
       add(stringSpec("middle_command"));
-      add(stringSpec("scroll_up_command"));
-      add(stringSpec("scroll_down_command"));
+      add(boolSpec("enable_scroll", true));
+      {
+        auto scrollUp = stringSpec("scroll_up_command");
+        scrollUp.visibleWhen = WidgetSettingVisibility{"enable_scroll", {"true"}};
+        add(std::move(scrollUp));
+      }
+      {
+        auto scrollDown = stringSpec("scroll_down_command");
+        scrollDown.visibleWhen = WidgetSettingVisibility{"enable_scroll", {"true"}};
+        add(std::move(scrollDown));
+      }
     } else if (type == "lock_keys") {
       add(boolSpec("show_caps_lock", true));
       add(boolSpec("show_num_lock", true));
@@ -888,8 +902,11 @@ namespace settings {
         minW.visibleWhen = WidgetSettingVisibility{"show_label", {"true"}};
         add(std::move(minW));
       }
+    } else if (type == "power_profile") {
+      add(boolSpec("enable_scroll", true));
     } else if (type == "taskbar") {
       // Windows: what the taskbar lists and how each window tile looks.
+      add(withGroup(boolSpec("enable_scroll", true), "taskbar.windows"));
       add(withGroup(boolSpec("show_all_outputs", false), "taskbar.windows"));
       add(withGroup(boolSpec("show_active_indicator", true), "taskbar.windows"));
       add(withGroup(doubleSpec("active_opacity", 1.0, 0.1, 1.0, 0.01), "taskbar.windows"));
@@ -1027,7 +1044,12 @@ namespace settings {
       add(glyphSpec("mute_glyph", ""));
       add(stringSpec("custom_image", ""));
       add(boolSpec("custom_image_colorize", false));
-      add(stepperIntSpec("scroll_step", 5, 1.0, 25.0, 1.0, "%"));
+      add(boolSpec("enable_scroll", true));
+      {
+        auto scrollStep = stepperIntSpec("scroll_step", 5, 1.0, 25.0, 1.0, "%");
+        scrollStep.visibleWhen = WidgetSettingVisibility{"enable_scroll", {"true"}};
+        add(std::move(scrollStep));
+      }
       add(boolSpec("show_label", true));
       add(colorSpec("mute_color", "error"));
     } else if (type == "wallpaper") {
@@ -1050,6 +1072,7 @@ namespace settings {
       }
 
       // Workspaces: which workspaces appear, and what each one's label shows.
+      add(withGroup(boolSpec("enable_scroll", true), "workspaces.list"));
       {
         auto hideWhenEmpty = withGroup(boolSpec("hide_when_empty", false), "workspaces.list");
         hideWhenEmpty.descriptionKey = "settings.widgets.settings.hide-when-empty.workspaces-description";
@@ -1304,6 +1327,8 @@ namespace settings {
       scripting::PluginTranslationCatalog translations;
       translations.load(pw->sourcePath.parent_path());
       std::vector<WidgetSettingSpec> specs = manifestSettingSpecs(pw->entry->settings, &translations);
+      // Host-owned gate for pointer-axis / onScroll handlers (same key as built-in widgets).
+      specs.push_back(boolSpec("enable_scroll", true));
       auto commonSpecs = commonWidgetSettingSpecs(shellFontFamily, populateFontCatalogs);
       specs.insert(
           specs.end(), std::make_move_iterator(commonSpecs.begin()), std::make_move_iterator(commonSpecs.end())
@@ -1376,6 +1401,14 @@ namespace settings {
       for (const auto& spec : manifestSettingSpecs(pluginEntry->entry->settings)) {
         out.push_back(spec.schema);
       }
+      // Host-owned scroll gate (same key as built-in scroll-capable widgets).
+      out.push_back(
+          schema::WidgetSettingField{
+              .key = "enable_scroll",
+              .type = schema::WidgetSettingType::Bool,
+              .defaultValue = true,
+          }
+      );
       return out;
     }
     for (const auto& spec : widgetSettingSpecs(type, config, "sans-serif", true, false)) {

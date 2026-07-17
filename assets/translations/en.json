@@ -3098,6 +3098,10 @@
           "description": "Color role used for empty workspaces; fixed hex colors are also supported",
           "label": "Empty Color"
         },
+        "enable-scroll": {
+          "description": "Allow mouse wheel and trackpad scroll actions on this widget",
+          "label": "Enable Scroll"
+        },
         "focused-color": {
           "description": "Color role used for the focused workspace; fixed hex colors are also supported",
           "label": "Focused Color"

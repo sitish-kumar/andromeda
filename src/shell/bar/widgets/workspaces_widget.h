@@ -42,6 +42,7 @@ public:
     bool minimal = false;
     bool focusedPill = false;
     bool focusedOutputOnly = false;
+    bool enableScroll = true;
   };
 
   WorkspacesWidget(CompositorPlatform& platform, ConfigService& config, wl_output* output, Options options);
@@ -152,6 +153,7 @@ private:
   bool m_minimal = false;
   bool m_focusedPill = false;
   bool m_focusedOutputOnly = false;
+  bool m_enableScroll = true;
   bool m_wasFocusedOutput = true;
   bool m_activeUsesFocusedColor = true;
   std::string m_cachedActiveWindowAppId;

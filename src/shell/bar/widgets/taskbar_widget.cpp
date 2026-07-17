@@ -179,12 +179,13 @@ TaskbarWidget::TaskbarWidget(
 )
     : m_platform(platform), m_configService(config), m_output(output), m_configOptions(std::move(options)),
       m_showAllOutputs(m_configOptions.showAllOutputs), m_focusedOutputOnly(m_configOptions.focusedOutputOnly),
-      m_minimal(m_configOptions.minimal), m_showActiveIndicator(m_configOptions.showActiveIndicator),
-      m_activeOpacity(m_configOptions.activeOpacity), m_inactiveOpacity(m_configOptions.inactiveOpacity),
-      m_focusedColor(m_configOptions.focusedColor), m_occupiedColor(m_configOptions.occupiedColor),
-      m_emptyColor(m_configOptions.emptyColor), m_windowTitleMaxWidth(m_configOptions.windowTitleMaxWidth),
-      m_taskbarMaxWidth(m_configOptions.taskbarMaxWidth), m_barPosition(std::move(m_configOptions.barPosition)),
-      m_barName(std::move(m_configOptions.barName)), m_shadowConfig(m_configOptions.shadowConfig) {
+      m_minimal(m_configOptions.minimal), m_enableScroll(m_configOptions.enableScroll),
+      m_showActiveIndicator(m_configOptions.showActiveIndicator), m_activeOpacity(m_configOptions.activeOpacity),
+      m_inactiveOpacity(m_configOptions.inactiveOpacity), m_focusedColor(m_configOptions.focusedColor),
+      m_occupiedColor(m_configOptions.occupiedColor), m_emptyColor(m_configOptions.emptyColor),
+      m_windowTitleMaxWidth(m_configOptions.windowTitleMaxWidth), m_taskbarMaxWidth(m_configOptions.taskbarMaxWidth),
+      m_barPosition(std::move(m_configOptions.barPosition)), m_barName(std::move(m_configOptions.barName)),
+      m_shadowConfig(m_configOptions.shadowConfig) {
   syncWorkspaceGroupingCapability();
   buildDesktopIconIndex();
 }
@@ -267,6 +268,9 @@ void TaskbarWidget::activateTaskModel(const TaskModel& task) {
 void TaskbarWidget::create() {
   auto container = std::make_unique<InputArea>();
   container->setOnAxisHandler([this](const InputArea::PointerData& data) {
+    if (!m_enableScroll) {
+      return false;
+    }
     if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL && data.axis != WL_POINTER_AXIS_HORIZONTAL_SCROLL) {
       return false;
     }
@@ -429,7 +433,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   const float tileWidthWithTitle = tileSize + (showWindowTitle ? windowTitleWidth + windowTitleGap : 0.0f);
 
   const auto workspaceAxisHandler = [this](const InputArea::PointerData& data) -> bool {
-    if (!m_groupByWorkspace) {
+    if (!m_enableScroll || !m_groupByWorkspace) {
       return false;
     }
     if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL && data.axis != WL_POINTER_AXIS_HORIZONTAL_SCROLL) {

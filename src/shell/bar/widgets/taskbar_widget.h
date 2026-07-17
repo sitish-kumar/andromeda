@@ -37,6 +37,7 @@ struct TaskbarWidgetOptions {
   bool focusedOutputOnly = false;
   bool minimal = false;
   bool groupSingleIconPerApp = false;
+  bool enableScroll = true;
   bool showActiveIndicator = true;
   float activeOpacity = 1.0f;
   float inactiveOpacity = 1.0f;
@@ -136,6 +137,7 @@ private:
   bool m_activeUsesFocusedColor = true;
   bool m_minimal = false;
   bool m_groupSingleIconPerApp = false;
+  bool m_enableScroll = true;
   bool m_showActiveIndicator = true;
   float m_activeOpacity = 1.0f;
   float m_inactiveOpacity = 1.0f;

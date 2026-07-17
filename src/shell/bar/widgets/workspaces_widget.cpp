@@ -78,7 +78,8 @@ WorkspacesWidget::WorkspacesWidget(
       m_activePillSize(std::clamp(options.activePillSize, 0.25f, 8.0f)),
       m_inactivePillSize(std::clamp(options.inactivePillSize, 0.25f, 8.0f)), m_minimal(options.minimal),
       m_focusedPill(options.focusedPill), m_focusedOutputOnly(options.focusedOutputOnly),
-      m_focusedColor(options.focusedColor), m_occupiedColor(options.occupiedColor), m_emptyColor(options.emptyColor) {
+      m_enableScroll(options.enableScroll), m_focusedColor(options.focusedColor),
+      m_occupiedColor(options.occupiedColor), m_emptyColor(options.emptyColor) {
   buildDesktopIconIndex();
 }
 
@@ -109,6 +110,9 @@ bool WorkspacesWidget::isWorkspaceHidden(const Workspace& workspace) const noexc
 void WorkspacesWidget::create() {
   auto container = std::make_unique<InputArea>();
   container->setOnAxis([this](const InputArea::PointerData& data) {
+    if (!m_enableScroll) {
+      return;
+    }
     if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL) {
       return;
     }

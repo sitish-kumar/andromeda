@@ -24,12 +24,12 @@ namespace {
 VolumeWidget::VolumeWidget(
     PipeWireService* audio, EasyEffectsService* easyEffects, const Config* config, wl_output* /*output*/,
     bool showLabel, VolumeWidgetTarget target, int scrollStepPercent, ColorSpec muteColor, std::string glyphOverride,
-    std::string muteGlyphOverride, WidgetCustomImage customImage
+    std::string muteGlyphOverride, WidgetCustomImage customImage, bool enableScroll
 )
     : m_audio(audio), m_easyEffects(easyEffects), m_config(config), m_showLabel(showLabel),
-      m_scrollStep(static_cast<float>(scrollStepPercent) / 100.0f), m_target(target), m_muteColor(muteColor),
-      m_glyphOverride(std::move(glyphOverride)), m_muteGlyphOverride(std::move(muteGlyphOverride)),
-      m_customImage(std::move(customImage)) {}
+      m_enableScroll(enableScroll), m_scrollStep(static_cast<float>(scrollStepPercent) / 100.0f), m_target(target),
+      m_muteColor(muteColor), m_glyphOverride(std::move(glyphOverride)),
+      m_muteGlyphOverride(std::move(muteGlyphOverride)), m_customImage(std::move(customImage)) {}
 
 void VolumeWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -53,7 +53,7 @@ void VolumeWidget::create() {
     }
   });
   area->setOnAxis([this](const InputArea::PointerData& data) {
-    if (m_audio == nullptr) {
+    if (!m_enableScroll || m_audio == nullptr) {
       return;
     }
     const auto* node = m_target == VolumeWidgetTarget::Input ? m_audio->defaultSource() : m_audio->defaultSink();
