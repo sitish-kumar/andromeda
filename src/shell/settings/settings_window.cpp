@@ -23,6 +23,7 @@
 #include "ui/palette.h"
 #include "ui/split_pane_focus.h"
 #include "ui/style.h"
+#include "util/clamp.h"
 #include "wayland/toplevel_surface.h"
 #include "wayland/wayland_connection.h"
 
@@ -30,6 +31,7 @@
 #include <cmath>
 #include <cstdint>
 #include <linux/input-event-codes.h>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -41,6 +43,10 @@ namespace {
 
   constexpr Logger kLog("settings");
 
+  // Golden rectangle oriented like the output: the constrained dimension takes the fraction,
+  // the other follows phi. The fixed size is only used when output geometry is unknown.
+  constexpr float kWindowOutputFraction = 0.66f;
+  constexpr float kGoldenRatio = std::numbers::phi_v<float>;
   constexpr float kWindowWidth = 1280.0f;
   constexpr float kWindowHeight = 600.0f;
   constexpr float kWindowMinWidth = 1020.0f;
@@ -398,10 +404,25 @@ void SettingsWindow::open(std::string context) {
   m_surface->setUpdateCallback([]() {});
 
   const float scale = uiScale();
-  const auto width = static_cast<std::uint32_t>(std::round(kWindowWidth * scale));
-  const auto height = static_cast<std::uint32_t>(std::round(kWindowHeight * scale));
-  const auto minWidth = static_cast<std::uint32_t>(std::round(kWindowMinWidth * scale));
-  const auto minHeight = static_cast<std::uint32_t>(std::round(kWindowMinHeight * scale));
+  const float minWidthF = kWindowMinWidth * scale;
+  const float minHeightF = kWindowMinHeight * scale;
+  float desiredWidth = kWindowWidth * scale;
+  float desiredHeight = kWindowHeight * scale;
+  if (const WaylandOutput* info = m_wayland->findOutputByWl(output); info != nullptr && info->hasUsableGeometry()) {
+    const auto outputW = static_cast<float>(info->effectiveLogicalWidth());
+    const auto outputH = static_cast<float>(info->effectiveLogicalHeight());
+    if (outputW >= outputH) {
+      desiredHeight = util::clampOrdered(outputH * kWindowOutputFraction, std::min(minHeightF, outputH), outputH);
+      desiredWidth = util::clampOrdered(desiredHeight * kGoldenRatio, std::min(minWidthF, outputW), outputW);
+    } else {
+      desiredWidth = util::clampOrdered(outputW * kWindowOutputFraction, std::min(minWidthF, outputW), outputW);
+      desiredHeight = util::clampOrdered(desiredWidth * kGoldenRatio, std::min(minHeightF, outputH), outputH);
+    }
+  }
+  const auto width = static_cast<std::uint32_t>(std::round(desiredWidth));
+  const auto height = static_cast<std::uint32_t>(std::round(desiredHeight));
+  const auto minWidth = static_cast<std::uint32_t>(std::round(minWidthF));
+  const auto minHeight = static_cast<std::uint32_t>(std::round(minHeightF));
 
   ToplevelSurfaceConfig cfg{
       .width = std::max<std::uint32_t>(1, width),
