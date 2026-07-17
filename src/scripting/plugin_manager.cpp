@@ -310,8 +310,7 @@ namespace scripting {
     return ids;
   }
 
-  bool PluginManager::ensureEnabledMaterialized(const PluginsConfig& plugins) const {
-    bool materialized = false;
+  void PluginManager::ensureEnabledMaterialized(const PluginsConfig& plugins) const {
     std::error_code ec;
     for (const auto& source : plugins.sources) {
       if (source.kind != PluginSourceKind::Git || !source.enabled) {
@@ -321,21 +320,16 @@ namespace scripting {
       if (repoRoot.empty()) {
         continue;
       }
-      if (std::filesystem::exists(repoRoot / ".git", ec)) {
-        // Repo already present: materialize from local git data only — no network.
-        auto sourceLock = plugin_source_locks::acquire(source.name);
-        if (materializeEnabledFromRepo(source, repoRoot, plugins.enabled)) {
-          materialized = true;
-        }
-        continue;
+      // Even with the repo present, catalog reads and exports lazy-fetch blobs from the
+      // blobless clone (network-bound), so reconciliation always runs off the main
+      // thread; the registry rescan + bar rebuild marshal back when an export lands.
+      const bool cloneFirst = !std::filesystem::exists(repoRoot / ".git", ec);
+      if (cloneFirst) {
+        // Source repo is gone (state dir wiped) or its first clone never completed.
+        std::filesystem::create_directories(repoRoot.parent_path(), ec);
       }
-      // Source repo is gone (state dir wiped) or its first clone never completed
-      // (DNS/proxy hang). Re-clone + materialize off the main thread so startup never
-      // blocks on the network; the bar rebuilds via m_onChanged when the export lands.
-      std::filesystem::create_directories(repoRoot.parent_path(), ec);
-      spawnCloneAndMaterialize(source, repoRoot, plugins.enabled);
+      spawnMaterializeEnabled(source, repoRoot, plugins.enabled, cloneFirst);
     }
-    return materialized;
   }
 
   bool PluginManager::materializeEnabledFromRepo(
@@ -389,28 +383,32 @@ namespace scripting {
     return materialized;
   }
 
-  void PluginManager::spawnCloneAndMaterialize(
-      PluginSourceConfig source, std::filesystem::path repoRoot, std::vector<std::string> enabled
+  void PluginManager::spawnMaterializeEnabled(
+      PluginSourceConfig source, std::filesystem::path repoRoot, std::vector<std::string> enabled, bool cloneFirst
   ) const {
     // `this` is an Application member and outlives the worker; the registry rescan and
     // bar rebuild marshal back to the main thread via DeferredCall.
-    std::thread([this, source = std::move(source), repoRoot = std::move(repoRoot),
-                 enabled = std::move(enabled)]() mutable {
+    std::thread([this, source = std::move(source), repoRoot = std::move(repoRoot), enabled = std::move(enabled),
+                 cloneFirst]() mutable {
       auto sourceLock = plugin_source_locks::acquire(source.name);
-      kLog.info("re-cloning missing plugin source '{}'", source.name);
-      const auto cloned = plugin_git::cloneBlobless(source.location, repoRoot);
-      if (!cloned) {
-        if (cloned.timedOut) {
-          kLog.warn("plugin source '{}': clone timed out", source.name);
-        } else {
-          kLog.warn("plugin source '{}': clone failed with exit code {}", source.name, cloned.exitCode);
+      if (cloneFirst) {
+        kLog.info("re-cloning missing plugin source '{}'", source.name);
+        const auto cloned = plugin_git::cloneBlobless(source.location, repoRoot);
+        if (!cloned) {
+          if (cloned.timedOut) {
+            kLog.warn("plugin source '{}': clone timed out", source.name);
+          } else {
+            kLog.warn("plugin source '{}': clone failed with exit code {}", source.name, cloned.exitCode);
+          }
+          return; // offline / unreachable — list/enable will retry
         }
-        return; // offline / unreachable — list/enable will retry
       }
-      const bool materialized = materializeEnabledFromRepo(source, repoRoot, enabled);
-      DeferredCall::callLater([this, materialized]() {
+      if (!materializeEnabledFromRepo(source, repoRoot, enabled)) {
+        return; // nothing exported; the startup registry scan already reflects disk state
+      }
+      DeferredCall::callLater([this]() {
         PluginRegistry::instance().scan(); // pick up the freshly exported plugins
-        if (materialized && m_onChanged) {
+        if (m_onChanged) {
           m_onChanged(); // rebuild bar + reconcile services
         }
       });

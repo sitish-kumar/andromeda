@@ -21,7 +21,9 @@ namespace scripting::plugin_git {
     constexpr double kSlowGitMs = 1000.0;
 
     // Hard backstop that kills a wedged git subprocess (e.g. a connect/DNS hang behind a
-    // proxy). Network ops also abort early via http.lowSpeed* below; local ops are quick.
+    // proxy). Network ops also abort early via http.lowSpeed* below. Note object reads
+    // from the blobless clone (show / cat-file) lazy-fetch missing blobs, so even
+    // "local" ops can hit the network; run every git op off the main thread.
     constexpr auto kNetworkTimeout = 60s;
     constexpr auto kLocalTimeout = 20s;
     // File bodies we read (catalog.toml / plugin.toml) are small; cap defensively.

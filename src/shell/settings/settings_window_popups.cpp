@@ -1770,14 +1770,35 @@ void SettingsWindow::openPluginStore() {
   if (m_config == nullptr || m_pluginManager == nullptr) {
     return;
   }
-  // Refresh the browsable catalog off the UI thread (throttled) before building the
-  // store, so it lists plugins published since the last fetch. The build itself stays
-  // on the main thread, reading the now-fetched catalog.
+  // Refresh the browsable catalog off the UI thread (throttled) and read it there too:
+  // discoverCatalog clones on first browse and lazy-fetches catalog blobs from the
+  // blobless clone, both network-bound. Only the sheet build runs on the main thread.
   auto* manager = m_pluginManager;
   PluginsConfig pluginsSnapshot = m_config->config().plugins;
   std::thread([this, manager, pluginsSnapshot = std::move(pluginsSnapshot)]() mutable {
     manager->fetchStaleCatalogs(pluginsSnapshot);
-    DeferredCall::callLater([this]() {
+
+    std::vector<settings::StoreCatalogEntry> catalog;
+    for (const auto& source : pluginsSnapshot.sources) {
+      if (!source.enabled) {
+        continue;
+      }
+      auto result = scripting::discoverCatalog(source);
+      if (!result.ok) {
+        continue;
+      }
+      for (auto& entry : result.entries) {
+        catalog.push_back(
+            settings::StoreCatalogEntry{
+                .entry = std::move(entry),
+                .source = source.name,
+                .sourceConfig = source,
+            }
+        );
+      }
+    }
+
+    DeferredCall::callLater([this, catalog = std::move(catalog)]() mutable {
       if (m_wayland == nullptr
           || m_renderContext == nullptr
           || m_surface == nullptr
@@ -1791,28 +1812,7 @@ void SettingsWindow::openPluginStore() {
         m_editorSheetPopup->close();
       }
 
-      const Config& cfg = m_config->config();
       const float scale = uiScale();
-
-      std::vector<settings::StoreCatalogEntry> catalog;
-      for (const auto& source : cfg.plugins.sources) {
-        if (!source.enabled) {
-          continue;
-        }
-        auto result = scripting::discoverCatalog(source);
-        if (!result.ok) {
-          continue;
-        }
-        for (auto& entry : result.entries) {
-          catalog.push_back(
-              settings::StoreCatalogEntry{
-                  .entry = std::move(entry),
-                  .source = source.name,
-                  .sourceConfig = source,
-              }
-          );
-        }
-      }
 
       std::unordered_set<std::string> onDiskIds;
       for (const auto& p : m_pluginList) {
