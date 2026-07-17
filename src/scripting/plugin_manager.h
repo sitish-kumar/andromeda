@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config/config_types.h"
+#include "scripting/plugin_catalog.h"
 
 #include <chrono>
 #include <filesystem>
@@ -100,8 +101,10 @@ namespace scripting {
 
     // Every plugin offered by the local dev source + each configured source, with
     // its compatibility and active state. For the management CLI / settings browser.
-    [[nodiscard]] std::vector<PluginStatus> list() const;
-    [[nodiscard]] std::vector<PluginStatus> list(const PluginsConfig& plugins) const;
+    // `access` gates git catalog reads: Network (clone / lazy-fetch, worker threads
+    // only) or LocalOnly (safe on the main thread, e.g. the IPC handler).
+    [[nodiscard]] std::vector<PluginStatus> list(CatalogAccess access) const;
+    [[nodiscard]] std::vector<PluginStatus> list(const PluginsConfig& plugins, CatalogAccess access) const;
 
     // Throttled `git fetch` of the enabled git sources in `plugins`, so the settings
     // browser / store show newly published plugins on open without waiting for the

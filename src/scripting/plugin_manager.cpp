@@ -304,7 +304,7 @@ namespace scripting {
     PluginSourceConfig localSource{
         .kind = PluginSourceKind::Path, .name = "local", .location = (std::filesystem::path(data) / "plugins").string()
     };
-    for (const auto& entry : discoverCatalog(localSource).entries) {
+    for (const auto& entry : discoverCatalog(localSource, CatalogAccess::LocalOnly).entries) {
       ids.insert(entry.id);
     }
     return ids;
@@ -463,7 +463,7 @@ namespace scripting {
         if (!source.enabled) {
           continue;
         }
-        const auto catalog = discoverCatalog(source);
+        const auto catalog = discoverCatalog(source, CatalogAccess::Network);
         if (std::ranges::any_of(catalog.entries, [&](const CatalogEntry& e) { return e.id == id; })) {
           offering = source;
           break;
@@ -578,9 +578,11 @@ namespace scripting {
     refresh();
   }
 
-  std::vector<PluginStatus> PluginManager::list() const { return list(m_config.config().plugins); }
+  std::vector<PluginStatus> PluginManager::list(CatalogAccess access) const {
+    return list(m_config.config().plugins, access);
+  }
 
-  std::vector<PluginStatus> PluginManager::list(const PluginsConfig& plugins) const {
+  std::vector<PluginStatus> PluginManager::list(const PluginsConfig& plugins, CatalogAccess access) const {
     const std::unordered_set<std::string> enabledSet(plugins.enabled.begin(), plugins.enabled.end());
 
     std::vector<PluginStatus> out;
@@ -646,14 +648,14 @@ namespace scripting {
           .name = "local",
           .location = (std::filesystem::path(data) / "plugins").string()
       };
-      collect("local", discoverCatalog(localSource), localSource);
+      collect("local", discoverCatalog(localSource, access), localSource);
     }
     // Reverse config order: a later user source outranks earlier ones and the defaults.
     for (const auto& source : std::views::reverse(plugins.sources)) {
       if (!source.enabled) {
         continue;
       }
-      collect(source.name, discoverCatalog(source), source);
+      collect(source.name, discoverCatalog(source, access), source);
     }
     return out;
   }
@@ -854,8 +856,11 @@ namespace scripting {
       sourceLock.emplace(plugin_source_locks::acquire(source->name));
     }
 
-    // Disable this source's plugins so no stale enabled ids linger.
-    for (const auto& entry : discoverCatalog(*source).entries) {
+    // Disable this source's plugins so no stale enabled ids linger. Local-only read:
+    // removal runs on the main thread, and enumerating a source just to delete it must
+    // not clone or lazy-fetch. A blob missing locally leaves its id enabled, same as
+    // removing while offline.
+    for (const auto& entry : discoverCatalog(*source, CatalogAccess::LocalOnly).entries) {
       m_config.setPluginEnabled(entry.id, false);
     }
     if (source->kind == PluginSourceKind::Git) {

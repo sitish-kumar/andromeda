@@ -577,7 +577,9 @@ void Application::initIpc() {
         const std::string& cmd = parts[0];
         if (cmd == "list") {
           std::string out;
-          for (const auto& s : m_pluginManager.list()) {
+          // Local-only: IPC handlers run on the main loop, so the listing must never
+          // clone or lazy-fetch; it reflects the last-fetched local catalog.
+          for (const auto& s : m_pluginManager.list(scripting::CatalogAccess::LocalOnly)) {
             const std::string dependencies =
                 s.dependencies.empty() ? std::string{} : " requires " + StringUtils::join(s.dependencies, ", ");
             out += std::format(

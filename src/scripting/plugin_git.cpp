@@ -111,9 +111,17 @@ namespace scripting::plugin_git {
     );
   }
 
-  GitResult showFile(const std::filesystem::path& dest, std::string_view repoPath, std::string_view rev) {
+  GitResult
+  showFile(const std::filesystem::path& dest, std::string_view repoPath, std::string_view rev, bool localOnly) {
+    std::vector<process::EnvOverride> env;
+    if (localOnly) {
+      // Error out on a blob missing from the local object store instead of lazy-fetching
+      // it (git >= 2.45; older git ignores the variable and may still fetch).
+      env.push_back({.name = "GIT_NO_LAZY_FETCH", .value = "1"});
+    }
     return run(
-        {"git", "-C", dest.string(), "show", std::string(rev) + ":" + std::string(repoPath)}, kLocalTimeout, kFileCap
+        {"git", "-C", dest.string(), "show", std::string(rev) + ":" + std::string(repoPath)}, kLocalTimeout, kFileCap,
+        std::move(env)
     );
   }
 

@@ -1783,7 +1783,7 @@ void SettingsWindow::openPluginStore() {
       if (!source.enabled) {
         continue;
       }
-      auto result = scripting::discoverCatalog(source);
+      auto result = scripting::discoverCatalog(source, scripting::CatalogAccess::Network);
       if (!result.ok) {
         continue;
       }

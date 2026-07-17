@@ -738,7 +738,7 @@ void SettingsWindow::refreshPluginListIfNeeded() {
     // Refresh the browsable catalog (throttled) so newly published plugins and update
     // badges appear on open, then list against the fetched revision.
     manager->fetchStaleCatalogs(pluginsSnapshot);
-    auto plugins = manager->list(pluginsSnapshot);
+    auto plugins = manager->list(pluginsSnapshot, scripting::CatalogAccess::Network);
     DeferredCall::callLater([this, generation, plugins = std::move(plugins)]() mutable {
       m_pluginListRefreshInFlight = false;
       if (generation != m_pluginListRefreshGeneration) {
