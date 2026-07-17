@@ -171,5 +171,11 @@ namespace settings {
       std::string_view widgetName, std::string_view settingKey, const Config& withOverride,
       const Config& withoutOverride
   );
+  // Effectiveness of a [plugin_settings."author/plugin"] override: absent values
+  // resolve to the manifest-declared default, so an override equal to the plugin
+  // default is not "effective".
+  [[nodiscard]] bool pluginSettingOverrideIsEffective(
+      std::string_view pluginId, std::string_view settingKey, const Config& withOverride, const Config& withoutOverride
+  );
 
 } // namespace settings

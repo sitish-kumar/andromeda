@@ -1554,4 +1554,76 @@ namespace settings {
     return !widgetSettingValuesEqual(resolvedValue(withOverride), resolvedValue(withoutOverride));
   }
 
+  namespace {
+
+    // The manifest-declared default for a plugin-level setting key, mirroring the
+    // plugin settings editor's spec assembly: plugin [[setting]] fields first, then
+    // each [[panel]] entry's shell placement specs and panel-declared fields.
+    std::optional<WidgetSettingValue> pluginSettingDefault(std::string_view pluginId, std::string_view settingKey) {
+      const auto* manifest = scripting::PluginRegistry::instance().findManifest(pluginId);
+      if (manifest == nullptr) {
+        return std::nullopt;
+      }
+      const auto fieldDefault =
+          [&](const std::vector<scripting::ManifestField>& fields) -> std::optional<WidgetSettingValue> {
+        const auto it = std::ranges::find_if(fields, [&](const scripting::ManifestField& field) {
+          return field.key == settingKey;
+        });
+        if (it == fields.end()) {
+          return std::nullopt;
+        }
+        return it->defaultValue();
+      };
+      if (auto value = fieldDefault(manifest->settings)) {
+        return value;
+      }
+      for (const auto& entry : manifest->entries) {
+        if (entry.kind != scripting::PluginEntryKind::Panel) {
+          continue;
+        }
+        for (const auto& spec : pluginPanelShellSettingSpecs(entry)) {
+          if (spec.schema.key == settingKey) {
+            return spec.schema.defaultValue;
+          }
+        }
+        if (auto value = fieldDefault(entry.settings)) {
+          return value;
+        }
+      }
+      return std::nullopt;
+    }
+
+  } // namespace
+
+  bool pluginSettingOverrideIsEffective(
+      std::string_view pluginId, std::string_view settingKey, const Config& withOverride, const Config& withoutOverride
+  ) {
+    const auto valueInConfig = [&](const Config& cfg) -> std::optional<WidgetSettingValue> {
+      const auto pluginIt = cfg.plugins.pluginSettings.find(std::string(pluginId));
+      if (pluginIt == cfg.plugins.pluginSettings.end()) {
+        return std::nullopt;
+      }
+      const auto keyIt = pluginIt->second.find(std::string(settingKey));
+      if (keyIt == pluginIt->second.end()) {
+        return std::nullopt;
+      }
+      return keyIt->second;
+    };
+    const auto withValue = valueInConfig(withOverride);
+    const auto withoutValue = valueInConfig(withoutOverride);
+    if (!withValue.has_value() && !withoutValue.has_value()) {
+      return false;
+    }
+
+    const auto defaultValue = pluginSettingDefault(pluginId, settingKey);
+    if (!defaultValue.has_value()) {
+      // Unknown key (plugin not loaded or stale override): presence alone decides.
+      if (!withValue.has_value() || !withoutValue.has_value()) {
+        return true;
+      }
+      return !widgetSettingValuesEqual(*withValue, *withoutValue);
+    }
+    return !widgetSettingValuesEqual(withValue.value_or(*defaultValue), withoutValue.value_or(*defaultValue));
+  }
+
 } // namespace settings
