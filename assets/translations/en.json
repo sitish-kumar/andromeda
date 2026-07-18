@@ -2169,6 +2169,10 @@
           "description": "Use smaller icons and tighter result rows",
           "label": "Compact Rows"
         },
+        "launcher-currency-exchange": {
+          "description": "Fetch rates from third party online sources",
+          "label": "Currency Exchange Conversion"
+        },
         "launcher-global-calculator": {
           "description": "Also show calculator results in unprefixed search",
           "label": "Calculator in Global Search"

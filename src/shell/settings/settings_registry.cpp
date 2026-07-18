@@ -1163,6 +1163,12 @@ namespace settings {
         ToggleSetting{cfg.shell.launcher.sortByUsage}, "launcher sort usage recently used frequency"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-currency-exchange.label"),
+        tr("settings.schema.panels.launcher-currency-exchange.description"),
+        {"shell", "launcher", "fetch_exchange_rates"}, ToggleSetting{cfg.shell.launcher.fetchExchangeRates},
+        "launcher currency exchange rates fetch online conversion"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-character.label"),
         tr("settings.schema.panels.launcher-prefix-character.description"), {"shell", "launcher", "provider_prefix"},
         TextSetting{.value = cfg.shell.launcher.providerPrefix, .placeholder = "/"}, "launcher common prefix character"
