@@ -54,8 +54,7 @@ namespace {
   dockLaunchOptions(const CompositorPlatform& platform, const ConfigService& config) {
     std::string token;
     if (platform.hasXdgActivation()) {
-      // Match launcher/taskbar: no layer-shell surface. Binding the dock surface can misplace
-      // first launches on Hyprland multi-monitor setups (see issue #3451).
+      // No layer-shell surface — binding it can misplace first launches on Hyprland.
       token = platform.requestActivationToken(nullptr);
     }
     return desktop_entry_launch::LaunchOptions{
@@ -473,9 +472,8 @@ void Dock::requestLayout() {
 // ── Input ─────────────────────────────────────────────────────────────────────
 
 bool Dock::onPointerEvent(const PointerEvent& event) {
-  // Route to any open popup first.
-  // If a pointer press is not consumed by the popup, close it and let the same
-  // event continue to dock item hit-testing.
+  // Route open popups first. Unconsumed presses dismiss the menu; only continue to
+  // dock hit-testing when the press is on the dock itself.
   if (m_itemMenu != nullptr) {
     const bool consumed = shell::dock::routePopupEvent(*m_itemMenu, event);
     if (consumed) {
@@ -483,6 +481,9 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
     }
     if (event.type == PointerEvent::Type::Button && event.state == 1) {
       closeItemMenu();
+      if (event.surface == nullptr || !m_surfaceMap.contains(event.surface)) {
+        return true;
+      }
     }
   }
 
@@ -1027,10 +1028,7 @@ void Dock::closeItemMenu() {
     return;
   }
 
-  // Grabbed xdg popups (especially on Hyprland) often skip Leave on the dock
-  // while the menu is open. Resync from the compositor's last pointer surface
-  // instead of assuming the pointer left — otherwise pointerInside can stick
-  // true and block smart auto-hide when a new window appears.
+  // Resync hover after grab dismiss — Leave is often missing while the menu is open.
   const wl_surface* ownerSurface = owner->surface != nullptr ? owner->surface->wlSurface() : nullptr;
   owner->pointerInside = m_platform != nullptr
       && ownerSurface != nullptr
@@ -1088,8 +1086,7 @@ void Dock::tryFulfillPendingLaunchFocus() {
     if (window == nullptr) {
       return;
     }
-    // Window appeared on the wrong output (common on Hyprland with a closed-lid
-    // internal display still marked focused). Move it before activating.
+    // Landed off the launch monitor; relocate before activate.
     if (pending.targetOutput != nullptr) {
       m_platform->moveToplevelToOutput(*window, pending.targetOutput);
     }
@@ -1117,8 +1114,6 @@ void Dock::activateOrLaunchItem(shell::dock::DockInstance& instance, const shell
         .targetOutput = instance.output,
         .deadline = std::chrono::steady_clock::now() + std::chrono::seconds(8),
     };
-    // Focus the dock's monitor before spawn so Hyprland does not place the first
-    // client on a stale/disabled internal display (issue #3451).
     m_platform->prepareAppLaunchOnOutput(instance.output);
     (void)desktop_entry_launch::launchEntry(action.entry, dockLaunchOptions(*m_platform, *m_config));
     return;

@@ -483,8 +483,7 @@ namespace {
       if (root == nullptr || box == nullptr) {
         continue;
       }
-      // Hidden / layout-skipped members keep stale (0,0) geometry — don't place a hover
-      // pill or feed that geometry into neighbor hit tiling.
+      // Skip hidden members — Flex leaves them at stale (0,0) geometry.
       if (!root->visible() || !root->participatesInLayout()) {
         box->setSize(0.0f, 0.0f);
         continue;
@@ -538,9 +537,7 @@ namespace {
         continue;
       }
 
-      // Group runs: tile the capsule between laid-out members only. Hidden widgets
-      // (e.g. notifications with hide_when_no_unread) stay in the run but Flex skips
-      // them, leaving stale (0,0) geometry that would corrupt neighbor midpoints.
+      // Tile only laid-out members; hidden ones keep stale geometry.
       std::vector<std::size_t> laidOut;
       laidOut.reserve(run.widgets.size());
       for (std::size_t i = 0; i < run.widgets.size(); ++i) {
