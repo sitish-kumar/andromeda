@@ -1075,15 +1075,24 @@ void Dock::tryFulfillPendingLaunchFocus() {
     return;
   }
 
-  auto windows =
-      shell::dock::windowsForDockItem(*m_platform, pending.idLower, pending.wmClassLower, pending.outputFilter);
-  if (windows.empty() && pending.outputFilter != nullptr) {
-    windows = shell::dock::windowsForDockItem(*m_platform, pending.idLower, pending.wmClassLower, nullptr);
-  }
-
-  const ToplevelInfo* window = newestActivatableWindow(windows);
+  auto windowsOnTarget =
+      shell::dock::windowsForDockItem(*m_platform, pending.idLower, pending.wmClassLower, pending.targetOutput);
+  const ToplevelInfo* window = newestActivatableWindow(windowsOnTarget);
   if (window == nullptr) {
-    return;
+    auto windows =
+        shell::dock::windowsForDockItem(*m_platform, pending.idLower, pending.wmClassLower, pending.outputFilter);
+    if (windows.empty() && pending.outputFilter != nullptr) {
+      windows = shell::dock::windowsForDockItem(*m_platform, pending.idLower, pending.wmClassLower, nullptr);
+    }
+    window = newestActivatableWindow(windows);
+    if (window == nullptr) {
+      return;
+    }
+    // Window appeared on the wrong output (common on Hyprland with a closed-lid
+    // internal display still marked focused). Move it before activating.
+    if (pending.targetOutput != nullptr) {
+      m_platform->moveToplevelToOutput(*window, pending.targetOutput);
+    }
   }
 
   m_pendingLaunchFocus.reset();
@@ -1105,8 +1114,12 @@ void Dock::activateOrLaunchItem(shell::dock::DockInstance& instance, const shell
         .idLower = action.windowLookupIdLower,
         .wmClassLower = action.windowLookupWmClassLower,
         .outputFilter = shell::dock::dockFilterOutput(m_config->config().dock, instance.output),
+        .targetOutput = instance.output,
         .deadline = std::chrono::steady_clock::now() + std::chrono::seconds(8),
     };
+    // Focus the dock's monitor before spawn so Hyprland does not place the first
+    // client on a stale/disabled internal display (issue #3451).
+    m_platform->prepareAppLaunchOnOutput(instance.output);
     (void)desktop_entry_launch::launchEntry(action.entry, dockLaunchOptions(*m_platform, *m_config));
     return;
   }
@@ -1177,7 +1190,9 @@ void Dock::openItemMenu(shell::dock::DockInstance& instance, const shell::dock::
             }
           },
       .launchAction =
-          [this, entryId, entryWorkingDir, entryTerminal](const DesktopAction& desktopAction) {
+          [this, entryId, entryWorkingDir, entryTerminal,
+           output = instance.output](const DesktopAction& desktopAction) {
+            m_platform->prepareAppLaunchOnOutput(output);
             (void)desktop_entry_launch::launchAction(
                 desktopAction, entryId, entryWorkingDir, entryTerminal, dockLaunchOptions(*m_platform, *m_config)
             );

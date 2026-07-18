@@ -110,6 +110,13 @@ public:
   void closeToplevelInfo(const ToplevelInfo& window);
   void focusCompositorWindow(const std::string& windowId) const;
 
+  // Before spawning a client, focus `output` in the compositor when supported
+  // (Hyprland). Layer-shell clicks often leave focus on a stale/disabled monitor.
+  void prepareAppLaunchOnOutput(wl_output* output);
+
+  // Move a toplevel onto `output` when the compositor supports it (Hyprland).
+  void moveToplevelToOutput(const ToplevelInfo& window, wl_output* output);
+
   void activateKdeWindow(const std::string& title, const std::string& appId, const std::string& uuid = {});
 
   void setToplevelChangeCallback(ChangeCallback callback);
