@@ -2,7 +2,6 @@
 
 #include "config/config_service.h"
 #include "config/config_types.h"
-#include "core/files/resource_paths.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "render/scene/node.h"
@@ -1567,7 +1566,7 @@ namespace settings {
             options.defaultViewMode = FileDialogViewMode::Grid;
             options.title = i18n::tr("settings.widgets.settings.custom-image.dialog-title");
             options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"};
-            options.startDirectory = paths::assetPath("images");
+            options.startDirectory = "/usr/share/icons";
             ctx.makeRow(
                 *panel, entry,
                 makePathBrowseControl(

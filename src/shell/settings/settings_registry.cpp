@@ -3,7 +3,6 @@
 #include "config/config_types.h"
 #include "config/schema/config_schema.h"
 #include "config/schema/ranges.h"
-#include "core/files/resource_paths.h"
 #include "core/log.h"
 #include "core/process/process.h"
 #include "i18n/i18n.h"
@@ -901,7 +900,7 @@ namespace settings {
               .placeholder = tr("settings.schema.dock.launcher-custom-image.placeholder"),
               .browseMode = TextSettingBrowseMode::OpenFile,
               .browseFileExtensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"},
-              .browseFallbackDirectory = paths::assetPath("images").string(),
+              .browseFallbackDirectory = "/usr/share/icons",
           },
           "launcher apps image picture logo"
       );
