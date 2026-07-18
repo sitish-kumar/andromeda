@@ -138,15 +138,15 @@
     },
     "entry": {
       "image": "Imagem",
-      "title": "Entrada na área de transferência"
+      "title": "Entrada na Área de Transferência"
     },
-    "filter-placeholder": "Filtro da área de transferência",
+    "filter-placeholder": "Filtrar área de transferência...",
     "preview": {
       "empty-text-payload": "(corpo do texto vazio)",
       "image-title": "Entrada na Área de Transferência de Imagem ",
       "loading": "Carregando pré-visualização...",
       "text-title": "Entrada na Área de Transferência de Texto",
-      "truncated": "...truncado"
+      "truncated": "... truncado"
     },
     "title": "Área de Transferência"
   },
@@ -426,7 +426,7 @@
         "done": "Pronto",
         "flip-horizontal": "Virar horizontalmente",
         "flip-vertical": "Virar verticalmente",
-        "hide": "Esconder",
+        "hide": "Ocultar",
         "settings": "Configurações",
         "show": "Exibir",
         "stack-back": "Empilhar Atrás",
@@ -472,7 +472,7 @@
         "format": "Formato",
         "gauge-layout": "Layout do Medidor",
         "glyph": "Símbolo",
-        "hide-when-no-media": "Esconder Quando Não houver mídia",
+        "hide-when-no-media": "Ocultar Quando Não Houver Mídia",
         "highlight-color": "Cor de Destaque",
         "horizontal": "Horizontal",
         "hover-background": "Fundo ao passar o mouse",
@@ -630,7 +630,7 @@
         "title": "Sessão"
       },
       "wallpaper": {
-        "title": "Papel de parede"
+        "title": "Papel de Parede"
       },
       "window": {
         "title": "Janelas"
@@ -717,7 +717,7 @@
       "screen-time-reset": "Tempo de Tela",
       "screen-time-reset-success": "Histórico de uso limpo.",
       "session-bus-unavailable": "Sessão bus indisponível",
-      "wallpaper-palette-export": "Paleta personalizada",
+      "wallpaper-palette-export": "Paleta Personalizada",
       "wallpaper-palette-export-success": "Salvou \"{name}\" e mudou a origem da paleta para personalizada."
     }
   },
@@ -802,7 +802,7 @@
     "profiles": {
       "balanced": "Balanceado",
       "performance": "Performance",
-      "power-saver": "Economia de energia"
+      "power-saver": "Economia de Energia"
     }
   },
   "session": {
@@ -828,7 +828,7 @@
       "advanced": "Avançado",
       "community": "Comunidade",
       "deprecated": "Obsoleto",
-      "inherited": "herdado",
+      "inherited": "Herdado",
       "monitor": "Monitor",
       "official": "Oficial",
       "override": "Sobrescrever"
@@ -937,8 +937,8 @@
           "fill-description": "Função de cor de fundo da cápsula; cores hexadecimais fixas também são suportadas",
           "foreground": "Primeiro plano",
           "foreground-description": "Função da cor do ícone e do rótulo para widgets neste grupo",
-          "hide": "Esconder esse grupo",
-          "hide-widget": "Esconder esse widget",
+          "hide": "Ocultar esse grupo",
+          "hide-widget": "Ocultar esse widget",
           "hint": "Parte de um grupo de cápsula",
           "members": "{count} widgets",
           "opacity": "Opacidade",
@@ -1128,7 +1128,7 @@
         "osd": "OSD",
         "overview": "Visão Geral",
         "pinned-apps": "Apps fixados",
-        "polkit": "polkit",
+        "polkit": "Polkit",
         "power": "Energia",
         "privacy": "Privacidade",
         "profile": "Perfil",
@@ -1173,7 +1173,7 @@
         "shell": "Shell",
         "system": "Sistema",
         "templates": "Modelos",
-        "wallpaper": "Papel de parede"
+        "wallpaper": "Papel de Parede"
       }
     },
     "notifications": {
@@ -1324,7 +1324,7 @@
           "built-in": "Integradas",
           "community": "Comunidade",
           "custom": "Personalizada",
-          "wallpaper": "Papel de parede"
+          "wallpaper": "Papel de Parede"
         }
       },
       "theme-role": {
@@ -1337,7 +1337,7 @@
           "crop": "Cortar",
           "fit": "Encaixar",
           "repeat": "Repetir",
-          "span": "Extender",
+          "span": "Estender",
           "stretch": "Esticar"
         },
         "order": {
@@ -1346,7 +1346,7 @@
         },
         "transition": {
           "disc": "Disco",
-          "fade": "Esmaecer",
+          "fade": "Desvanecer",
           "honeycomb": "Favo de mel",
           "stripes": "Listras",
           "wipe": "Limpar",
@@ -1588,7 +1588,7 @@
         },
         "concave-edge-corners": {
           "description": "Cria entalhes côncavos em dois dos cantos da barra (requer que a Margem da borda seja 0); Com a Margem das extremidades em 0, os cantos na borda interna da barra são recortados; caso contrário, os cantos que tocam a borda da tela são recortados.",
-          "label": "Cantos com Bordas Côncavas"
+          "label": "Cantos de Borda Côncavos"
         },
         "contact-shadow": {
           "description": "Gradiente escuro entre um painel anexado e a barra para sugerir profundidade na junção"
@@ -1608,7 +1608,7 @@
           "description": "Raio do canto inferior direito da barra"
         },
         "corner-radius": {
-          "description": "Raio do canto da barra"
+          "description": "Raio dos cantos da barra"
         },
         "corner-top-left": {
           "description": "Raio do canto superior esquerdo da barra"
@@ -1794,7 +1794,7 @@
         },
         "concave-edge-corners": {
           "description": "Esculpe os cantos para dentro no lado que toca a borda da tela; requer que a margem em relação à borda da tela seja 0",
-          "label": "Cantos Côncavos da Borda"
+          "label": "Cantos de Borda Côncavos"
         },
         "corner-bottom-left": {
           "description": "Raio do canto inferior esquerdo do dock"
@@ -1803,7 +1803,7 @@
           "description": "Raio do canto inferior direito do dock"
         },
         "corner-radius": {
-          "description": "Raio de canto do dock"
+          "description": "Raio dos cantos do dock"
         },
         "corner-top-left": {
           "description": "Raio do canto superior esquerdo do dock"
@@ -1821,7 +1821,7 @@
           "description": "Mostra ou oculta o dock"
         },
         "ends-margin": {
-          "description": "Recuo em cada extremidade do dock ao longo do eixo principal"
+          "description": "Espaço nas extremidades do dock ao longo do eixo principal"
         },
         "icon-size": {
           "description": "Tamanho dos ícones do dock em pixels",
@@ -1901,76 +1901,76 @@
         "command-placeholder": "comando do shell ou caminho do script",
         "events": {
           "battery-charging": {
-            "description": "Comando para rodar quando a bateria começar a carregar",
-            "label": "Carregar a Bateria"
+            "description": "Comando para executar quando a bateria começar a carregar",
+            "label": "Ao Carregar a Bateria"
           },
           "battery-discharging": {
-            "description": "Comando para rodar quando a bateria começar a descarregar",
-            "label": "Bateria Descarregando"
+            "description": "Comando para executar quando a bateria começar a descarregar",
+            "label": "Ao Descarregar a Bateria"
           },
           "battery-percentage-changed": {
-            "description": "Comando para rodar quando a porcentagem da bateria mudar",
-            "label": "Mudança na Porcentagem da Bateria"
+            "description": "Comando para executar quando a porcentagem da bateria mudar",
+            "label": "Ao Mudar a Porcentagem da Bateria"
           },
           "battery-plugged": {
-            "description": "Comando para rodar quando a bateria estiver completamente de carga carregada ou pendente",
-            "label": "Conectar o carregador"
+            "description": "Comando para executar quando a bateria estiver totalmente carregada ou com carga pendente",
+            "label": "Ao Conectar o Carregador"
           },
           "bluetooth-disabled": {
-            "description": "Comando para rodar quando o Bluetooth for desabilitado",
+            "description": "Comando para executar quando o Bluetooth for ativado",
             "label": "Ao Desativar o Bluetooth"
           },
           "bluetooth-enabled": {
-            "description": "Comando para rodar quando o Bluetooth for habilitado",
-            "label": "Bluetooth Ativado"
+            "description": "Comando para executar quando o Bluetooth for ativado",
+            "label": "Ao Ativar o Bluetooth"
           },
           "colors-changed": {
-            "description": "Comando para rodar quando a paleta de cor ativa mudar",
-            "label": "Mudança de Cores"
+            "description": "Comando para executar quando a paleta de cores ativa mudar",
+            "label": "Ao Mudar as Cores"
           },
           "logging-out": {
-            "description": "Comando para rodar antes de sair da sessão",
+            "description": "Comando para executar antes de sair da sessão",
             "label": "Ao Sair"
           },
           "power-profile-changed": {
-            "description": "Comando para rodar quando o UPower/PPD perfil de energia ativo mudar",
-            "label": "Quando o Perfil de Energia Mudar"
+            "description": "Comando para executar quando o perfil de energia ativo do UPower/PPD mudar",
+            "label": "Ao Mudar o Perfil de Energia"
           },
           "rebooting": {
-            "description": "Comando para rodar antes de reiniciar",
+            "description": "Comando para executar antes de reiniciar",
             "label": "Ao Reiniciar"
           },
           "session-locked": {
-            "description": "Comando para rodar quando a sessão for bloqueada",
+            "description": "Comando para executar quando a sessão for bloqueada",
             "label": "Ao Bloquear a Sessão"
           },
           "session-unlocked": {
-            "description": "Comando para rodar depois que a sessão for desbloqueada ",
+            "description": "Comando para executar depois que a sessão for desbloqueada ",
             "label": "Ao Desbloquear a Sessão"
           },
           "shutting-down": {
-            "description": "Comando para rodar antes de desligar",
+            "description": "Comando para executar antes de desligar",
             "label": "Ao Desligar"
           },
           "started": {
-            "description": "Comando para rodar depois que o Noctalia iniciar",
+            "description": "Comando para executar após o Noctalia iniciar",
             "label": "Ao Iniciar"
           },
           "theme-mode-changed": {
-            "description": "Comando para rodar quando o modo de tema escolhido mudar entre claro e escuro",
-            "label": "Ao Mudar O Modo do Tema"
+            "description": "Comando para executar quando o modo do tema alternar entre claro e escuro",
+            "label": "Ao Mudar o Modo do Tema"
           },
           "wallpaper-changed": {
-            "description": "Comando para rodar quando o papel de parede mudar",
+            "description": "Comando para executar quando o papel de parede mudar; fornece NOCTALIA_WALLPAPER_PATH e NOCTALIA_WALLPAPER_CONNECTOR",
             "label": "Ao Mudar o Papel de Parede"
           },
           "wifi-disabled": {
-            "description": "Comando para rodar quando o Wi-Fi for desabilitado",
-            "label": "Ao Desabilitar o Wi-Fi"
+            "description": "Comando para executar o Wi-Fi for desativado",
+            "label": "Ao Desativar o Wi-Fi"
           },
           "wifi-enabled": {
-            "description": "Comando para rodar quando o Wi-Fi for habilitado",
-            "label": "Ao Habilitar o Wi-Fi"
+            "description": "Comando para executar quando o Wi-Fi for ativado",
+            "label": "Ao Ativar o Wi-Fi"
           }
         }
       },
@@ -2321,15 +2321,15 @@
       },
       "services": {
         "audio-overdrive": {
-          "description": "Permite volume além de 100%",
-          "label": "Amplificação extra de áudio"
+          "description": "Permitir volume acima de 100%",
+          "label": "Amplificação Extra de Áudio"
         },
         "calendar": {
-          "description": "Mostra eventos das suas contas de calendários online",
+          "description": "Mostrar eventos das suas contas de calendários online",
           "label": "Calendário"
         },
         "calendar-add": {
-          "button": "Adicionar conta",
+          "button": "Adicionar Conta",
           "description": "Adicionar contas iCloud, CalDAV ou Google",
           "label": "Contas de Calendário"
         },
@@ -2347,7 +2347,7 @@
         },
         "day-temperature": {
           "description": "Temperatura de cor durante o dia (Kelvin)",
-          "label": "Temperatura do dia"
+          "label": "Temperatura do Dia"
         },
         "ddcutil": {
           "description": "Controla brilho do monitor externo via DDC/CI",
@@ -2368,8 +2368,8 @@
           "placeholder": "Cidade, País"
         },
         "location-auto-locate": {
-          "description": "Detecta sua localização automaticamente a partir do seu endereço IP",
-          "label": "Auto-Locate (IP)"
+          "description": "Detectar sua localização automaticamente a partir do seu endereço IP",
+          "label": "Localização Automática (IP)"
         },
         "longitude": {
           "description": "Longitude manual para a programação de nascer/pôr do sol, usada quando auto-locate e endereço estão desativados",
@@ -2377,20 +2377,20 @@
         },
         "minimum-brightness": {
           "description": "Impedir que a tela fique completamente escura",
-          "label": "Brilho mínimo"
+          "label": "Brilho Mínimo"
         },
         "mpris-blacklist": {
-          "description": "Players para ignorar no controle de mídia e Reproduzindo agora",
-          "label": "Lista Negra do MPRIS Player"
+          "description": "Players para ignorar no controle de mídia e Reproduzindo Agora",
+          "label": "Lista Negra de Players MPRIS"
         },
         "night-light": {
-          "description": "Deixa as cores da tela mais quentes à noite",
+          "description": "Deixar as cores da tela mais quentes à noite",
           "label": "Luz Noturna",
           "requires-gamma-control": "O compositor não oferece suporte ao controle de gama"
         },
         "night-temperature": {
           "description": "Temperatura de cor à noite  (Kelvin)",
-          "label": "Temperatura Noturna"
+          "label": "Temperatura da Noite"
         },
         "notification-sound": {
           "description": "Arquivo de áudio usado para feedback de notificação",
@@ -2403,42 +2403,42 @@
         },
         "sound-volume": {
           "description": "Volume para efeitos de som da shell",
-          "label": "Volume do áudio"
+          "label": "Volume do Áudio"
         },
         "sunrise": {
-          "description": "Tempo manual do nascer do sol em HH:MM, usado quando não há localização definida",
+          "description": "Horário manual do nascer do sol em HH:MM, usado quando não há localização definida",
           "label": "Nascer do Sol"
         },
         "sunset": {
-          "description": "Tempo manual do pôr do sol em HH:MM, usado quando não há localização definida",
+          "description": "Horário manual do pôr do sol em HH:MM, usado quando não há localização definida",
           "label": "Pôr do Sol"
         },
         "sync-monitor-brightness": {
           "description": "Sincronizar brilho em todos monitores",
-          "label": "Sincroniza o brilho do monitor"
+          "label": "Sincronizar o brilho do monitor"
         },
         "system-monitor": {
           "cpu-poll": {
             "description": "Segundos entre as coletas de uso da CPU, temperatura da CPU e média de carga (0 desativa)",
-            "label": "Intervalo de polling da CPU"
+            "label": "Intervalo de Polling da CPU"
           },
-          "description": "Coleta estatísticas de CPU, memória, rede, carga do sistema, temperatura e disco",
+          "description": "Coletar estatísticas de CPU, memória, rede, carga do sistema, temperatura e disco",
           "disk-poll": {
             "description": "Segundos entre as coletas de uso do disco e uso da swap (0 desativa)",
-            "label": "Intervalo de polling do Disco"
+            "label": "Intervalo de Polling do Disco"
           },
           "gpu-poll": {
             "description": "Segundos entre as coletas de temperatura da GPU e uso da VRAM. 0 desativa isso por padrão, evitando acordar uma GPU dedicada; 5 é um bom intervalo se você ativar",
-            "label": "Intervalo de polling da GPU"
+            "label": "Intervalo de Polling da GPU"
           },
           "label": "Monitor do Sistema",
           "memory-poll": {
             "description": "Segundos entre as amostras de uso da RAM (0 desativa)",
-            "label": "Intervalo de polling da Memória"
+            "label": "Intervalo de Polling da Memória"
           },
           "network-poll": {
             "description": "Segundos entre as coletas de taxa de transferência da rede (0 desativa)",
-            "label": "Intervalo de polling da Rede"
+            "label": "Intervalo de Polling da Rede"
           },
           "stats": {
             "cpu-temp": "Temp da CPU",
@@ -2467,7 +2467,7 @@
           "label": "Clima"
         },
         "weather-effects": {
-          "description": "Mostra efeitos visual do clima",
+          "description": "Mostrar efeitos visual do clima",
           "label": "Efeitos do Clima"
         },
         "weather-refresh-interval": {
@@ -2496,31 +2496,31 @@
           "label": "Raio inferior direito"
         },
         "corner-radius": {
-          "label": "Raio dos cantos"
+          "label": "Raio dos Cantos"
         },
         "corner-top-left": {
-          "label": "Raio superior esquerdo"
+          "label": "Raio Superior Esquerdo"
         },
         "corner-top-right": {
-          "label": "Raio inferior direito"
+          "label": "Raio Superior Direito"
         },
         "cross-axis-padding": {
           "label": "Espaçamento no eixo transversal"
         },
         "edge-margin": {
-          "label": "Margem da borda"
+          "label": "Margem da Borda"
         },
         "enabled": {
           "label": "Habilitado"
         },
         "ends-margin": {
-          "label": "Recuo nas extremidades"
+          "label": "Margem das Extremidades"
         },
         "main-axis-padding": {
           "label": "Espaçamento principal no eixo transversal"
         },
         "opposite-edge-margin": {
-          "label": "Margem da Extremidade Oposta"
+          "label": "Margem Interna"
         },
         "position": {
           "label": "Posição"
@@ -2554,7 +2554,7 @@
         },
         "clipboard-enabled": {
           "description": "Ative o histórico da área de transferência, o painel da área de transferência e a integração de copiar/colar",
-          "label": "Área de transferência"
+          "label": "Área de Transferência"
         },
         "clipboard-history-max-entries": {
           "description": "Número máximo de entradas não fixadas mantidas no histórico da área de transferência",
@@ -2838,8 +2838,8 @@
           "placeholder": "~/Pictures/Wallpapers"
         },
         "edge-smoothness": {
-          "description": "Suavização das bordas de transição entre papéis de parede",
-          "label": "Suavidade da borda"
+          "description": "Suavização das extremidades de transição entre papéis de parede",
+          "label": "Suavidade da Extremidade"
         },
         "enabled": {
           "description": "Ativa o serviço de papel de parede"
@@ -3139,7 +3139,7 @@
           "label": "Altura"
         },
         "hidden": {
-          "description": "ids de itens do Tray para ocultar",
+          "description": "IDs de itens do Tray para ocultar",
           "label": "Ocultar Itens"
         },
         "hide-album-art": {
@@ -3473,7 +3473,7 @@
         "bluetooth": "Bluetooth",
         "brightness": "Brilho",
         "caffeine": "Cafeína",
-        "clipboard": "Área de transferência",
+        "clipboard": "Área de Transferência",
         "clock": "Relógio",
         "control-center": "Central de Controle",
         "custom-button": "Botão Personalizado",
@@ -3652,7 +3652,7 @@
       "sort-date-desc": "Ordenar por data (mais recentes primeiro)",
       "sort-name-asc": "Ordenar por nome (A-Z)",
       "sort-name-desc": "Ordenar por nome (Z-A)",
-      "title": "Papel de parede"
+      "title": "Papel de Parede"
     }
   },
   "weather": {

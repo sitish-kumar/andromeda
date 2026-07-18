@@ -2631,6 +2631,10 @@
           "description": "Show an OSD popup when Do Not Disturb is toggled",
           "label": "Do Not Disturb"
         },
+        "osd-kinds-keyboard-backlight": {
+          "description": "Show an OSD popup when the keyboard backlight level changes",
+          "label": "Keyboard Backlight"
+        },
         "osd-kinds-keyboard-layout": {
           "description": "Show an OSD popup when the input keyboard layout changes",
           "label": "Keyboard Layout"
@@ -2650,10 +2654,6 @@
         "osd-kinds-power-profile": {
           "description": "Show an OSD popup when the power profile changes",
           "label": "Power Profile"
-        },
-        "osd-kinds-keyboard-backlight": {
-          "description": "Show an OSD popup when the keyboard backlight level changes",
-          "label": "Keyboard Backlight"
         },
         "osd-kinds-privacy": {
           "description": "Show an OSD popup when microphone, camera, or screen-share capture starts or stops",
