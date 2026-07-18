@@ -252,22 +252,43 @@ public:
 
     setHeader(std::move(header));
 
-    auto bodyColumn = ui::column(
-        {
-            .align = FlexAlign::Stretch,
-            .gap = Style::spaceSm * scale,
+    auto bodyColumn = ui::column({
+        .align = FlexAlign::Stretch,
+        .gap = Style::spaceSm * scale,
+        .configure = [scale](Flex& col) {
+          col.setPadding(
+              Style::spaceXs * scale, Style::spaceMd * scale, Style::spaceSm * scale, Style::spaceMd * scale
+          );
         },
+    });
+
+    if (m_device.paired) {
+      bodyColumn->addChild(
+          ui::row(
+              {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
+              ui::label({
+                  .text = i18n::tr("control-center.bluetooth.auto-reconnect"),
+                  .fontSize = Style::fontSizeCaption * scale,
+                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                  .flexGrow = 1.0f,
+              }),
+              ui::toggle({
+                  .checkedImmediate = m_device.trusted,
+                  .toggleSize = ToggleSize::Small,
+                  .scale = scale,
+                  .onChange = [this](bool checked) {
+                    if (m_service != nullptr) {
+                      m_service->setTrusted(m_device.path, checked);
+                    }
+                  },
+              })
+          )
+      );
+    }
+
+    bodyColumn->addChild(
         ui::row(
-            {
-                .align = FlexAlign::Center,
-                .gap = Style::spaceSm * scale,
-                .configure =
-                    [scale](Flex& body) {
-                      body.setPadding(
-                          Style::spaceXs * scale, Style::spaceMd * scale, Style::spaceSm * scale, Style::spaceMd * scale
-                      );
-                    },
-            },
+            {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
             ui::label({
                 .text = i18n::tr("control-center.bluetooth.address"),
                 .fontSize = Style::fontSizeCaption * scale,
@@ -281,37 +302,6 @@ public:
             )
         )
     );
-
-    if (m_device.paired) {
-      bodyColumn->addChild(
-          ui::row(
-              {.align = FlexAlign::Center,
-               .gap = Style::spaceSm * scale,
-               .configure =
-                   [scale](Flex& body) {
-                     body.setPadding(
-                         Style::spaceXs * scale, Style::spaceMd * scale, Style::spaceSm * scale, Style::spaceMd * scale
-                     );
-                   }},
-              ui::label({
-                  .text = i18n::tr("control-center.bluetooth.auto-reconnect"),
-                  .fontSize = Style::fontSizeCaption * scale,
-                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                  .flexGrow = 1.0f,
-              }),
-              ui::toggle({
-                  .checkedImmediate = m_device.trusted,
-                  .toggleSize = ToggleSize::Medium,
-                  .scale = scale,
-                  .onChange = [this](bool checked) {
-                    if (m_service != nullptr) {
-                      m_service->setTrusted(m_device.path, checked);
-                    }
-                  },
-              })
-          )
-      );
-    }
 
     setBody(std::move(bodyColumn));
   }
