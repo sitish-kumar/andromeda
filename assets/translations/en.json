@@ -1474,18 +1474,6 @@
           "description": "Draw outlines around buttons throughout the shell",
           "label": "Button Borders"
         },
-        "input-borders": {
-          "description": "Draw outlines around text fields and other inputs throughout the shell",
-          "label": "Input Borders"
-        },
-        "popup-borders": {
-          "description": "Draw outlines around popups and dropdowns",
-          "label": "Popup Borders"
-        },
-        "popup-shadows": {
-          "description": "Draw drop shadows behind popups and dropdowns",
-          "label": "Popup Shadows"
-        },
         "community-palette": {
           "description": "Choose a palette from the community catalog",
           "label": "Community Palette",
@@ -1515,6 +1503,10 @@
         "global-shadow-direction": {
           "description": "Direction the shadow is cast from surfaces"
         },
+        "input-borders": {
+          "description": "Draw outlines around text fields and other inputs throughout the shell",
+          "label": "Input Borders"
+        },
         "language": {
           "description": "Override automatic locale detection",
           "label": "Language"
@@ -1522,6 +1514,14 @@
         "palette-source": {
           "description": "Where to derive the color palette from",
           "label": "Palette Source"
+        },
+        "popup-borders": {
+          "description": "Draw outlines around popups and dropdowns",
+          "label": "Popup Borders"
+        },
+        "popup-shadows": {
+          "description": "Draw drop shadows behind popups and dropdowns",
+          "label": "Popup Shadows"
         },
         "pure-black-dark": {
           "description": "Anchor dark surfaces to true black, preventing banding on OLED panels (dark mode only)",
@@ -3122,6 +3122,10 @@
           "description": "Size of tray icons inside the drawer panel in pixels",
           "label": "Drawer Icon Size"
         },
+        "effects-profile-glyphs": {
+          "description": "Map EasyEffects profile names to icon glyphs",
+          "label": "Effects Profile Glyphs"
+        },
         "empty-color": {
           "description": "Color role used for empty workspaces; fixed hex colors are also supported",
           "label": "Empty Color"
@@ -3129,10 +3133,6 @@
         "enable-scroll": {
           "description": "Allow mouse wheel and trackpad scroll actions on this widget",
           "label": "Enable Scroll"
-        },
-        "effects-profile-glyphs": {
-          "description": "Map EasyEffects profile names to icon glyphs",
-          "label": "Effects Profile Glyphs"
         },
         "focused-color": {
           "description": "Color role used for the focused workspace; fixed hex colors are also supported",

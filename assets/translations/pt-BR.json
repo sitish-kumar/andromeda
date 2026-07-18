@@ -323,7 +323,7 @@
       "nightlight": "Luz noturna",
       "nightlight-states": {
         "forced": "Sempre ligada",
-        "off": "Luz noturna",
+        "off": "Luz Noturna",
         "scheduled-day": "Agendada",
         "scheduled-night": "Em uso"
       },
@@ -994,7 +994,7 @@
           "groups": {
             "grouping": "Agrupamento",
             "presentation": "Apresentação",
-            "runtime": "Tempo de execução",
+            "runtime": "Tempo de Execução",
             "taskbar": {
               "grouping": "Agrupando",
               "windows": "Janelas",
@@ -1081,18 +1081,18 @@
     "navigation": {
       "groups": {
         "accessibility": "Acessibilidade",
-        "audio": "áudio",
+        "audio": "Áudio",
         "authentication": "Autenticação",
         "automation": "Automação",
-        "backdrop": "Camada de fundo",
-        "background": "Plano de fundo",
+        "backdrop": "Camada de Fundo",
+        "background": "Plano de Fundo",
         "battery": "Bateria",
         "behavior": "Comportamento",
         "brightness": "Brilho",
-        "built-in": "Interno",
+        "built-in": "Integrado",
         "calendar": "Calendário",
         "capsules": "Cápsulas",
-        "clipboard": "Área de transferência",
+        "clipboard": "Área de Transferência",
         "community": "Comunidade",
         "control-center": "Central de Controle",
         "dead-zone": "Zona Morta",
@@ -1100,7 +1100,7 @@
         "display": "Tela",
         "effects": "Efeitos",
         "filtering": "Filtragem",
-        "focus-styling": "Estilo de foco",
+        "focus-styling": "Estilo de Foco",
         "formats": "Formatos",
         "general": "Geral",
         "greeter": "Greeter",
@@ -1118,16 +1118,16 @@
         "lock-screen": "Tela de Bloqueio",
         "media": "Mídia",
         "monitor": "Monitor do Sistema",
-        "monitor-polling": "Intervalos de verificação",
-        "monitor-thresholds": "Limites de realce",
+        "monitor-polling": "Intervalos de Coleta",
+        "monitor-thresholds": "Limites de Destaque",
         "monitors": "Monitores",
         "motion": "Movimento",
-        "network": "Conexão",
+        "network": "Rede",
         "night-light": "Luz Noturna",
         "notifications": "Notificações",
         "osd": "OSD",
         "overview": "Visão Geral",
-        "pinned-apps": "Apps fixados",
+        "pinned-apps": "Apps Fixados",
         "polkit": "Polkit",
         "power": "Energia",
         "privacy": "Privacidade",
@@ -1466,7 +1466,7 @@
         },
         "builtin-palette": {
           "description": "Escolha uma paleta de cores do catálogo incluído.",
-          "label": "Paleta integrada"
+          "label": "Paleta Integrada"
         },
         "button-borders": {
           "description": "Desenhe contornos ao redor dos botões em toda a interface",
@@ -1479,7 +1479,7 @@
         },
         "corner-roundness": {
           "description": "Dimensionar o raio dos cantos em contêineres e controles da interface do usuário do shell",
-          "label": "Arredondamento de cantos"
+          "label": "Arredondamento de Cantos"
         },
         "custom-palette": {
           "description": "Escolha uma paleta em ~/.config/noctalia/palettes/",
@@ -1507,7 +1507,7 @@
         },
         "palette-source": {
           "description": "De onde derivar a paleta de cores",
-          "label": "Fonte da paleta"
+          "label": "Fonte da Paleta"
         },
         "pure-black-dark": {
           "description": "Ajustar as superfícies escuras para o preto verdadeiro, evitando o efeito de faixas nos painéis OLED (somente no modo escuro)",
@@ -1749,7 +1749,7 @@
         },
         "screen-corners-enabled": {
           "description": "Arredonde os cantos da tela com uma sobreposição preta",
-          "label": "Cantos da tela"
+          "label": "Cantos da Tela"
         },
         "screen-corners-size": {
           "description": "Raio dos cantos arredondados da tela em pixels",
@@ -1837,7 +1837,7 @@
         },
         "item-spacing": {
           "description": "Espaço entre itens do dock",
-          "label": "Espaçamento entre Itens "
+          "label": "Espaçamento de Itens "
         },
         "launcher-custom-image": {
           "description": "Use uma imagem no botão do launcher na dock ao invés de um ícone",
@@ -1854,7 +1854,7 @@
         },
         "launcher-position": {
           "description": "Mostra um botão do launcher no início ou fim do dock",
-          "label": "Botão do launcher"
+          "label": "Botão do Launcher"
         },
         "magnification": {
           "description": "Ampliar ícones do Dock próximos ao cursor, estilo macOS",
@@ -1873,7 +1873,7 @@
         },
         "pinned-apps": {
           "description": "IDs das entradas Desktop dos apps fixados no dock",
-          "label": "Apps fixados"
+          "label": "Apps Fixados"
         },
         "position": {
           "description": "Em qual borda de tela o dock ficará"
@@ -1886,11 +1886,11 @@
         },
         "show-dots": {
           "description": "Mostra pontos indicadores de janelas abertas ao lado dos ícones do dock",
-          "label": "Mostra pontos indicadores"
+          "label": "Mostra Pontos Indicadores"
         },
         "show-instance-count": {
           "description": "Mostra um indicador com o número de instâncias abertas",
-          "label": "Mostra contador de instâncias"
+          "label": "Mostra Contador de Instâncias"
         },
         "show-running": {
           "description": "Mostra aplicativos abertos que não estão fixados",
@@ -2490,10 +2490,10 @@
           "label": "Sombra de Contato"
         },
         "corner-bottom-left": {
-          "label": "Raio inferior esquerdo"
+          "label": "Raio Inferior Esquerdo"
         },
         "corner-bottom-right": {
-          "label": "Raio inferior direito"
+          "label": "Raio Inferior Direito"
         },
         "corner-radius": {
           "label": "Raio dos Cantos"
@@ -2505,7 +2505,7 @@
           "label": "Raio Superior Direito"
         },
         "cross-axis-padding": {
-          "label": "Espaçamento no eixo transversal"
+          "label": "Espaçamento de Eixo Transversal"
         },
         "edge-margin": {
           "label": "Margem da Borda"
@@ -2526,7 +2526,7 @@
           "label": "Posição"
         },
         "reserve-space": {
-          "label": "Reserva de espaço"
+          "label": "Reservar Espaço"
         },
         "shadow": {
           "label": "Sombra"
@@ -2558,7 +2558,7 @@
         },
         "clipboard-history-max-entries": {
           "description": "Número máximo de entradas não fixadas mantidas no histórico da área de transferência",
-          "label": "Tamanho do histórico"
+          "label": "Tamanho do Histórico"
         },
         "clipboard-image-action": {
           "description": "Comando a ser executado a partir de entradas da área de transferência de imagens; use {path} para o caminho do arquivo, {stdin} para marcar a posição da entrada padrão (stdin) ou omita {path} para redirecionar automaticamente a saída",
@@ -2571,10 +2571,10 @@
         },
         "external-ip": {
           "description": "Determinar o IP público da WAN da conexão (por meio de api.noctalia.dev) e exibi-lo na guia “Rede” da Central de Controle",
-          "label": "Mostra IP da WAN"
+          "label": "Mostrar IP da WAN"
         },
         "greeter-sync-auto": {
-          "description": "Automaticamente sincronizar o greeter quando um papel de parede, cor ou tema foi alterado",
+          "description": "Automaticamente sincronizar o greeter quando um papel de parede, cor ou tema for alterado",
           "label": "Autossincronizar Greeter"
         },
         "greeter-sync-privilege-command": {
@@ -2583,7 +2583,7 @@
         },
         "launch-apps-as-systemd-services": {
           "description": "Executa aplicativos em serviços systemd separados para que não compartilhem o cgroup do Noctalia",
-          "label": "Iniciar Apps como Serviços do Systemd"
+          "label": "Iniciar Apps como Serviços Systemd"
         },
         "launch-apps-custom-command": {
           "description": "Comando personalizado usado pelo app launcher; substitui $CMD com o comando original",
@@ -2611,36 +2611,39 @@
           "label": "Borda"
         },
         "osd-kinds-bluetooth": {
-          "description": "Exibir uma pop-up OSD quando o Bluetooth for habilitado/desabilitado",
+          "description": "Exibir um OSD quando o Bluetooth for ativado/desativado",
           "label": "Bluetooth"
         },
         "osd-kinds-brightness": {
-          "description": "Exibir uma pop-up OSD quando o bilho da tela mudar",
+          "description": "Exibir um OSD quando o bilho da tela mudar",
           "label": "Brilho"
         },
         "osd-kinds-caffeine": {
-          "description": "Exibe uma pop-up OSD quando o estado da cafeína (inibidor de inatividade) for alterado",
+          "description": "Exibir um OSD quando o estado da cafeína (inibidor de inatividade) for alterado",
           "label": "Cafeína"
         },
         "osd-kinds-dnd": {
-          "description": "Exibe uma pop-up OSD quando o Não Pertube é alterado",
+          "description": "Exibir um OSD quando o Não Pertube é alterado",
           "label": "Não Pertube"
         },
+        "osd-kinds-keyboard-backlight": {
+          "label": "Iluminação do Teclado"
+        },
         "osd-kinds-keyboard-layout": {
-          "description": "Exibe uma pop-up OSD quando o layout de teclado é alterado",
+          "description": "Exibir um OSD quando o layout do teclado é alterado",
           "label": "Layout de Teclado"
         },
         "osd-kinds-lock-keys": {
-          "description": "Mostra uma pop-up OSD para alterações nas teclas Caps Lock, Num Lock e Scroll Lock",
+          "description": "Exibir um OSD para alterações nas teclas Caps Lock, Num Lock e Scroll Lock",
           "label": "Teclas Lock"
         },
         "osd-kinds-media": {
-          "description": "Mostra OSD quando uma nova faixa começar a tocar",
+          "description": "Exibir um OSD quando uma nova faixa começar a tocar",
           "label": "Reproduzindo Agora"
         },
         "osd-kinds-nightlight": {
-          "description": "Mostra OSD quando luz noturna for alternada",
-          "label": "Luz Norturna"
+          "description": "Exibir um OSD quando luz noturna for alternada",
+          "label": "Luz Noturna"
         },
         "osd-kinds-power-profile": {
           "description": "Exibe um pop-up OSD quando o perfil de energia for alterado",
@@ -2870,7 +2873,7 @@
         },
         "per-monitor-directories": {
           "description": "Usa pastas de papéis de parede separadas para cada monitor",
-          "label": "Diretórios por monitor"
+          "label": "Diretórios por Monitor"
         },
         "transition-duration": {
           "description": "Duração da animação de mudança de papel de parede em milissegundos",
@@ -3522,7 +3525,7 @@
   },
   "setup-wizard": {
     "browse": "Procurar",
-    "builtin-palette": "Paleta padrão",
+    "builtin-palette": "Paleta Integrada",
     "footer-note": "Você pode alterar isso depois nas configurações",
     "get-started": "Vamos começar",
     "mode": "Modo",
