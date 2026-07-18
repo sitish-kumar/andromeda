@@ -871,6 +871,7 @@ _noctalia_sources = files(
   'src/theme/template_apply_service.cpp',
   'src/theme/theme_service.cpp',
   'src/theme/json_output.cpp',
+  'src/theme/kde_color_scheme.cpp',
   'src/theme/template_engine.cpp',
   'src/theme/cli.cpp',
   'src/ipc/cli.cpp',
@@ -1259,6 +1260,20 @@ scheme_test = executable('scheme_test',
 )
 
 test('scheme', scheme_test)
+
+kde_color_scheme_test = executable('kde_color_scheme_test',
+  sources: files(
+    'tests/kde_color_scheme_test.cpp',
+    'src/config/atomic_file.cpp',
+    'src/theme/kde_color_scheme.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [
+    sdbus_cpp_dep,
+  ],
+)
+
+test('kde_color_scheme', kde_color_scheme_test)
 
 plugin_source_paths_test = executable('plugin_source_paths_test',
   sources: files(

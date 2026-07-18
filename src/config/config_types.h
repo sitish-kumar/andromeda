@@ -1338,6 +1338,7 @@ struct ThemeConfig {
     std::vector<TemplateCompareColorConfig> colorsToCompare;
     std::string preHook;
     std::string postHook;
+    std::string postAction;
     int index = 0;
 
     bool operator==(const UserTemplateConfig&) const = default;

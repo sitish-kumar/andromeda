@@ -1040,6 +1040,7 @@ namespace noctalia::config::schema {
           ),
           field(&UserTemplate::preHook, "pre_hook"),
           field(&UserTemplate::postHook, "post_hook"),
+          field(&UserTemplate::postAction, "post_action"),
           field(&UserTemplate::index, "index"),
       };
       return s;
