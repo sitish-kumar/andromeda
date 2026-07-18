@@ -37,11 +37,18 @@ namespace {
   using ConnectionSettings = std::map<std::string, std::map<std::string, sdbus::Variant>>;
   using VariantMap = std::map<std::string, sdbus::Variant>;
   constexpr std::string_view kNmWiredConnectionType = "802-3-ethernet";
-  constexpr std::string_view kNmWirelessConnectionType = "802-11-wireless";
+  constexpr std::string_view kNmVpnConnectionType = "vpn";
+  constexpr std::string_view kNmWireguardConnectionType = "wireguard";
 
   // NMDeviceType values from NetworkManager D-Bus API.
   constexpr std::uint32_t kNmDeviceTypeEthernet = 1;
   constexpr std::uint32_t kNmDeviceTypeWifi = 2;
+  // Aggregating/virtual links that carry a wired L3 connection (a default-route
+  // bridge/bond is the user's real LAN link, shown as wired).
+  constexpr std::uint32_t kNmDeviceTypeBond = 10;
+  constexpr std::uint32_t kNmDeviceTypeVlan = 11;
+  constexpr std::uint32_t kNmDeviceTypeBridge = 13;
+  constexpr std::uint32_t kNmDeviceTypeTeam = 15;
 
   // NMDeviceState: a device between Prepare and Activated is mid-activation.
   constexpr std::uint32_t kNmDeviceStatePrepare = 40;
@@ -1814,12 +1821,16 @@ void NetworkManagerService::requestRebind() {
                       }
                     }
                   }
-                  if (type == kNmWiredConnectionType || type == kNmWirelessConnectionType) {
-                    adoptActiveConnection(primaryPath, devicePath);
-                  } else {
+                  if (type == kNmVpnConnectionType || type == kNmWireguardConnectionType) {
+                    // A VPN holding the default route must not masquerade as the
+                    // physical link; describe the ethernet/wifi device beneath it.
                     resolvePhysicalPrimary(true, [this](std::string connectionPath, std::string physicalDevicePath) {
                       adoptActiveConnection(connectionPath, physicalDevicePath);
                     });
+                  } else {
+                    // Any real default-route link (wired, wireless, bridge, bond, …)
+                    // is itself the connection to describe.
+                    adoptActiveConnection(primaryPath, devicePath);
                   }
                 });
           } catch (const sdbus::Error&) {
@@ -2198,11 +2209,17 @@ void NetworkManagerService::readStateAsync(std::function<void(NetworkState)> onC
 
               if (deviceType == kNmDeviceTypeWifi) {
                 next->kind = NetworkConnectivity::Wireless;
-              } else if (deviceType == kNmDeviceTypeEthernet) {
+              } else if (
+                  deviceType == kNmDeviceTypeEthernet
+                  || deviceType == kNmDeviceTypeBridge
+                  || deviceType == kNmDeviceTypeBond
+                  || deviceType == kNmDeviceTypeTeam
+                  || deviceType == kNmDeviceTypeVlan
+              ) {
                 next->kind = NetworkConnectivity::Wired;
               }
-              // Other device types (wireguard, tun, bridge, …) are virtual and
-              // must not be reported as a wired link; kind stays Unknown.
+              // Remaining device types (wireguard, tun, …) are VPN/overlay virtual
+              // links and must not be reported as wired; kind stays Unknown.
 
               auto finishAfterIp4 = [lifetimeToken, finish, readActiveAccessPoint, deviceType]() {
                 if (lifetimeToken.expired()) {
