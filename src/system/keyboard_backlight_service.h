@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 class IpcService;
 class SystemBus;
@@ -22,20 +23,25 @@ public:
 
   [[nodiscard]] int brightness() const noexcept { return m_brightness; }
   [[nodiscard]] int maxBrightness() const noexcept { return m_maxBrightness; }
-  [[nodiscard]] bool available() const noexcept { return m_available; }
+  [[nodiscard]] bool available() const noexcept { return !m_devices.empty(); }
 
-  void setBrightness(int value);
   void registerIpc(IpcService& ipc);
   void setChangeCallback(ChangeCallback callback);
 
 private:
-  void refreshBrightness();
-  void onBrightnessChangedInternal();
+  struct Device;
+
+  void rescanDevices();
+  void publishBrightness(const Device& device);
+  [[nodiscard]] bool setBrightness(Device& device, int value);
+  [[nodiscard]] bool setPercent(int percent);
+  [[nodiscard]] bool adjustBrightness(int delta);
+  [[nodiscard]] bool toggleBrightness();
 
   SystemBus& m_bus;
-  std::unique_ptr<sdbus::IProxy> m_proxy;
+  std::unique_ptr<sdbus::IProxy> m_upowerProxy;
+  std::vector<std::unique_ptr<Device>> m_devices;
   int m_brightness = 0;
   int m_maxBrightness = 0;
-  bool m_available = false;
   ChangeCallback m_changeCallback;
 };

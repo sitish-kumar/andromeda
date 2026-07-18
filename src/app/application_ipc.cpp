@@ -547,31 +547,23 @@ void Application::initIpc() {
   }
   if (m_keyboardBacklightService != nullptr) {
     m_keyboardBacklightService->registerIpc(m_ipcService);
-    m_ipcService.registerHandler(
-        "keyboard-backlight-osd",
-        [this](const std::string& args) -> std::string {
-          const auto parts = noctalia::ipc::splitWords(args);
-          if (parts.size() != 1) {
-            return "error: keyboard-backlight-osd requires <value>\n";
-          }
-          int value = 0;
-          for (const char c : parts[0]) {
-            if (c < '0' || c > '9') {
-              return "error: invalid keyboard backlight value (use 0-100 for %)\n";
-            }
-            value = value * 10 + (c - '0');
-          }
-          if (value < 0 || value > 100) {
-            return "error: invalid keyboard backlight value (use 0-100 for %)\n";
-          }
-          const int maxBrightness = m_keyboardBacklightService->maxBrightness();
-          const int raw = static_cast<int>(std::round(value / 100.0 * maxBrightness));
-          m_keyboardBacklightOsd.showValue(raw, maxBrightness);
-          return "ok\n";
-        },
-        "keyboard-backlight-osd <value>", "Show keyboard backlight OSD without changing brightness"
-    );
   }
+  m_ipcService.registerHandler(
+      "keyboard-backlight-osd",
+      [this](const std::string& args) -> std::string {
+        const auto parts = noctalia::ipc::splitWords(args);
+        if (parts.size() != 1) {
+          return "error: keyboard-backlight-osd requires <value>\n";
+        }
+        const auto value = noctalia::ipc::parseNormalizedOrPercent(parts[0]);
+        if (!value.has_value()) {
+          return "error: invalid keyboard backlight value (use percent like 65 or 65%, or normalized like 0.65)\n";
+        }
+        m_keyboardBacklightOsd.showValue(*value);
+        return "ok\n";
+      },
+      "keyboard-backlight-osd <value>", "Show keyboard backlight OSD without changing brightness"
+  );
   m_ipcService.registerHandler(
       "brightness-osd",
       [this](const std::string& args) -> std::string {

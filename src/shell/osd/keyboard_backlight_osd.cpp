@@ -3,25 +3,27 @@
 #include "shell/osd/osd_overlay.h"
 #include "system/keyboard_backlight_service.h"
 
+#include <algorithm>
+#include <cmath>
 #include <string>
 
 namespace {
 
-  const char* kbdBacklightIcon(int brightness) {
-    if (brightness <= 0) {
+  const char* kbdBacklightIcon(float brightness) {
+    if (brightness <= 0.0f) {
       return "keyboard-off";
     }
     return "keyboard";
   }
 
-  OsdContent makeKbdBacklightContent(int brightness, int maxBrightness) {
-    const float progress =
-        maxBrightness > 0 ? static_cast<float>(brightness) / static_cast<float>(maxBrightness) : 0.0f;
+  OsdContent makeKbdBacklightContent(float brightness) {
+    const float progress = std::clamp(brightness, 0.0f, 1.0f);
+    const int percent = static_cast<int>(std::round(progress * 100.0f));
     return OsdContent{
         .kind = OsdKind::KeyboardBacklight,
-        .icon = kbdBacklightIcon(brightness),
-        .value = std::to_string(maxBrightness > 0 ? (brightness * 100) / maxBrightness : 0) + "%",
-        .progress = std::clamp(progress, 0.0f, 1.0f),
+        .icon = kbdBacklightIcon(progress),
+        .value = std::to_string(percent) + "%",
+        .progress = progress,
     };
   }
 
@@ -35,24 +37,15 @@ void KeyboardBacklightOsd::onBrightnessChanged(const KeyboardBacklightService& s
   }
   const int brightness = service.brightness();
   const int maxBrightness = service.maxBrightness();
-
-  // Only show when value actually changed
-  if (brightness == m_lastBrightness && maxBrightness == m_lastMaxBrightness) {
-    return;
-  }
-
-  m_lastBrightness = brightness;
-  m_lastMaxBrightness = maxBrightness;
-
   if (m_overlay != nullptr) {
-    m_overlay->show(makeKbdBacklightContent(brightness, maxBrightness));
+    const float normalized =
+        maxBrightness > 0 ? static_cast<float>(brightness) / static_cast<float>(maxBrightness) : 0.0f;
+    m_overlay->show(makeKbdBacklightContent(normalized));
   }
 }
 
-void KeyboardBacklightOsd::showValue(int brightness, int maxBrightness) {
-  m_lastBrightness = brightness;
-  m_lastMaxBrightness = maxBrightness;
+void KeyboardBacklightOsd::showValue(float brightness) {
   if (m_overlay != nullptr) {
-    m_overlay->show(makeKbdBacklightContent(brightness, maxBrightness));
+    m_overlay->show(makeKbdBacklightContent(brightness));
   }
 }
