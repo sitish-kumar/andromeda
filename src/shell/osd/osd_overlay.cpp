@@ -217,6 +217,9 @@ void OsdOverlay::show(const OsdContent& content) {
   if (m_wayland == nullptr || m_renderContext == nullptr) {
     return;
   }
+  if (m_config != nullptr && !m_config->config().osd.enabled) {
+    return;
+  }
   if (m_config != nullptr && !isOsdKindEnabled(m_config->config().osd.kinds, content.kind)) {
     return;
   }

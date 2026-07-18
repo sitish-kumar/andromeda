@@ -1773,6 +1773,12 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-enabled.label"),
+        tr("settings.schema.shell.osd-enabled.description"), {"osd", "enabled"}, ToggleSetting{cfg.osd.enabled},
+        "hud overlay master enable disable all"
+    ));
+    const std::size_t osdGatedStart = entries.size();
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-orientation.label"),
         tr("settings.schema.shell.osd-orientation.description"), {"osd", "orientation"},
         asSegmented(plainSelect(
@@ -1932,6 +1938,13 @@ namespace settings {
         tr("settings.schema.shell.osd-kinds-keyboard-backlight.description"), {"osd", "kinds", "keyboard_backlight"},
         ToggleSetting{cfg.osd.kinds.keyboardBacklight}, "hud overlay keyboard backlight kbd"
     ));
+    // Gate every OSD entry after the master toggle on osd.enabled, preserving any per-entry visibility.
+    for (std::size_t i = osdGatedStart; i < entries.size(); ++i) {
+      SettingVisibility prev = std::move(entries[i].visibleWhen);
+      entries[i].visibleWhen = prev
+          ? SettingVisibility{[prev = std::move(prev)](const Config& c) { return c.osd.enabled && prev(c); }}
+          : SettingVisibility{[](const Config& c) { return c.osd.enabled; }};
+    }
 
     // Keybinds
     entries.push_back(makeEntry(

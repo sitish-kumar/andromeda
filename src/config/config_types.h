@@ -645,6 +645,7 @@ struct OsdKindsConfig {
 };
 
 struct OsdConfig {
+  bool enabled = true; // master gate for all OSD popups
   std::string position = "top_center";
   std::string positionVertical = "top_center";
   std::string orientation = "horizontal";

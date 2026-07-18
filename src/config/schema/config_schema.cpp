@@ -61,6 +61,7 @@ namespace noctalia::config::schema {
 
   const Schema<OsdConfig>& osdSchema() {
     static const Schema<OsdConfig> s = {
+        field(&OsdConfig::enabled, "enabled"),
         field(&OsdConfig::position, "position"),
         field(&OsdConfig::positionVertical, "position_vertical"),
         field(&OsdConfig::orientation, "orientation"),

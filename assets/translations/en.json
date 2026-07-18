@@ -2628,6 +2628,10 @@
           "description": "Draw an outline around OSD popups",
           "label": "Border"
         },
+        "osd-enabled": {
+          "description": "Master switch for all OSD popups; when off no OSD is shown",
+          "label": "Enable OSD"
+        },
         "osd-kinds-bluetooth": {
           "description": "Show an OSD popup when Bluetooth is toggled",
           "label": "Bluetooth"
