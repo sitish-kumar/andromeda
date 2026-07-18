@@ -1023,15 +1023,45 @@ void Dock::closeItemMenu() {
   shell::dock::DockInstance* owner = m_popupOwnerInstance;
   m_popupOwnerInstance = nullptr;
   m_itemMenu.reset();
-  // Fade the owner out — the pointer left the dock to interact with the menu,
-  // whether or not the compositor sent a Leave event at that time.
-  if (owner != nullptr && owner->hideOpacity > 0.0f && dockPointerHideAllowed(m_config->config().dock, *owner)) {
-    owner->pointerInside = false;
+  if (owner == nullptr) {
+    return;
+  }
+
+  // Grabbed xdg popups (especially on Hyprland) often skip Leave on the dock
+  // while the menu is open. Resync from the compositor's last pointer surface
+  // instead of assuming the pointer left — otherwise pointerInside can stick
+  // true and block smart auto-hide when a new window appears.
+  const wl_surface* ownerSurface = owner->surface != nullptr ? owner->surface->wlSurface() : nullptr;
+  owner->pointerInside = m_platform != nullptr
+      && ownerSurface != nullptr
+      && m_platform->hasPointerPosition()
+      && m_platform->lastPointerSurface() == ownerSurface;
+
+  if (owner->pointerInside) {
+    const float sx = static_cast<float>(m_platform->lastPointerX());
+    const float sy = static_cast<float>(m_platform->lastPointerY());
+    owner->inputDispatcher.pointerEnter(sx, sy, m_platform->lastInputSerial());
+    m_hoveredInstance = owner;
+    updateHoverZoomPointer(*owner, sx, sy);
+  } else {
+    clearHoverZoomPointer(*owner);
+    owner->inputDispatcher.pointerLeave();
     if (m_hoveredInstance == owner) {
       m_hoveredInstance = nullptr;
     }
-    shell::dock::startHideFadeOut(*owner, *m_config);
   }
+
+  if (owner->surface != nullptr) {
+    owner->surface->requestRedraw();
+  }
+
+  if (owner->pointerInside
+      || m_config == nullptr
+      || owner->hideOpacity <= 0.0f
+      || !dockPointerHideAllowed(m_config->config().dock, *owner)) {
+    return;
+  }
+  shell::dock::startHideFadeOut(*owner, *m_config);
 }
 
 void Dock::tryFulfillPendingLaunchFocus() {
