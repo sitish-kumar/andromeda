@@ -1036,8 +1036,8 @@ void Dock::closeItemMenu() {
       && m_platform->lastPointerSurface() == ownerSurface;
 
   if (owner->pointerInside) {
-    const float sx = static_cast<float>(m_platform->lastPointerX());
-    const float sy = static_cast<float>(m_platform->lastPointerY());
+    const auto sx = static_cast<float>(m_platform->lastPointerX());
+    const auto sy = static_cast<float>(m_platform->lastPointerY());
     owner->inputDispatcher.pointerEnter(sx, sy, m_platform->lastInputSerial());
     m_hoveredInstance = owner;
     updateHoverZoomPointer(*owner, sx, sy);
