@@ -1250,6 +1250,13 @@ void PanelManager::destroyPanel() {
   m_pointerInside = false;
   m_attachedPopupCount = 0;
   m_inputDispatcher.setSceneRoot(nullptr);
+  // Hover leave only fades tooltips asynchronously. Destroy them (and any
+  // open context menu) before the layer surface — xdg_popup must die first.
+  TooltipManager::instance().forceDestroy();
+  if (m_activePopup != nullptr) {
+    m_activePopup->close();
+    m_activePopup = nullptr;
+  }
   if (m_activePanel != nullptr) {
     m_activePanel->onClose();
   }
