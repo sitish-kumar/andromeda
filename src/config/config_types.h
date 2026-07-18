@@ -1,9 +1,10 @@
 #pragma once
 
+#include "config/color_spec.h"
 #include "config/config_limits.h"
+#include "config/widget_setting_value.h"
 #include "core/input/key_chord.h"
 #include "system/sysmon_threshold_profile.h"
-#include "ui/palette.h"
 #include "ui/style.h"
 
 #include <array>
@@ -331,7 +332,6 @@ enum class KeybindAction : std::uint8_t {
 
 [[nodiscard]] std::vector<KeyChord> defaultKeybindSet(KeybindAction action);
 
-using WidgetSettingValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>>;
 using ConfigOverrideValue = std::variant<
     bool, std::int64_t, double, std::string, std::vector<std::string>, std::vector<ShortcutConfig>,
     std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>, std::vector<NotificationFilterConfig>,
@@ -365,6 +365,7 @@ struct WidgetConfig {
   std::unordered_map<std::string, WidgetSettingValue> settings;
   std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tables;
 
+  [[nodiscard]] const WidgetSettingValue* findSetting(const std::string& key) const;
   [[nodiscard]] std::string getString(const std::string& key, const std::string& fallback = {}) const;
   [[nodiscard]] std::vector<std::string>
   getStringList(const std::string& key, const std::vector<std::string>& fallback = {}) const;
@@ -393,12 +394,6 @@ struct WidgetConfig {
 [[nodiscard]] WidgetBarCapsuleSpec capsuleSpecFromGroup(const BarConfig& bar, const BarCapsuleGroupStyle& group);
 [[nodiscard]] float
 resolveWidgetContentScale(float barScale, const WidgetConfig* widget, std::string_view context = "widget.scale");
-
-// Color spec for user color strings: either a palette color role token or a hex color.
-[[nodiscard]] ColorSpec colorSpecFromConfigString(const std::string& raw, std::string_view context = {});
-
-// Serializes a color spec back to its config string form (palette role token or hex).
-[[nodiscard]] std::string colorSpecToConfigString(const ColorSpec& spec);
 
 // Shared output selector matching used by monitor-scoped config and IPC selectors.
 // Matches connector name exactly, or a word-boundary token within output description.
