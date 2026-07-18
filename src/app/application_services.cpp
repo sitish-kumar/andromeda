@@ -366,6 +366,9 @@ void Application::initStyleThemeAndWayland() {
         std::isfinite(lastCornerRadiusScale) && std::abs(corner - lastCornerRadiusScale) > 1.0e-4f;
     Style::setCornerRadiusScale(corner);
     Style::setButtonBordersEnabled(m_configService.config().shell.buttonBorders);
+    Style::setInputBordersEnabled(m_configService.config().shell.inputBorders);
+    Style::setPopupBordersEnabled(m_configService.config().shell.popupBorders);
+    Style::setPopupShadowsEnabled(m_configService.config().shell.popupShadows);
     lastCornerRadiusScale = corner;
     if (cornerChanged) {
       m_notificationToast.requestLayout();
