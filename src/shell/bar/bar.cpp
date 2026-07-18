@@ -2882,6 +2882,9 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
       m_platform->setCursorShape(serial, shape);
     });
     instance.inputDispatcher.setHoverChangeCallback([this, inst = &instance](InputArea* /*old*/, InputArea* next) {
+      if (next != nullptr) {
+        next->setTooltipPlacement(tooltipPlacementAwayFromEdge(inst->barConfig.position));
+      }
       TooltipManager::instance().onHoverChange(next, inst->surface->layerSurface(), inst->output);
       updateWidgetHoverHighlight(*inst, next);
     });
