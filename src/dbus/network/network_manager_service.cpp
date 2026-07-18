@@ -1776,7 +1776,7 @@ void NetworkManagerService::requestRebind() {
           // cases resolve the physical ethernet/wifi link instead, so the state
           // (and disconnect target) always describe the physical connection.
           if (primaryPath.empty() || primaryPath == "/") {
-            resolvePhysicalPrimary([this](std::string connectionPath, std::string devicePath) {
+            resolvePhysicalPrimary(false, [this](std::string connectionPath, std::string devicePath) {
               adoptActiveConnection(connectionPath, devicePath);
             });
             return;
@@ -1817,13 +1817,13 @@ void NetworkManagerService::requestRebind() {
                   if (type == kNmWiredConnectionType || type == kNmWirelessConnectionType) {
                     adoptActiveConnection(primaryPath, devicePath);
                   } else {
-                    resolvePhysicalPrimary([this](std::string connectionPath, std::string physicalDevicePath) {
+                    resolvePhysicalPrimary(true, [this](std::string connectionPath, std::string physicalDevicePath) {
                       adoptActiveConnection(connectionPath, physicalDevicePath);
                     });
                   }
                 });
           } catch (const sdbus::Error&) {
-            resolvePhysicalPrimary([this](std::string connectionPath, std::string devicePath) {
+            resolvePhysicalPrimary(true, [this](std::string connectionPath, std::string devicePath) {
               adoptActiveConnection(connectionPath, devicePath);
             });
           }
@@ -1836,13 +1836,13 @@ void NetworkManagerService::requestRebind() {
 }
 
 void NetworkManagerService::resolvePhysicalPrimary(
-    std::function<void(std::string connectionPath, std::string devicePath)> done
+    bool allowActivatedAsPrimary, std::function<void(std::string connectionPath, std::string devicePath)> done
 ) {
   const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
   try {
     m_nm->callMethodAsync("GetDevices")
         .onInterface(kNmInterface)
-        .uponReplyInvoke([this, lifetimeToken,
+        .uponReplyInvoke([this, lifetimeToken, allowActivatedAsPrimary,
                           done](std::optional<sdbus::Error> err, std::vector<sdbus::ObjectPath> devices) {
           if (lifetimeToken.expired()) {
             return;
@@ -1864,7 +1864,7 @@ void NetworkManagerService::resolvePhysicalPrimary(
               device->callMethodAsync("GetAll")
                   .onInterface(kPropertiesInterface)
                   .withArguments(kNmDeviceInterface)
-                  .uponReplyInvoke([lifetimeToken, device, scan, devicePathStr](
+                  .uponReplyInvoke([lifetimeToken, device, scan, devicePathStr, allowActivatedAsPrimary](
                                        std::optional<sdbus::Error> devErr,
                                        std::map<std::string, sdbus::Variant> properties
                                    ) {
@@ -1896,8 +1896,12 @@ void NetworkManagerService::resolvePhysicalPrimary(
                       const bool physical = deviceType == kNmDeviceTypeEthernet || deviceType == kNmDeviceTypeWifi;
                       if (physical && !activePath.empty() && activePath != "/") {
                         // Prefer activated over activating, ethernet over wifi.
+                        // An activated device only counts as the connected primary
+                        // once NM has an established default route; otherwise it may
+                        // be a bridge/bond slave that activates long before the link
+                        // it feeds is usable.
                         int score = 0;
-                        if (state == kNmDeviceStateActivated) {
+                        if (allowActivatedAsPrimary && state == kNmDeviceStateActivated) {
                           score = 4;
                         } else if (state >= kNmDeviceStatePrepare && state < kNmDeviceStateActivated) {
                           score = 2;
