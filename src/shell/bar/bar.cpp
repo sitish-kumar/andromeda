@@ -538,12 +538,13 @@ namespace {
       }
 
       // Tile only laid-out members; hidden ones keep stale geometry.
+      // Use Node visibility, some widgets (e.g. tray) root on Flex, not InputArea.
       std::vector<std::size_t> laidOut;
       laidOut.reserve(run.widgets.size());
       for (std::size_t i = 0; i < run.widgets.size(); ++i) {
         Widget* widget = run.widgets[i];
-        auto* area = widget != nullptr ? dynamic_cast<InputArea*>(widget->root()) : nullptr;
-        if (area == nullptr || !area->visible() || !area->participatesInLayout()) {
+        auto* root = widget != nullptr ? widget->root() : nullptr;
+        if (root == nullptr || !root->visible() || !root->participatesInLayout()) {
           continue;
         }
         laidOut.push_back(i);
