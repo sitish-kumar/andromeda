@@ -709,6 +709,27 @@ void Dock::reevaluateSmartAutoHide() {
       continue;
     }
 
+    // Stale pointerInside blocks hide (and can leave smart-hide stuck after grabs / focus
+    // changes). Resync from the compositor before deciding.
+    const wl_surface* surface = instance->surface->wlSurface();
+    const bool pointerOnDock =
+        m_platform->hasPointerPosition() && surface != nullptr && m_platform->lastPointerSurface() == surface;
+    if (instance->pointerInside && !pointerOnDock) {
+      clearHoverZoomPointer(*instance);
+      instance->pointerInside = false;
+      instance->inputDispatcher.pointerLeave();
+      if (m_hoveredInstance == instance) {
+        m_hoveredInstance = nullptr;
+      }
+    } else if (!instance->pointerInside && pointerOnDock) {
+      instance->pointerInside = true;
+      instance->inputDispatcher.pointerEnter(
+          static_cast<float>(m_platform->lastPointerX()), static_cast<float>(m_platform->lastPointerY()),
+          m_platform->lastInputSerial()
+      );
+      m_hoveredInstance = instance;
+    }
+
     const bool wantsPinned = dockSmartAutoHideWantsPinnedVisible(*m_platform, instance->output);
     const bool pinnedChanged = wantsPinned != instance->smartAutoHidePinnedVisible;
     instance->smartAutoHidePinnedVisible = wantsPinned;
