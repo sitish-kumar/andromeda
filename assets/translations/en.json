@@ -1440,6 +1440,8 @@
         "open-source": "Open plugin source repository",
         "results-count": "{count} plugins",
         "search-placeholder": "Search plugins…",
+        "source-all": "All",
+        "sources": "Sources",
         "title": "Plugin Store"
       }
     },
