@@ -238,14 +238,9 @@ namespace settings {
       if (plugin.source == "official") {
         title->addChild(makeRoleBadge(i18n::tr("settings.badges.official"), ColorRole::Primary, scale));
       } else if (plugin.source == "community") {
-        // Quieter than Official — muted surface tones instead of Primary.
-        title->addChild(
-            makeRoleBadge(i18n::tr("settings.badges.community"), ColorRole::OnSurfaceVariant, scale, 0.12f)
-        );
+        title->addChild(makeRoleBadge(i18n::tr("settings.badges.community"), ColorRole::Secondary, scale));
       } else if (!plugin.source.empty()) {
-        title->addChild(makeLabel(
-            pluginSourceDisplayName(plugin.source), Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant
-        ));
+        title->addChild(makeRoleBadge(pluginSourceDisplayName(plugin.source), ColorRole::Tertiary, scale));
       }
       title->addChild(makeLabel("v" + version, Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant));
       if (!plugin.compatible) {
