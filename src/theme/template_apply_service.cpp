@@ -7,6 +7,7 @@
 #include "ipc/ipc_service.h"
 #include "theme/community_templates.h"
 #include "theme/template_engine.h"
+#include "tools/pywalfox/pywalfox_host.h"
 #include "util/file_utils.h"
 #include "util/string_utils.h"
 
@@ -262,6 +263,7 @@ namespace noctalia::theme {
     if (request.templates.enableCommunityTemplates
         && !request.templates.communityIds.empty()
         && !requestSuperseded(request.generation)) {
+      pywalfox_host::ensureManifestForCommunityTemplates(request.templates.communityIds);
       for (const auto& id : request.templates.communityIds) {
         if (requestSuperseded(request.generation))
           return;

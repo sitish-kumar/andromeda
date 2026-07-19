@@ -258,8 +258,12 @@ Meson installs the binary and shipped assets using the normal prefix layout:
 
 ```text
 /usr/local/bin/noctalia
+/usr/local/bin/noctalia-pywalfox
 /usr/local/share/noctalia/assets/...
 ```
+
+`noctalia-pywalfox` is the optional Pywalfox native messaging host (Firefox theming). See
+[`src/tools/pywalfox/README.md`](src/tools/pywalfox/README.md) for build/test setup.
 
 Noctalia needs the shipped `assets/` tree at runtime. Copying only the `noctalia` binary is not enough.
 

@@ -878,6 +878,10 @@ _noctalia_sources = files(
   'src/theme/kde_color_scheme.cpp',
   'src/theme/template_engine.cpp',
   'src/theme/cli.cpp',
+  'src/tools/pywalfox/css.cpp',
+  'src/tools/pywalfox/native_messaging.cpp',
+  'src/tools/pywalfox/pywalfox_host.cpp',
+  'src/tools/pywalfox/settings.cpp',
   'src/ipc/cli.cpp',
 )
 
@@ -959,6 +963,30 @@ noctalia_exe = executable('noctalia',
     '-DNOCTALIA_INSTALL_DATADIR="' + get_option('datadir') + '"',
     '-DNOCTALIA_VERSION="' + meson.project_version() + '"',
   ] + jemalloc_cpp_args,
+  install: true,
+)
+
+_pywalfox_host_sources = files(
+  'src/tools/pywalfox/main.cpp',
+  'src/tools/pywalfox/css.cpp',
+  'src/tools/pywalfox/native_messaging.cpp',
+  'src/tools/pywalfox/pywalfox_host.cpp',
+  'src/tools/pywalfox/settings.cpp',
+)
+
+noctalia_pywalfox_exe = executable('noctalia-pywalfox',
+  sources: _pywalfox_host_sources,
+  dependencies: [
+    nlohmann_dep,
+  ],
+  include_directories: _noctalia_inc,
+  cpp_args: [
+    '-Wall', '-Wextra', '-Wno-missing-field-initializers', '-Wpedantic', '-Wconversion', '-Wshadow',
+    '-DNOCTALIA_SOURCE_ASSETS_DIR="' + meson.project_source_root() / 'assets' + '"',
+    '-DNOCTALIA_INSTALL_PREFIX="' + get_option('prefix') + '"',
+    '-DNOCTALIA_INSTALL_DATADIR="' + get_option('datadir') + '"',
+    '-DNOCTALIA_VERSION="' + meson.project_version() + '"',
+  ],
   install: true,
 )
 

@@ -4,6 +4,7 @@
 #include "core/log.h"
 #include "core/toml.h" // IWYU pragma: keep
 #include "net/http_client.h"
+#include "tools/pywalfox/pywalfox_host.h"
 #include "util/checksum.h"
 #include "util/file_utils.h"
 #include "util/string_utils.h"
@@ -661,6 +662,8 @@ namespace noctalia::theme {
     if (!templates.enableCommunityTemplates) {
       return;
     }
+
+    pywalfox_host::ensureManifestForCommunityTemplates(templates.communityIds);
 
     std::error_code ec;
     const std::filesystem::path cacheDir = communityTemplatesCacheDir();
