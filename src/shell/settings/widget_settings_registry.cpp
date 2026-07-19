@@ -666,6 +666,7 @@ namespace settings {
         {"gauge", "settings.widgets.options.gauge"},
         {"graph", "settings.widgets.options.graph"},
         {"text", "settings.widgets.options.text"},
+        {"none", "settings.widgets.options.none"},
     };
     const std::vector<WidgetSettingSelectOption> networkSpeedUnits = {
         {"auto", "settings.widgets.options.auto"},
