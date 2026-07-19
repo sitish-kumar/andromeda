@@ -806,7 +806,7 @@ namespace {
       return ContextMenuControlEntry{
           .id = static_cast<std::int32_t>(item.id),
           .label = std::move(label),
-          .radio = true,
+          .checkmark = true,
           .toggleState = item.selected ? 1 : 0,
           .ellipsize = TextEllipsize::Middle,
       };
@@ -1498,10 +1498,12 @@ void AudioTab::openDeviceMenu(DeviceVolumeCardState& card, const DeviceMenuModel
                   .width = static_cast<std::int32_t>(card.menuAnchor->width()),
                   .height = static_cast<std::int32_t>(card.menuAnchor->height()),
               },
-          .parent = PopupSurfaceParent{
-              .layerSurface = parentCtx->layerSurface,
-              .output = parentCtx->output,
-          },
+          .parent =
+              PopupSurfaceParent{
+                  .layerSurface = parentCtx->layerSurface,
+                  .output = parentCtx->output,
+              },
+          .pointerParentSurface = parentCtx->surface,
       }
   );
   if (m_deviceMenuPopup->isOpen()) {

@@ -3,6 +3,7 @@
 #include "core/ui_phase.h"
 #include "render/scene/input_area.h"
 #include "ui/builders.h"
+#include "ui/controls/box.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -18,6 +19,8 @@ namespace {
   constexpr float kItemGap = 0.0f;
   constexpr float kMenuFontSize = Style::fontSizeCaption;
   constexpr float kMenuGlyphSize = Style::fontSizeCaption - 1.0f;
+  // Leading check/radio column: the glyph plus a small gap before the label (or leading visual).
+  constexpr float kToggleSlot = kMenuGlyphSize + Style::spaceXs;
 
   float safeScale(float scale) noexcept { return std::max(0.1f, scale); }
 
@@ -29,6 +32,21 @@ namespace {
 
   bool isInteractive(const ContextMenuControlEntry& entry) {
     return entry.enabled && !entry.separator && !entry.header;
+  }
+
+  // Horizontal space the entry's leading indicator dot / swatch strip occupies, including its
+  // trailing gap. The strip's metrics are font-derived, so this is layout-independent.
+  float leadingVisualSlot(const ContextMenuControlEntry& entry, float scale) {
+    if (!entry.swatchPreview.empty()) {
+      ColorSwatchPreviewStrip strip;
+      strip.setMetricsFromFontSize(kMenuFontSize * scale);
+      strip.setPreview(entry.swatchPreview);
+      return strip.preferredWidth() + Style::spaceSm * scale;
+    }
+    if (entry.indicatorColor.has_value()) {
+      return std::round(kMenuFontSize * scale) + Style::spaceSm * scale;
+    }
+    return 0.0f;
   }
 
   std::string toggleGlyphName(const ContextMenuControlEntry& entry) {
@@ -197,12 +215,12 @@ float ContextMenuControl::preferredWidth(
     if (entry.separator || entry.label.empty()) {
       continue;
     }
-    const float toggleSlot = hasToggle(entry) ? 22.0f * scale : 0.0f;
+    const float toggleSlot = hasToggle(entry) ? kToggleSlot * scale : 0.0f;
     const FontWeight weight = entry.header ? FontWeight::Bold : FontWeight::Normal;
     const float textWidth = std::ceil(renderer.measureText(entry.label, kMenuFontSize * scale, weight).width);
     // Mirrors rebuildRows: 8px label inset each side, 30px right when a chevron is drawn.
     const float sidePadding = (entry.hasSubmenu ? 30.0f : 16.0f) * scale;
-    maxRowWidth = std::max(maxRowWidth, textWidth + toggleSlot + sidePadding);
+    maxRowWidth = std::max(maxRowWidth, textWidth + toggleSlot + leadingVisualSlot(entry, scale) + sidePadding);
   }
   return maxRowWidth + kMenuPadding * scale * 2.0f;
 }
@@ -238,16 +256,9 @@ void ContextMenuControl::rebuild(Renderer& renderer) {
 
   setSize(m_menuWidth, preferredHeight());
 
-  addChild(
-      ui::box({
-          .configure = [this](Box& bg) {
-            bg.setCardStyle(m_contentScale, 1.0f, Style::popupBordersEnabled());
-            bg.setRadius(Style::scaledRadiusLg(m_contentScale));
-            bg.setFrameSize(width(), height());
-          },
-      })
-  );
-
+  // No background here: the control is scrolled content, so the rounded popup card is drawn by
+  // the host at the fixed viewport rect (popup_chrome::addCardBackground) — otherwise the card's
+  // corners scroll away with the rows.
   rebuildRows(renderer);
   m_needsRebuild = false;
 }
@@ -311,7 +322,7 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
       );
 
       const bool toggleVisible = hasToggle(entry);
-      const float toggleSlot = toggleVisible ? 22.0f * scale : 0.0f;
+      const float toggleSlot = toggleVisible ? kToggleSlot * scale : 0.0f;
       const std::string toggleGlyph = toggleGlyphName(entry);
       if (!toggleGlyph.empty()) {
         auto glyph = ui::glyph({
@@ -325,6 +336,24 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
         row->addChild(std::move(glyph));
       }
 
+      const float leadingSlot = leadingVisualSlot(entry, scale);
+      if (!entry.swatchPreview.empty()) {
+        auto strip = std::make_unique<ColorSwatchPreviewStrip>();
+        strip->setMetricsFromFontSize(kMenuFontSize * scale);
+        strip->setPreview(entry.swatchPreview);
+        strip->setPosition(8.0f * scale + toggleSlot, std::round((rowHeight - strip->preferredHeight()) * 0.5f));
+        row->addChild(std::move(strip));
+      } else if (entry.indicatorColor.has_value()) {
+        const float dotSize = std::round(kMenuFontSize * scale);
+        auto dot = std::make_unique<Box>();
+        dot->setFill(*entry.indicatorColor);
+        dot->setBorder(colorSpecFromRole(ColorRole::Outline), 1.5f);
+        dot->setFrameSize(dotSize, dotSize);
+        dot->setRadius(dotSize * 0.5f);
+        dot->setPosition(8.0f * scale + toggleSlot, std::round((rowHeight - dotSize) * 0.5f));
+        row->addChild(std::move(dot));
+      }
+
       auto label = ui::label({
           .out = &labelPtr,
           .text = entry.label,
@@ -333,13 +362,13 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
           .color = entry.header ? colorSpecFromRole(ColorRole::OnSurfaceVariant)
               : entry.enabled   ? enabledItemColor()
                                 : disabledItemColor(),
-          .maxWidth =
-              entry.hasSubmenu ? (rowWidth - 30.0f * scale - toggleSlot) : (rowWidth - 16.0f * scale - toggleSlot),
+          .maxWidth = entry.hasSubmenu ? (rowWidth - 30.0f * scale - toggleSlot - leadingSlot)
+                                       : (rowWidth - 16.0f * scale - toggleSlot - leadingSlot),
           .maxLines = 1,
           .ellipsize = entry.ellipsize,
       });
       label->measure(renderer);
-      label->setPosition(8.0f * scale + toggleSlot, (rowHeight - label->height()) * 0.5f);
+      label->setPosition(8.0f * scale + toggleSlot + leadingSlot, (rowHeight - label->height()) * 0.5f);
       row->addChild(std::move(label));
 
       if (entry.hasSubmenu) {

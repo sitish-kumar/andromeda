@@ -452,10 +452,7 @@ void Select::openPopupDropdown() {
       .anchorHeight = static_cast<std::int32_t>(std::round(triggerHeight)),
       .menuWidth = menuWidth,
       .maxMenuWidth = maxMenuWidth,
-      .optionHeight = m_controlHeight,
       .fontSize = m_fontSize,
-      .glyphSize = m_glyphSize,
-      .horizontalPadding = m_horizontalPadding,
       .options = m_options,
       .indicatorColors = m_indicatorColors,
       .optionSwatchPreviews = m_optionSwatchPreviews,
@@ -475,7 +472,6 @@ void Select::openPopupDropdown() {
             m_open = false;
             animateCaret(false);
           },
-      .onHoverChanged = nullptr,
   };
 
   m_open = true;

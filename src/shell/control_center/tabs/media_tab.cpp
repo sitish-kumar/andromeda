@@ -156,10 +156,12 @@ void MediaTab::openPlayerMenu() {
                   .width = static_cast<std::int32_t>(anchor->width()),
                   .height = static_cast<std::int32_t>(anchor->height()),
               },
-          .parent = PopupSurfaceParent{
-              .layerSurface = parentCtx->layerSurface,
-              .output = parentCtx->output,
-          },
+          .parent =
+              PopupSurfaceParent{
+                  .layerSurface = parentCtx->layerSurface,
+                  .output = parentCtx->output,
+              },
+          .pointerParentSurface = parentCtx->surface,
       }
   );
 

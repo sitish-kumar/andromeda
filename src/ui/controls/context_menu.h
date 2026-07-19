@@ -2,9 +2,11 @@
 
 #include "render/core/renderer.h"
 #include "render/scene/node.h"
+#include "ui/controls/color_swatch_preview.h"
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -26,6 +28,9 @@ struct ContextMenuControlEntry {
   bool checkmark = false;
   bool radio = false;
   std::int32_t toggleState = -1;
+  // Optional leading visual (dropdown-style rows): a small color dot, or a palette swatch strip.
+  std::optional<ColorSpec> indicatorColor;
+  ColorSwatchPreview swatchPreview;
   TextEllipsize ellipsize = TextEllipsize::End;
 };
 
