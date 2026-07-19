@@ -198,11 +198,11 @@ namespace settings {
       return row;
     }
 
-    std::unique_ptr<Flex> makeRoleBadge(std::string_view label, ColorRole role, float scale) {
+    std::unique_ptr<Flex> makeRoleBadge(std::string_view label, ColorRole role, float scale, float fillAlpha = 0.15f) {
       return ui::row(
           {.align = FlexAlign::Center,
            .paddingH = Style::spaceXs * scale,
-           .fill = colorSpecFromRole(role, 0.15f),
+           .fill = colorSpecFromRole(role, fillAlpha),
            .radius = Style::scaledRadiusSm(scale)},
           ui::label({
               .text = std::string(label),
@@ -211,10 +211,6 @@ namespace settings {
               .color = colorSpecFromRole(role),
           })
       );
-    }
-
-    std::unique_ptr<Flex> makeSourceBadge(std::string_view label, float scale) {
-      return makeRoleBadge(label, ColorRole::Primary, scale);
     }
 
     std::unique_ptr<Flex>
@@ -240,7 +236,12 @@ namespace settings {
           makeLabel(pluginDisplayName(plugin), Style::fontSizeBody * scale, ColorRole::OnSurface, FontWeight::Medium)
       );
       if (plugin.source == "official") {
-        title->addChild(makeSourceBadge(i18n::tr("settings.badges.official"), scale));
+        title->addChild(makeRoleBadge(i18n::tr("settings.badges.official"), ColorRole::Primary, scale));
+      } else if (plugin.source == "community") {
+        // Quieter than Official — muted surface tones instead of Primary.
+        title->addChild(
+            makeRoleBadge(i18n::tr("settings.badges.community"), ColorRole::OnSurfaceVariant, scale, 0.12f)
+        );
       } else if (!plugin.source.empty()) {
         title->addChild(makeLabel(
             pluginSourceDisplayName(plugin.source), Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant
