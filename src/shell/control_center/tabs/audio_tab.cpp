@@ -1868,11 +1868,22 @@ void AudioTab::doUpdate(Renderer& renderer) {
     m_outputDeviceVolume.deviceLabel->setText(
         sink != nullptr ? audioDeviceLabel(*sink) : i18n::tr("control-center.audio.no-output-selected")
     );
+    // The caption ellipsizes long device names; the tooltip exposes the full name.
+    if (sink != nullptr) {
+      m_outputDeviceVolume.deviceLabel->setTooltip(audioDeviceLabel(*sink));
+    } else {
+      m_outputDeviceVolume.deviceLabel->clearTooltip();
+    }
   }
   if (m_inputDeviceVolume.deviceLabel != nullptr) {
     m_inputDeviceVolume.deviceLabel->setText(
         source != nullptr ? audioDeviceLabel(*source) : i18n::tr("control-center.audio.no-input-selected")
     );
+    if (source != nullptr) {
+      m_inputDeviceVolume.deviceLabel->setTooltip(audioDeviceLabel(*source));
+    } else {
+      m_inputDeviceVolume.deviceLabel->clearTooltip();
+    }
   }
 
   const float sinkVolume = sink != nullptr ? sink->volume : 0.0f;
