@@ -836,6 +836,7 @@
     },
     "calendar-accounts": {
       "add-title": "Adicionar Conta de Calendário",
+      "calendars-label": "Calendários",
       "color-label": "Cor",
       "delete-error": "Não foi possível deletar conta de calendário",
       "edit-title": "Editar Conta de Calendário",
@@ -1481,7 +1482,7 @@
         },
         "corner-roundness": {
           "description": "Dimensionar o raio dos cantos em contêineres e controles da interface do usuário do shell",
-          "label": "Arredondamento de Cantos"
+          "label": "Arredondamento dos Cantos"
         },
         "custom-palette": {
           "description": "Escolha uma paleta em ~/.config/noctalia/palettes/",
@@ -2247,6 +2248,10 @@
           "description": "Colocar os aplicativos usados com mais frequência no topo e exibir um filtro da categoria \\\"Usados recentemente\\\"\"",
           "label": "Organizar por Uso"
         },
+        "list-item-background": {
+          "description": "Adicionar um fundo arredondado em cada item do launcher e da área de transferência",
+          "label": "Fundo dos Itens de Lista"
+        },
         "open-near-click-clipboard": {
           "description": "Posicione o painel da área de transferência próximo ao clique da barra, em vez de centralizá-lo ao longo da barra",
           "label": "Ao Longo da Barra"
@@ -2627,6 +2632,10 @@
         "osd-border": {
           "description": "Desenha um contorno ao redor do OSD",
           "label": "Borda"
+        },
+        "osd-enabled": {
+          "description": "Interruptor principal para todos os OSDs; quando desativado, nenhum OSD é exibido",
+          "label": "Ativar OSD"
         },
         "osd-kinds-bluetooth": {
           "description": "Exibir um OSD quando o Bluetooth for ativado/desativado",
@@ -3381,8 +3390,8 @@
           "label": "Comando de Scroll Down"
         },
         "scroll-step": {
-          "description": "Variação percentual aplicada a cada passo da roda do mouse",
-          "label": "Scroll Step"
+          "description": "Variação percentual aplicada a cada passo da rolagem do mouse",
+          "label": "Passo de Rolagem"
         },
         "scroll-up-command": {
           "description": "O comando do shell é executado ao rolar para cima sobre este botão",
@@ -3715,7 +3724,7 @@
         "cloudy": "Nublado",
         "drizzle": "Garoa",
         "fog": "Nevoeiro",
-        "mostly-clear": "Poucas nnvens",
+        "mostly-clear": "Poucas nuvens",
         "overcast": "Encoberto",
         "showers": "Pancadas",
         "snow": "Neve",
