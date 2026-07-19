@@ -34,7 +34,10 @@ struct ContextMenuPopupPlacement {
 
 struct ContextMenuPopupRequest {
   std::vector<ContextMenuControlEntry> entries;
+  // <= 0 sizes the menu to its widest entry, clamped to [minMenuWidth, maxMenuWidth] (0 = unbounded).
   float menuWidth = 0.0f;
+  float minMenuWidth = 0.0f;
+  float maxMenuWidth = 0.0f;
   std::size_t maxVisible = 0;
   PopupAnchorRect anchor;
   PopupSurfaceParent parent;

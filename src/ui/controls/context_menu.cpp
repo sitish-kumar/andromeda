@@ -7,6 +7,7 @@
 #include "ui/style.h"
 
 #include <algorithm>
+#include <cmath>
 #include <linux/input-event-codes.h>
 
 namespace {
@@ -25,6 +26,10 @@ namespace {
   ColorSpec disabledItemColor() { return colorSpecFromRole(ColorRole::OnSurface, 0.55f); }
 
   bool hasToggle(const ContextMenuControlEntry& entry) { return entry.checkmark || entry.radio; }
+
+  bool isInteractive(const ContextMenuControlEntry& entry) {
+    return entry.enabled && !entry.separator && !entry.header;
+  }
 
   std::string toggleGlyphName(const ContextMenuControlEntry& entry) {
     if (entry.toggleState == 2) {
@@ -91,7 +96,7 @@ void ContextMenuControl::setRedrawCallback(std::function<void()> redrawCallback)
 
 std::size_t ContextMenuControl::firstInteractiveIndex() const noexcept {
   for (std::size_t i = 0; i < m_entries.size(); ++i) {
-    if (m_entries[i].enabled && !m_entries[i].separator) {
+    if (isInteractive(m_entries[i])) {
       return i;
     }
   }
@@ -154,7 +159,7 @@ bool ContextMenuControl::activateHighlighted() {
     return false;
   }
   const ContextMenuControlEntry& entry = m_entries[m_highlightedIndex];
-  if (!entry.enabled || entry.separator) {
+  if (!isInteractive(entry)) {
     return false;
   }
   if (entry.hasSubmenu) {
@@ -182,6 +187,25 @@ float ContextMenuControl::rowBottom(std::size_t index) const noexcept {
 }
 
 float ContextMenuControl::preferredHeight() const { return preferredHeight(m_entries, m_maxVisible, m_contentScale); }
+
+float ContextMenuControl::preferredWidth(
+    Renderer& renderer, const std::vector<ContextMenuControlEntry>& entries, float scale
+) {
+  scale = safeScale(scale);
+  float maxRowWidth = 0.0f;
+  for (const ContextMenuControlEntry& entry : entries) {
+    if (entry.separator || entry.label.empty()) {
+      continue;
+    }
+    const float toggleSlot = hasToggle(entry) ? 22.0f * scale : 0.0f;
+    const FontWeight weight = entry.header ? FontWeight::Bold : FontWeight::Normal;
+    const float textWidth = std::ceil(renderer.measureText(entry.label, kMenuFontSize * scale, weight).width);
+    // Mirrors rebuildRows: 8px label inset each side, 30px right when a chevron is drawn.
+    const float sidePadding = (entry.hasSubmenu ? 30.0f : 16.0f) * scale;
+    maxRowWidth = std::max(maxRowWidth, textWidth + toggleSlot + sidePadding);
+  }
+  return maxRowWidth + kMenuPadding * scale * 2.0f;
+}
 
 float ContextMenuControl::preferredHeight(
     const std::vector<ContextMenuControlEntry>& entries, std::size_t maxVisible, float scale
@@ -245,7 +269,7 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
 
   for (std::size_t i = 0; i < visibleItems; ++i) {
     const ContextMenuControlEntry& entry = m_entries[i];
-    const bool interactive = entry.enabled && !entry.separator;
+    const bool interactive = isInteractive(entry);
     const bool separator = entry.separator;
     const float rowHeight = separator ? separatorHeight : itemHeight;
 
@@ -261,7 +285,7 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
 
     const float rowCenterY = currentY + rowHeight * 0.5f;
     row->setOnClick([this, entry, rowCenterY](const InputArea::PointerData& data) {
-      if (!entry.enabled || entry.separator || data.button != BTN_LEFT) {
+      if (!isInteractive(entry) || data.button != BTN_LEFT) {
         return;
       }
       if (entry.hasSubmenu) {
@@ -305,7 +329,10 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
           .out = &labelPtr,
           .text = entry.label,
           .fontSize = kMenuFontSize * scale,
-          .color = entry.enabled ? enabledItemColor() : disabledItemColor(),
+          .fontWeight = entry.header ? FontWeight::Bold : FontWeight::Normal,
+          .color = entry.header ? colorSpecFromRole(ColorRole::OnSurfaceVariant)
+              : entry.enabled   ? enabledItemColor()
+                                : disabledItemColor(),
           .maxWidth =
               entry.hasSubmenu ? (rowWidth - 30.0f * scale - toggleSlot) : (rowWidth - 16.0f * scale - toggleSlot),
           .maxLines = 1,
@@ -367,9 +394,10 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
         .interactive = interactive,
     };
     if (rowBgPtr != nullptr && labelPtr != nullptr) {
-      visual.apply = [rowBgPtr, labelPtr, togglePtr, chevronPtr, interactive, separator](bool highlighted) {
+      visual.apply = [rowBgPtr, labelPtr, togglePtr, chevronPtr, interactive, separator,
+                      header = entry.header](bool highlighted) {
         rowBgPtr->setFill(highlighted ? colorSpecFromRole(ColorRole::Hover) : clearColorSpec());
-        if (separator) {
+        if (separator || header) {
           labelPtr->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
         } else {
           labelPtr->setColor(

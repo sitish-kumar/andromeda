@@ -20,6 +20,8 @@ struct ContextMenuControlEntry {
   std::string label;
   bool enabled = true;
   bool separator = false;
+  // Non-interactive group heading; entries below it read as members of the group.
+  bool header = false;
   bool hasSubmenu = false;
   bool checkmark = false;
   bool radio = false;
@@ -51,6 +53,9 @@ public:
   [[nodiscard]] float preferredHeight() const;
   [[nodiscard]] static float
   preferredHeight(const std::vector<ContextMenuControlEntry>& entries, std::size_t maxVisible, float scale = 1.0f);
+  // Width that fits the widest entry without elision (label + toggle/submenu slots + padding).
+  [[nodiscard]] static float
+  preferredWidth(Renderer& renderer, const std::vector<ContextMenuControlEntry>& entries, float scale = 1.0f);
 
 private:
   struct RowVisual {

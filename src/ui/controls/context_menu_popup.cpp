@@ -42,8 +42,18 @@ void ContextMenuPopup::open(ContextMenuPopupRequest request) {
   const std::size_t maxVisible =
       request.maxVisible > 0 ? request.maxVisible : std::max<std::size_t>(1, request.entries.size());
   const float menuHeight = ContextMenuControl::preferredHeight(request.entries, maxVisible);
+  float menuWidth = request.menuWidth;
+  if (menuWidth <= 0.0f) {
+    menuWidth = ContextMenuControl::preferredWidth(m_renderContext, request.entries);
+    if (request.maxMenuWidth > 0.0f) {
+      menuWidth = std::min(menuWidth, request.maxMenuWidth);
+    }
+    if (request.minMenuWidth > 0.0f) {
+      menuWidth = std::max(menuWidth, request.minMenuWidth);
+    }
+  }
   const auto chrome =
-      popup_chrome::computeGeometry(request.menuWidth, menuHeight, m_shadowConfig, Style::popupShadowsEnabled());
+      popup_chrome::computeGeometry(menuWidth, menuHeight, m_shadowConfig, Style::popupShadowsEnabled());
   m_scrollState = {};
   m_scrollView = nullptr;
   m_menu = nullptr;
