@@ -120,6 +120,17 @@
       "delete-item": "Öğeyi sil",
       "keep-pinned": "Sabit tut"
     },
+    "confirm": {
+      "clear-desc": "Sabitlenmiş öğelerin saklanıp saklanmayacağını seçin.",
+      "clear-desc-no-pinned": "Bu her öğeyi pano geçmişinden silecektir.",
+      "clear-title": "Pano geçmişi silinsin mi?",
+      "delete-desc": "Bu seçilmiş öğeyi pano geçmişinden kaldıracaktır.",
+      "delete-title": "Pano öğesi silinsin mi?"
+    },
+    "empty": {
+      "history-message": "Pano geçmişinde öğe yok.",
+      "history-title": "Pao geçmişi boş"
+    },
     "preview": {
       "loading": "Önizleme yükleniyor..."
     }
