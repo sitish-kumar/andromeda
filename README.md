@@ -263,6 +263,10 @@ Meson installs the binary and shipped assets using the normal prefix layout:
 
 Noctalia needs the shipped `assets/` tree at runtime. Copying only the `noctalia` binary is not enough.
 
+Firefox theming uses the built-in template `post_action = "firefox-theme"` (same pattern as
+`kde-color-scheme`) plus the [Pywalfox](https://addons.mozilla.org/en-US/firefox/addon/pywalfox/)
+browser extension. Manual host helpers: `noctalia firefox-theme --help`.
+
 Portable bundle layouts are also supported:
 
 ```text
