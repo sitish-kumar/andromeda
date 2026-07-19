@@ -3190,6 +3190,10 @@
           "description": "Tray item IDs to hide",
           "label": "Hidden Items"
         },
+        "artist-first": {
+          "description": "Show the artist before the track title (Artist - Title)",
+          "label": "Artist First"
+        },
         "hide-album-art": {
           "description": "Hide the album artwork",
           "label": "Hide Album Art"

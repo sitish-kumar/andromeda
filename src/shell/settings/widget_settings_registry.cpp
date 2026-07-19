@@ -817,6 +817,12 @@ namespace settings {
         add(std::move(hideArtist));
       }
       {
+        auto artistFirst = boolSpec("artist_first", false);
+        artistFirst.horizontalBarOnly = true;
+        artistFirst.visibleWhen = notAlbumArtOnly;
+        add(std::move(artistFirst));
+      }
+      {
         auto minLength = intSpec("min_length", 80, 0.0, 800.0, 1.0);
         minLength.visibleWhen = notAlbumArtOnly;
         add(std::move(minLength));
