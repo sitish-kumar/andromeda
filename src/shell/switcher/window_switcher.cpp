@@ -907,7 +907,7 @@ bool WindowSwitcher::onPointerEvent(const PointerEvent& event) {
     }
     return false;
   case PointerEvent::Type::Button: {
-    const bool pressed = (event.state == 1);
+    const bool pressed = event.pressed;
     if (onTarget) {
       target->pointerInside = true;
     }

@@ -314,7 +314,7 @@ bool ContextMenuPopup::onPointerEvent(const PointerEvent& event) {
       if (onPopup) {
         m_pointerInside = true;
       }
-      const bool pressed = (event.state == 1);
+      const bool pressed = event.pressed;
       m_inputDispatcher.pointerButton(localX, localY, event.button, pressed);
       if (!pressed && captured && !onPopup) {
         m_pointerInside = false;

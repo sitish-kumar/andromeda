@@ -3116,7 +3116,7 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
   if (targetInstance != nullptr
       && event.type == PointerEvent::Type::Button
       && event.button == BTN_MIDDLE
-      && event.state == 1
+      && event.pressed
       && m_config != nullptr
       && m_config->config().shell.middleClickOpensWidgetSettings) {
     auto* widget = widgetAtPoint(*targetInstance, static_cast<float>(event.sx), static_cast<float>(event.sy));
@@ -3144,7 +3144,7 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
     case PointerEvent::Type::Motion:
     case PointerEvent::Type::Button:
     case PointerEvent::Type::Axis:
-      if (event.type == PointerEvent::Type::Button && event.button == BTN_RIGHT && event.state == 1) {
+      if (event.type == PointerEvent::Type::Button && event.button == BTN_RIGHT && event.pressed) {
         const auto sx = static_cast<float>(event.sx);
         const auto sy = static_cast<float>(event.sy);
         const auto& deadZone = targetInstance->barConfig.deadZone;
@@ -3216,7 +3216,7 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
     m_hoveredInstance->lastPointerSy = static_cast<float>(event.sy);
     const auto sx = static_cast<float>(event.sx);
     const auto sy = static_cast<float>(event.sy);
-    bool pressed = (event.state == 1); // WL_POINTER_BUTTON_STATE_PRESSED
+    bool pressed = event.pressed;
     consumed = m_hoveredInstance->inputDispatcher.pointerButton(sx, sy, event.button, pressed);
     if (pressed && !consumed) {
       if (handleBarDeadZoneButton(*m_hoveredInstance, sx, sy, event.button, m_platform)) {

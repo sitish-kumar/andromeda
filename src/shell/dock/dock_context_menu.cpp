@@ -106,7 +106,7 @@ namespace shell::dock {
         // Keep hover state synced before click dispatch so stationary pointers can
         // still activate rows even if Enter/Motion ordering is flaky.
         popup.inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
-        const bool pressed = (event.state == 1);
+        const bool pressed = event.pressed;
         popup.inputDispatcher.pointerButton(
             static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, pressed
         );

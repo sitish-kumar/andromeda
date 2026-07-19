@@ -396,7 +396,7 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
       if (onSub || sub->pointerInside) {
         if (onSub)
           sub->pointerInside = true;
-        const bool pressed = (event.state == 1);
+        const bool pressed = event.pressed;
         sub->inputDispatcher.pointerButton(
             static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, pressed
         );
@@ -461,7 +461,7 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
       if (onThisSurface) {
         inst->pointerInside = true;
       }
-      const bool pressed = (event.state == 1);
+      const bool pressed = event.pressed;
       inst->inputDispatcher.pointerButton(
           static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, pressed
       );
@@ -494,7 +494,7 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
     }
   }
 
-  if (event.type == PointerEvent::Type::Button && event.state == 1 && !consumed) {
+  if (event.type == PointerEvent::Type::Button && event.pressed && !consumed) {
     close();
   }
   return consumed;

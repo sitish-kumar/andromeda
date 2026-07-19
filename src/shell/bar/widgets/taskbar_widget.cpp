@@ -1862,7 +1862,7 @@ bool TaskbarWidget::onPointerEvent(const PointerEvent& event) {
     return false;
   }
   const bool consumed = m_contextMenuPopup->onPointerEvent(event);
-  if (!consumed && event.type == PointerEvent::Type::Button && event.state == 1) {
+  if (!consumed && event.type == PointerEvent::Type::Button && event.pressed) {
     m_contextMenuPopup->close();
     return true;
   }
