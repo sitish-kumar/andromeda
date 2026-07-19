@@ -2248,6 +2248,10 @@
           "description": "Boost frequently used apps toward the top and show a Recently Used category filter",
           "label": "Sort by Usage"
         },
+        "list-item-background": {
+          "description": "Draw a filled rounded background behind each launcher and clipboard list item",
+          "label": "List Item Background"
+        },
         "open-near-click-clipboard": {
           "description": "Position the clipboard panel near the bar widget that opened it; openings without a bar trigger are centered",
           "label": "Along Bar"

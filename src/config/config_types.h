@@ -873,8 +873,9 @@ struct ShellConfig {
 
   struct PanelConfig {
     PanelTransparencyMode transparencyMode = PanelTransparencyMode::Solid;
-    bool borders = true; // panel shell outline and in-panel section cards
-    bool shadow = true;  // cast the global [shell.shadow] from panel surfaces
+    bool borders = true;             // panel shell outline and in-panel section cards
+    bool shadow = true;              // cast the global [shell.shadow] from panel surfaces
+    bool listItemBackground = false; // filled rounded background behind launcher/clipboard list items
     PanelPlacement launcherPlacement = PanelPlacement::Floating;
     PanelPlacement clipboardPlacement = PanelPlacement::Floating;
     PanelPlacement controlCenterPlacement = PanelPlacement::Attached;

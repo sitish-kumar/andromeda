@@ -1075,6 +1075,11 @@ namespace settings {
         ToggleSetting{cfg.shell.panel.shadow}, "shadow depth"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Panels, "effects", tr("settings.schema.panels.list-item-background.label"),
+        tr("settings.schema.panels.list-item-background.description"), {"shell", "panel", "list_item_background"},
+        ToggleSetting{cfg.shell.panel.listItemBackground}, "list item background fill row card launcher clipboard"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Panels, "effects", tr("settings.schema.panels.floating-offset.label"),
         tr("settings.schema.panels.floating-offset.description"), {"shell", "panel", "floating_offset"},
         StepperSetting{
