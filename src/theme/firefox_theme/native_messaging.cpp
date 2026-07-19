@@ -1,4 +1,4 @@
-#include "tools/pywalfox/native_messaging.h"
+#include "theme/firefox_theme/native_messaging.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <vector>
 
-namespace pywalfox_host::native_messaging {
+namespace noctalia::theme::firefox_theme::native_messaging {
   namespace {
 
     bool writeAll(const void* data, std::size_t size) {
@@ -110,4 +110,4 @@ namespace pywalfox_host::native_messaging {
     }
   }
 
-} // namespace pywalfox_host::native_messaging
+} // namespace noctalia::theme::firefox_theme::native_messaging

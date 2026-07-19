@@ -1,14 +1,14 @@
-#include "tools/pywalfox/css.h"
+#include "theme/firefox_theme/css.h"
 
-#include "tools/pywalfox/pywalfox_host.h"
-#include "tools/pywalfox/settings.h"
+#include "theme/firefox_theme/settings.h"
 
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <unistd.h>
 #include <vector>
 
-namespace pywalfox_host::css {
+namespace noctalia::theme::firefox_theme::css {
   namespace {
 
     [[nodiscard]] std::string withCssExtension(std::string_view name) {
@@ -31,6 +31,60 @@ namespace pywalfox_host::css {
       }
       const auto home = homeDir();
       return home.empty() ? std::filesystem::path{} : home / ".config";
+    }
+
+    [[nodiscard]] std::string selfExePath() {
+      char buf[4096];
+      const ssize_t n = ::readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+      if (n <= 0) {
+        return {};
+      }
+      buf[n] = '\0';
+      return std::string(buf, static_cast<std::size_t>(n));
+    }
+
+    [[nodiscard]] std::filesystem::path cssAssetDir() {
+#ifdef NOCTALIA_SOURCE_ASSETS_DIR
+      {
+        const auto source = std::filesystem::path(NOCTALIA_SOURCE_ASSETS_DIR) / "firefox_theme" / "css";
+        std::error_code ec;
+        if (std::filesystem::is_directory(source, ec)) {
+          return source;
+        }
+      }
+#endif
+#ifdef NOCTALIA_INSTALL_PREFIX
+#ifdef NOCTALIA_INSTALL_DATADIR
+      {
+        const std::filesystem::path datadir(NOCTALIA_INSTALL_DATADIR);
+        const auto installed = datadir.is_absolute() ? datadir / "noctalia" / "assets" / "firefox_theme" / "css"
+                                                     : std::filesystem::path(NOCTALIA_INSTALL_PREFIX)
+                / datadir
+                / "noctalia"
+                / "assets"
+                / "firefox_theme"
+                / "css";
+        std::error_code ec;
+        if (std::filesystem::is_directory(installed, ec)) {
+          return installed;
+        }
+      }
+#endif
+#endif
+      const std::string self = selfExePath();
+      if (!self.empty()) {
+        const auto candidate = std::filesystem::path(self).parent_path().parent_path()
+            / "share"
+            / "noctalia"
+            / "assets"
+            / "firefox_theme"
+            / "css";
+        std::error_code ec;
+        if (std::filesystem::is_directory(candidate, ec)) {
+          return candidate;
+        }
+      }
+      return {};
     }
 
     [[nodiscard]] std::optional<std::filesystem::path> profilesRoot() {
@@ -148,7 +202,7 @@ namespace pywalfox_host::css {
     const auto assets = cssAssetDir();
     if (assets.empty()) {
       if (message != nullptr) {
-        *message = "Could not locate shipped Pywalfox CSS assets";
+        *message = "Could not locate shipped Firefox theme CSS assets";
       }
       return false;
     }
@@ -220,4 +274,4 @@ namespace pywalfox_host::css {
     return true;
   }
 
-} // namespace pywalfox_host::css
+} // namespace noctalia::theme::firefox_theme::css

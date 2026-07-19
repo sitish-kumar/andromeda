@@ -1,8 +1,8 @@
-#include "tools/pywalfox/pywalfox_host.h"
+#include "theme/firefox_theme/firefox_theme.h"
 
-#include "tools/pywalfox/css.h"
-#include "tools/pywalfox/native_messaging.h"
-#include "tools/pywalfox/settings.h"
+#include "theme/firefox_theme/css.h"
+#include "theme/firefox_theme/native_messaging.h"
+#include "theme/firefox_theme/settings.h"
 
 #include <algorithm>
 #include <array>
@@ -17,6 +17,7 @@
 #include <poll.h>
 #include <print>
 #include <string>
+#include <string_view>
 #include <sys/inotify.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -25,8 +26,17 @@
 #include <unistd.h>
 #include <vector>
 
-namespace pywalfox_host {
+namespace noctalia::theme {
   namespace {
+
+    namespace css = firefox_theme::css;
+    namespace native_messaging = firefox_theme::native_messaging;
+    namespace settings = firefox_theme::settings;
+
+    // Wire names required by the Pywalfox Firefox/Thunderbird extension.
+    constexpr std::string_view kExtensionId = "pywalfox@frewacom.org";
+    constexpr std::string_view kManifestName = "pywalfox";
+    constexpr std::string_view kHostVersion = "noctalia-2.9.0-compat";
 
     constexpr std::string_view kActionVersion = "debug:version";
     constexpr std::string_view kActionColors = "action:colors";
@@ -82,6 +92,222 @@ namespace pywalfox_host {
       return ::fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
     }
 
+    [[nodiscard]] std::filesystem::path defaultColorsJsonPath() {
+      const auto cache = xdgCacheHome();
+      return cache.empty() ? std::filesystem::path{} : cache / "wal" / "colors.json";
+    }
+
+    [[nodiscard]] std::filesystem::path unixSocketPath() {
+      // Must match the historical Pywalfox host socket name.
+      return std::filesystem::temp_directory_path() / ("pywalfox_socket_" + std::to_string(::getuid()));
+    }
+
+    [[nodiscard]] std::filesystem::path userManifestPath() {
+      const auto home = homeDir();
+      if (home.empty()) {
+        return {};
+      }
+      return home / ".mozilla" / "native-messaging-hosts" / "pywalfox.json";
+    }
+
+    [[nodiscard]] std::filesystem::path resolveNoctaliaExecutable() {
+      const std::string self = selfExePath();
+      if (!self.empty()) {
+        return self;
+      }
+#ifdef NOCTALIA_INSTALL_PREFIX
+      const auto installed = std::filesystem::path(NOCTALIA_INSTALL_PREFIX) / "bin" / "noctalia";
+      std::error_code ec;
+      if (std::filesystem::is_regular_file(installed, ec)) {
+        return installed;
+      }
+#endif
+      return {};
+    }
+
+    [[nodiscard]] bool pathLooksLikeNoctaliaHost(const std::filesystem::path& path) {
+      const std::string name = path.filename().string();
+      return name == "noctalia" || name == "noctalia-pywalfox";
+    }
+
+    [[nodiscard]] std::optional<std::filesystem::path> readExistingManifestHostPath() {
+      const auto manifest = userManifestPath();
+      if (manifest.empty()) {
+        return std::nullopt;
+      }
+      std::ifstream in(manifest);
+      if (!in) {
+        return std::nullopt;
+      }
+      try {
+        nlohmann::json root;
+        in >> root;
+        if (!root.contains("path") || !root["path"].is_string()) {
+          return std::nullopt;
+        }
+        return std::filesystem::path(root["path"].get<std::string>());
+      } catch (...) {
+        return std::nullopt;
+      }
+    }
+
+    bool installManifest(const std::filesystem::path& hostExecutable, std::string* error) {
+      if (hostExecutable.empty() || !std::filesystem::is_regular_file(hostExecutable)) {
+        if (error != nullptr) {
+          *error = "noctalia executable not found";
+        }
+        return false;
+      }
+
+      std::error_code ec;
+      const auto canonical = std::filesystem::weakly_canonical(hostExecutable, ec);
+      const auto path = ec ? hostExecutable : canonical;
+
+      const auto manifest = userManifestPath();
+      if (manifest.empty()) {
+        if (error != nullptr) {
+          *error = "HOME is not set";
+        }
+        return false;
+      }
+
+      std::filesystem::create_directories(manifest.parent_path(), ec);
+      if (ec) {
+        if (error != nullptr) {
+          *error = "failed to create native-messaging-hosts directory: " + ec.message();
+        }
+        return false;
+      }
+
+      const nlohmann::json body = {
+          {"name", std::string(kManifestName)},
+          {"description", "Noctalia Firefox theme native messaging host"},
+          {"path", path.string()},
+          {"type", "stdio"},
+          {"allowed_extensions", nlohmann::json::array({std::string(kExtensionId)})},
+      };
+
+      std::ofstream out(manifest, std::ios::trunc);
+      if (!out) {
+        if (error != nullptr) {
+          *error = "failed to write " + manifest.string();
+        }
+        return false;
+      }
+      out << body.dump(2) << '\n';
+      return true;
+    }
+
+    bool uninstallManifest(std::string* error) {
+      const auto manifest = userManifestPath();
+      if (manifest.empty()) {
+        if (error != nullptr) {
+          *error = "HOME is not set";
+        }
+        return false;
+      }
+      std::error_code ec;
+      if (!std::filesystem::exists(manifest, ec)) {
+        return true;
+      }
+      if (!std::filesystem::remove(manifest, ec)) {
+        if (error != nullptr) {
+          *error = "failed to remove " + manifest.string() + ": " + ec.message();
+        }
+        return false;
+      }
+      return true;
+    }
+
+    // Install only when absent or already owned by noctalia — never clobber a foreign host.
+    bool ensureManifestOwnedByNoctalia(std::string* error, std::string* warning) {
+      const auto host = resolveNoctaliaExecutable();
+      if (host.empty()) {
+        if (error != nullptr) {
+          *error = "noctalia executable not found";
+        }
+        return false;
+      }
+
+      if (const auto existing = readExistingManifestHostPath()) {
+        if (!pathLooksLikeNoctaliaHost(*existing)) {
+          if (warning != nullptr) {
+            *warning = "leaving existing native messaging host at " + existing->string();
+          }
+          return true;
+        }
+      }
+
+      return installManifest(host, error);
+    }
+
+    int sendSocketCommand(std::string_view command) {
+      const int fd = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+      if (fd < 0) {
+        std::println(stderr, "failed to create socket: {}", std::strerror(errno));
+        return 1;
+      }
+
+      sockaddr_un addr{};
+      addr.sun_family = AF_UNIX;
+      const auto path = unixSocketPath().string();
+      if (path.size() >= sizeof(addr.sun_path)) {
+        ::close(fd);
+        std::println(stderr, "socket path too long");
+        return 1;
+      }
+      std::memcpy(addr.sun_path, path.c_str(), path.size() + 1);
+
+      if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
+        std::println(stderr, "failed to connect to {}: {}", path, std::strerror(errno));
+        ::close(fd);
+        return 1;
+      }
+
+      const ssize_t sent = ::send(fd, command.data(), command.size(), 0);
+      ::close(fd);
+      if (sent < 0 || static_cast<std::size_t>(sent) != command.size()) {
+        std::println(stderr, "failed to send command");
+        return 1;
+      }
+      return 0;
+    }
+
+    // Best-effort notify; missing host is not an apply failure (colors are already on disk).
+    bool trySendHostCommand(std::string_view command, std::string* warning) {
+      const int fd = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+      if (fd < 0) {
+        return false;
+      }
+
+      sockaddr_un addr{};
+      addr.sun_family = AF_UNIX;
+      const auto path = unixSocketPath().string();
+      if (path.size() >= sizeof(addr.sun_path)) {
+        ::close(fd);
+        return false;
+      }
+      std::memcpy(addr.sun_path, path.c_str(), path.size() + 1);
+
+      if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
+        ::close(fd);
+        if (warning != nullptr && warning->empty()) {
+          *warning = "Firefox theme host is not running; colors will apply when the extension connects";
+        }
+        return false;
+      }
+
+      const ssize_t sent = ::send(fd, command.data(), command.size(), 0);
+      ::close(fd);
+      if (sent < 0 || static_cast<std::size_t>(sent) != command.size()) {
+        if (warning != nullptr && warning->empty()) {
+          *warning = "failed to notify running Firefox theme host";
+        }
+        return false;
+      }
+      return true;
+    }
+
     struct ColorsPayload {
       std::vector<std::string> colors;
       std::string wallpaper;
@@ -89,9 +315,8 @@ namespace pywalfox_host {
       bool ok = false;
     };
 
-    [[nodiscard]] ColorsPayload loadColors() {
+    [[nodiscard]] ColorsPayload loadColors(const std::filesystem::path& path) {
       ColorsPayload out;
-      const auto path = colorsJsonPath();
       std::ifstream in(path);
       if (!in) {
         out.error = "Could not read colors from: " + path.string();
@@ -115,7 +340,6 @@ namespace pywalfox_host {
         return out;
       }
 
-      // Preserve pywal key order color0..color15 when present.
       const auto& colorsObj = root["colors"];
       for (int i = 0; i < 16; ++i) {
         const std::string key = "color" + std::to_string(i);
@@ -145,11 +369,11 @@ namespace pywalfox_host {
     void sendMessage(const nlohmann::json& message) { native_messaging::writeMessage(message); }
 
     void sendVersion() {
-      sendMessage({{"action", std::string(kActionVersion)}, {"success", true}, {"data", std::string(kDaemonVersion)}});
+      sendMessage({{"action", std::string(kActionVersion)}, {"success", true}, {"data", std::string(kHostVersion)}});
     }
 
-    void sendColors() {
-      const auto payload = loadColors();
+    void sendColorsFromPath(const std::filesystem::path& path) {
+      const auto payload = loadColors(path);
       nlohmann::json msg = {{"action", std::string(kActionColors)}, {"success", payload.ok}};
       if (payload.ok) {
         msg["data"] = {{"colors", payload.colors}, {"wallpaper", payload.wallpaper}};
@@ -158,6 +382,8 @@ namespace pywalfox_host {
       }
       sendMessage(msg);
     }
+
+    void sendColors() { sendColorsFromPath(defaultColorsJsonPath()); }
 
     void sendInvalid() { sendMessage({{"action", std::string(kActionInvalid)}, {"success", false}}); }
 
@@ -308,199 +534,81 @@ namespace pywalfox_host {
       return fd;
     }
 
+    void printCliHelp() {
+      std::println(
+          "noctalia firefox-theme — Firefox theme host helpers (Pywalfox-compatible)\n"
+          "\n"
+          "Usage: noctalia firefox-theme <ACTION>\n"
+          "\n"
+          "Actions:\n"
+          "  host           Run as Firefox native messaging host\n"
+          "  install        Install user-local native messaging manifest\n"
+          "  uninstall      Remove user-local native messaging manifest\n"
+          "  update         Ask a running host to push colors to the extension\n"
+          "  dark|light|auto  Persist and push theme mode\n"
+          "  -h, --help     Show this help\n"
+          "\n"
+          "Templates use post_action = \"firefox-theme\" after writing colors.json.\n"
+          "Firefox still requires the Pywalfox browser extension.\n"
+      );
+    }
+
   } // namespace
 
-  std::filesystem::path colorsJsonPath() {
-    const auto cache = xdgCacheHome();
-    return cache.empty() ? std::filesystem::path{} : cache / "wal" / "colors.json";
-  }
-
-  std::filesystem::path unixSocketPath() {
-    return std::filesystem::temp_directory_path() / ("pywalfox_socket_" + std::to_string(::getuid()));
-  }
-
-  std::filesystem::path userManifestPath() {
-    const auto home = homeDir();
-    if (home.empty()) {
-      return {};
-    }
-    return home / ".mozilla" / "native-messaging-hosts" / "pywalfox.json";
-  }
-
-  std::filesystem::path resolveHostExecutable() {
-    const std::string self = selfExePath();
-    if (!self.empty()) {
-      const auto selfPath = std::filesystem::path(self);
-      if (selfPath.filename() == "noctalia-pywalfox") {
-        return selfPath;
-      }
-      const auto sibling = selfPath.parent_path() / "noctalia-pywalfox";
-      std::error_code ec;
-      if (std::filesystem::is_regular_file(sibling, ec)) {
-        return sibling;
-      }
-    }
-
-#ifdef NOCTALIA_INSTALL_PREFIX
-    const auto installed = std::filesystem::path(NOCTALIA_INSTALL_PREFIX) / "bin" / "noctalia-pywalfox";
-    std::error_code ec;
-    if (std::filesystem::is_regular_file(installed, ec)) {
-      return installed;
-    }
-#endif
-    return {};
-  }
-
-  std::filesystem::path cssAssetDir() {
-#ifdef NOCTALIA_SOURCE_ASSETS_DIR
-    {
-      const auto source = std::filesystem::path(NOCTALIA_SOURCE_ASSETS_DIR) / "pywalfox" / "css";
-      std::error_code ec;
-      if (std::filesystem::is_directory(source, ec)) {
-        return source;
-      }
-    }
-#endif
-#ifdef NOCTALIA_INSTALL_PREFIX
-#ifdef NOCTALIA_INSTALL_DATADIR
-    {
-      const std::filesystem::path datadir(NOCTALIA_INSTALL_DATADIR);
-      const auto installed = datadir.is_absolute()
-          ? datadir / "noctalia" / "assets" / "pywalfox" / "css"
-          : std::filesystem::path(NOCTALIA_INSTALL_PREFIX) / datadir / "noctalia" / "assets" / "pywalfox" / "css";
-      std::error_code ec;
-      if (std::filesystem::is_directory(installed, ec)) {
-        return installed;
-      }
-    }
-#endif
-#endif
-    const auto exe = resolveHostExecutable();
-    if (!exe.empty()) {
-      // Typical layout: prefix/bin/noctalia-pywalfox → prefix/share/noctalia/assets/pywalfox/css
-      const auto candidate = exe.parent_path().parent_path() / "share" / "noctalia" / "assets" / "pywalfox" / "css";
-      std::error_code ec;
-      if (std::filesystem::is_directory(candidate, ec)) {
-        return candidate;
-      }
-    }
-    return {};
-  }
-
-  bool installManifest(const std::filesystem::path& hostExecutable, std::string* error) {
-    if (hostExecutable.empty() || !std::filesystem::is_regular_file(hostExecutable)) {
-      if (error != nullptr) {
-        *error = "noctalia-pywalfox executable not found";
-      }
-      return false;
-    }
-
-    std::error_code ec;
-    const auto canonical = std::filesystem::weakly_canonical(hostExecutable, ec);
-    const auto path = ec ? hostExecutable : canonical;
-
-    const auto manifest = userManifestPath();
-    if (manifest.empty()) {
-      if (error != nullptr) {
-        *error = "HOME is not set";
-      }
-      return false;
-    }
-
-    std::filesystem::create_directories(manifest.parent_path(), ec);
-    if (ec) {
-      if (error != nullptr) {
-        *error = "failed to create native-messaging-hosts directory: " + ec.message();
-      }
-      return false;
-    }
-
-    const nlohmann::json body = {
-        {"name", std::string(kManifestName)},
-        {"description", "Noctalia Pywalfox native messaging host"},
-        {"path", path.string()},
-        {"type", "stdio"},
-        {"allowed_extensions", nlohmann::json::array({std::string(kExtensionId)})},
-    };
-
-    std::ofstream out(manifest, std::ios::trunc);
-    if (!out) {
-      if (error != nullptr) {
-        *error = "failed to write " + manifest.string();
-      }
-      return false;
-    }
-    out << body.dump(2) << '\n';
-    return true;
-  }
-
-  bool uninstallManifest(std::string* error) {
-    const auto manifest = userManifestPath();
-    if (manifest.empty()) {
-      if (error != nullptr) {
-        *error = "HOME is not set";
-      }
-      return false;
+  FirefoxThemeApplyResult applyFirefoxTheme(const std::filesystem::path& colorsJsonPath, std::string_view mode) {
+    FirefoxThemeApplyResult result;
+    if (colorsJsonPath.empty()) {
+      result.error = "colors.json path is empty";
+      return result;
     }
     std::error_code ec;
-    if (!std::filesystem::exists(manifest, ec)) {
+    if (!std::filesystem::is_regular_file(colorsJsonPath, ec)) {
+      result.error = "colors.json not found: " + colorsJsonPath.string();
+      return result;
+    }
+
+    const auto payload = loadColors(colorsJsonPath);
+    if (!payload.ok) {
+      result.error = payload.error;
+      return result;
+    }
+
+    std::string ensureError;
+    std::string ensureWarning;
+    if (!ensureManifestOwnedByNoctalia(&ensureError, &ensureWarning)) {
+      result.error = ensureError;
+      return result;
+    }
+    if (!ensureWarning.empty()) {
+      result.warning = ensureWarning;
+    }
+
+    // Match community apply.sh: pywalfox dark|light (when valid), then pywalfox update.
+    if (mode == "dark" || mode == "light") {
+      firefox_theme::settings::set("theme_mode", mode);
+      (void)trySendHostCommand(mode == "dark" ? kCmdDark : kCmdLight, &result.warning);
+    }
+    (void)trySendHostCommand(kCmdUpdate, &result.warning);
+    result.success = true;
+    return result;
+  }
+
+  bool isFirefoxNativeMessagingLaunch(int argc, char* argv[]) {
+    if (argc < 2 || argv[1] == nullptr) {
+      return false;
+    }
+    const std::string_view arg = argv[1];
+    if (arg == kExtensionId) {
       return true;
     }
-    if (!std::filesystem::remove(manifest, ec)) {
-      if (error != nullptr) {
-        *error = "failed to remove " + manifest.string() + ": " + ec.message();
-      }
-      return false;
+    // Firefox may pass an absolute chrome/extension path as argv[1] and the id as argv[2].
+    if (argc >= 3 && argv[2] != nullptr && std::string_view(argv[2]) == kExtensionId) {
+      return true;
     }
-    return true;
+    return false;
   }
 
-  void ensureManifestForCommunityTemplates(const std::vector<std::string>& communityIds) {
-    const bool enabled =
-        std::ranges::any_of(communityIds, [](const std::string& id) { return id == kCommunityTemplateId; });
-    if (!enabled) {
-      return;
-    }
-    const auto host = resolveHostExecutable();
-    std::string err;
-    if (!installManifest(host, &err)) {
-      std::println(stderr, "noctalia-pywalfox: failed to ensure native messaging host: {}", err);
-    }
-  }
-
-  int sendSocketCommand(std::string_view command) {
-    const int fd = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
-    if (fd < 0) {
-      std::println(stderr, "failed to create socket: {}", std::strerror(errno));
-      return 1;
-    }
-
-    sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    const auto path = unixSocketPath().string();
-    if (path.size() >= sizeof(addr.sun_path)) {
-      ::close(fd);
-      std::println(stderr, "socket path too long");
-      return 1;
-    }
-    std::memcpy(addr.sun_path, path.c_str(), path.size() + 1);
-
-    if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
-      std::println(stderr, "failed to connect to {}: {}", path, std::strerror(errno));
-      ::close(fd);
-      return 1;
-    }
-
-    const ssize_t sent = ::send(fd, command.data(), command.size(), 0);
-    ::close(fd);
-    if (sent < 0 || static_cast<std::size_t>(sent) != command.size()) {
-      std::println(stderr, "failed to send command");
-      return 1;
-    }
-    return 0;
-  }
-
-  int runDaemon() {
+  int runFirefoxNativeMessagingHost() {
     (void)setNonBlocking(STDIN_FILENO);
     (void)setCloexec(STDIN_FILENO);
 
@@ -511,7 +619,7 @@ namespace pywalfox_host {
     }
 
     int inotifyWd = -1;
-    const auto colorsPath = colorsJsonPath();
+    const auto colorsPath = defaultColorsJsonPath();
     const int inotifyFd = openColorsInotify(colorsPath, &inotifyWd);
     const std::string colorsFileName = colorsPath.filename().string();
 
@@ -608,4 +716,60 @@ namespace pywalfox_host {
     return 0;
   }
 
-} // namespace pywalfox_host
+  int runFirefoxThemeCli(int argc, char* argv[]) {
+    std::string_view action;
+    if (argc >= 3 && argv[2] != nullptr) {
+      action = argv[2];
+    }
+
+    if (action.empty() || action == "-h" || action == "--help" || action == "help") {
+      printCliHelp();
+      return action.empty() ? 1 : 0;
+    }
+    if (action == "host" || action == "start") {
+      return runFirefoxNativeMessagingHost();
+    }
+    if (action == "install") {
+      const auto host = resolveNoctaliaExecutable();
+      std::string err;
+      if (!installManifest(host, &err)) {
+        std::println(stderr, "install failed: {}", err);
+        return 1;
+      }
+      std::println("Installed native messaging host manifest:");
+      std::println("  {}", userManifestPath().string());
+      std::println("  path = {}", host.string());
+      std::println("Restart Firefox if it was already running.");
+      return 0;
+    }
+    if (action == "uninstall") {
+      std::string err;
+      if (!uninstallManifest(&err)) {
+        std::println(stderr, "uninstall failed: {}", err);
+        return 1;
+      }
+      std::println("Removed {}", userManifestPath().string());
+      return 0;
+    }
+    if (action == "update") {
+      return sendSocketCommand(kCmdUpdate);
+    }
+    if (action == "dark") {
+      settings::set("theme_mode", "dark");
+      return sendSocketCommand(kCmdDark);
+    }
+    if (action == "light") {
+      settings::set("theme_mode", "light");
+      return sendSocketCommand(kCmdLight);
+    }
+    if (action == "auto") {
+      settings::set("theme_mode", "auto");
+      return sendSocketCommand(kCmdAuto);
+    }
+
+    std::println(stderr, "error: unknown firefox-theme action '{}'", action);
+    printCliHelp();
+    return 1;
+  }
+
+} // namespace noctalia::theme

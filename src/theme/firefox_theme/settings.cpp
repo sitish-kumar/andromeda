@@ -1,11 +1,11 @@
-#include "tools/pywalfox/settings.h"
+#include "theme/firefox_theme/settings.h"
 
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-namespace pywalfox_host::settings {
+namespace noctalia::theme::firefox_theme::settings {
   namespace {
 
     [[nodiscard]] std::filesystem::path configPath() {
@@ -18,6 +18,7 @@ namespace pywalfox_host::settings {
       if (configHome.empty()) {
         return {};
       }
+      // Extension wire path — keep stable even though noctalia naming avoids "pywalfox".
       return configHome / "pywalfox" / "config.json";
     }
 
@@ -67,4 +68,4 @@ namespace pywalfox_host::settings {
     return true;
   }
 
-} // namespace pywalfox_host::settings
+} // namespace noctalia::theme::firefox_theme::settings
