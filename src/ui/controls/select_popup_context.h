@@ -19,6 +19,8 @@ public:
     std::int32_t anchorWidth = 1;
     std::int32_t anchorHeight = 1;
     float menuWidth = 0.0f;
+    // When > menuWidth, the dropdown grows past menuWidth to fit its widest option, up to this cap.
+    float maxMenuWidth = 0.0f;
     float optionHeight = 0.0f;
     float fontSize = 0.0f;
     float glyphSize = 14.0f;

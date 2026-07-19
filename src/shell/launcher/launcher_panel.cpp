@@ -1642,7 +1642,7 @@ void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float a
 
   const float scale = contentScale();
   constexpr float kMenuWidth = 240.0f;
-  const float menuWidth = kMenuWidth * scale;
+  const float minMenuWidth = kMenuWidth * scale;
 
   if (m_config != nullptr) {
     m_actionsMenu->setShadowConfig(m_config->config().shell.shadow);
@@ -1710,7 +1710,8 @@ void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float a
   m_actionsMenu->open(
       ContextMenuPopupRequest{
           .entries = std::move(entries),
-          .menuWidth = menuWidth,
+          .minMenuWidth = minMenuWidth,
+          .maxMenuWidth = Style::menuAutoMaxWidth * scale,
           .maxVisible = 12,
           .anchor =
               PopupAnchorRect{

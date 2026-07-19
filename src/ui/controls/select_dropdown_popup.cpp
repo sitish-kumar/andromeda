@@ -37,6 +37,31 @@ namespace {
 
   Color resolved(ColorRole role, float alpha = 1.0f) { return colorForRole(role, alpha); }
 
+  // Width that fits the widest option row without elision. Mirrors the row layout in
+  // rebuildSceneGraph: horizontal padding, indicator/swatch inset, label, check-glyph slot.
+  float preferredContentWidth(Renderer& renderer, const SelectPopupContext::DropdownRequest& request) {
+    const bool hasIndicators = !request.indicatorColors.empty();
+    const float indicatorSize = hasIndicators ? std::round(request.fontSize) : 0.0f;
+    float maxRowWidth = 0.0f;
+    for (std::size_t i = 0; i < request.options.size(); ++i) {
+      float leadingInset = 0.0f;
+      if (i < request.optionSwatchPreviews.size() && !request.optionSwatchPreviews[i].empty()) {
+        ColorSwatchPreviewStrip preview;
+        preview.setMetricsFromFontSize(request.fontSize);
+        preview.setPreview(request.optionSwatchPreviews[i]);
+        leadingInset = preview.preferredWidth() + Style::spaceSm;
+      } else if (hasIndicators && i < request.indicatorColors.size()) {
+        leadingInset = indicatorSize + Style::spaceSm;
+      }
+      const float labelWidth = std::ceil(renderer.measureText(request.options[i], request.fontSize).width);
+      maxRowWidth = std::max(
+          maxRowWidth, request.horizontalPadding * 2.0f + leadingInset + labelWidth + Style::spaceXs + request.glyphSize
+      );
+    }
+    const bool scrollable = request.options.size() > request.maxVisibleOptions;
+    return maxRowWidth + kMenuPadding * 2.0f + (scrollable ? Style::scrollbarWidth : 0.0f);
+  }
+
 } // namespace
 
 SelectDropdownPopup::SelectDropdownPopup(WaylandConnection& wayland, RenderContext& renderContext)
@@ -93,6 +118,9 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
   m_hoveredIndex = m_selectedIndex < m_options.size() ? m_selectedIndex : 0;
   m_optionHeight = request.optionHeight;
   m_menuWidth = request.menuWidth;
+  if (request.maxMenuWidth > request.menuWidth) {
+    m_menuWidth = std::clamp(preferredContentWidth(m_renderContext, request), request.menuWidth, request.maxMenuWidth);
+  }
 
   const std::size_t visibleCount = std::min(request.maxVisibleOptions, m_options.size());
   m_viewportHeight = static_cast<float>(visibleCount) * m_optionHeight + kMenuPadding * 2.0f;

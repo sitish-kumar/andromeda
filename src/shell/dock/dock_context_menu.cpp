@@ -251,8 +251,10 @@ namespace shell::dock {
       return nullptr;
     }
 
-    // Compute popup height.
+    // Compute popup geometry; width grows past the base width to fit long window titles.
     const float menuHeight = ContextMenuControl::preferredHeight(entries, entries.size());
+    const float menuWidth =
+        std::clamp(ContextMenuControl::preferredWidth(renderContext, entries), kMenuWidth, Style::menuAutoMaxWidth);
 
     // Determine anchor / gravity + gap based on dock position.
     const DockEdge edge = dockConfig.position;
@@ -296,7 +298,7 @@ namespace shell::dock {
     const std::int32_t aH = halfCell * 2;
 
     const auto menuChrome = popup_chrome::computeGeometry(
-        kMenuWidth, menuHeight, config.config().shell.shadow, Style::popupShadowsEnabled()
+        menuWidth, menuHeight, config.config().shell.shadow, Style::popupShadowsEnabled()
     );
     PopupSurfaceConfig popupCfg{
         .anchorX = aX,
