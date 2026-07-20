@@ -690,6 +690,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     }
     if (!task.title.empty()) {
       area->setTooltip(task.title);
+    } else {
+      area->clearTooltip();
     }
     attachHover(*area, tileWidthWithTitle, tileSize);
     return area;
@@ -2228,7 +2230,7 @@ bool TaskbarWidget::modelsEqual(
         || tasks[i].workspaceKey != m_tasks[i].workspaceKey
         || tasks[i].order != m_tasks[i].order
         || tasks[i].workspaceOrder != m_tasks[i].workspaceOrder
-        || (m_showWindowTitle && tasks[i].title != m_tasks[i].title)) {
+        || tasks[i].title != m_tasks[i].title) {
       return false;
     }
   }
