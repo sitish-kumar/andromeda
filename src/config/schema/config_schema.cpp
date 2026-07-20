@@ -393,6 +393,7 @@ namespace noctalia::config::schema {
     };
     static const Schema<HotCornersConfig> s = {
         field(&HotCornersConfig::enabled, "enabled"),
+        field(&HotCornersConfig::delayMs, "delay_ms", kHotCornersDelayMsRange),
         subTable(&HotCornersConfig::topLeft, "top_left", cornerSchema),
         subTable(&HotCornersConfig::topRight, "top_right", cornerSchema),
         subTable(&HotCornersConfig::bottomLeft, "bottom_left", cornerSchema),

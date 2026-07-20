@@ -1749,6 +1749,10 @@
           "description": "Trigger actions by pushing the mouse pointer into screen corners",
           "label": "Hot Corners"
         },
+        "hot-corners-delay-ms": {
+          "description": "How long the pointer must stay in a corner before the action runs (0 = immediate)",
+          "label": "Activation Delay"
+        },
         "hot-corners-top-left": {
           "description": "Action when the pointer hits the top left corner",
           "label": "Top Left Corner"

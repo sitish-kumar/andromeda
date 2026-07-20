@@ -1439,6 +1439,8 @@ struct AccessibilityConfig {
 
 struct HotCornersConfig {
   bool enabled = false;
+  // Hold time in the corner before the action runs. 0 = trigger immediately on enter.
+  std::int32_t delayMs = 0;
 
   struct Corner {
     std::string action = "none";

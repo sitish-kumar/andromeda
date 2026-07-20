@@ -1399,6 +1399,19 @@ namespace settings {
         tr("settings.schema.desktop.hot-corners-enabled.description"), {"hot_corners", "enabled"},
         ToggleSetting{cfg.hotCorners.enabled}, "hot corners trigger mouse edge screen"
     ));
+    {
+      auto delay = sliderFor(
+          static_cast<std::int64_t>(cfg.hotCorners.delayMs), noctalia::config::schema::kHotCornersDelayMsRange, true
+      );
+      delay.valueSuffix = "ms";
+      SettingEntry e = makeEntry(
+          SettingsSection::Desktop, "hot-corners", tr("settings.schema.desktop.hot-corners-delay-ms.label"),
+          tr("settings.schema.desktop.hot-corners-delay-ms.description"), {"hot_corners", "delay_ms"}, std::move(delay),
+          "hot corners delay hold ms timeout"
+      );
+      e.visibleWhen = [](const Config& conf) { return conf.hotCorners.enabled; };
+      entries.push_back(std::move(e));
+    }
 
     auto hotCornerActionSelect = [](const std::string& current) {
       return plainSelect(
@@ -1425,8 +1438,21 @@ namespace settings {
           tr(labelKey + "-command.description"), {"hot_corners", key, "command"},
           TextSetting{.value = currentCommand, .placeholder = "Run command..."}, "hot corners command execute " + key
       );
-      c.visibleWhen = [action = currentAction](const Config& conf) {
-        return conf.hotCorners.enabled && action == "command";
+      c.visibleWhen = [key](const Config& conf) {
+        if (!conf.hotCorners.enabled) {
+          return false;
+        }
+        const HotCornersConfig::Corner* corner = nullptr;
+        if (key == "top_left") {
+          corner = &conf.hotCorners.topLeft;
+        } else if (key == "top_right") {
+          corner = &conf.hotCorners.topRight;
+        } else if (key == "bottom_left") {
+          corner = &conf.hotCorners.bottomLeft;
+        } else if (key == "bottom_right") {
+          corner = &conf.hotCorners.bottomRight;
+        }
+        return corner != nullptr && corner->action == "command";
       };
       entries.push_back(std::move(c));
     };
