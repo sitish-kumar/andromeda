@@ -169,6 +169,9 @@ private:
   std::unique_ptr<ContextMenuPopup> m_contextMenuPopup;
   std::vector<zwlr_foreign_toplevel_handle_v1*> m_contextMenuHandles;
   zwlr_foreign_toplevel_handle_v1* m_contextMenuPrimaryHandle = nullptr;
+  // KDE has no wlr foreign-toplevel handles; close targets use title/appId/uuid instead.
+  std::vector<ToplevelInfo> m_contextMenuKdeWindows;
+  ToplevelInfo m_contextMenuKdePrimary;
   std::uint64_t m_desktopEntriesVersion = 0;
   IconResolver m_iconResolver;
   Signal<>::ScopedConnection m_appIconColorizeConn;

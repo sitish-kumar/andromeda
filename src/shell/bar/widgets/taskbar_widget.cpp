@@ -615,7 +615,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           }
           return;
         }
-        if (data.button == BTN_RIGHT && areaPtr != nullptr && handle != nullptr) {
+        if (data.button == BTN_RIGHT && areaPtr != nullptr && (handle != nullptr || compositors::isKde())) {
           openTaskContextMenu(task, *areaPtr);
         }
       });
@@ -2020,13 +2020,37 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
 
   const auto windows = m_platform.windowsForApp(task.idLower, task.startupWmClassLower, toplevelOutputFilter());
   m_contextMenuHandles.clear();
-  m_contextMenuHandles.reserve(windows.size());
-  for (const auto& window : windows) {
-    if (window.handle != nullptr) {
-      m_contextMenuHandles.push_back(window.handle);
+  m_contextMenuKdeWindows.clear();
+  m_contextMenuPrimaryHandle = task.firstHandle;
+  m_contextMenuKdePrimary = {};
+
+  const bool kde = compositors::isKde();
+  if (kde) {
+    m_contextMenuKdeWindows = windows;
+    m_contextMenuKdePrimary = ToplevelInfo{
+        .title = task.title,
+        .appId = task.appId,
+        .identifier = task.workspaceWindowId,
+        .handle = task.firstHandle,
+    };
+    for (const auto& window : m_contextMenuKdeWindows) {
+      if (!task.workspaceWindowId.empty() && window.identifier == task.workspaceWindowId) {
+        m_contextMenuKdePrimary = window;
+        break;
+      }
+      if (task.firstHandle != nullptr && window.handle == task.firstHandle) {
+        m_contextMenuKdePrimary = window;
+        break;
+      }
+    }
+  } else {
+    m_contextMenuHandles.reserve(windows.size());
+    for (const auto& window : windows) {
+      if (window.handle != nullptr) {
+        m_contextMenuHandles.push_back(window.handle);
+      }
     }
   }
-  m_contextMenuPrimaryHandle = task.firstHandle;
 
   std::vector<DesktopAction> entryActions;
   std::string entryAppName = task.idLower.empty() ? task.appId : task.idLower;
@@ -2047,6 +2071,16 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
     }
   }
 
+  const auto kdeCanClose = [](const ToplevelInfo& window) {
+    return !window.identifier.empty() || !window.title.empty() || !window.appId.empty();
+  };
+  const bool showClose =
+      kde ? (kdeCanClose(m_contextMenuKdePrimary) || !m_contextMenuKdeWindows.empty()) : !m_contextMenuHandles.empty();
+  const bool closePrimaryEnabled = kde ? kdeCanClose(m_contextMenuKdePrimary) : m_contextMenuPrimaryHandle != nullptr;
+  const std::size_t closeAllCount = kde
+      ? (m_contextMenuKdeWindows.empty() ? (closePrimaryEnabled ? 1U : 0U) : m_contextMenuKdeWindows.size())
+      : m_contextMenuHandles.size();
+
   // IDs 0..N-1 => desktop actions, -1 => close single, -2 => close all.
   std::vector<ContextMenuControlEntry> entries;
   entries.reserve(entryActions.size() + 3);
@@ -2061,7 +2095,7 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
         }
     );
   }
-  if (!m_contextMenuHandles.empty()) {
+  if (showClose) {
     if (!entries.empty()) {
       entries.push_back(
           ContextMenuControlEntry{.id = -3, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false}
@@ -2071,12 +2105,12 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
         ContextMenuControlEntry{
             .id = -1,
             .label = i18n::tr("dock.actions.close"),
-            .enabled = m_contextMenuPrimaryHandle != nullptr,
+            .enabled = closePrimaryEnabled,
             .separator = false,
             .hasSubmenu = false,
         }
     );
-    if (m_contextMenuHandles.size() > 1) {
+    if (closeAllCount > 1) {
       entries.push_back(
           ContextMenuControlEntry{
               .id = -2,
@@ -2124,15 +2158,27 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
       return;
     }
     if (entry.id == -1) {
-      if (m_contextMenuPrimaryHandle != nullptr) {
+      if (compositors::isKde()) {
+        m_platform.closeToplevelInfo(m_contextMenuKdePrimary);
+      } else if (m_contextMenuPrimaryHandle != nullptr) {
         m_platform.closeToplevel(m_contextMenuPrimaryHandle);
       }
       return;
     }
     if (entry.id == -2) {
-      for (auto* handle : m_contextMenuHandles) {
-        if (handle != nullptr) {
-          m_platform.closeToplevel(handle);
+      if (compositors::isKde()) {
+        if (!m_contextMenuKdeWindows.empty()) {
+          for (const auto& window : m_contextMenuKdeWindows) {
+            m_platform.closeToplevelInfo(window);
+          }
+        } else {
+          m_platform.closeToplevelInfo(m_contextMenuKdePrimary);
+        }
+      } else {
+        for (auto* handle : m_contextMenuHandles) {
+          if (handle != nullptr) {
+            m_platform.closeToplevel(handle);
+          }
         }
       }
     }
