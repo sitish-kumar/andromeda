@@ -2744,7 +2744,7 @@ namespace settings {
       ));
       const SettingVisibility autoHideOn = [barName = bar.name](const Config& c) {
         const BarConfig* b = findBar(c, barName);
-        return b != nullptr && b->autoHide && !b->smartAutoHide;
+        return b != nullptr && b->isAutoHideEnabled();
       };
       {
         auto e = makeEntry(
@@ -3085,9 +3085,7 @@ namespace settings {
             return false;
           }
           const BarMonitorOverride* o = findMonitorOverride(*b, match);
-          const bool autoHide = o != nullptr && o->autoHide.has_value() ? *o->autoHide : b->autoHide;
-          const bool smart = o != nullptr && o->smartAutoHide.has_value() ? *o->smartAutoHide : b->smartAutoHide;
-          return autoHide && !smart;
+          return o != nullptr ? o->isAutoHideEnabled(b->autoHide, b->smartAutoHide) : b->isAutoHideEnabled();
         };
         {
           auto e = makeEntry(
