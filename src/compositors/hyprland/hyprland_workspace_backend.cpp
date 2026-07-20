@@ -155,7 +155,7 @@ std::vector<WorkspaceWindow> HyprlandWorkspaceBackend::workspaceWindows(wl_outpu
   std::vector<WorkspaceWindow> result;
   result.reserve(m_toplevels.size());
   for (const auto& [address, toplevel] : m_toplevels) {
-    if (toplevel.appId.empty() || toplevel.workspaceId == -1) {
+    if (toplevel.workspaceId == -1) {
       continue;
     }
     if (filterByOutput && !m_workspaces.empty()) {

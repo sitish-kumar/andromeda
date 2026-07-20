@@ -143,6 +143,25 @@ namespace {
     return 0;
   }
 
+  [[nodiscard]] bool isOrphanAppIdentity(
+      const std::string& appId, const std::string& appIdLower, const std::string& idLower,
+      const std::string& startupWmClassLower, const std::string& nameLower
+  ) {
+    return appId.empty() && appIdLower.empty() && idLower.empty() && startupWmClassLower.empty() && nameLower.empty();
+  }
+
+  [[nodiscard]] std::uintptr_t
+  syntheticAssignmentHandleKey(const WorkspaceWindowAssignment& assignment, std::size_t index) {
+    const std::string seed = assignment.windowId.empty()
+        ? assignment.workspaceKey + "\n" + assignment.appId + "\n" + assignment.title + "\n" + std::to_string(index)
+        : assignment.windowId;
+    std::uintptr_t value = static_cast<std::uintptr_t>(std::hash<std::string>{}(seed));
+    if (value == 0) {
+      value = static_cast<std::uintptr_t>(index + 1);
+    }
+    return value;
+  }
+
   [[nodiscard]] float barCapsuleThicknessFor(const ConfigService& config, std::string_view barName) {
     for (const auto& bar : config.config().bars) {
       if (bar.name == barName) {
@@ -1134,9 +1153,26 @@ void TaskbarWidget::updateModels() {
     }
   }
 
+  // Windows with no app id still get a task keyed by toplevel handle / window id.
+  for (const auto& window : m_platform.windowsWithoutAppId(topFilter)) {
+    const auto handleKey = taskHandleKey(window);
+    if (handleKey == 0 || !processedHandles.insert(handleKey).second) {
+      continue;
+    }
+
+    TaskModel task{};
+    task.handleKey = handleKey;
+    task.order = window.order;
+    task.title = window.title;
+    task.active = activeHandle != nullptr && activeHandle == window.handle;
+    task.firstHandle = window.handle;
+    task.iconPath = resolveIconPath({}, {});
+    nextTasks.push_back(std::move(task));
+  }
+
   if (compositors::isKde() && nextTasks.empty()) {
     for (const auto& assignment : workspaceAssignments) {
-      if (assignment.appId.empty()) {
+      if (assignment.appId.empty() && assignment.windowId.empty() && assignment.title.empty()) {
         continue;
       }
       const std::string idLower = toLower(assignment.appId);
@@ -1305,9 +1341,20 @@ void TaskbarWidget::updateModels() {
               && toLower(assignment.appId) != task.idLower
               && toLower(assignment.appId) != task.startupWmClassLower
               && toLower(assignment.appId) != task.nameLower) {
-            continue;
+            if (!assignment.appId.empty()
+                || !isOrphanAppIdentity(
+                    task.appId, task.appIdLower, task.idLower, task.startupWmClassLower, task.nameLower
+                )) {
+              continue;
+            }
           }
           if (!assigned.title.empty() && !assignment.title.empty() && assignment.title != assigned.title) {
+            continue;
+          }
+          if (assignment.appId.empty()
+              && !assignment.title.empty()
+              && !task.title.empty()
+              && assignment.title != task.title) {
             continue;
           }
           task.workspaceOrder = assignmentIndex;
@@ -1317,14 +1364,7 @@ void TaskbarWidget::updateModels() {
       }
 
       auto syntheticTaskKey = [](const WorkspaceWindowAssignment& assignment, std::size_t index) {
-        const std::string seed = assignment.windowId.empty()
-            ? assignment.workspaceKey + "\n" + assignment.appId + "\n" + assignment.title + "\n" + std::to_string(index)
-            : assignment.windowId;
-        std::uintptr_t value = static_cast<std::uintptr_t>(std::hash<std::string>{}(seed));
-        if (value == 0) {
-          value = static_cast<std::uintptr_t>(index + 1);
-        }
-        return value;
+        return syntheticAssignmentHandleKey(assignment, index);
       };
 
       if (m_groupByWorkspace) {
@@ -1334,7 +1374,10 @@ void TaskbarWidget::updateModels() {
           }
 
           const auto& assignment = workspaceAssignments[i];
-          if (assignment.workspaceKey.empty() || assignment.appId.empty()) {
+          if (assignment.workspaceKey.empty()) {
+            continue;
+          }
+          if (assignment.appId.empty() && assignment.windowId.empty()) {
             continue;
           }
 
@@ -1397,6 +1440,14 @@ void TaskbarWidget::updateModels() {
 
       std::vector<bool> used(workspaceAssignments.size(), false);
       auto matchesApp = [&](const TaskModel& task, const WorkspaceWindowAssignment& assignment) {
+        if (assignment.appId.empty()) {
+          return isOrphanAppIdentity(
+              task.appId, task.appIdLower, task.idLower, task.startupWmClassLower, task.nameLower
+          );
+        }
+        if (isOrphanAppIdentity(task.appId, task.appIdLower, task.idLower, task.startupWmClassLower, task.nameLower)) {
+          return false;
+        }
         const std::string assignmentAppLower = toLower(assignment.appId);
         return assignmentAppLower == task.appIdLower
             || assignmentAppLower == task.idLower
@@ -1538,10 +1589,18 @@ void TaskbarWidget::updateModels() {
           }
           const auto& assignment = workspaceAssignments[i];
           const std::string assignmentAppLower = toLower(assignment.appId);
-          if (assignmentAppLower != task.appIdLower
+          if (assignment.appId.empty()) {
+            if (!isOrphanAppIdentity(
+                    task.appId, task.appIdLower, task.idLower, task.startupWmClassLower, task.nameLower
+                )) {
+              continue;
+            }
+          } else if (
+              assignmentAppLower != task.appIdLower
               && assignmentAppLower != task.idLower
               && assignmentAppLower != task.startupWmClassLower
-              && assignmentAppLower != task.nameLower) {
+              && assignmentAppLower != task.nameLower
+          ) {
             continue;
           }
           if (assignment.workspaceKey != task.workspaceKey) {
@@ -1594,6 +1653,16 @@ void TaskbarWidget::updateModels() {
         const std::string assignmentAppLower = toLower(assignment.appId);
 
         auto appMatches = [&](const TaskModel& task) {
+          if (assignment.appId.empty()) {
+            return isOrphanAppIdentity(
+                task.appId, task.appIdLower, task.idLower, task.startupWmClassLower, task.nameLower
+            );
+          }
+          if (isOrphanAppIdentity(
+                  task.appId, task.appIdLower, task.idLower, task.startupWmClassLower, task.nameLower
+              )) {
+            return false;
+          }
           return assignmentAppLower == task.appIdLower
               || assignmentAppLower == task.idLower
               || assignmentAppLower == task.startupWmClassLower
@@ -1643,17 +1712,6 @@ void TaskbarWidget::updateModels() {
     }
 
     if (compositors::isHyprland()) {
-      auto syntheticTaskHandleKey = [](const WorkspaceWindowAssignment& assignment, std::size_t index) {
-        const std::string seed = assignment.windowId.empty()
-            ? assignment.workspaceKey + "\n" + assignment.appId + "\n" + assignment.title + "\n" + std::to_string(index)
-            : assignment.windowId;
-        std::uintptr_t value = static_cast<std::uintptr_t>(std::hash<std::string>{}(seed));
-        if (value == 0) {
-          value = static_cast<std::uintptr_t>(index + 1);
-        }
-        return value;
-      };
-
       std::unordered_set<std::string> representedWindowIds;
       representedWindowIds.reserve(nextTasks.size());
       for (const auto& task : nextTasks) {
@@ -1677,7 +1735,7 @@ void TaskbarWidget::updateModels() {
         }
 
         TaskModel task{};
-        task.handleKey = syntheticTaskHandleKey(assignment, i);
+        task.handleKey = syntheticAssignmentHandleKey(assignment, i);
         task.order = static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max()) + i;
         task.appId = assignment.appId;
         task.idLower = toLower(task.appId);
@@ -1693,6 +1751,46 @@ void TaskbarWidget::updateModels() {
         if (!assignment.windowId.empty()) {
           representedWindowIds.insert(assignment.windowId);
         }
+      }
+    }
+
+    // Compositor-agnostic: workspace windows with no app id become their own tasks.
+    {
+      std::unordered_set<std::string> representedWindowIds;
+      representedWindowIds.reserve(nextTasks.size());
+      std::unordered_set<std::uintptr_t> representedHandles;
+      representedHandles.reserve(nextTasks.size());
+      for (const auto& task : nextTasks) {
+        if (!task.workspaceWindowId.empty()) {
+          representedWindowIds.insert(task.workspaceWindowId);
+        }
+        representedHandles.insert(task.handleKey);
+      }
+
+      for (std::size_t i = 0; i < workspaceAssignments.size(); ++i) {
+        const auto& assignment = workspaceAssignments[i];
+        if (!assignment.appId.empty() || assignment.windowId.empty()) {
+          continue;
+        }
+        if (representedWindowIds.contains(assignment.windowId)) {
+          continue;
+        }
+
+        const std::uintptr_t handleKey = syntheticAssignmentHandleKey(assignment, i);
+        if (!representedHandles.insert(handleKey).second) {
+          continue;
+        }
+
+        TaskModel task{};
+        task.handleKey = handleKey;
+        task.order = static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max()) + i;
+        task.title = assignment.title;
+        task.iconPath = resolveIconPath({}, {});
+        task.workspaceKey = assignment.workspaceKey;
+        task.workspaceWindowId = assignment.windowId;
+        task.workspaceOrder = i;
+        nextTasks.push_back(std::move(task));
+        representedWindowIds.insert(assignment.windowId);
       }
     }
   }
