@@ -3122,7 +3122,7 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
       && m_config->config().shell.middleClickOpensWidgetSettings) {
     auto* widget = widgetAtPoint(*targetInstance, static_cast<float>(event.sx), static_cast<float>(event.sy));
     if (widget != nullptr
-        && !widget->reservesMiddleClick()
+        && !widget->reservesMiddleClick(static_cast<float>(event.sx), static_cast<float>(event.sy))
         && !widget->configName().empty()
         && m_openWidgetSettingsCallback) {
       m_openWidgetSettingsCallback(targetInstance->barConfig.name, std::string(widget->configName()));

@@ -284,6 +284,31 @@ void TaskbarWidget::activateTaskModel(const TaskModel& task) {
   }
 }
 
+void TaskbarWidget::closeTaskModel(const TaskModel& task) {
+  if (task.firstHandle != nullptr) {
+    m_platform.closeToplevel(task.firstHandle);
+    return;
+  }
+  if (compositors::isKde() && (!task.title.empty() || !task.appId.empty() || !task.workspaceWindowId.empty())) {
+    ToplevelInfo info{};
+    info.title = task.title;
+    info.appId = task.appId;
+    info.identifier = task.workspaceWindowId;
+    m_platform.closeToplevelInfo(info);
+  }
+}
+
+bool TaskbarWidget::reservesMiddleClick(float sceneX, float sceneY) const noexcept {
+  Node* hit = Node::hitTest(root(), sceneX, sceneY);
+  while (hit != nullptr) {
+    if (auto* area = dynamic_cast<InputArea*>(hit); area != nullptr && area->acceptsButton(BTN_MIDDLE)) {
+      return true;
+    }
+    hit = hit->parent();
+  }
+  return false;
+}
+
 void TaskbarWidget::create() {
   auto container = std::make_unique<InputArea>();
   container->setOnAxisHandler([this](const InputArea::PointerData& data) {
@@ -525,7 +550,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     auto area = std::make_unique<InputArea>();
     area->setFrameSize(tileWidthWithTitle, tileSize);
     area->setOpacity(task.active ? m_activeOpacity : m_inactiveOpacity);
-    area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
+    area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT, BTN_MIDDLE}));
     area->setOnAxisHandler(workspaceAxisHandler);
 
     const WorkspaceModel* taskWorkspace = nullptr;
@@ -550,6 +575,18 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       area->setOnClick([this, task, areaPtr, handle = task.firstHandle, windowId = task.workspaceWindowId,
                         clickWorkspace, taskWsHost, cycleCandidates = std::move(cycleCandidates),
                         cycleKey = std::move(cycleKey)](const InputArea::PointerData& data) {
+        if (data.button == BTN_MIDDLE) {
+          if (!cycleCandidates.empty()) {
+            for (const auto& candidate : cycleCandidates) {
+              if (candidate.active) {
+                closeTaskModel(candidate);
+                return;
+              }
+            }
+          }
+          closeTaskModel(task);
+          return;
+        }
         if (data.button == BTN_LEFT) {
           if (!cycleCandidates.empty()) {
             std::size_t& cursor = m_groupedAppCycleCursor[cycleKey];

@@ -60,6 +60,7 @@ public:
   void create() override;
   [[nodiscard]] bool onPointerEvent(const PointerEvent& event) override;
   [[nodiscard]] bool wantsBarHoverHighlight() const noexcept override { return false; }
+  [[nodiscard]] bool reservesMiddleClick(float sceneX, float sceneY) const noexcept override;
 
 private:
   struct TaskModel {
@@ -120,6 +121,7 @@ private:
   [[nodiscard]] static ColorRole onRoleForFill(ColorRole fill);
   [[nodiscard]] static bool taskInWorkspaceGroup(const TaskModel& task, const WorkspaceModel& ws);
   void activateTaskModel(const TaskModel& task);
+  void closeTaskModel(const TaskModel& task);
 
   CompositorPlatform& m_platform;
   ConfigService& m_configService;
