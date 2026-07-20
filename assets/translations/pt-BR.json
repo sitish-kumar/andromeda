@@ -76,6 +76,7 @@
         "signal": "Sinal",
         "upload": "Upload",
         "vpn": "VPN",
+        "wan-ip": "IP Público",
         "wifi": "Wi-Fi",
         "wired": "Cabeada",
         "yes": "Sim"
@@ -236,7 +237,7 @@
       },
       "select-avatar": "Selecionar Avatar",
       "unknown": "desconhecido",
-      "uptime": "Tempo Ativo - {uptime}",
+      "uptime": "Tempo Ativo – {uptime}",
       "weather": {
         "data-unavailable": "Dados de clima indisponíveis",
         "disabled": "O clima está desabilitado nas configurações.",
@@ -258,8 +259,8 @@
       "password": "Senha",
       "password-prompt": "Digitar a senha",
       "password-prompt-for": "Digite a senha para {ssid}",
-      "unavailable-detail": "Instale e habilite o NetworkManager para gerenciar redes a partir daqui.",
-      "unavailable-title": "NetworkManager indisponível",
+      "unavailable-detail": "Instale e ative o NetworkManager, wpa_supplicant ou iwd para gerenciar redes a partir daqui.",
+      "unavailable-title": "Serviço de rede indisponível",
       "vpns": "VPNs",
       "wi-fi": "Sem fio",
       "wifi": "Wi-Fi",
@@ -397,7 +398,7 @@
       "forecast-placeholder": {
         "day": "Domingo",
         "description": "Clima",
-        "temperature": "10 / 4C"
+        "temperature": "10 / 4°C"
       },
       "forecast-view": {
         "daily": "Diariamente",
@@ -457,8 +458,8 @@
         "clock-style-analog": "Analógico",
         "clock-style-digital": "Digital",
         "color": "Cor",
-        "color-1": "Cor Um",
-        "color-2": "Cor Dois",
+        "color-1": "Cor 1",
+        "color-2": "Cor 2",
         "color2": "Cor 2",
         "command": "Comando",
         "custom-color": "Personalizar...",
@@ -562,7 +563,7 @@
     },
     "weather": {
       "error": "Erro",
-      "loading": "Carregando",
+      "loading": "Carregando...",
       "no-location": "Sem localização",
       "off": "Clima desligado"
     }
@@ -657,7 +658,7 @@
   "lockscreen": {
     "authenticating": "Autenticando...",
     "authentication-failed": "Falha na autenticação",
-    "caps-lock-on": "Caps lock está ativado",
+    "caps-lock-on": "Caps Lock está ativo",
     "password-cleared": "Senha apagada",
     "password-placeholder": "Senha",
     "ready": "Digite sua senha e aperte Enter.",
@@ -795,8 +796,8 @@
         "health": "Saúde",
         "rate": "Taxa",
         "status": "Status",
-        "time-left": "Tempo restante",
-        "time-to-full": "Tempo até completar",
+        "time-left": "Tempo Restante",
+        "time-to-full": "Tempo até a carga total",
         "unknown-device": "Dispositivo Desconhecido"
       }
     },
@@ -889,7 +890,7 @@
         "delete": "Deletar",
         "delete-confirm-desc": "Esta barra criada pela interface gráfica será removida do arquivo settings.toml.",
         "delete-confirm-title": "Deletar \"{name}\"?",
-        "id-placeholder": "Identificador da Barra",
+        "id-placeholder": "ID da Barra",
         "label": "Barra: {name}",
         "management": "Barra",
         "move-down": "Mover Abaixo",
@@ -968,7 +969,7 @@
           "delete-confirm-desc": "Este widget com nome específico será removido de todas as barras e suas configurações serão descartadas.",
           "delete-confirm-title": "Deletar \"{name}\"?",
           "id-description": "Use apenas letras, números, sublinhados ou hífens. Sem espaços; deve ser único.",
-          "id-placeholder": "ID do widget",
+          "id-placeholder": "ID do Widget",
           "rename": "Renomear",
           "rename-save": "Salvar"
         },
@@ -984,7 +985,7 @@
           "empty": "Nenhum widget encontrado",
           "instance-description": "Widget nomeado para o tipo \"{type}\"",
           "instance-toggle": "Widget Nomeado",
-          "placeholder": "Procurar por widgets..."
+          "placeholder": "Procurar widgets..."
         },
         "raw": {
           "delete": "Deletar",
@@ -1408,8 +1409,8 @@
         "edit-title": "Editar fonte de plugin",
         "empty": "Nenhuma fonte configurada.",
         "errors": {
-          "duplicate-name": "Uma fonte com este nome já existe.",
-          "invalid-name": "O nome da fonte deve usar letras, dígitos, '.', '_' ou '-', iniciando com uma letra ou dígito.",
+          "duplicate-name": "Já existe uma fonte com este ID.",
+          "invalid-name": "O ID da fonte deve consistir apenas de letras, dígitos, '.', '_' ou '-', e deve iniciar com uma letra ou dígito",
           "location-required": "A localização da fonte é necessária."
         },
         "kind": {
@@ -1420,7 +1421,7 @@
         "location-label": "Localização",
         "location-placeholder-git": "https://github.com/me/noctalia-plugins",
         "location-placeholder-path": "~/dev/noctalia-plugins",
-        "name-label": "Nome",
+        "name-label": "ID da Fonte",
         "name-placeholder": "meus-plugins",
         "precedence-hint": "As fontes de nível inferior têm prioridade sobre as de nível superior quando oferecem o mesmo plug-in.",
         "remove": "Remover fonte",
@@ -1440,6 +1441,8 @@
         "open-source": "Abrir repositório fonte de plugin",
         "results-count": "{count} plugins",
         "search-placeholder": "Pesquisar plugins...",
+        "source-all": "Todos",
+        "sources": "Fontes",
         "title": "Loja de Plugins"
       }
     },
@@ -1894,7 +1897,7 @@
           "description": "Em qual borda de tela o dock ficará"
         },
         "reserve-space": {
-          "description": "Reserva espaço de tela para o dock"
+          "description": "Afastar as janelas da borda do dock"
         },
         "shadow": {
           "description": "Projeta a sombra global da superfície a partir do dock"
@@ -2148,7 +2151,7 @@
           "label": "Bordas"
         },
         "control-center-sidebar": {
-          "description": "No Início ou em situações gerais",
+          "description": "Escolha como exibir a barra lateral",
           "label": "Barra Lateral"
         },
         "control-center-sidebar-section": {
@@ -2486,7 +2489,7 @@
           "placeholder": "/path/to/sound.wav"
         },
         "weather": {
-          "description": "Habilitar serviço de clima",
+          "description": "Ativar o serviço de clima via open-meteo.com",
           "label": "Clima"
         },
         "weather-effects": {
@@ -2563,7 +2566,7 @@
       },
       "shell": {
         "avatar-path": {
-          "description": "Caminho do avatar de imagem personalizado",
+          "description": "Caminho para uma imagem de avatar personalizada; imagens grandes são cortadas e redimensionadas automaticamente",
           "label": "Caminho do Avatar",
           "placeholder": "/path/to/avatar.png"
         },
@@ -3007,7 +3010,7 @@
           "label": "Cor Ativa"
         },
         "active-opacity": {
-          "description": "Opacidade do ícone da janela ativa (com foco).",
+          "description": "Opacidade do ícone da janela ativa (com foco)",
           "label": "Opacidade do Ícone Ativo"
         },
         "active-pill-size": {
@@ -3026,6 +3029,10 @@
         "art-size": {
           "description": "Tamanho da arte da mídia em pixels",
           "label": "Tamanho da Arte"
+        },
+        "artist-first": {
+          "description": "Mostra o artista antes do título da faixa (Artista - Título)",
+          "label": "Artista Primeiro"
         },
         "bands": {
           "description": "Número de faixas do visualizador",
@@ -3075,11 +3082,11 @@
         },
         "color-1": {
           "description": "Primeira cor de gradiente no visualizador",
-          "label": "Cor Um"
+          "label": "Cor 1"
         },
         "color-2": {
           "description": "Segunda cor de gradiente no visualizador",
-          "label": "Cor Dois"
+          "label": "Cor 2"
         },
         "command": {
           "description": "O comando do shell é executado ao clicar com o botão esquerdo do mouse neste botão",
@@ -3261,7 +3268,7 @@
           "label": "Cor Inativa"
         },
         "inactive-opacity": {
-          "description": "Opacidade dos ícones para janelas inativas (sem foco)",
+          "description": "Opacidade dos ícones de janelas inativas (sem foco)",
           "label": "Opacidade do Ícone Inativo"
         },
         "inactive-pill-size": {
@@ -3349,7 +3356,7 @@
           "label": "Cor Ocupada"
         },
         "only-active-workspace": {
-          "description": "Oculte janelas em áreas de trabalho inativas",
+          "description": "Ocultar janelas em espaços de trabalho inativos",
           "label": "Apenas Espaço de Trabalho Ativo"
         },
         "path": {
