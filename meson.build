@@ -409,6 +409,7 @@ _noctalia_sources = files(
   'src/auth/pam_authenticator.cpp',
   'src/calendar/caldav_client.cpp',
   'src/calendar/caldav_discovery.cpp',
+  'src/calendar/calendar_cache.cpp',
   'src/calendar/calendar_discovery_state.cpp',
   'src/calendar/calendar_service.cpp',
   'src/calendar/google_client.cpp',
@@ -1603,6 +1604,17 @@ state_store_test = executable('state_store_test',
 )
 
 test('state_store', state_store_test)
+
+calendar_cache_permissions_test = executable('calendar_cache_permissions_test',
+  sources: files(
+    'tests/calendar_cache_permissions_test.cpp',
+    'src/calendar/calendar_cache.cpp',
+    'src/config/atomic_file.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('calendar_cache_permissions', calendar_cache_permissions_test)
 
 clipboard_storage_permissions_test = executable('clipboard_storage_permissions_test',
   sources: files(

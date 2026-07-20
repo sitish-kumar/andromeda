@@ -2,6 +2,7 @@
 
 #include "calendar/caldav_client.h"
 #include "calendar/caldav_discovery.h"
+#include "calendar/calendar_cache.h"
 #include "calendar/calendar_discovery_state.h"
 #include "config/config_service.h"
 #include "core/log.h"
@@ -498,6 +499,9 @@ std::filesystem::path CalendarService::cacheFilePath() {
 
 void CalendarService::loadCache() {
   const std::filesystem::path path = cacheFilePath();
+  if (!calendar::cache::secureExisting(path)) {
+    kLog.warn("failed to secure calendar cache {}", path.string());
+  }
   std::ifstream in(path);
   if (!in.is_open()) {
     return;
@@ -528,11 +532,6 @@ void CalendarService::loadCache() {
 
 void CalendarService::saveCache() const {
   const std::filesystem::path path = cacheFilePath();
-  std::error_code ec;
-  std::filesystem::create_directories(path.parent_path(), ec);
-  if (ec) {
-    return;
-  }
 
   nlohmann::json events = nlohmann::json::array();
   for (const auto& [accountId, accountEvents] : m_eventsByAccount) {
@@ -551,16 +550,7 @@ void CalendarService::saveCache() const {
     }
   }
 
-  const std::filesystem::path tmp = path.string() + ".tmp";
-  {
-    std::ofstream out(tmp, std::ios::trunc);
-    if (!out.is_open()) {
-      return;
-    }
-    out << nlohmann::json{{"events", std::move(events)}}.dump();
-  }
-  std::filesystem::rename(tmp, path, ec);
-  if (ec) {
-    std::filesystem::remove(tmp, ec);
+  if (!calendar::cache::write(path, nlohmann::json{{"events", std::move(events)}}.dump())) {
+    kLog.warn("failed to write calendar cache {}", path.string());
   }
 }
