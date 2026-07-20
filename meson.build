@@ -1604,6 +1604,22 @@ state_store_test = executable('state_store_test',
 
 test('state_store', state_store_test)
 
+clipboard_storage_permissions_test = executable('clipboard_storage_permissions_test',
+  sources: files(
+    'tests/clipboard_storage_permissions_test.cpp',
+    'src/config/atomic_file.cpp',
+    'src/core/log.cpp',
+    'src/wayland/clipboard_service.cpp',
+  ) + _protocol_headers + _protocol_sources,
+  include_directories: _noctalia_inc,
+  dependencies: [
+    nlohmann_dep,
+    wayland_client_dep,
+  ],
+)
+
+test('clipboard_storage_permissions', clipboard_storage_permissions_test)
+
 image_source_log_test = executable('image_source_log_test',
   sources: files(
     'tests/image_source_log_test.cpp',
