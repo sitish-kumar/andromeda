@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <linux/input-event-codes.h>
+#include <wayland-client-protocol.h>
 
 using namespace mpris;
 
@@ -26,11 +27,12 @@ namespace {
 MediaWidget::MediaWidget(
     MprisService* mpris, HttpClient* httpClient, wl_output* /*output*/, float maxWidth, float minWidth, float artSize,
     MediaTitleScrollMode titleScrollMode, bool hideWhenNoMedia, bool albumArtOnly, bool hideAlbumArt, bool hideArtist,
-    bool artistFirst
+    bool artistFirst, bool enableScroll
 )
     : m_mpris(mpris), m_httpClient(httpClient), m_maxWidth(maxWidth), m_minWidth(minWidth), m_artSize(artSize),
       m_titleScrollMode(titleScrollMode), m_hideWhenNoMedia(hideWhenNoMedia), m_albumArtOnly(albumArtOnly),
-      m_hideAlbumArt(hideAlbumArt), m_hideArtist(hideArtist), m_artistFirst(artistFirst) {}
+      m_hideAlbumArt(hideAlbumArt), m_hideArtist(hideArtist), m_artistFirst(artistFirst), m_enableScroll(enableScroll) {
+}
 
 void MediaWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -50,6 +52,21 @@ void MediaWidget::create() {
     }
     if (data.button == BTN_RIGHT && m_mpris != nullptr) {
       m_mpris->playPauseActive();
+    }
+  });
+  area->setOnAxis([this](const InputArea::PointerData& data) {
+    if (!m_enableScroll || m_mpris == nullptr || data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL) {
+      return;
+    }
+    const float steps = data.scrollSteps();
+    if (steps == 0.0f) {
+      return;
+    }
+    // Scroll up → next; Wayland reports up as a negative delta.
+    if (steps < 0.0f) {
+      m_mpris->nextActive();
+    } else {
+      m_mpris->previousActive();
     }
   });
   m_area = area.get();

@@ -839,6 +839,7 @@ namespace settings {
         add(std::move(titleScroll));
       }
       add(boolSpec("hide_when_no_media", false));
+      add(boolSpec("enable_scroll", true));
     } else if (type == "network") {
       add(boolSpec("show_label", true));
       {
