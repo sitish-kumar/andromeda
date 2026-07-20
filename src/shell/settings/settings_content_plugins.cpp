@@ -2,7 +2,9 @@
 
 #include "config/config_types.h"
 #include "i18n/i18n.h"
+#include "net/url_open.h"
 #include "scripting/plugin_i18n.h"
+#include "scripting/plugin_id.h"
 #include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_registry.h"
 #include "shell/settings/settings_control_factory.h"
@@ -272,6 +274,18 @@ namespace settings {
         ));
       }
       r->addChild(std::move(info));
+
+      if (const auto pageUrl = scripting::pluginWebsitePageUrl(plugin.source, plugin.id)) {
+        r->addChild(
+            ui::button({
+                .glyph = "external-link",
+                .glyphSize = Style::fontSizeBody * scale,
+                .variant = ButtonVariant::Ghost,
+                .tooltip = i18n::tr("settings.plugins.store.open-page"),
+                .onClick = [url = *pageUrl]() { (void)net::openInBrowser(url); },
+            })
+        );
+      }
 
       const auto* manifest = scripting::PluginRegistry::instance().findManifest(plugin.id);
       const bool hasSettings = [&]() {

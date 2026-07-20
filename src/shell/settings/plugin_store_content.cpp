@@ -145,13 +145,7 @@ namespace settings {
       return std::nullopt;
     }
     const auto& storeEntry = m_catalog[m_filteredIndices[*m_detailIndex]];
-    if (storeEntry.source != "official" && storeEntry.source != "community") {
-      return std::nullopt;
-    }
-    return "https://noctalia.dev/plugins/"
-        + storeEntry.source
-        + "/"
-        + scripting::pluginSubdirFromId(storeEntry.entry.id).value();
+    return scripting::pluginWebsitePageUrl(storeEntry.source, storeEntry.entry.id);
   }
 
   std::optional<std::string> PluginStoreContent::detailSourceUrl() const {
