@@ -102,6 +102,10 @@ struct BarMonitorOverride {
   std::optional<bool> hoverHighlight;
   BarDeadZoneOverride deadZone;
 
+  [[nodiscard]] bool isAutoHideEnabled(bool baseAutoHide, bool baseSmartAutoHide) const noexcept {
+    return autoHide.value_or(baseAutoHide) || smartAutoHide.value_or(baseSmartAutoHide);
+  }
+
   bool operator==(const BarMonitorOverride&) const = default;
 };
 
@@ -122,8 +126,10 @@ struct BarConfig {
   bool autoHide = false;             // slide out when the pointer leaves; reveal on edge approach
   bool smartAutoHide = false;        // hide while the active workspace has windows; show when it is empty
   bool showOnWorkspaceSwitch = true; // with auto_hide: briefly reveal when the active workspace changes
-  bool reserveSpace = true;          // reserve compositor exclusive zone; applies with or without auto_hide
-  std::string layer = "top";         // top | overlay — attached panels use the same layer
+
+  [[nodiscard]] constexpr bool isAutoHideEnabled() const noexcept { return autoHide || smartAutoHide; }
+  bool reserveSpace = true;  // reserve compositor exclusive zone; applies with or without auto_hide
+  std::string layer = "top"; // top | overlay — attached panels use the same layer
   std::int32_t thickness = Style::barThicknessDefault;
   float backgroundOpacity = 1.0f;
   // Inside outline for the bar background; attached panels inherit the resolved values.
@@ -562,15 +568,17 @@ struct DockConfig {
   bool showRunning = true;             // also show running apps not in pinned list
   bool autoHide = false;               // slide out when not hovered (overlay mode)
   bool smartAutoHide = false;          // hide while the active workspace has windows; show when it is empty
-  bool reserveSpace = true;            // reserve compositor exclusive zone; applies with or without auto_hide
-  float activeScale = 1.0f;            // focused app icon scale
-  float inactiveScale = 0.85f;         // non-focused app icon scale
-  bool magnification = true;           // magnify icons near the pointer (macOS-style)
-  float magnificationScale = 1.45f;    // max icon scale multiplier at the pointer center
-  float activeOpacity = 1.0f;          // focused app icon opacity
-  float inactiveOpacity = 0.85f;       // non-focused app icon opacity
-  bool showDots = false;               // show optional running window dots below app icons
-  bool showInstanceCount = true;       // show a badge with count when app has >1 window
+
+  [[nodiscard]] constexpr bool isAutoHideEnabled() const noexcept { return autoHide || smartAutoHide; }
+  bool reserveSpace = true;         // reserve compositor exclusive zone; applies with or without auto_hide
+  float activeScale = 1.0f;         // focused app icon scale
+  float inactiveScale = 0.85f;      // non-focused app icon scale
+  bool magnification = true;        // magnify icons near the pointer (macOS-style)
+  float magnificationScale = 1.45f; // max icon scale multiplier at the pointer center
+  float activeOpacity = 1.0f;       // focused app icon opacity
+  float inactiveOpacity = 0.85f;    // non-focused app icon opacity
+  bool showDots = false;            // show optional running window dots below app icons
+  bool showInstanceCount = true;    // show a badge with count when app has >1 window
   DockLauncherPosition launcherPosition = DockLauncherPosition::None;
   std::string launcherIcon = "grid-dots";   // Tabler glyph name
   std::string launcherCustomImage = "";     // image path; overrides launcherIcon glyph when set
