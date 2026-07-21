@@ -5,12 +5,14 @@
 #include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_registry.h"
 #include "shell/bar/widgets/battery_widget_definition.h"
+#include "shell/bar/widgets/brightness_widget_definition.h"
 #include "shell/settings/font_family_catalog.h"
 #include "shell/settings/font_weight_catalog.h"
 #include "shell/settings/font_weight_i18n.h"
 #include "ui/style.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <iterator>
@@ -55,6 +57,33 @@ namespace settings {
 
     std::optional<scripting::ResolvedPluginEntry>
     resolvePluginWidget(std::string_view type, scripting::PluginRegistry* pluginRegistry = nullptr);
+
+    struct TypedWidgetDefinitionProjection {
+      std::string_view (*type)();
+      schema::WidgetSettingSchema (*schemaFields)();
+      std::vector<WidgetSettingSpec> (*presentedSettingSpecs)();
+    };
+
+    template <auto DefinitionAccessor> constexpr TypedWidgetDefinitionProjection projectWidgetDefinition() {
+      return TypedWidgetDefinitionProjection{
+          .type = [] { return DefinitionAccessor().type; },
+          .schemaFields = [] { return DefinitionAccessor().schemaFields(); },
+          .presentedSettingSpecs = [] { return DefinitionAccessor().presentedSettingSpecs(); },
+      };
+    }
+
+    constexpr std::array kTypedWidgetDefinitions{
+        projectWidgetDefinition<batteryWidgetDefinition>(),
+        projectWidgetDefinition<brightnessWidgetDefinition>(),
+    };
+
+    const TypedWidgetDefinitionProjection* findTypedWidgetDefinitionProjection(std::string_view type) {
+      const auto projection =
+          std::ranges::find_if(kTypedWidgetDefinitions, [type](const TypedWidgetDefinitionProjection& candidate) {
+            return candidate.type() == type;
+          });
+      return projection != kTypedWidgetDefinitions.end() ? &*projection : nullptr;
+    }
 
     const std::vector<WidgetTypeSpec> kWidgetTypeSpecs = {
         {.type = "active_window", .labelKey = "settings.widgets.types.active-window", .glyph = "app-window"},
@@ -672,7 +701,9 @@ namespace settings {
         {"output", "settings.widgets.options.output"},
         {"input", "settings.widgets.options.input"},
     };
-    if (type == "active_window") {
+    if (const auto* projection = findTypedWidgetDefinitionProjection(type)) {
+      specs = projection->presentedSettingSpecs();
+    } else if (type == "active_window") {
       add(intSpec("min_length", 80, 0.0, 800.0, 1.0));
       add(intSpec("max_length", 260, 40.0, 800.0, 1.0));
       add(intSpec("icon_size", static_cast<double>(Style::fontSizeBody), 8.0, 64.0, 1.0));
@@ -697,21 +728,9 @@ namespace settings {
         auto color2 = colorSpec("color_2", "primary");
         add(std::move(color2));
       }
-    } else if (type == "battery") {
-      for (auto& spec : batteryWidgetDefinition().presentedSettingSpecs()) {
-        add(std::move(spec));
-      }
     } else if (type == "bluetooth") {
       add(boolSpec("show_label", false));
       add(boolSpec("hide_when_no_connected_device", false));
-    } else if (type == "brightness") {
-      add(boolSpec("enable_scroll", true));
-      {
-        auto scrollStep = stepperIntSpec("scroll_step", 5, 1.0, 25.0, 1.0, "%");
-        scrollStep.visibleWhen = WidgetSettingVisibility{"enable_scroll", {"true"}};
-        add(std::move(scrollStep));
-      }
-      add(boolSpec("show_label", true));
     } else if (type == "clock") {
       add(stringSpec("format", "{:%H:%M}"));
       add(stringSpec("vertical_format"));
@@ -1402,11 +1421,12 @@ namespace settings {
   namespace {
 
     std::optional<schema::WidgetSettingSchema> typedWidgetSettingSchema(std::string_view type) {
-      if (type != "battery") {
+      const auto* projection = findTypedWidgetDefinitionProjection(type);
+      if (projection == nullptr) {
         return std::nullopt;
       }
 
-      auto fields = batteryWidgetDefinition().schemaFields();
+      auto fields = projection->schemaFields();
       const auto common = commonWidgetSettingSpecs("sans-serif", false);
       std::ranges::transform(common, std::back_inserter(fields), [](const WidgetSettingSpec& spec) {
         return spec.schema;
