@@ -230,7 +230,7 @@ int HyprlandWorkspaceBackend::pollFd() const noexcept { return m_runtime.pollFd(
 void HyprlandWorkspaceBackend::dispatchPoll(short revents) { m_runtime.dispatchPoll(revents); }
 
 void HyprlandWorkspaceBackend::refreshSnapshot() {
-  refreshWorkspaces();
+  (void)refreshWorkspaces();
   refreshMonitors();
   refreshClients();
   recomputeWorkspaceFlags();
@@ -263,7 +263,7 @@ void HyprlandWorkspaceBackend::ensureSnapshotFresh() const {
     changed = true;
   }
   if (m_workspaces.empty()) {
-    self->refreshWorkspaces();
+    (void)self->refreshWorkspaces();
     self->refreshMonitors();
     changed = true;
   }
@@ -630,7 +630,7 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
     } else {
       workspace->name = name;
     }
-    refreshWorkspaces();
+    (void)refreshWorkspaces();
     recomputeWorkspaceFlags();
     notifyChanged();
     return;
@@ -667,7 +667,7 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
     }
     auto* workspace = findWorkspaceById(*id);
     if (workspace == nullptr) {
-      refreshWorkspaces();
+      (void)refreshWorkspaces();
       recomputeWorkspaceFlags();
       notifyChanged();
       return;
