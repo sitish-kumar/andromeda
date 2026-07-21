@@ -390,7 +390,7 @@ namespace notification_dbus {
         }
         if (std::optional<NotificationImageData> decoded = decodeImageDataFromImagePath(truncated);
             decoded.has_value()) {
-          return std::move(decoded);
+          return decoded;
         }
       } catch (...) {
       }
