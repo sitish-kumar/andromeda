@@ -135,6 +135,17 @@ void AudioOsd::showInput(std::uint32_t sourceId, float volume, bool muted, bool 
   m_lastSourceMuted = muted;
 }
 
+void AudioOsd::showInputName(std::string name, bool muted) {
+  const auto now = std::chrono::steady_clock::now();
+  if (now < m_suppressUntil) {
+    return;
+  }
+  if (m_overlay != nullptr) {
+    m_overlay->show(makeInputNameContent(std::move(name), muted));
+    m_currentKind = OsdKind::Microphone;
+  }
+}
+
 void AudioOsd::showOutputValue(float volume, bool muted) {
   if (m_overlay == nullptr) {
     return;
@@ -149,15 +160,6 @@ void AudioOsd::showInputValue(float volume, bool muted) {
   }
   m_overlay->show(makeInputContent(volume, muted));
   m_currentKind = OsdKind::Microphone;
-void AudioOsd::showInputName(std::string name, bool muted) {
-  const auto now = std::chrono::steady_clock::now();
-  if (now < m_suppressUntil) {
-    return;
-  }
-  if (m_overlay != nullptr) {
-    m_overlay->show(makeInputNameContent(std::move(name), muted));
-    m_currentKind = OsdKind::Microphone;
-  }
 }
 
 void AudioOsd::onAudioStateChanged(const PipeWireService& service) {
