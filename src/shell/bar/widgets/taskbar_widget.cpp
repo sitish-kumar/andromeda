@@ -1955,6 +1955,7 @@ void TaskbarWidget::updateModels() {
   }
 
   if (m_groupByWorkspace && m_hideEmptyWorkspaces && !nextWorkspaces.empty()) {
+    m_allWorkspaces = nextWorkspaces;
     const auto workspaceHasTask = [](const WorkspaceModel& wsm, const std::vector<TaskModel>& tasks) {
       for (const auto& t : tasks) {
         if (taskInWorkspaceGroup(t, wsm)) {
@@ -1966,10 +1967,13 @@ void TaskbarWidget::updateModels() {
     std::erase_if(nextWorkspaces, [&](const WorkspaceModel& wsm) {
       return !wsm.workspace.active && !workspaceHasTask(wsm, nextTasks);
     });
+  } else {
+    m_allWorkspaces.clear();
   }
 
   if (!m_groupByWorkspace) {
     nextWorkspaces.clear();
+    m_allWorkspaces.clear();
     std::ranges::stable_sort(nextTasks, [](const TaskModel& a, const TaskModel& b) {
       if (a.workspaceOrder != b.workspaceOrder) {
         return a.workspaceOrder < b.workspaceOrder;
@@ -2399,11 +2403,16 @@ std::string TaskbarWidget::resolveIconPath(const std::string& appId, const std::
 }
 
 bool TaskbarWidget::activeWorkspaceIndex(std::size_t& index) const {
+  const auto& workspaces = navigationWorkspaces();
+  if (workspaces.empty()) {
+    return false;
+  }
+
   // Try to find the workspace of the globally active task first
   for (const auto& task : m_tasks) {
     if (task.active) {
-      for (std::size_t i = 0; i < m_workspaces.size(); ++i) {
-        if (taskInWorkspaceGroup(task, m_workspaces[i])) {
+      for (std::size_t i = 0; i < workspaces.size(); ++i) {
+        if (taskInWorkspaceGroup(task, workspaces[i])) {
           index = i;
           return true;
         }
@@ -2413,16 +2422,16 @@ bool TaskbarWidget::activeWorkspaceIndex(std::size_t& index) const {
   }
 
   // Fallback to the active workspace on the current output
-  for (std::size_t i = 0; i < m_workspaces.size(); ++i) {
-    if (m_workspaces[i].workspace.active && m_workspaces[i].hostOutput == m_output) {
+  for (std::size_t i = 0; i < workspaces.size(); ++i) {
+    if (workspaces[i].workspace.active && workspaces[i].hostOutput == m_output) {
       index = i;
       return true;
     }
   }
 
   // Fallback to any active workspace
-  for (std::size_t i = 0; i < m_workspaces.size(); ++i) {
-    if (m_workspaces[i].workspace.active) {
+  for (std::size_t i = 0; i < workspaces.size(); ++i) {
+    if (workspaces[i].workspace.active) {
       index = i;
       return true;
     }
@@ -2430,17 +2439,22 @@ bool TaskbarWidget::activeWorkspaceIndex(std::size_t& index) const {
   return false;
 }
 
+const std::vector<TaskbarWidget::WorkspaceModel>& TaskbarWidget::navigationWorkspaces() const noexcept {
+  return (m_hideEmptyWorkspaces && !m_allWorkspaces.empty()) ? m_allWorkspaces : m_workspaces;
+}
+
 void TaskbarWidget::activateAdjacentWorkspace(int direction) {
-  if (!m_groupByWorkspace || m_workspaces.empty() || direction == 0) {
+  const auto& workspaces = navigationWorkspaces();
+  if (!m_groupByWorkspace || workspaces.empty() || direction == 0) {
     return;
   }
 
   std::size_t targetIndex = 0;
   std::size_t current = 0;
   if (!activeWorkspaceIndex(current)) {
-    targetIndex = direction > 0 ? 0 : (m_workspaces.size() - 1);
+    targetIndex = direction > 0 ? 0 : (workspaces.size() - 1);
   } else if (direction > 0) {
-    if (current + 1 >= m_workspaces.size()) {
+    if (current + 1 >= workspaces.size()) {
       return;
     }
     targetIndex = current + 1;
@@ -2451,7 +2465,7 @@ void TaskbarWidget::activateAdjacentWorkspace(int direction) {
     targetIndex = current - 1;
   }
 
-  const auto& targetWs = m_workspaces[targetIndex];
+  const auto& targetWs = workspaces[targetIndex];
   m_platform.activateWorkspace(workspaceHostOutput(targetWs), targetWs.workspace);
 }
 

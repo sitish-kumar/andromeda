@@ -110,6 +110,7 @@ private:
   void activateAdjacentWorkspace(int direction);
   void activateAdjacentTask(int direction);
   [[nodiscard]] bool activeWorkspaceIndex(std::size_t& index) const;
+  [[nodiscard]] const std::vector<WorkspaceModel>& navigationWorkspaces() const noexcept;
   [[nodiscard]] wl_output* toplevelOutputFilter() const noexcept;
   [[nodiscard]] bool useMultiOutputWorkspaceKeys() const noexcept;
   [[nodiscard]] std::string workspaceKeyPrefixForOutput(wl_output* out) const;
@@ -163,6 +164,8 @@ private:
 
   std::vector<TaskModel> m_tasks;
   std::vector<WorkspaceModel> m_workspaces;
+  // Full workspace list before "hide empty" filtering; used for scroll navigation.
+  std::vector<WorkspaceModel> m_allWorkspaces;
   std::unordered_map<std::uintptr_t, PendingWorkspaceTransition> m_pendingWorkspaceTransitions;
   std::unordered_map<std::string, std::size_t> m_groupedAppCycleCursor;
   std::unordered_map<std::string, std::string> m_appIconsByLower;
