@@ -2613,11 +2613,12 @@
         },
         "launch-apps-as-systemd-services": {
           "description": "Launches applications in separate systemd services so they don't share Noctalia's cgroup",
-          "label": "Launch Apps as systemd Services"
+          "label": "Launch Apps as systemd Services",
+          "requires-systemd-session": "Requires Noctalia to run as a systemd user service (uwsm or a systemd user unit)"
         },
         "launch-apps-custom-command": {
-          "description": "Custom command used by the app launcher; substitutes $CMD with the original command",
-          "label": "Custom Launcher Command",
+          "description": "Wraps apps launched from the launcher, dock, and taskbar; substitutes $CMD with the original command",
+          "label": "Custom App Launch Command",
           "placeholder": "$CMD"
         },
         "middle-click-opens-widget-settings": {

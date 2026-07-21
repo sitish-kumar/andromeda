@@ -4,6 +4,7 @@
 #include "config/schema/config_schema.h"
 #include "config/schema/engine.h"
 #include "core/log.h"
+#include "core/process/process.h"
 #include "core/scoped_timer.h"
 #include "core/ui_phase.h"
 #include "dbus/upower/upower_service.h"
@@ -735,6 +736,7 @@ settings::RegistryEnvironment SettingsWindow::buildRegistryEnvironment() const {
   env.screencopySupported = m_wayland != nullptr && m_wayland->hasScreencopy();
   env.niriOverviewTypeToLaunchSupported = (m_wayland != nullptr && compositors::isNiri());
   env.ddcutilAvailable = (m_dependencies != nullptr && m_dependencies->hasDdcutil());
+  env.systemdUserManaged = process::runningUnderSystemdUserManager();
   env.gammaControlAvailable = (m_wayland != nullptr && m_wayland->hasGammaControl());
   env.greeterSyncAvailable =
       m_config != nullptr && greeter::appearanceSyncAvailable(m_config->config().shell.greeterSync);

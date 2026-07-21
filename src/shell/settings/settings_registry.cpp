@@ -1656,13 +1656,17 @@ namespace settings {
         {"shell", "middle_click_opens_widget_settings"}, ToggleSetting{cfg.shell.middleClickOpensWidgetSettings},
         "bar widget settings middle click configure"
     ));
-    if (process::systemdAvailable()) {
-      entries.push_back(makeEntry(
-          SettingsSection::Shell, "general", tr("settings.schema.shell.launch-apps-as-systemd-services.label"),
-          tr("settings.schema.shell.launch-apps-as-systemd-services.description"),
-          {"shell", "launch_apps_as_systemd_services"}, ToggleSetting{cfg.shell.launchAppsAsSystemdServices}
-      ));
-    }
+    entries.push_back(makeEntry(
+        SettingsSection::Shell, "general", tr("settings.schema.shell.launch-apps-as-systemd-services.label"),
+        env.systemdUserManaged ? tr("settings.schema.shell.launch-apps-as-systemd-services.description")
+                               : tr("settings.schema.shell.launch-apps-as-systemd-services.requires-systemd-session"),
+        {"shell", "launch_apps_as_systemd_services"},
+        ToggleSetting{
+            .checked = cfg.shell.launchAppsAsSystemdServices,
+            // Keep a leftover `true` switchable off even when the session cannot honor it.
+            .enabled = env.systemdUserManaged || cfg.shell.launchAppsAsSystemdServices
+        }
+    ));
     {
       auto e = makeEntry(
           SettingsSection::Shell, "general", tr("settings.schema.shell.launch-apps-custom-command.label"),
@@ -1673,9 +1677,11 @@ namespace settings {
               .width = 320.0f,
               .browseFileExtensions = {},
           },
-          "app command custom launcher"
+          "app command custom launcher dock taskbar"
       );
-      e.visibleWhen = [](const Config& c) { return !c.shell.launchAppsAsSystemdServices; };
+      e.visibleWhen = [managed = env.systemdUserManaged](const Config& c) {
+        return !(c.shell.launchAppsAsSystemdServices && managed);
+      };
       entries.push_back(std::move(e));
     }
     const SettingVisibility clipboardOn = [](const Config& c) { return c.shell.clipboardEnabled; };
