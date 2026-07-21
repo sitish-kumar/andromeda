@@ -1150,6 +1150,23 @@ namespace settings {
               }
               out += "]";
               return out;
+            } else if constexpr (std::is_same_v<T, WidgetSettingStringMap>) {
+              std::vector<std::string> keys;
+              keys.reserve(concrete.size());
+              for (const auto& [key, mapValue] : concrete) {
+                (void)mapValue;
+                keys.push_back(key);
+              }
+              std::ranges::sort(keys);
+              std::string out = "{";
+              for (std::size_t i = 0; i < keys.size(); ++i) {
+                if (i > 0) {
+                  out += ", ";
+                }
+                out += "\"" + keys[i] + "\" = \"" + concrete.at(keys[i]) + "\"";
+              }
+              out += "}";
+              return out;
             }
           },
           value
@@ -1637,19 +1654,32 @@ namespace settings {
           break;
         case WidgetControlKind::StringMap: {
           const bool customLabels = spec.schema.key == "custom_labels";
+          const bool effectsProfileGlyphs = spec.schema.key == "effects_profile_glyphs";
+          WidgetSettingStringMap entries;
+          if (widgetConfig != nullptr) {
+            if (const auto tableIt = widgetConfig->tables.find(spec.schema.key);
+                tableIt != widgetConfig->tables.end()) {
+              entries = tableIt->second;
+            } else if (const auto* defaults = std::get_if<WidgetSettingStringMap>(&spec.schema.defaultValue)) {
+              entries = *defaults;
+            }
+          } else if (const auto* defaults = std::get_if<WidgetSettingStringMap>(&spec.schema.defaultValue)) {
+            entries = *defaults;
+          }
           ctx.makeStringMapBlock(
               *panel, entry,
               StringMapSetting{
-                  .entries = widgetConfig != nullptr ? widgetConfig->getStringMap(spec.schema.key)
-                                                     : std::unordered_map<std::string, std::string>{},
+                  .entries = std::move(entries),
                   .suggestedKeys = customLabels ? ctx.keyboardLayoutNames : std::vector<std::string>{},
                   .keyPlaceholder = i18n::tr(
-                      customLabels ? "settings.widgets.map-placeholders.layout-name"
-                                   : "settings.widgets.map-placeholders.effects-profile-name"
+                      customLabels               ? "settings.widgets.map-placeholders.layout-name"
+                          : effectsProfileGlyphs ? "settings.widgets.map-placeholders.effects-profile-name"
+                                                 : "settings.widgets.map-placeholders.key"
                   ),
                   .valuePlaceholder = i18n::tr(
-                      customLabels ? "settings.widgets.map-placeholders.label"
-                                   : "settings.widgets.map-placeholders.glyph-name"
+                      customLabels               ? "settings.widgets.map-placeholders.label"
+                          : effectsProfileGlyphs ? "settings.widgets.map-placeholders.glyph-name"
+                                                 : "settings.widgets.map-placeholders.value"
                   ),
               }
           );

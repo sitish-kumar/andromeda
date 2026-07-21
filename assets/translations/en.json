@@ -2966,8 +2966,10 @@
       "map-placeholders": {
         "effects-profile-name": "Profile name",
         "glyph-name": "Glyph name",
+        "key": "Key",
         "label": "Label",
-        "layout-name": "Layout name"
+        "layout-name": "Layout name",
+        "value": "Value"
       },
       "options": {
         "always": "Always",

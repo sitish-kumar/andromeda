@@ -304,7 +304,7 @@ namespace settings {
     }
 
     WidgetSettingSpec stringMapSpec(std::string_view key, bool advanced = false) {
-      return baseSpec(key, WidgetControlKind::StringMap, std::string{}, advanced);
+      return baseSpec(key, WidgetControlKind::StringMap, WidgetSettingStringMap{}, advanced);
     }
 
     WidgetSettingSpec selectSpec(
@@ -1180,6 +1180,10 @@ namespace settings {
       case scripting::ManifestFieldType::StringList:
         spec.control = WidgetControlKind::StringList;
         spec.schema.defaultValue = field.stringListDefault;
+        break;
+      case scripting::ManifestFieldType::StringMap:
+        spec.control = WidgetControlKind::StringMap;
+        spec.schema.defaultValue = field.stringMapDefault;
         break;
       case scripting::ManifestFieldType::File:
         spec.control = WidgetControlKind::File;

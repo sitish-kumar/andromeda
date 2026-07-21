@@ -397,6 +397,14 @@ std::unique_ptr<Widget> WidgetFactory::create(
     std::unordered_map<std::string, WidgetSettingValue> overrides;
     if (wc != nullptr) {
       overrides = wc->settings;
+      for (const auto& field : pluginEntry->entry->settings) {
+        if (field.type != scripting::ManifestFieldType::StringMap) {
+          continue;
+        }
+        if (const auto tableIt = wc->tables.find(field.key); tableIt != wc->tables.end()) {
+          overrides.insert_or_assign(field.key, tableIt->second);
+        }
+      }
     }
     auto seeded = scripting::seedEntrySettings(*pluginEntry->entry, overrides);
     const auto& pluginSettings = m_config.plugins.pluginSettings;
