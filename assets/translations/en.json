@@ -2782,6 +2782,10 @@
           "description": "Capture the desktop before region selection so moving content stays still",
           "label": "Freeze Screen"
         },
+        "screenshot-show-cursor": {
+          "description": "Include the mouse pointer in screenshots",
+          "label": "Show Cursor"
+        },
         "screenshot-pipe-command": {
           "description": "Command run as /bin/sh -lc with the PNG on stdin; for annotators or uploaders (for example: swappy -f - or satty -f -)",
           "label": "Pipe Command",
