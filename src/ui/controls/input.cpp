@@ -1068,8 +1068,8 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
     m_goalCaretX = -1.0f;
   }
 
-  // Ignore keys that produce no text and aren't action keys we handle below
-  if (utf32 == 0 && !preedit) {
+  // Ignore non-text keys that aren't handled below. Ctrl chords may still have utf32 == 0.
+  if (utf32 == 0 && !preedit && !ctrl) {
     const bool navigationOrEdit = KeySymbol::isBackspace(sym)
         || KeySymbol::isDelete(sym)
         || KeySymbol::isLeft(sym)
