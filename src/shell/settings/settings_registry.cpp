@@ -2558,6 +2558,11 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
+        SettingsSection::Power, "session-panel", tr("settings.schema.power.session-show-shortcuts.label"),
+        tr("settings.schema.power.session-show-shortcuts.description"), {"shell", "session", "show_shortcuts"},
+        ToggleSetting{.checked = cfg.shell.session.showShortcuts}, "session panel show shortcuts"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Power, "session-panel", tr("settings.schema.power.session-actions.label"),
         tr("settings.schema.power.session-actions.description"), {"shell", "session", "actions"},
         SessionPanelActionsSetting{.items = cfg.shell.session.actions},

@@ -227,6 +227,7 @@ struct ShellSessionConfig {
   // fitting them on a single row.
   bool grid = false;
   std::int32_t gridColumns = 3;
+  bool showShortcuts = true;
   // Optional overrides for built-in session power commands. Empty = auto-detect at runtime.
   struct ShellSessionPowerConfig {
     // Shell strings run with `/bin/sh -lc` (shell=True).
