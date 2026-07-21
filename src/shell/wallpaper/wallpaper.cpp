@@ -683,6 +683,24 @@ void Wallpaper::applyResolvedWallpaper(const std::optional<std::string>& connect
   }
   notifyKdePlasmaWallpaper(resolvedPath, connector.value_or(""), output);
 
+  if (const WallpaperFavorite* favorite = m_config->wallpaperFavorite(resolvedPath); favorite != nullptr) {
+    if (connector.has_value()) {
+      m_config->applyWallpaperSelection(connector, resolvedPath, favorite, {});
+      return;
+    }
+
+    std::vector<std::string> connectors;
+    if (m_wayland != nullptr) {
+      for (const auto& out : m_wayland->outputs()) {
+        if (!out.connectorName.empty()) {
+          connectors.push_back(out.connectorName);
+        }
+      }
+    }
+    m_config->applyWallpaperSelection(std::nullopt, resolvedPath, favorite, connectors);
+    return;
+  }
+
   if (connector.has_value()) {
     m_config->setWallpaperPath(connector, resolvedPath);
     return;
@@ -980,7 +998,11 @@ void Wallpaper::applyStartupAutomation(std::int64_t secondStamp) {
         continue;
       }
 
-      m_config->setWallpaperPath(output.connectorName, picked);
+      if (const WallpaperFavorite* favorite = m_config->wallpaperFavorite(picked); favorite != nullptr) {
+        m_config->applyWallpaperSelection(output.connectorName, picked, favorite, {});
+      } else {
+        m_config->setWallpaperPath(output.connectorName, picked);
+      }
       kLog.info("startup automation set {} → {}", output.connectorName, picked);
     }
   } else {
@@ -1003,15 +1025,28 @@ void Wallpaper::applyStartupAutomation(std::int64_t secondStamp) {
         const std::string currentDefault = m_config->getDefaultWallpaperPath();
         const std::string picked = pickAutomationWallpaperPath(automation, std::move(candidates), currentDefault);
         if (!picked.empty()) {
-          for (const auto& output : outputs) {
-            if (output.done
-                && !output.connectorName.empty()
-                && output.hasUsableGeometry()
-                && wallpaperOutputEnabled(wallpaper, output)) {
-              m_config->setWallpaperPath(output.connectorName, picked);
+          if (const WallpaperFavorite* favorite = m_config->wallpaperFavorite(picked); favorite != nullptr) {
+            std::vector<std::string> connectors;
+            for (const auto& output : outputs) {
+              if (output.done
+                  && !output.connectorName.empty()
+                  && output.hasUsableGeometry()
+                  && wallpaperOutputEnabled(wallpaper, output)) {
+                connectors.push_back(output.connectorName);
+              }
             }
+            m_config->applyWallpaperSelection(std::nullopt, picked, favorite, connectors);
+          } else {
+            for (const auto& output : outputs) {
+              if (output.done
+                  && !output.connectorName.empty()
+                  && output.hasUsableGeometry()
+                  && wallpaperOutputEnabled(wallpaper, output)) {
+                m_config->setWallpaperPath(output.connectorName, picked);
+              }
+            }
+            m_config->setWallpaperPath(std::nullopt, picked);
           }
-          m_config->setWallpaperPath(std::nullopt, picked);
           kLog.info("startup automation set all outputs → {}", picked);
         }
       }
@@ -1066,7 +1101,11 @@ void Wallpaper::runAutomation(std::int64_t secondStamp) {
       if (picked.empty() || picked == currentPath) {
         continue;
       }
-      m_config->setWallpaperPath(inst->connectorName, picked);
+      if (const WallpaperFavorite* favorite = m_config->wallpaperFavorite(picked); favorite != nullptr) {
+        m_config->applyWallpaperSelection(inst->connectorName, picked, favorite, {});
+      } else {
+        m_config->setWallpaperPath(inst->connectorName, picked);
+      }
       kLog.info("automation set {} → {}", inst->connectorName, picked);
     }
   } else {
@@ -1077,12 +1116,23 @@ void Wallpaper::runAutomation(std::int64_t secondStamp) {
       const std::string currentDefault = m_config->getDefaultWallpaperPath();
       const std::string picked = pickAutomationWallpaperPath(automation, std::move(candidates), currentDefault);
       if (!picked.empty()) {
-        for (const auto& inst : m_instances) {
-          if (!inst->connectorName.empty()) {
-            m_config->setWallpaperPath(inst->connectorName, picked);
+        if (const WallpaperFavorite* favorite = m_config->wallpaperFavorite(picked); favorite != nullptr) {
+          std::vector<std::string> connectors;
+          connectors.reserve(m_instances.size());
+          for (const auto& inst : m_instances) {
+            if (!inst->connectorName.empty()) {
+              connectors.push_back(inst->connectorName);
+            }
           }
+          m_config->applyWallpaperSelection(std::nullopt, picked, favorite, connectors);
+        } else {
+          for (const auto& inst : m_instances) {
+            if (!inst->connectorName.empty()) {
+              m_config->setWallpaperPath(inst->connectorName, picked);
+            }
+          }
+          m_config->setWallpaperPath(std::nullopt, picked);
         }
-        m_config->setWallpaperPath(std::nullopt, picked);
         kLog.info("automation set all outputs → {}", picked);
       }
     }
