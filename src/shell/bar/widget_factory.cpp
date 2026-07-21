@@ -38,6 +38,7 @@
 #include "shell/bar/widgets/sysmon_widget.h"
 #include "shell/bar/widgets/taskbar_widget.h"
 #include "shell/bar/widgets/test_widget.h"
+#include "shell/bar/widgets/text_widget.h"
 #include "shell/bar/widgets/theme_mode_widget.h"
 #include "shell/bar/widgets/tray_widget.h"
 #include "shell/bar/widgets/volume_widget.h"
@@ -465,6 +466,13 @@ std::unique_ptr<Widget> WidgetFactory::create(
         static_cast<float>(wc != nullptr ? wc->getDouble("length", kDefaultSpacerLength) : kDefaultSpacerLength);
     const bool verticalBar = barPosition == "left" || barPosition == "right";
     auto widget = std::make_unique<SpacerWidget>(length, verticalBar);
+    widget->setContentScale(contentScale);
+    return widget;
+  }
+
+  if (type == "text") {
+    const std::string text = wc != nullptr ? wc->getString("text", "") : std::string{};
+    auto widget = std::make_unique<TextWidget>(text);
     widget->setContentScale(contentScale);
     return widget;
   }

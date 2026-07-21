@@ -83,6 +83,7 @@ namespace settings {
         {.type = "sysmon", .labelKey = "settings.widgets.types.sysmon", .glyph = "cpu-usage"},
         {.type = "taskbar", .labelKey = "settings.widgets.types.taskbar", .glyph = "apps"},
         {.type = "test", .labelKey = "settings.widgets.types.test", .glyph = "flask", .visibleInPicker = false},
+        {.type = "text", .labelKey = "settings.widgets.types.text", .glyph = "letter-t"},
         {.type = "theme_mode", .labelKey = "settings.widgets.types.theme-mode", .glyph = "theme-mode"},
         {.type = "tray", .labelKey = "settings.widgets.types.tray", .glyph = "apps"},
         {.type = "volume", .labelKey = "settings.widgets.types.volume", .glyph = "volume-high"},
@@ -394,7 +395,7 @@ namespace settings {
   bool isPluginWidgetType(std::string_view type) { return resolvePluginWidget(type).has_value(); }
 
   bool widgetTypeRequiresNamedConfig(std::string_view type) {
-    return type == "custom_button" || type == "spacer" || resolvePluginWidget(type).has_value();
+    return type == "custom_button" || type == "spacer" || type == "text" || resolvePluginWidget(type).has_value();
   }
 
   std::string widgetTypeForReference(const Config& cfg, std::string_view name) {
@@ -864,6 +865,8 @@ namespace settings {
       add(boolSpec("custom_image_colorize", false));
     } else if (type == "spacer") {
       add(intSpec("length", 20, 0.0, 400.0, 1.0));
+    } else if (type == "text") {
+      add(stringSpec("text"));
     } else if (type == "sysmon") {
       add(selectSpec("stat", "cpu_usage", sysmonStats));
       {

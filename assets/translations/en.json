@@ -3481,6 +3481,10 @@
           "description": "Total width budget in pixels; window titles shrink to fit and hide when too narrow",
           "label": "Taskbar Max Width"
         },
+        "text": {
+          "description": "Text shown on the bar",
+          "label": "Text"
+        },
         "timezone": {
           "description": "Timezone identifier (e.g. Europe/Berlin) to use for this clock; leave empty to use system local time",
           "label": "Timezone"
@@ -3558,6 +3562,7 @@
         "sysmon": "System Monitor",
         "taskbar": "Taskbar",
         "test": "Test",
+        "text": "Text",
         "theme-mode": "Theme Mode",
         "tray": "Tray",
         "volume": "Volume",
