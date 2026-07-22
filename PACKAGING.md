@@ -42,12 +42,29 @@ first-class supported.
 `jemalloc` is glibc-only, on musl leave `-Djemalloc=disabled` (or `auto`, which
 skips it).
 
+## Compilers / linkers
+
+C++23 is required.
+
+| Toolchain | Minimum | Notes |
+|---|---|---|
+| GCC + libstdc++ | **GCC 13+** | Default on most distros |
+| Clang + libstdc++ or libc++ | **Clang 16+** | libc++ needs Meson’s experimental-library flags (already wired in `meson.build`) |
+
+Debian 12 “bookworm” needs a newer toolchain than the default `g++` (e.g.
+`g++-13` with `CXX=g++-13`).
+
+No special linker is required. The default linker from the compiler driver is
+fine (**GNU ld** / gold, **lld**, **mold** via `-fuse-ld=` all work). Release
+builds pass `-Wl,--gc-sections` and `-Wl,--as-needed`, which those linkers
+support.
+
 ## Build
 
 - Build system: [Meson](https://mesonbuild.com/) + Ninja. The repo’s
   [`justfile`](justfile) is convenience only; packaging can call Meson
   directly.
-- Language: **C++23** (GCC 13+ or Clang 16+).
+- Language / toolchain: see [Compilers / linkers](#compilers--linkers).
 - Recommended: `meson setup build --buildtype=release`, then compile/install.
 - Do **not** enable `-Dnative_optimizations=true` for distro packages (CPU-local
   codegen; not portable).
@@ -107,8 +124,9 @@ Each carries its own license file beside the code.
 | PAM (`login` service by default) | Lock screen authentication |
 | Fontconfig / fonts | Text rendering (users still need usable fonts installed) |
 | `git` | Plugin git sources / auto-update invoke `git` on `PATH` |
-| `upower` | Optional, battery / power devices |
-| `ddcutil` | Optional, external monitor brightness |
+| Secret Service provider | Optional but recommended for credential / encrypted-state persistence (GNOME Keyring, KWallet, KeePassXC, ...). `libsecret` is only the client library; without a session provider those features cannot persist secrets. |
+| `upower` | Optional: battery / power devices |
+| `ddcutil` | Optional: external monitor brightness |
 
 ## Startup and IPC
 
@@ -129,7 +147,7 @@ On non-Plasma sessions Noctalia provides and registers:
 
 Do not run it alongside another notification daemon or StatusNotifier host
 (mako, dunst, swaync, waybar-as-host, ...) unless those are disabled. On Plasma,
-Noctalia integrates with Plasma’s notification / tray paths instead of claiming
+Noctalia integrates with Plasma's notification / tray paths instead of claiming
 the freedesktop Notifications name.
 
 ## User data paths
