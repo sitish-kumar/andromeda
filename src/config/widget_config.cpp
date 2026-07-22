@@ -30,7 +30,11 @@ namespace noctalia::config {
           strings.push_back(*value);
         }
       }
+      // GCC 16+: -Wfree-nonheap-object false positive on variant move-return.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object"
       return WidgetSettingValue{std::move(strings)};
+#pragma GCC diagnostic pop
     }
     if (const auto* tableValue = node.as_table()) {
       WidgetSettingStringMap strings;
@@ -41,7 +45,10 @@ namespace noctalia::config {
         }
         strings.emplace(std::string(key.str()), *value);
       }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object"
       return WidgetSettingValue{std::move(strings)};
+#pragma GCC diagnostic pop
     }
     return std::nullopt;
   }
