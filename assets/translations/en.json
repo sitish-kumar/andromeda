@@ -2347,6 +2347,10 @@
         "session-grid-columns": {
           "description": "Number of columns for the grid layout",
           "label": "Columns"
+        },
+        "session-show-shortcuts": {
+          "description": "Show or hide the shortcut hints",
+          "label": "Show shortcuts"
         }
       },
       "services": {
