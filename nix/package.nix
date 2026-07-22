@@ -28,6 +28,8 @@
   libqalculate,
   libxml2,
   md4c,
+  libsecret,
+  libsodium,
   stb,
   fetchFromGitHub,
   nlohmann_json,
@@ -97,6 +99,8 @@ stdenv.mkDerivation {
     libqalculate
     libxml2
     md4c
+    libsecret
+    libsodium
     stb'
     nlohmann_json
     tomlplusplus
