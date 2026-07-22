@@ -27,6 +27,10 @@ v5 is already packaged for:
 - GNU Guix
 - Debian (including Ubuntu)
 
+[Repology](https://repology.org/project/noctalia/versions) is a useful at-a-glance
+check, but it only covers repositories it indexes (and may still list v4 as
+`noctalia-shell`). It is not a complete inventory of community packaging.
+
 ## Identity
 
 | | |
