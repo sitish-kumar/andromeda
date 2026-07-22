@@ -839,17 +839,16 @@ namespace ui {
     }
     if (const std::string* onHover = callbackProp(desired, "onHover"); onHover != nullptr) {
       if (*onHover != slot.hoverCallbackName) {
-        releaseHover(slot.hoverCallbackName);
+        releaseHover(node);
         slot.hoverCallbackName = *onHover;
         if (inputArea != nullptr) {
-          inputArea->setOnEnter([this, name = slot.hoverCallbackName](const InputArea::PointerData&) {
-            openHover(name);
-          });
-          inputArea->setOnLeave([this, name = slot.hoverCallbackName]() { releaseHover(name); });
+          inputArea->setOnEnter([this, name = slot.hoverCallbackName, key = desired.key,
+                                 node](const InputArea::PointerData&) { openHover(name, key, node); });
+          inputArea->setOnLeave([this, node]() { releaseHover(node); });
         }
       }
     } else if (!slot.hoverCallbackName.empty()) {
-      releaseHover(slot.hoverCallbackName);
+      releaseHover(node);
       slot.hoverCallbackName.clear();
       if (inputArea != nullptr) {
         clearWrapperHover(inputArea);
@@ -858,43 +857,48 @@ namespace ui {
   }
 
   // Hover is state the plugin mirrors, so every "true" owes a "false". Exactly
-  // one InputArea is hovered at a time, so one live callback name is enough to
-  // close the hover when its node is dropped, rewired, or reset away — none of
-  // which reach the dispatcher's leave path, because that only tracks areas
-  // still in the scene.
-  void UiTreeReconciler::openHover(const std::string& name) {
-    if (m_hoveredCallback == name) {
+  // one InputArea is hovered at a time, so tracking the one node that opened the
+  // hover is enough to close it when that node is dropped, rewired, or reset
+  // away. None of those reach the dispatcher's leave path, which only tracks
+  // areas still in the scene.
+  void UiTreeReconciler::openHover(const std::string& name, const std::string& key, const Node* owner) {
+    if (m_hoveredOwner == owner) {
       return;
     }
     closeHover();
     m_hoveredCallback = name;
+    m_hoveredKey = key;
+    m_hoveredOwner = owner;
     if (m_sink) {
-      m_sink(ControlCallback{name, "true"});
+      m_sink(ControlCallback{name, "true", key});
     }
   }
 
   void UiTreeReconciler::closeHover() {
-    if (m_hoveredCallback.empty()) {
+    if (m_hoveredOwner == nullptr) {
       return;
     }
     const std::string name = std::exchange(m_hoveredCallback, std::string{});
+    const std::string key = std::exchange(m_hoveredKey, std::string{});
+    m_hoveredOwner = nullptr;
     if (m_sink) {
-      m_sink(ControlCallback{name, "false"});
+      m_sink(ControlCallback{name, "false", key});
     }
   }
 
-  // Closes the hover only if `name` is the one currently reporting it.
-  void UiTreeReconciler::releaseHover(const std::string& name) {
-    if (!name.empty() && name == m_hoveredCallback) {
+  // Closes the hover only if `owner` is the node currently reporting it, so
+  // sibling nodes sharing one callback name do not close each other's hover.
+  void UiTreeReconciler::releaseHover(const Node* owner) {
+    if (owner != nullptr && owner == m_hoveredOwner) {
       closeHover();
     }
   }
 
   bool UiTreeReconciler::subtreeOwnsHover(const Slot& slot) const {
-    if (m_hoveredCallback.empty()) {
+    if (m_hoveredOwner == nullptr) {
       return false;
     }
-    if (slot.hoverCallbackName == m_hoveredCallback) {
+    if (slot.node == m_hoveredOwner) {
       return true;
     }
     for (const Slot& child : slot.children) {
@@ -1332,13 +1336,15 @@ namespace ui {
       // InputArea enabled for a callback the tree no longer declares.
       if (const std::string* onHover = callbackProp(desired, "onHover"); onHover != nullptr) {
         if (*onHover != slot.hoverCallbackName) {
-          releaseHover(slot.hoverCallbackName);
+          releaseHover(node);
           slot.hoverCallbackName = *onHover;
-          button->setOnEnter([this, name = slot.hoverCallbackName]() { openHover(name); });
-          button->setOnLeave([this, name = slot.hoverCallbackName]() { releaseHover(name); });
+          button->setOnEnter([this, name = slot.hoverCallbackName, key = desired.key, node]() {
+            openHover(name, key, node);
+          });
+          button->setOnLeave([this, node]() { releaseHover(node); });
         }
       } else if (!slot.hoverCallbackName.empty()) {
-        releaseHover(slot.hoverCallbackName);
+        releaseHover(node);
         slot.hoverCallbackName.clear();
         button->setOnEnter(nullptr);
         button->setOnLeave(nullptr);

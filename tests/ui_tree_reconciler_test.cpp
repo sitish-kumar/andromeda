@@ -502,22 +502,34 @@ int main() {
       ui::UiTreeReconciler reconciler;
       std::string callbackName;
       std::string callbackArg;
+      std::string callbackKey;
       reconciler.setCallbackSink([&](const ui::UiTreeReconciler::ControlCallback& cb) {
         callbackName = cb.fn;
         callbackArg = cb.arg1;
+        callbackKey = cb.arg2;
       });
       Flex host;
 
+      // The node's key rides along as arg2, so one handler can serve a list.
       ui::UiTreeNode tree = makeNode(type);
+      tree.key = "chip-3";
       tree.props.emplace("onHover", std::string("hover"));
       (void)reconciler.reconcile(host, tree, renderer);
       auto* area = dynamic_cast<InputArea*>(host.children().front().get());
       if (area != nullptr) {
         area->dispatchEnter(0.0f, 0.0f);
-        ok = expect(callbackName == "hover" && callbackArg == "true", "container hover enter reaches the sink") && ok;
+        ok = expect(
+                 callbackName == "hover" && callbackArg == "true" && callbackKey == "chip-3",
+                 "container hover enter reaches the sink with the node key"
+             )
+            && ok;
         area->dispatchLeave();
       }
-      ok = expect(callbackName == "hover" && callbackArg == "false", "container hover leave reaches the sink") && ok;
+      ok = expect(
+               callbackName == "hover" && callbackArg == "false" && callbackKey == "chip-3",
+               "container hover leave reaches the sink with the node key"
+           )
+          && ok;
     }
 
     {
@@ -574,7 +586,7 @@ int main() {
     }
     ok = expect(fired.size() == 1 && fired.front().second == "true", "hover enter reported before the drop") && ok;
 
-    // A retained hovered node is not a drop — nothing more fires.
+    // A retained hovered node is not a drop, so nothing more fires.
     fired.clear();
     (void)reconciler.reconcile(host, tree, renderer);
     ok = expect(fired.empty(), "retaining a hovered node emits no hover callback") && ok;
@@ -626,7 +638,7 @@ int main() {
     ok = expect(fired.size() == 1 && fired.front().first == "second", "the rewired callback opens on re-enter") && ok;
 
     // A host tree torn down and reset away leaves slots naming a hover whose
-    // Nodes are already freed — reset() must still close it.
+    // Nodes are already freed, so reset() must still close it.
     fired.clear();
     reconciler.reset();
     ok = expect(
@@ -638,6 +650,51 @@ int main() {
     fired.clear();
     reconciler.reset();
     ok = expect(fired.empty(), "a second reset has no hover left to close") && ok;
+  }
+
+  // Siblings sharing one onHover handler are told apart by node, not by callback
+  // name: dropping the unhovered sibling must not close the hovered one.
+  {
+    ui::UiTreeReconciler reconciler;
+    std::vector<std::pair<std::string, std::string>> fired;
+    reconciler.setCallbackSink([&fired](const ui::UiTreeReconciler::ControlCallback& cb) {
+      fired.emplace_back(cb.arg1, cb.arg2);
+    });
+    Flex host;
+
+    ui::UiTreeNode tree = makeNode("column");
+    for (const char* key : {"a", "b"}) {
+      ui::UiTreeNode chip = makeNode("box");
+      chip.key = key;
+      chip.props.emplace("onHover", std::string("chipHover"));
+      tree.children.push_back(chip);
+    }
+    (void)reconciler.reconcile(host, tree, renderer);
+
+    auto* column = dynamic_cast<Flex*>(host.children().front().get());
+    auto* first = column != nullptr && column->children().size() == 2
+        ? dynamic_cast<InputArea*>(column->children()[0].get())
+        : nullptr;
+    ok = expect(first != nullptr, "shared-name fixture built two wrapped boxes") && ok;
+    if (first != nullptr) {
+      first->dispatchEnter(0.0f, 0.0f);
+    }
+    ok = expect(fired.size() == 1 && fired.front().second == "a", "hover opens against the keyed node") && ok;
+
+    // Drop the sibling that is not hovered.
+    fired.clear();
+    tree.children.pop_back();
+    (void)reconciler.reconcile(host, tree, renderer);
+    ok = expect(fired.empty(), "dropping an unhovered same-name sibling leaves the hover open") && ok;
+
+    // Now drop the hovered one; it closes with its own key.
+    tree.children.clear();
+    (void)reconciler.reconcile(host, tree, renderer);
+    ok = expect(
+             fired.size() == 1 && fired.front().first == "false" && fired.front().second == "a",
+             "dropping the hovered node closes it with its own key"
+         )
+        && ok;
   }
 
   // Button hover callbacks clear on removal rather than being retained, and an
