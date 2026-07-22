@@ -493,18 +493,16 @@ void Application::initStyleThemeAndWayland() {
     syncScriptApiWallpaperDirectory();
     const std::optional<std::string> previousMode = lastResolvedThemeMode;
     lastResolvedThemeMode = resolvedMode;
-    m_templateApplyService.setAfterApplyCallback([this, resolvedMode, previousMode, configuredMode]() {
-      m_hookManager.fire(HookKind::ColorsChanged);
-      if (previousMode.has_value() && *previousMode != resolvedMode) {
-        m_hookManager.fire(
-            HookKind::ThemeModeChanged,
-            {{"NOCTALIA_THEME_MODE", resolvedMode},
-             {"NOCTALIA_THEME_MODE_PREVIOUS", *previousMode},
-             {"NOCTALIA_THEME_MODE_CONFIGURED", configuredMode}}
-        );
-      }
-    });
+    m_templateApplyService.setAfterApplyCallback([this]() { m_hookManager.fire(HookKind::ColorsChanged); });
     m_templateApplyService.apply(generated, mode);
+    if (previousMode.has_value() && *previousMode != resolvedMode) {
+      m_hookManager.fire(
+          HookKind::ThemeModeChanged,
+          {{"NOCTALIA_THEME_MODE", resolvedMode},
+           {"NOCTALIA_THEME_MODE_PREVIOUS", *previousMode},
+           {"NOCTALIA_THEME_MODE_CONFIGURED", configuredMode}}
+      );
+    }
   });
   m_themeService.apply();
   syncScriptApiWallpaperDirectory();
