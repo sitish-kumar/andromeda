@@ -412,6 +412,7 @@ _noctalia_sources = files(
   'src/calendar/caldav_client.cpp',
   'src/calendar/caldav_discovery.cpp',
   'src/calendar/calendar_cache.cpp',
+  'src/calendar/calendar_credential_store.cpp',
   'src/calendar/calendar_discovery_state.cpp',
   'src/calendar/calendar_service.cpp',
   'src/calendar/google_client.cpp',
@@ -1645,6 +1646,23 @@ secret_store_test = executable('secret_store_test',
 )
 
 test('secret_store', secret_store_test)
+
+calendar_credential_store_test = executable('calendar_credential_store_test',
+  sources: files(
+    'tests/calendar_credential_store_test.cpp',
+    'src/calendar/calendar_credential_store.cpp',
+    'src/core/log.cpp',
+    'src/security/secret_store.cpp',
+    'src/security/secure_buffer.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [
+    libsecret_dep,
+    libsodium_dep,
+  ],
+)
+
+test('calendar_credential_store', calendar_credential_store_test)
 
 calendar_cache_permissions_test = executable('calendar_cache_permissions_test',
   sources: files(

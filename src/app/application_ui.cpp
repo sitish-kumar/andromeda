@@ -501,18 +501,8 @@ void Application::initPanelManagerAndPanels() {
     wl_output* output = m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200));
     m_panelManager.openPanel("wallpaper", PanelOpenRequest{.output = output});
   });
-  m_settingsWindow.setConnectCalendarAccount([this](std::string accountId, std::string activationToken) {
-    const auto& accounts = m_configService.config().calendar.accounts;
-    const auto it = std::ranges::find(accounts, accountId, &CalendarConfig::Account::id);
-    if (it == accounts.end()) {
-      return;
-    }
-    if (it->type == "google") {
-      m_calendarService.connectGoogleAccount(accountId, activationToken);
-    } else if (it->type == "caldav") {
-      m_calendarService.requestRefresh();
-    }
-  });
+  m_settingsWindow.setCalendarService(&m_calendarService);
+  m_calendarService.setCredentialChangeCallback([this]() { m_settingsWindow.onExternalOptionsChanged(); });
   auto clipboardPanel = std::make_unique<ClipboardPanel>(
       &m_clipboardService, &m_configService, &m_thumbnailService, &m_asyncTextureCache
   );

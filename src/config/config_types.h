@@ -1028,9 +1028,14 @@ struct WeatherConfig {
   bool operator==(const WeatherConfig&) const = default;
 };
 
+enum class CalendarCredentialSource : std::uint8_t {
+  SecretService = 0,
+  File = 1,
+};
+
 struct CalendarConfig {
-  // A single connected account. Credentials (OAuth tokens / CalDAV app-password) are NOT stored
-  // here; they live in state.toml keyed by id. id must be [a-z0-9_] (used as a state key).
+  // A single connected account. Google refresh tokens and Secret Service-backed CalDAV passwords
+  // are not stored here. id must be [a-z0-9_] because it identifies durable credential records.
   struct Account {
     std::string id;
     std::string type; // "google" | "caldav"
@@ -1040,6 +1045,8 @@ struct CalendarConfig {
     std::string serverUrl;              // CalDAV discovery root (custom only; provider presets own theirs)
     std::string username;               // CalDAV login (caldav only)
     std::vector<std::string> calendars; // discovered collection ids; empty = all
+    CalendarCredentialSource credentialSource = CalendarCredentialSource::SecretService; // CalDAV only
+    std::string passwordFile; // required for file-backed CalDAV credentials
 
     bool operator==(const Account&) const = default;
   };

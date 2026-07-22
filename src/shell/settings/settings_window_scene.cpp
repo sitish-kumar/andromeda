@@ -1,3 +1,4 @@
+#include "calendar/calendar_service.h"
 #include "compositors/compositor_detect.h"
 #include "compositors/compositor_platform.h"
 #include "config/config_service.h"
@@ -1371,6 +1372,56 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
   m_settingsRegistry = settings::buildSettingsRegistry(cfg, nullptr, nullptr, env);
   logSettingsProfile("refreshRegistry registry", phaseProfileWatch);
   phaseProfileWatch.reset();
+
+  if (m_calendarService != nullptr
+      && (m_calendarService->credentialMigrationPending()
+          || m_calendarService->credentialState() != calendar::CredentialState::Ready)) {
+    std::string descriptionKey = "settings.schema.services.calendar-credentials.description-error";
+    switch (m_calendarService->credentialState()) {
+    case calendar::CredentialState::Opening:
+      descriptionKey = "settings.schema.services.calendar-credentials.description-opening";
+      break;
+    case calendar::CredentialState::Unavailable:
+      descriptionKey = "settings.schema.services.calendar-credentials.description-unavailable";
+      break;
+    case calendar::CredentialState::Cancelled:
+      descriptionKey = "settings.schema.services.calendar-credentials.description-cancelled";
+      break;
+    case calendar::CredentialState::DeniedOrLocked:
+      descriptionKey = "settings.schema.services.calendar-credentials.description-locked";
+      break;
+    case calendar::CredentialState::BackendError:
+    case calendar::CredentialState::Ready:
+      break;
+    }
+    if (m_calendarService->credentialMigrationPending()
+        && (m_calendarService->credentialState() == calendar::CredentialState::Opening
+            || m_calendarService->credentialState() == calendar::CredentialState::Ready)) {
+      descriptionKey = "settings.schema.services.calendar-credentials.description-migration";
+    }
+
+    auto it = std::ranges::find_if(m_settingsRegistry, [](const settings::SettingEntry& entry) {
+      return entry.section == settings::SettingsSection::Services && entry.group == "calendar";
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    settings::SettingEntry retry{
+        .section = settings::SettingsSection::Services,
+        .group = "calendar",
+        .title = i18n::tr("settings.schema.services.calendar-credentials.label"),
+        .subtitle = i18n::tr(descriptionKey),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr("settings.schema.services.calendar-credentials.button"),
+                .action = [this]() { m_calendarService->retryCredentialMigration(); },
+                .glyph = "refresh",
+            },
+        .searchText = "calendar credentials keyring secret service retry migration unlock",
+    };
+    m_settingsRegistry.insert(it, std::move(retry));
+  }
 
   if (m_syncGreeterAppearance && env.greeterSyncAvailable) {
     auto it = std::ranges::find_if(m_settingsRegistry, [](const settings::SettingEntry& e) {

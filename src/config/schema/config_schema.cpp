@@ -10,6 +10,7 @@
 #include "util/file_utils.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <format>
 #include <stdexcept>
 #include <unordered_map>
@@ -543,10 +544,56 @@ namespace noctalia::config::schema {
           field(&CalendarConfig::Account::serverUrl, "server_url"),
           field(&CalendarConfig::Account::username, "username"),
           field(&CalendarConfig::Account::calendars, "calendars"),
+          custom<CalendarConfig::Account>(
+              "credential_source",
+              [](const toml::table& table, CalendarConfig::Account& out, std::string_view parentPath,
+                 Diagnostics& diag) {
+                const auto value = table["credential_source"].value<std::string>();
+                if (!value.has_value()) {
+                  return;
+                }
+                const std::string source = StringUtils::trim(*value);
+                if (source == "secret-service") {
+                  out.credentialSource = CalendarCredentialSource::SecretService;
+                } else if (source == "file") {
+                  out.credentialSource = CalendarCredentialSource::File;
+                } else {
+                  diag.error(
+                      joinPath(parentPath, "credential_source"),
+                      R"(credential_source must be "secret-service" or "file")"
+                  );
+                }
+              },
+              [](toml::table& table, const CalendarConfig::Account& in) {
+                table.insert_or_assign(
+                    "credential_source",
+                    in.credentialSource == CalendarCredentialSource::File ? "file" : "secret-service"
+                );
+              }
+          ),
+          pathStringField(&CalendarConfig::Account::passwordFile, "password_file"),
           finalize<CalendarConfig::Account>([](CalendarConfig::Account& out, std::string_view parentPath,
                                                Diagnostics& diag) {
             if (out.type != "caldav") {
+              if (out.credentialSource != CalendarCredentialSource::SecretService) {
+                diag.error(joinPath(parentPath, "credential_source"), "credential_source is only valid for caldav");
+              }
+              if (!out.passwordFile.empty()) {
+                diag.error(joinPath(parentPath, "password_file"), "password_file is only valid for caldav");
+              }
               return;
+            }
+            if (out.credentialSource == CalendarCredentialSource::File) {
+              if (out.passwordFile.empty()) {
+                diag.error(
+                    joinPath(parentPath, "password_file"),
+                    R"(caldav accounts with credential_source = "file" require password_file)"
+                );
+              } else if (!std::filesystem::path(out.passwordFile).is_absolute()) {
+                diag.error(joinPath(parentPath, "password_file"), "password_file must resolve to an absolute path");
+              }
+            } else if (!out.passwordFile.empty()) {
+              diag.error(joinPath(parentPath, "password_file"), R"(password_file requires credential_source = "file")");
             }
             if (out.provider.empty()) {
               diag.error(
