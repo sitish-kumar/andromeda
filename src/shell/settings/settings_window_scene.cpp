@@ -837,6 +837,9 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
     setSettingOverrides(std::move(overrides));
   };
   const auto clearOverride = [this](std::vector<std::string> path) { clearSettingOverride(std::move(path)); };
+  const auto clearOverrides = [this](std::vector<std::vector<std::string>> paths) {
+    clearSettingOverrides(std::move(paths));
+  };
   const auto renameWidget = [this](
                                 std::string oldName, std::string newName,
                                 std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> referenceOverrides
@@ -873,6 +876,14 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
       .setOverride = setOverride,
       .setOverrides = setOverrides,
       .clearOverride = clearOverride,
+      .clearOverrides = clearOverrides,
+      .isResetConfirmationPending =
+          [this](const std::vector<std::vector<std::string>>& paths) { return m_pendingResetSettingPaths == paths; },
+      .requestResetConfirmation =
+          [this](std::vector<std::vector<std::string>> paths) {
+            m_pendingResetPageScope.clear();
+            m_pendingResetSettingPaths = std::move(paths);
+          },
       .renameWidgetInstance = renameWidget,
       .openSessionActionEntryEditor = [this](std::size_t entryIndex) { openSessionActionEntryEditor(entryIndex); },
       .openIdleBehaviorEntryEditor = [this](std::size_t entryIndex) { openIdleBehaviorEntryEditor(entryIndex); },
@@ -1142,8 +1153,9 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
             const bool wasSearchActive = !m_searchQuery.empty();
             m_searchQuery = value;
             const bool searchActiveChanged = wasSearchActive != !m_searchQuery.empty();
-            const bool hadPendingReset = !m_pendingResetPageScope.empty();
+            const bool hadPendingReset = !m_pendingResetPageScope.empty() || !m_pendingResetSettingPaths.empty();
             m_pendingResetPageScope.clear();
+            m_pendingResetSettingPaths.clear();
 
             if (hadPendingReset || searchActiveChanged) {
               // Toggling between empty/non-empty changes surrounding chrome and recreates the
@@ -1203,8 +1215,9 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
               return;
             }
             m_showAdvanced = value;
-            const bool hadPendingReset = !m_pendingResetPageScope.empty();
+            const bool hadPendingReset = !m_pendingResetPageScope.empty() || !m_pendingResetSettingPaths.empty();
             m_pendingResetPageScope.clear();
+            m_pendingResetSettingPaths.clear();
             if (hadPendingReset) {
               requestRebuild();
             } else {
@@ -1226,8 +1239,9 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
           .scale = scale,
           .onChange = [this, requestRebuild](bool value) {
             m_showOverriddenOnly = value;
-            const bool hadPendingReset = !m_pendingResetPageScope.empty();
+            const bool hadPendingReset = !m_pendingResetPageScope.empty() || !m_pendingResetSettingPaths.empty();
             m_pendingResetPageScope.clear();
+            m_pendingResetSettingPaths.clear();
             if (hadPendingReset) {
               requestRebuild();
             } else {
@@ -1252,6 +1266,7 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
             .onClick = [this, resetPageScope, resetPagePaths = std::move(resetPagePaths), requestRebuild,
                         clearOverrides, pendingReset]() mutable {
               if (!pendingReset) {
+                m_pendingResetSettingPaths.clear();
                 m_pendingResetPageScope = resetPageScope;
                 requestRebuild();
                 return;

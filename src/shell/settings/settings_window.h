@@ -280,6 +280,7 @@ private:
   std::string m_selectedSection;
   std::string m_statusMessage;
   std::string m_pendingResetPageScope;
+  std::vector<std::vector<std::string>> m_pendingResetSettingPaths;
   bool m_forceEnTranslation = false;
   bool m_showAdvanced = false;
   bool m_showOverriddenOnly = false;

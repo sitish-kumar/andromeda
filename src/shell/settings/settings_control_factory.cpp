@@ -153,35 +153,29 @@ namespace settings {
   }
 
   std::unique_ptr<Button> SettingsControlFactory::makeResetButton(const std::vector<std::string>& path) {
-    auto& ctx = m_ctx;
-    const float scale = m_scale;
-    return ui::button({
-        .text = i18n::tr("settings.actions.reset"),
-        .fontSize = Style::fontSizeCaption * scale,
-        .variant = ButtonVariant::Ghost,
-        .minHeight = Style::controlHeightSm * scale,
-        .paddingV = Style::spaceXs * scale,
-        .paddingH = Style::spaceSm * scale,
-        .radius = Style::scaledRadiusMd(scale),
-        .onClick = [clearOverride = ctx.clearOverride, path]() { clearOverride(path); },
-    });
+    return makeGroupedResetButton(std::vector<std::vector<std::string>>{path});
   }
 
-  std::unique_ptr<Button> SettingsControlFactory::makeResetButton(std::vector<std::vector<std::string>> paths) {
+  std::unique_ptr<Button> SettingsControlFactory::makeGroupedResetButton(std::vector<std::vector<std::string>> paths) {
     auto& ctx = m_ctx;
     const float scale = m_scale;
+    const bool pendingConfirmation = ctx.isResetConfirmationPending && ctx.isResetConfirmationPending(paths);
     return ui::button({
-        .text = i18n::tr("settings.actions.reset"),
+        .text = i18n::tr(pendingConfirmation ? "settings.actions.confirm-reset" : "settings.actions.reset"),
         .fontSize = Style::fontSizeCaption * scale,
-        .variant = ButtonVariant::Ghost,
+        .variant = pendingConfirmation ? ButtonVariant::Destructive : ButtonVariant::Ghost,
         .minHeight = Style::controlHeightSm * scale,
         .paddingV = Style::spaceXs * scale,
         .paddingH = Style::spaceSm * scale,
         .radius = Style::scaledRadiusMd(scale),
-        .onClick = [clearOverride = ctx.clearOverride, paths = std::move(paths)]() {
-          for (const auto& path : paths) {
-            clearOverride(path);
+        .onClick = [clearOverrides = ctx.clearOverrides, requestConfirmation = ctx.requestResetConfirmation,
+                    requestRebuild = ctx.requestRebuild, paths = std::move(paths), pendingConfirmation]() mutable {
+          if (!pendingConfirmation) {
+            requestConfirmation(paths);
+            requestRebuild();
+            return;
           }
+          clearOverrides(std::move(paths));
         },
     });
   }
@@ -275,10 +269,12 @@ namespace settings {
     if (overridden) {
       actions->addChild(makeOverrideBadge());
       if (rangeSlider != nullptr) {
-        actions->addChild(makeResetButton(std::vector<std::vector<std::string>>{entry.path, rangeSlider->highPath}));
+        actions->addChild(
+            makeGroupedResetButton(std::vector<std::vector<std::string>>{entry.path, rangeSlider->highPath})
+        );
       } else if (selectSetting != nullptr && !selectSetting->linkedPath.empty()) {
         actions->addChild(
-            makeResetButton(std::vector<std::vector<std::string>>{entry.path, selectSetting->linkedPath})
+            makeGroupedResetButton(std::vector<std::vector<std::string>>{entry.path, selectSetting->linkedPath})
         );
       } else {
         actions->addChild(makeResetButton(entry.path));

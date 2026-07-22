@@ -835,6 +835,7 @@
   },
   "settings": {
     "actions": {
+      "confirm-reset": "Confirm Reset",
       "reset": "Reset"
     },
     "badges": {
