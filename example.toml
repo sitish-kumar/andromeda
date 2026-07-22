@@ -69,6 +69,7 @@ app_grid      = false                   # show app icon grid view when results a
 sort_by_usage = true                    # sort apps by usage frequency
 fetch_exchange_rates = true             # refresh currency rates from third-party sources
 provider_prefix = "/"                     # common prefix character for provider trigger words (e.g. "/" or ".")
+auto_paste = "auto"                       # off | auto | ctrl_v | ctrl_shift_v | shift_insert (copy activations)
 
 # For each provider: prefix = trigger word (empty falls back to its built-in default; triggers on
 # provider_prefix + trigger, e.g. "/emo"). global = true also surfaces it in unprefixed search.

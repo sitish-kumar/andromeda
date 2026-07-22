@@ -858,6 +858,12 @@ namespace scripting {
       }
 
       dispatchSideEffects(result.sideEffects, clipboard, scriptApi, togglePanelCallback);
+      for (const auto& effect : result.sideEffects) {
+        if (effect.kind == ScriptSideEffectKind::CopyToClipboard) {
+          result.copiedToClipboard = true;
+          break;
+        }
+      }
       result.sideEffects.clear();
 
       for (auto& callback : callbacks) {

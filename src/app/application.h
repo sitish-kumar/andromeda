@@ -358,6 +358,7 @@ private:
   Timer m_greeterSyncTimeoutTimer;
   Timer m_greeterAutoSyncTimer;
   Timer m_clipboardAutoPasteTimer;
+  Timer m_launcherAutoPasteTimer;
   Timer m_pluginAutoUpdateTimer;
   Timer m_graphicsRecoveryTimer;
   std::uint64_t m_greeterSyncGeneration = 0;
