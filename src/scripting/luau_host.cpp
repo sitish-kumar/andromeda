@@ -109,7 +109,7 @@ namespace {
     try {
       std::thread([command = std::move(command)]() mutable {
         try {
-          (void)process::runAsync(command);
+          (void)process::runAsync(std::vector<std::string>{"/bin/sh", "-c", std::move(command)});
         } catch (...) {
         }
         releaseDetachedCommandSlot();
