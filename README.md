@@ -320,6 +320,11 @@ Donations are appreciated but completely optional.
 
 MIT License. See [LICENSE](LICENSE) for details.
 
+## Packaging
+
+Distro packaging notes (description, deps, install layout, Meson options) live in
+[PACKAGING.md](PACKAGING.md).
+
 ## Star History
 
 <p align="center">
