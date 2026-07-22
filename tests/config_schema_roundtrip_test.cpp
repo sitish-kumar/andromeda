@@ -382,6 +382,8 @@ location = "https://example.invalid/bad"
     c.controlCenter.shortcuts = {{"wifi"}, {"bluetooth"}};
     c.calendar.enabled = true;
     c.calendar.refreshMinutes = 30;
+    c.calendar.eventDateFormat = "%Y-%m-%d";
+    c.calendar.eventTimeFormat = "%I:%M %p";
     c.calendar.accounts = {
         {"acc1", "google", "Work", "#ff0000", "", "", "", {}},
         {"acc2",

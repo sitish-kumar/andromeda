@@ -2470,6 +2470,26 @@ namespace settings {
       e.visibleWhen = calendarOn;
       entries.push_back(std::move(e));
     }
+    {
+      auto e = makeEntry(
+          SettingsSection::Services, "calendar", tr("settings.schema.services.calendar-event-date-format.label"),
+          tr("settings.schema.services.calendar-event-date-format.description"), {"calendar", "event_date_format"},
+          TextSetting{.value = cfg.calendar.eventDateFormat, .placeholder = "%A %e %B", .browseFileExtensions = {}},
+          "calendar date format strftime chrono"
+      );
+      e.visibleWhen = calendarOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          SettingsSection::Services, "calendar", tr("settings.schema.services.calendar-event-time-format.label"),
+          tr("settings.schema.services.calendar-event-time-format.description"), {"calendar", "event_time_format"},
+          TextSetting{.value = cfg.calendar.eventTimeFormat, .placeholder = "%H:%M", .browseFileExtensions = {}},
+          "calendar time format strftime chrono"
+      );
+      e.visibleWhen = calendarOn;
+      entries.push_back(std::move(e));
+    }
 
     entries.push_back(makeEntry(
         SettingsSection::Services, "audio", tr("settings.schema.services.audio-overdrive.label"),
