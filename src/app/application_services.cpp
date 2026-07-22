@@ -343,6 +343,10 @@ void Application::syncClipboardService() {
 }
 
 void Application::initServices() {
+  if (!security::initializeSecurityPrimitives()) {
+    kLog.error("libsodium initialization failed; encrypted persistence is unavailable");
+  }
+  m_secretStore.retryAvailabilityCheck();
   initStyleThemeAndWayland();
   initWaylandCallbacks();
   initAuxServicesAndHooks();
