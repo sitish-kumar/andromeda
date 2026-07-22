@@ -995,6 +995,12 @@ void SystemMonitorService::applyConfig(const SystemConfig::MonitorConfig& config
     m_pollConfig = sanitized;
     m_historyInterval = pollDuration(effectiveHistoryPollSeconds(sanitized));
   }
+  {
+    // The generation must be published under the wake mutex, or the increment can land after the
+    // sampling thread evaluated its predicate but before it blocks, losing the wakeup.
+    std::scoped_lock wakeLock{m_wakeMutex};
+    m_configGeneration.fetch_add(1, std::memory_order_relaxed);
+  }
   m_wakeCv.notify_all();
   setEnabled(sanitized.enabled);
 }
@@ -1100,16 +1106,19 @@ void SystemMonitorService::start() {
 }
 
 void SystemMonitorService::stop() {
-  m_running = false;
+  {
+    std::scoped_lock wakeLock{m_wakeMutex};
+    m_running = false;
+  }
   m_wakeCv.notify_all();
   if (m_thread.joinable()) {
     m_thread.join();
   }
+  releaseGpuReaders();
 }
 
 void SystemMonitorService::logDetectedSources() {
   const SystemConfig::MonitorConfig pollCfg = pollConfig();
-  const NvidiaDisplayDeviceState nvidiaDisplayState = detectNvidiaPciDisplayDeviceState();
   const auto cpu = readCpuTotals();
   const auto mem = readMemoryKb();
   const auto net = readNetBytes();
@@ -1130,6 +1139,13 @@ void SystemMonitorService::logDetectedSources() {
   } else {
     kLog.info("detected CPU temperature source: unavailable");
   }
+
+  if (pollCfg.gpuPollSeconds <= 0.0f) {
+    kLog.info("GPU monitoring disabled; source detection skipped");
+    return;
+  }
+
+  const NvidiaDisplayDeviceState nvidiaDisplayState = detectNvidiaPciDisplayDeviceState();
 
   const auto gpuTemp = readGpuTempData(nvidiaDisplayState);
   if (gpuTemp.tempC.has_value()) {
@@ -1171,6 +1187,7 @@ void SystemMonitorService::samplingLoop() {
   auto nextHistory = Clock::now();
 
   while (m_running.load()) {
+    const std::uint64_t configGeneration = m_configGeneration.load();
     const SystemConfig::MonitorConfig pollCfg = pollConfig();
     const float historyPollSeconds = effectiveHistoryPollSeconds(pollCfg);
 
@@ -1181,6 +1198,10 @@ void SystemMonitorService::samplingLoop() {
     const bool networkEnabled = pollCfg.networkPollSeconds > 0.0f;
     const bool diskEnabled = pollCfg.diskPollSeconds > 0.0f;
     const bool historyEnabled = historyPollSeconds > 0.0f;
+
+    if (!gpuEnabled) {
+      releaseGpuReaders();
+    }
 
     const auto cpuInterval = pollDuration(pollCfg.cpuPollSeconds);
     const auto gpuInterval = pollDuration(pollCfg.gpuPollSeconds);
@@ -1374,8 +1395,16 @@ void SystemMonitorService::samplingLoop() {
     considerWake(historyEnabled, nextHistory);
 
     std::unique_lock wakeLock{m_wakeMutex};
-    m_wakeCv.wait_until(wakeLock, nextWake, [this]() { return !m_running.load(); });
+    m_wakeCv.wait_until(wakeLock, nextWake, [this, configGeneration]() {
+      return !m_running.load() || m_configGeneration.load() != configGeneration;
+    });
   }
+}
+
+void SystemMonitorService::releaseGpuReaders() {
+  m_nvidiaNvmlReader.reset();
+  m_amdRsmiReader.reset();
+  m_intelGpuReader.reset();
 }
 
 std::optional<SystemMonitorService::CpuTotals> SystemMonitorService::readCpuTotals() {

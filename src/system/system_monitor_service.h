@@ -114,6 +114,7 @@ private:
   void stop();
   void samplingLoop();
   void logDetectedSources();
+  void releaseGpuReaders();
 
   [[nodiscard]] static std::optional<CpuTotals> readCpuTotals();
   struct MemData {
@@ -155,6 +156,8 @@ private:
   std::thread m_thread;
   std::mutex m_wakeMutex;
   std::condition_variable m_wakeCv;
+  // Bumped under m_wakeMutex so a config change interrupts the sampling loop's wait.
+  std::atomic<std::uint64_t> m_configGeneration{0};
 
   mutable std::mutex m_configMutex;
   SystemConfig::MonitorConfig m_pollConfig;
