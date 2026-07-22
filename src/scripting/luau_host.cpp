@@ -924,6 +924,7 @@ namespace {
     request.basicUsername = reqStringField(L, tableIdx, "basic_username");
     request.basicPassword = reqStringField(L, tableIdx, "basic_password");
     request.followRedirects = reqBoolField(L, tableIdx, "follow_redirects", false);
+    request.allowInsecureTls = reqBoolField(L, tableIdx, "allow_insecure_tls", false);
     lua_getfield(L, tableIdx, "headers");
     if (lua_istable(L, -1)) {
       const int headersIdx = lua_gettop(L);

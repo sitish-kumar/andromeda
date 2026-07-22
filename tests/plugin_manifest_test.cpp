@@ -59,7 +59,8 @@ int main() {
   ok = expect(scripting::supportsPluginApiVersion(4), "plugin API 4 should be supported") && ok;
   ok = expect(scripting::supportsPluginApiVersion(5), "plugin API 5 should be supported") && ok;
   ok = expect(scripting::supportsPluginApiVersion(6), "plugin API 6 should be supported") && ok;
-  ok = expect(!scripting::supportsPluginApiVersion(7), "plugin API 7 should be too new") && ok;
+  ok = expect(scripting::supportsPluginApiVersion(7), "plugin API 7 should be supported") && ok;
+  ok = expect(!scripting::supportsPluginApiVersion(8), "plugin API 8 should be too new") && ok;
   const auto defaultManifestPath = root / "defaults/plugin.toml";
   ok = writeText(defaultManifestPath, "id = \"me/defaults\"\nname = \"Defaults\"\nplugin_api = 3\n") && ok;
 
