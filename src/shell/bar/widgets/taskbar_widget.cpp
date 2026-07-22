@@ -371,22 +371,21 @@ void TaskbarWidget::setEntryPinned(const DesktopEntry& entry, bool pinned) {
 }
 
 void TaskbarWidget::launchDesktopEntry(const TaskModel& task) {
-  const auto entry = desktopEntryForTask(task);
+  auto entry = desktopEntryForTask(task);
   if (!entry.has_value() || entry->exec.empty()) {
     return;
   }
   auto& platform = m_platform;
   auto& configService = m_configService;
   wl_output* const launchOutput = m_output;
-  const DesktopEntry entryCopy = *entry;
-  DeferredCall::callLater([&platform, &configService, entryCopy, launchOutput]() {
+  DeferredCall::callLater([&platform, &configService, entry = std::move(*entry), launchOutput]() mutable {
     std::string token;
     if (platform.hasXdgActivation()) {
       token = platform.requestActivationToken(nullptr);
     }
     platform.prepareAppLaunchOnOutput(launchOutput);
     (void)desktop_entry_launch::launchEntry(
-        entryCopy,
+        entry,
         desktop_entry_launch::LaunchOptions{
             .activationToken = std::move(token),
             .runAsSystemdService = configService.config().shell.launchAppsAsSystemdServices,
