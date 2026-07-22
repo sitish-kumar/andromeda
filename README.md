@@ -201,8 +201,6 @@ and daemon into separate packages, make sure you have both installed.
 
 `ddcutil` is an optional dependency used for controlling monitor brightness.
 
-`wtype` is an optional dependency used for clipboard auto-paste.
-
 Credential and encrypted-state persistence requires a Secret Service provider at runtime, such as GNOME Keyring,
 KWallet, or KeePassXC. `libsecret` is the client library and does not provide the session service by itself. Noctalia
 continues to run when no provider is available, but features requiring durable secrets cannot persist them.
