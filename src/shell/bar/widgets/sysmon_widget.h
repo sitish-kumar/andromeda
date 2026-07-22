@@ -6,6 +6,7 @@
 #include "shell/bar/widget_custom_image.h"
 #include "shell/tooltip/tooltip_content.h"
 #include "system/format_units.h"
+#include "ui/controls/flex.h"
 #include "ui/palette.h"
 #include "ui/signal.h"
 
@@ -40,6 +41,7 @@ enum class SysmonStat {
   NetTx
 };
 enum class SysmonDisplayMode { Text, Graph, Gauge, None };
+enum class SysmonGlyphPosition { Before, After };
 
 struct SysmonWidgetOptions {
   SysmonStat stat = SysmonStat::CpuUsage;
@@ -53,6 +55,8 @@ struct SysmonWidgetOptions {
   float labelMinWidth = 0.0f;
   std::string glyph;
   WidgetCustomImage customImage;
+  bool showUnits = true;
+  SysmonGlyphPosition glyphPosition = SysmonGlyphPosition::After;
 };
 
 class SysmonWidget : public Widget {
@@ -105,6 +109,8 @@ private:
   FormatUnits::ByteRateLabelStyle m_networkSpeedLabelStyle = FormatUnits::ByteRateLabelStyle::Full;
   std::string m_glyphOverride;
   WidgetCustomImage m_customImage;
+  bool m_showUnits;
+  SysmonGlyphPosition m_glyphPosition;
   std::string m_lastRawValue;
   bool m_isVerticalBar = false;
   bool m_lastLabelVertical = false;
@@ -112,6 +118,7 @@ private:
   Glyph* m_glyph = nullptr;
   Image* m_image = nullptr;
   Label* m_label = nullptr;
+  Flex* m_containerRow = nullptr;
 
   static constexpr int kHistorySamples = 30;
   bool m_graphInitialized = false;

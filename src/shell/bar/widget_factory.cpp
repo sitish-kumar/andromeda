@@ -520,6 +520,9 @@ std::unique_ptr<Widget> WidgetFactory::create(
       displayMode = SysmonDisplayMode::Graph;
     else if (display == "none")
       displayMode = SysmonDisplayMode::None;
+    const std::string glyphPositionStr = wc != nullptr ? wc->getString("glyph_position", "before") : "before";
+    SysmonGlyphPosition glyphPosition =
+        glyphPositionStr == "after" ? SysmonGlyphPosition::After : SysmonGlyphPosition::Before;
     if (verticalBar && displayMode == SysmonDisplayMode::Graph) {
       displayMode = SysmonDisplayMode::Gauge;
     }
@@ -540,6 +543,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .labelMinWidth = static_cast<float>(wc != nullptr ? wc->getDouble("label_min_width", 0.0) : 0.0),
         .glyph = wc != nullptr ? wc->getString("glyph", "") : std::string{},
         .customImage = customImageFor(wc),
+        .showUnits = wc != nullptr ? wc->getBool("label_show_units", true) : true,
+        .glyphPosition = glyphPosition,
     };
     auto widget = std::make_unique<SysmonWidget>(m_sysmon, m_configService, std::move(options));
     widget->setContentScale(contentScale);

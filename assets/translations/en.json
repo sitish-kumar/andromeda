@@ -3021,8 +3021,10 @@
         "value": "Value"
       },
       "options": {
+        "after": "After",
         "always": "Always",
         "auto": "Auto",
+        "before": "Before",
         "count": "Count",
         "cpu-temp": "CPU Temperature",
         "cpu-usage": "CPU Usage",
@@ -3243,6 +3245,10 @@
           "sysmon-description": "Custom icon glyph; leave empty to use the icon for the selected stat",
           "volume-description": "Custom icon glyph; leave empty to use the built-in dynamic icons"
         },
+        "glyph-position": {
+          "label": "Glyph Position",
+          "description": "In which order to display the glyph in relation to the text/graph/gauge"
+        },
         "group-by-workspace": {
           "description": "Group taskbar icons into workspace capsules when compositor data is available",
           "label": "Group by Workspace"
@@ -3360,6 +3366,10 @@
         "label-min-width": {
           "description": "Minimum label width in pixels to prevent resizing",
           "label": "Label Min Width"
+        },
+        "label-show-units": {
+          "label": "Show Units",
+          "description": "Show units like percent / GiB / °C"
         },
         "labels-only-when-occupied": {
           "description": "Hide workspace labels on empty, inactive workspaces",
