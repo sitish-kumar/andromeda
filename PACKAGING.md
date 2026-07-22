@@ -22,6 +22,7 @@ v5 is already packaged for:
 - NixOS
 - Fedora
 - openSUSE
+- KaOS
 - Gentoo
 - Void Linux
 - GNU Guix
