@@ -921,6 +921,8 @@ struct ShellConfig {
     /// When true, refresh currency exchange rates from libqalculate's online sources.
     bool fetchExchangeRates = true;
     std::string providerPrefix = "/";
+    /// Paste shortcut after a copy-style launcher activation (calculator, emoji, …).
+    ClipboardAutoPasteMode autoPaste = ClipboardAutoPasteMode::Auto;
 
     struct DmenuConfig {
       std::vector<DmenuEntryConfig> entries;

@@ -575,6 +575,19 @@ void Application::initPanelManagerAndPanels() {
     launcherPanel->addProvider(std::make_unique<SessionProvider>(&m_configService, &m_sessionActionRunner));
     launcherPanel->addProvider(std::make_unique<MathProvider>(&m_clipboardService, &m_configService, &m_httpClient));
     launcherPanel->addProvider(std::make_unique<EmojiProvider>(&m_clipboardService));
+    launcherPanel->setCopiedActivationCallback([this]() {
+      const ClipboardAutoPasteMode mode = m_configService.config().shell.launcher.autoPaste;
+      if (mode == ClipboardAutoPasteMode::Off) {
+        return;
+      }
+      m_launcherAutoPasteTimer.stop();
+      m_launcherAutoPasteTimer.start(std::chrono::milliseconds(Style::animFast + 30), [this]() {
+        DeferredCall::callLater([this]() {
+          const ClipboardAutoPasteMode activeMode = m_configService.config().shell.launcher.autoPaste;
+          (void)clipboard_paste::pasteEntry(false, activeMode, m_virtualKeyboardService);
+        });
+      });
+    });
     m_launcherPanel = launcherPanel.get();
     m_panelManager.registerPanel("launcher", std::move(launcherPanel));
   }

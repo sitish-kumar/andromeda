@@ -543,6 +543,49 @@ int main() {
   ok = expect(!zeroPluginApi.has_value(), "zero plugin_api should fail") && ok;
   ok = expectEq(error, "invalid 'plugin_api' (expected a positive integer)", "zero plugin API error") && ok;
 
+  const auto oldApiDismissPath = root / "old-api-dismiss/plugin.toml";
+  ok = writeText(
+           oldApiDismissPath,
+           "id = \"me/old-api-dismiss\"\n"
+           "name = \"Old API Dismiss\"\n"
+           "plugin_api = 7\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "dismiss_on_outside_click = false\n"
+       )
+      && ok;
+  error.clear();
+  const auto oldApiDismiss = scripting::parsePluginManifest(oldApiDismissPath, &error);
+  ok = expect(!oldApiDismiss.has_value(), "dismiss_on_outside_click should require plugin API 8") && ok;
+  ok = expectEq(
+           error,
+           "panel entry 'panel': dismiss_on_outside_click requires plugin_api >= 8",
+           "dismiss outside-click API gate error"
+       )
+      && ok;
+
+  const auto dismissPanelPath = root / "dismiss-panel/plugin.toml";
+  ok = writeText(
+           dismissPanelPath,
+           "id = \"me/dismiss-panel\"\n"
+           "name = \"Dismiss Panel\"\n"
+           "plugin_api = 8\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "dismiss_on_outside_click = false\n"
+       )
+      && ok;
+  error.clear();
+  const auto dismissPanel = scripting::parsePluginManifest(dismissPanelPath, &error);
+  ok = expect(dismissPanel.has_value(), error.empty() ? "failed to parse dismiss panel manifest" : error.c_str())
+      && ok;
+  if (dismissPanel.has_value() && expect(dismissPanel->entries.size() == 1, "one dismiss panel entry expected")) {
+    ok = expect(!dismissPanel->entries.front().panelDismissOnOutsideClick, "dismiss_on_outside_click false should parse")
+        && ok;
+  }
+
   std::error_code ec;
   std::filesystem::remove_all(root, ec);
   return ok ? 0 : 1;

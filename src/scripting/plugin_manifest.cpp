@@ -392,6 +392,21 @@ namespace scripting {
           if (const auto* openNearClick = (*entryTable)["open_near_click"].as_boolean()) {
             entry.panelOpenNearClickDefault = openNearClick->get();
           }
+          if ((*entryTable)["dismiss_on_outside_click"]) {
+            if (manifest.pluginApiVersion < kPanelDismissOnOutsideClickPluginApiVersion) {
+              error = "panel entry '"
+                  + entry.id
+                  + "': dismiss_on_outside_click requires plugin_api >= "
+                  + std::to_string(kPanelDismissOnOutsideClickPluginApiVersion);
+              return false;
+            }
+            if (const auto* dismissOutside = (*entryTable)["dismiss_on_outside_click"].as_boolean()) {
+              entry.panelDismissOnOutsideClick = dismissOutside->get();
+            } else {
+              error = "panel entry '" + entry.id + "': dismiss_on_outside_click must be a bool";
+              return false;
+            }
+          }
           injectStandardPanelShellSettings(entry);
         }
         if (kind == PluginEntryKind::LauncherProvider) {
