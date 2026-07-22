@@ -688,6 +688,11 @@ namespace settings {
         {"centered", "settings.widgets.options.workspace-label-centered"},
         {"inside", "settings.widgets.options.workspace-label-inside"},
     };
+    const std::vector<WidgetSettingSelectOption> workspaceGroupContent = {
+        {"icons", "settings.widgets.options.icons"},
+        {"count", "settings.widgets.options.count"},
+        {"dots", "settings.widgets.options.dots"},
+    };
     const std::vector<WidgetSettingSelectOption> mediaTitleScroll = {
         {"none", "settings.widgets.options.none"},
         {"always", "settings.widgets.options.always"},
@@ -999,8 +1004,19 @@ namespace settings {
           add(std::move(hideEmpty));
         }
         {
+          auto groupContent =
+              withGroup(segmentedSpec("workspace_group_content", "icons", workspaceGroupContent), "taskbar.grouping");
+          groupContent.visibleWhen = groupedWorkspaceSettings;
+          add(std::move(groupContent));
+        }
+        {
           auto singleIconPerApp = withGroup(boolSpec("group_single_icon_per_app", false), "taskbar.grouping");
-          singleIconPerApp.visibleWhen = groupedWorkspaceSettings;
+          WidgetSettingVisibility singleIconSettings;
+          singleIconSettings.all = {
+              WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}},
+              WidgetSettingVisibilityCondition{"workspace_group_content", {"icons"}},
+          };
+          singleIconPerApp.visibleWhen = std::move(singleIconSettings);
           add(std::move(singleIconPerApp));
         }
         {

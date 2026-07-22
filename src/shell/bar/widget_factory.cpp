@@ -559,6 +559,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .onlyActiveWorkspace = wc != nullptr ? wc->getBool("only_active_workspace", false) : false,
         .showWorkspaceLabel = wc != nullptr ? wc->getBool("show_workspace_label", true) : true,
         .workspaceLabelPlacement = WorkspaceLabelPlacement::Corner,
+        .workspaceGroupContent = WorkspaceGroupContent::Icons,
         .hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false,
         .workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true,
         .focusedOutputOnly = wc != nullptr ? wc->getBool("focused_output_only", false) : false,
@@ -601,6 +602,12 @@ std::unique_ptr<Widget> WidgetFactory::create(
         options.workspaceLabelPlacement = WorkspaceLabelPlacement::Centered;
       } else if (placement == "inside") {
         options.workspaceLabelPlacement = WorkspaceLabelPlacement::Inside;
+      }
+      const std::string groupContent = wc->getString("workspace_group_content", "icons");
+      if (groupContent == "count") {
+        options.workspaceGroupContent = WorkspaceGroupContent::Count;
+      } else if (groupContent == "dots") {
+        options.workspaceGroupContent = WorkspaceGroupContent::Dots;
       }
     }
     auto widget = std::make_unique<TaskbarWidget>(m_platform, m_configService, output, std::move(options));
