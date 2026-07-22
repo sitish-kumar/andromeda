@@ -29,7 +29,7 @@
   "bar": {
     "screenshot": {
       "choose-display": "Escolha o monitor",
-      "confirm-region": "Enter ou Espaço para capturar · Esc para cancelar · arraste para reselecionar",
+      "confirm-region": "Enter ou Espaço para capturar · Esc para cancelar · Arraste para reselecionar",
       "fullscreen": "Tela cheia",
       "overlay-alloc-failed": "Não foi possível mostrar a camada de captura de tela (GPU sem memória disponível?",
       "region": "Selecione a área"
@@ -262,7 +262,7 @@
       "unavailable-detail": "Instale e ative o NetworkManager, wpa_supplicant ou iwd para gerenciar redes a partir daqui.",
       "unavailable-title": "Serviço de rede indisponível",
       "vpns": "VPNs",
-      "wi-fi": "Sem fio",
+      "wi-fi": "Wi-Fi",
       "wifi": "Wi-Fi",
       "wifi-off": "O Wi-Fi está desligado",
       "wifi-on": "O Wi-Fi está ligado",
@@ -452,7 +452,7 @@
         "center-password-text": "Centralizar Texto de Senha",
         "center-text": "Centralizar Texto",
         "centered": "Centralizado",
-        "change-image": "Mudar...",
+        "change-image": "Alterar…",
         "circle": "Círculo",
         "clock-style": "Estilo do Relógio",
         "clock-style-analog": "Analógico",
@@ -462,7 +462,7 @@
         "color-2": "Cor 2",
         "color2": "Cor 2",
         "command": "Comando",
-        "custom-color": "Personalizar...",
+        "custom-color": "Personalizada",
         "description": "Descrição",
         "display": "Tela",
         "display-gauge": "Medidor",
@@ -663,7 +663,7 @@
     "password-placeholder": "Senha",
     "ready": "Digite sua senha e aperte Enter.",
     "unlocked": "Desbloqueado",
-    "waiting": "Esperando confirmação de bloqueio..."
+    "waiting": "Aguardando confirmação de bloqueio…"
   },
   "notifications": {
     "actions": {
@@ -672,7 +672,7 @@
     },
     "inline-reply": {
       "button": "Responder",
-      "placeholder": "Digite uma resposta"
+      "placeholder": "Digite uma resposta..."
     },
     "internal": {
       "battery": "Bateria",
@@ -1110,7 +1110,7 @@
         "greeter": "Greeter",
         "grouping": "Agrupamento",
         "home": "Início",
-        "hot-corners": "Hot Corners",
+        "hot-corners": "Cantos Ativos",
         "idle": "Inatividade",
         "interface": "Interface",
         "keybinds": "Atalhos do Teclado",
@@ -1332,7 +1332,7 @@
         }
       },
       "theme-role": {
-        "custom": "Personalizado...",
+        "custom": "Personalizada",
         "default": "Padrão"
       },
       "wallpaper": {
@@ -1559,7 +1559,7 @@
       },
       "bar": {
         "auto-hide": {
-          "description": "Ocultar automaticamente a barra quando não estiver em uso"
+          "description": "Desligado mantém a barra visível; Ligado a oculta até que você mova o ponteiro para a borda da tela; Inteligente mostra a barra em um espaço de trabalho vazio e a oculta quando há janelas abertas"
         },
         "background-opacity": {
           "description": "Opacidade do plano de fundo da barra"
@@ -1655,7 +1655,7 @@
           "label": "Rolar para Cima"
         },
         "edge-margin": {
-          "description": "Distância da borda da tela mais próxima; valores positivos afastam a barra da borda"
+          "description": "Espaço entre a barra e a borda da tela em que ela está; defina como 0 px para alinhar exatamente com a borda"
         },
         "enabled": {
           "description": "Exibir ou ocultar esta barra"
@@ -1665,7 +1665,7 @@
           "label": "Widgets Finais"
         },
         "ends-margin": {
-          "description": "Inserção a partir de cada extremidade da barra ao longo de seu eixo principal"
+          "description": "Encurta a barra nas duas extremidades ao longo do comprimento; defina como 0 px para uma barra com largura ou altura total"
         },
         "font-family": {
           "description": "Fonte a ser usada nos widgets desta barra; deixe em branco para herdar a fonte global (Família de fontes definida para cada widget tem prioridade sobre esta)",
@@ -1680,7 +1680,7 @@
           "label": "Destaque ao Passar o Mouse"
         },
         "layer": {
-          "description": "Use Overlay para a barra; painéis anexados abrem na mesma camada",
+          "description": "Use Overlay para mostrar a barra  acima de apps em tela cheia; painéis acoplados acompanham a barra",
           "label": "Camada Wayland"
         },
         "opposite-edge-margin": {
@@ -1716,7 +1716,7 @@
           "label": "Cápsulas de Widgets"
         },
         "widget-color": {
-          "description": "Função padrão de cor para ícones e rótulos de widgets nesta barra; cores hexadecimais fixas também são suportadas",
+          "description": "Cor padrão de ícone e rótulo para widgets nesta barra; cores hexadecimais fixas também são suportadas",
           "label": "Cor do Widget"
         },
         "widget-icon-color": {
@@ -1801,7 +1801,7 @@
           "label": "Somente Monitor Ativo"
         },
         "auto-hide": {
-          "description": "Ocultar automaticamente o dock quando não estiver em uso"
+          "description": "Desligado mantém o dock visível; Ligado o oculta até que você mova o ponteiro para a borda da tela; Inteligente mostra o dock em um espaço de trabalho vazio e o oculta quando há janelas abertas"
         },
         "background-opacity": {
           "description": "Opacidade do plano de fundo do dock"
@@ -1998,7 +1998,7 @@
       },
       "idle": {
         "behaviors": {
-          "description": "Ações ociosas nomeadas com predefinições (bloquear, desligar telas, suspender) ou comandos personalizados, tempos limite, retomar emparelhamento e ordem",
+          "description": "Ações de inatividade nomeadas, com predefinições (bloquear, desligar tela, suspender) ou comandos personalizados, tempos limite, retomar emparelhamento e ordem",
           "label": "Comportamentos"
         },
         "pre-action-fade": {
@@ -2070,7 +2070,7 @@
           "label": "Intensidade da Cor"
         },
         "wallpaper": {
-          "description": "Imagem personalizada para o fundo da tela de bloqueio. Deixe em branco para usar o papel de parede da área de trabalho.",
+          "description": "Imagem personalizada para o fundo da tela de bloqueio; deixe em branco para usar o papel de parede da área de trabalho.",
           "label": "Papel de Parede",
           "placeholder": "Usar o papel de parede da área de trabalho"
         },
@@ -2113,7 +2113,7 @@
           "label": "Filtros de Notificações"
         },
         "layer": {
-          "description": "Use o Overlay para exibir notificações flutuantes sobre apps em tela cheia.",
+          "description": "Use Overlay para mostrar notificações flutuantes acima de apps em tela cheia",
           "label": "Camada Wayland"
         },
         "monitors": {
@@ -2260,23 +2260,23 @@
           "label": "Fundo dos Itens de Lista"
         },
         "open-near-click-clipboard": {
-          "description": "Posicione o painel da área de transferência próximo ao clique da barra, em vez de centralizá-lo ao longo da barra",
+          "description": "Posicionar o painel da área de transferência perto do widget da barra que o acionou; se aberto sem um gatilho, fica centralizado",
           "label": "Ao Longo da Barra"
         },
         "open-near-click-control-center": {
-          "description": "Posiciona o Painel de Controle perto ao clique da barra ao invés de centralizar ao longo da barra",
+          "description": "Posicionar a Central de Controle perto do widget da barra que a acionou; se aberta sem um gatilho, fica centralizada",
           "label": "Abrir Próximo ao Clique"
         },
         "open-near-click-launcher": {
-          "description": "Posiciona o painel do launcher próximo ao clique da barra ao invés de centralizar ao longo da barra",
+          "description": "Posicionar o launcher perto do widget da barra que o acionou; se aberto sem um gatilho, fica centralizado",
           "label": "Abrir Próximo ao Clique"
         },
         "open-near-click-session": {
-          "description": "Posiciona o painel de menu da sessão próximo ao clique da barra ao invés de centralizar ao longo da barra",
+          "description": "Posicionar o painel de sessão perto do widget da barra que o acionou; se aberto sem um gatilho, fica centralizado",
           "label": "Abrir Próximo ao Clique"
         },
         "open-near-click-wallpaper": {
-          "description": "Posiciona o painel selecionador de papéis de parede próximo ao clique da barra ao invés de centralizar ao longo da barra",
+          "description": "Posicionar o seletor de papéis de parede perto do widget da barra que o acionou; se aberto sem um gatilho, fica centralizado",
           "label": "Abrir Próximo ao Clique"
         },
         "placement-clipboard": {
@@ -2331,13 +2331,13 @@
           "description": "Faz as superfícies dos painéis projetarem a sombra global da superfície"
         },
         "transparency-mode": {
-          "description": "Estilo vidro dos painéis, incluindo a opacidade dos painéis flutuantes/centralizados e a translucência dos cards",
+          "description": "Estilo vidro dos painéis, incluindo a opacidade dos painéis flutuantes e a translucência dos cards",
           "label": "Transparência"
         }
       },
       "power": {
         "session-actions": {
-          "description": "Entradas do menu de Energia, comandos personalizados e ícones",
+          "description": "Entradas do painel de sessão, ordem, comandos personalizados e ícones",
           "label": "Entradas"
         },
         "session-grid": {
@@ -2347,6 +2347,10 @@
         "session-grid-columns": {
           "description": "Número de colunas para o layout em grade",
           "label": "Colunas"
+        },
+        "session-show-shortcuts": {
+          "description": "Exibir ou ocultar as dicas de atalhos",
+          "label": "Mostrar Atalhos"
         }
       },
       "services": {
@@ -2613,10 +2617,11 @@
         },
         "launch-apps-as-systemd-services": {
           "description": "Executa aplicativos em serviços systemd separados para que não compartilhem o cgroup do Noctalia",
-          "label": "Iniciar Apps como Serviços do Systemd"
+          "label": "Iniciar Apps como Serviços do Systemd",
+          "requires-systemd-session": "Requer que o Noctalia seja executado como um serviço de usuário do systemd (uwsm ou uma unidade de usuário do systemd)"
         },
         "launch-apps-custom-command": {
-          "description": "Comando personalizado usado pelo app launcher; substitui $CMD com o comando original",
+          "description": "Envolve apps iniciados pelo launcher, dock e taskbar; substitui $CMD pelo comando original",
           "label": "Comando de Launcher Personalizado",
           "placeholder": "$CMD"
         },
@@ -2795,6 +2800,10 @@
           "description": "Salva as capturas de tela como arquivos PNG no diretório de saída",
           "label": "Salvar para Arquivo"
         },
+        "screenshot-show-cursor": {
+          "description": "Incluir o ponteiro do mouse nas capturas de tela",
+          "label": "Mostrar Cursor"
+        },
         "show-location": {
           "description": "Exibe o nome do local nos widgets de previsão do tempo",
           "label": "Mostrar Localização"
@@ -2819,7 +2828,7 @@
           "label": "{device} - Limiar de Aviso"
         },
         "battery-warning-threshold": {
-          "description": "Percentagem da bateria do sistema igual ou inferior ao nível em que o shell deve enviar uma notificação de bateria fraca e os widgets de bateria exibem sua cor de aviso. Defina como 0 para desativar",
+          "description": "Porcentagem da bateria do sistema igual ou inferior à qual o shell envia uma notificação de bateria fraca e os widgets de bateria usam sua cor de aviso (0 desativa)",
           "label": "Limiar de Aviso de Bateria"
         }
       },
@@ -2962,8 +2971,10 @@
       "map-placeholders": {
         "effects-profile-name": "Nome do perfil",
         "glyph-name": "Nome do símbolo",
+        "key": "Chave",
         "label": "Rótulo",
-        "layout-name": "Nome do layout"
+        "layout-name": "Nome do layout",
+        "value": "Valor"
       },
       "options": {
         "always": "Sempre",
@@ -2994,8 +3005,10 @@
         "none": "Nenhum",
         "on-hover": "Ao Passar o Mouse",
         "output": "Saída",
+        "percent": "Porcentagem",
         "ram-percent": "Porcentagem de RAM",
         "ram-used": "Uso de RAM",
+        "rate": "Consumo",
         "regular": "Normal",
         "screenshot-primary-fullscreen": "Tela Cheia",
         "screenshot-primary-region": "Região",
@@ -3004,6 +3017,7 @@
         "swap-percent": "Porcentagem de Swap",
         "text": "Texto",
         "text-only": "Apenas Texto",
+        "time": "Tempo",
         "workspace-label-centered": "Centralizado",
         "workspace-label-corner": "No Canto",
         "workspace-label-inside": "Dentro da Pílula"
@@ -3081,7 +3095,7 @@
           "label": "Centralizado"
         },
         "color": {
-          "description": "Função de cor para o primeiro plano do widget; cores hexadecimais fixas também são suportadas",
+          "description": "Cor do ícone e rótulo deste widget; cores hexadecimais fixas também são suportadas",
           "label": "Cor"
         },
         "color-1": {
@@ -3097,12 +3111,12 @@
           "label": "Comando de Clique Esquerdo"
         },
         "custom-image": {
-          "description": "Caminho para uma imagem personalizada. Deixe em branco para usar o ícone padrão.",
+          "description": "Caminho para uma imagem personalizada; deixe em branco para usar o símbolo padrão",
           "dialog-title": "Selecionar imagem personalizada",
           "label": "Imagem Personalizada"
         },
         "custom-image-colorize": {
-          "description": "Aplica a cor da imagem personalizada usando a configuração de cor do widget",
+          "description": "Colorir a imagem personalizada com a configuração de Cor do Ícone do widget",
           "label": "Colorir Imagem Personalizada"
         },
         "custom-labels": {
@@ -3122,12 +3136,12 @@
           "label": "Dispositivo"
         },
         "display": {
-          "active-window-description": "Ícone, título ou ambos em barras horizontais. Barras verticais exibem apenas o ícone.",
+          "active-window-description": "Ícone, título ou ambos em barras horizontais; barras verticais permanecem apenas com ícone",
           "description": "Modo de Tela para este widget",
           "label": "Tela"
         },
         "display-mode": {
-          "description": "Renderiza a bateria como uma forma gráfica ou um glifo do Tabler",
+          "description": "Exibir a bateria como uma forma gráfica, um símbolo do Tabler ou apenas o rótulo",
           "label": "Modo da Tela"
         },
         "drawer": {
@@ -3224,7 +3238,7 @@
           "label": "Ocultar Quando Cheia"
         },
         "hide-when-no-connected-device": {
-          "description": "Ocultar o widget Bluetooth quando nenhum dispositivo estiver conectado",
+          "description": "Ocultar o widget do Bluetooth quando nenhum dispositivo estiver conectado",
           "label": "Ocultar Quando Não Conectado"
         },
         "hide-when-no-media": {
@@ -3291,6 +3305,10 @@
         "label": {
           "description": "Texto estático opcional exibido neste botão",
           "label": "Rótulo"
+        },
+        "label-content": {
+          "description": "O que o rótulo da bateria mostra: porcentagem de carga, tempo restante ou consumo de energia",
+          "label": "Conteúdo do Rótulo"
         },
         "label-min-width": {
           "description": "Largura mínima do rótulo em pixels para evitar redimensionamento.",
@@ -3374,7 +3392,13 @@
         },
         "pinned": {
           "description": "IDs dos itens do tray que permanecem visíveis na barra com o modo drawer ativado",
-          "label": "Itens Fixados"
+          "label": "Itens Fixados",
+          "taskbar-description": "Apps que permanecem na barra de tarefas quando não estão em execução; ignorados quando Agrupar por Espaço de Trabalho está ativado",
+          "taskbar-label": "Apps Fixados"
+        },
+        "pinned-opacity": {
+          "description": "Opacidade dos apps fixados que não estão em execução",
+          "label": "Opacidade do App Fixado"
         },
         "primary-click": {
           "description": "Ação executada ao clicar com o botão esquerdo do mouse no botão da barra",
@@ -3409,11 +3433,11 @@
           "label": "Comando de Scroll Up"
         },
         "show-active-indicator": {
-          "description": "Exibe um pequeno ponto abaixo do ícone da janela ativa na barra de tarefas.",
+          "description": "Exibir um pequeno ponto abaixo do ícone da janela ativa na barra de tarefas",
           "label": "Indicador de Janela Ativa "
         },
         "show-all-outputs": {
-          "description": "Inclua janelas de todos os monitores neste widget.",
+          "description": "Incluir janelas de todos os monitores neste widget",
           "label": "Exibir Todos Monitores"
         },
         "show-caps-lock": {
@@ -3461,7 +3485,7 @@
           "label": "Exibir Título da Janela"
         },
         "show-workspace-label": {
-          "description": "Mostre a pequena tag do espaço de trabalho nas cápsulas agrupadas da barra de tarefas. Desative para grupos somente de ícones.",
+          "description": "Mostrar a pequena etiqueta de espaço de trabalho nas cápsulas agrupadas da barra de tarefas; desative para grupos apenas com ícones",
           "label": "Rótulo da cápsula do espaço de trabalho"
         },
         "stat": {
@@ -3476,6 +3500,10 @@
         "taskbar-max-width": {
           "description": "Limite total de largura em pixels; os títulos das janelas encolhem para caber e ficam ocultos quando o espaço é muito estreito",
           "label": "Largura máxima da Taskbar"
+        },
+        "text": {
+          "description": "Texto exibido na barra",
+          "label": "Texto"
         },
         "timezone": {
           "description": "Identicador de fuso horário (ex.: Europa/Berlin) para usar neste relógio; deixe em vazio para usar horário do sistema local",
@@ -3554,6 +3582,7 @@
         "sysmon": "Monitor do Sistema",
         "taskbar": "Taskbar",
         "test": "Teste",
+        "text": "Texto",
         "theme-mode": "Modo do Tema",
         "tray": "Tray",
         "volume": "Volume",
@@ -3638,8 +3667,10 @@
       "day": "{count} dia",
       "day-plural": "{count} dias",
       "hour": "{count} hora",
+      "hour-compact": "{count}h",
       "hour-plural": "{count} horas",
       "minute": "{count} minuto",
+      "minute-compact": "{count}m",
       "minute-plural": "{count} minutos",
       "month": "{count} mês",
       "month-plural": "{count} meses",
@@ -3649,7 +3680,7 @@
   },
   "tray": {
     "menu": {
-      "empty": "Nenhum item de menu...",
+      "empty": "Nenhum item no menu…",
       "pin": "Fixar",
       "unpin": "Desfixar"
     }

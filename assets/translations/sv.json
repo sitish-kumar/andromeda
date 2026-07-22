@@ -2,12 +2,14 @@
   "auth": {
     "fingerprint": {
       "disconnected": "Fingeravtrycksläsare bortkopplad",
+      "error": "Fel med fingeravtrycksautentisering",
       "no-match": "Fingeravtrycket matchar inte",
       "not-centered": "Centrera ditt finger och försök igen",
       "present": "Läser fingeravtryck...",
       "ready": "Placera fingret på läsaren",
       "remove-and-retry": "Lyft fingret och försök igen",
       "retry": "Vänligen skanna ditt fingeravtryck igen",
+      "swipe-too-short": "Svep var för kort, försök igen",
       "too-many-attempts": "Fingeravtryck avstängt (för många försök)"
     },
     "pam": {
@@ -228,7 +230,7 @@
       "battery": "Batteri",
       "health": "Batterihälsa",
       "peripherals": "Anslutna Enheter",
-      "time-to-empty": "{time} återstår",
+      "time-to-empty": "{time} kvar",
       "time-to-full": "{time} tills fulladdad",
       "unknown-device": "Okänd enhet"
     },
@@ -252,7 +254,7 @@
         "dark": "Mörkt Läge",
         "light": "Ljust Läge"
       },
-      "keyboard-layout": "Tangentbordslayout",
+      "keyboard-layout": "Layout",
       "media": "Media",
       "mic-mute": "Mikrofon",
       "nightlight-states": {
@@ -349,11 +351,241 @@
       "settings": {
         "background": "Bakgrund",
         "background-color": "Färg",
-        "font-family": "Typsnitt"
+        "background-opacity": "Opacitet",
+        "background-radius": "Radie",
+        "background-section": "Bakgrund",
+        "center-password-text": "Centrera lösenordstext",
+        "center-text": "Centrera text",
+        "centered": "Centrerad",
+        "circle": "Cirkel",
+        "clock-style-analog": "Analog",
+        "clock-style-digital": "Digital",
+        "color": "Färg",
+        "color-1": "Färg 1",
+        "color-2": "Färg 2",
+        "color2": "Färg 2",
+        "command": "Kommando",
+        "description": "Beskrivning",
+        "display-graph": "Graf",
+        "font-family": "Typsnitt",
+        "format": "Format",
+        "image-path": "Bild",
+        "interface": "Gränssnitt",
+        "label": "Etikett",
+        "mirrored": "Speglad",
+        "network-speed-unit-kilobytes": "kB/s",
+        "network-speed-unit-megabytes": "MB/s",
+        "opacity": "Opacitet",
+        "primary-color": "Primärfärg",
+        "secondary-color": "Sekundärfärg",
+        "sensitivity": "Känslighet",
+        "shadow": "Skugga",
+        "show-forecast": "Visa Prognos",
+        "show-keyboard-layout": "Tangentbordslayout",
+        "show-label": "Visa Etikett",
+        "show-login-button": "Loginknapp",
+        "title": "Rubrik",
+        "visualization-mode": "Läge",
+        "visualization-mode-all": "Alla"
+      },
+      "state": {
+        "grid-off": "Rutnät Av",
+        "grid-on": "Rutnät På"
+      },
+      "types": {
+        "button": "Knapp",
+        "clock": "Klocka",
+        "label": "Etikett",
+        "weather": "Väder"
       }
+    },
+    "weather": {
+      "loading": "Laddar...",
+      "no-location": "Ingen plats",
+      "off": "Väder av"
+    }
+  },
+  "dock": {
+    "actions": {
+      "close": "Stäng",
+      "close-all": "Stäng Alla"
+    }
+  },
+  "internal-apps": {
+    "settings": {
+      "display-name": "Inställningar"
+    }
+  },
+  "launcher": {
+    "categories": {
+      "all": "Alla",
+      "applications": {
+        "development": "Utveckling",
+        "education": "Utbildning",
+        "games": "Spel",
+        "graphics": "Grafik",
+        "internet": "Internet",
+        "multimedia": "Multimedia",
+        "office": "Kontor",
+        "system": "System",
+        "utilities": "Verktyg"
+      },
+      "emoji": {
+        "activity": "Aktivitet",
+        "animals": "Djur",
+        "flags": "Flaggor",
+        "food": "Mat",
+        "nature": "Natur",
+        "objects": "Föremål",
+        "people": "Folk",
+        "symbols": "Symboler",
+        "travel": "Resa"
+      },
+      "recently-used": "Nyligen använda"
+    },
+    "context-menu": {
+      "open": "Öppna",
+      "pin-to-dock": "Fäst till dock",
+      "unpin-from-dock": "Lossa från dock"
+    },
+    "empty": {
+      "no-results": "Inga resultat hittades",
+      "type-to-search": "Skriv för att söka..."
+    },
+    "providers": {
+      "applications": {
+        "title": "Applikationer"
+      },
+      "calculator": {
+        "title": "Miniräknare"
+      },
+      "emoji": {
+        "title": "Emoji"
+      },
+      "wallpaper": {
+        "title": "Bakgrundsbild"
+      },
+      "window": {
+        "title": "Fönster"
+      }
+    },
+    "search-placeholder": "Sök applikationer..."
+  },
+  "location": {
+    "source": {
+      "address": "Adress"
+    }
+  },
+  "lockscreen": {
+    "authenticating": "Autentiserar...",
+    "authentication-failed": "Autentisering misslyckades",
+    "caps-lock-on": "Caps Lock är på",
+    "password-cleared": "Lösenord rensat",
+    "password-placeholder": "Lösenord",
+    "ready": "Mata in ditt lösenord och tryck Retur."
+  },
+  "notifications": {
+    "actions": {
+      "fallback": "Handling",
+      "open": "Öppna"
+    },
+    "inline-reply": {
+      "button": "Svara",
+      "placeholder": "Skriv ett svar..."
+    },
+    "internal": {
+      "battery": "Batteri",
+      "battery-critical-title": "Batterinivå kritiskt låg",
+      "battery-device": "Batterienhet",
+      "battery-low-body": "{device}: {percent}% kvar",
+      "battery-low-title": "Batterinivå låg",
+      "calendar": "Kalender",
+      "calendar-google-connect-expired": "Google auktorisering gick ut innan inloggning blev klart. Påbörja kopplingen på nytt.",
+      "calendar-google-connect-failed-title": "Google Kalender koppling misslyckades",
+      "calendar-google-connect-missing-account": "Inget konfigurerat Google Kalender konto matchar \"{account}\".",
+      "calendar-google-connect-result-failed": "Kunde inte avsluta Google auktorisering. Påbörja kopplingen på nytt.",
+      "keybind-app": "Noctalia"
+    }
+  },
+  "osd": {
+    "bluetooth": {
+      "off": "Bluetooth av",
+      "on": "Bluetooth på"
+    },
+    "dnd": {
+      "off": "Stör ej av",
+      "on": "Stör ej på"
+    },
+    "nightlight": {
+      "forced": "Alltid på",
+      "scheduled": "Schemalagd"
+    },
+    "wifi": {
+      "off": "Wi-Fi av",
+      "on": "Wi-Fi på"
+    }
+  },
+  "power": {
+    "battery": {
+      "states": {
+        "battery": "Batteri",
+        "charging": "Laddar",
+        "discharging": "Urladdar",
+        "empty": "Tomt",
+        "plugged-in": "Inkopplad"
+      },
+      "tooltip": {
+        "device": "Batteri",
+        "device-numbered": "Batteri {index}",
+        "health": "Hälsa",
+        "status": "Status",
+        "time-left": "Tid kvar",
+        "time-to-full": "Tid tills fulladdad",
+        "unknown-device": "Okänd enhet"
+      }
+    },
+    "profiles": {
+      "balanced": "Balanserat",
+      "performance": "Prestanda",
+      "power-saver": "Batterisparläge"
+    }
+  },
+  "session": {
+    "actions": {
+      "lock": "Lås",
+      "logout": "Logga ut",
+      "reboot": "Starta om",
+      "shutdown": "Stäng av"
+    },
+    "errors": {
+      "lock-title": "Lås otillgängligt"
     }
   },
   "settings": {
+    "actions": {
+      "reset": "Återställ"
+    },
+    "badges": {
+      "advanced": "Avancerat",
+      "community": "Community",
+      "inherited": "Ärvt",
+      "official": "Officiell"
+    },
+    "calendar-accounts": {
+      "add-title": "Lägg till kalenderkonto",
+      "calendars-label": "Kalendrar",
+      "color-label": "Färg",
+      "delete-error": "Kunde inte ta bort kalenderkonto.",
+      "edit-title": "Ändra kalenderkonto",
+      "provider": {
+        "custom": "CalDAV",
+        "google": "Google",
+        "icloud": "iCloud"
+      },
+      "provider-label": "Leverantör",
+      "save": "Spara",
+      "save-connect": "Spara och anslut"
+    },
     "entities": {
       "bar": {
         "create": "Skapa",
@@ -401,6 +633,14 @@
       }
     },
     "schema": {
+      "appearance": {
+        "animations": {
+          "description": "Sätt på eller stäng av animationer i gränsnittet"
+        },
+        "ui-scale": {
+          "label": "Gränsnittsskala"
+        }
+      },
       "bar": {
         "dead-zone-command": {
           "label": "Vänsterklick"
@@ -410,6 +650,13 @@
         },
         "dead-zone-right-command": {
           "label": "Högerklick"
+        }
+      }
+    },
+    "widgets": {
+      "settings": {
+        "interface": {
+          "label": "Gränsnitt"
         }
       }
     }

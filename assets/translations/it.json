@@ -2347,6 +2347,10 @@
         "session-grid-columns": {
           "description": "Numero di colonne per il layout a griglia",
           "label": "Colonne"
+        },
+        "session-show-shortcuts": {
+          "description": "Mostra o nascondi i suggerimenti di scelta rapida",
+          "label": "Mostra scorciatoie"
         }
       },
       "services": {
@@ -2613,11 +2617,12 @@
         },
         "launch-apps-as-systemd-services": {
           "description": "Avvia le applicazioni in servizi systemd separati così non condividono il cgroup di Noctalia",
-          "label": "Avvia app come servizi systemd"
+          "label": "Avvia app come servizi systemd",
+          "requires-systemd-session": "Richiede che Noctalia venga eseguito come servizio utente systemd (uwsm o unità utente systemd)"
         },
         "launch-apps-custom-command": {
-          "description": "Comando personalizzato utilizzato dal Launcher; sostituisce $CMD con il comando originale",
-          "label": "Comando Launcher personalizzato",
+          "description": "Comprende le app avviate dal launcher, dal dock e dalla barra delle applicazioni; sostituisce $CMD con il comando originale",
+          "label": "Comando di avvio app personalizzato",
           "placeholder": "$CMD"
         },
         "middle-click-opens-widget-settings": {
@@ -2966,8 +2971,10 @@
       "map-placeholders": {
         "effects-profile-name": "Nome profilo",
         "glyph-name": "Nome glifo",
+        "key": "Chiave",
         "label": "Etichetta",
-        "layout-name": "Nome layout"
+        "layout-name": "Nome layout",
+        "value": "Valore"
       },
       "options": {
         "always": "Sempre",
@@ -2998,8 +3005,10 @@
         "none": "Nessuno",
         "on-hover": "Al passaggio",
         "output": "Uscita",
+        "percent": "Percentuale",
         "ram-percent": "Percentuale RAM",
         "ram-used": "RAM usata",
+        "rate": "Livello",
         "regular": "Normale",
         "screenshot-primary-fullscreen": "Schermo intero",
         "screenshot-primary-region": "Area",
@@ -3008,6 +3017,7 @@
         "swap-percent": "Percentuale swap",
         "text": "Testo",
         "text-only": "Solo testo",
+        "time": "Tempo",
         "workspace-label-centered": "Centrata",
         "workspace-label-corner": "Angolo",
         "workspace-label-inside": "Dentro pillola"
@@ -3131,7 +3141,7 @@
           "label": "Visualizzazione"
         },
         "display-mode": {
-          "description": "Renderizza la batteria come forma grafica o glifo",
+          "description": "Visualizza la batteria solo in forma grafica, glifo tab o etichetta",
           "label": "Modalità visualizzazione"
         },
         "drawer": {
@@ -3295,6 +3305,10 @@
         "label": {
           "description": "Testo statico opzionale mostrato su questo pulsante",
           "label": "Etichetta"
+        },
+        "label-content": {
+          "description": "Cosa mostra l'etichetta della batteria: percentuale di carica, tempo rimanente o barra di carica",
+          "label": "Contenuto dell'etichetta"
         },
         "label-min-width": {
           "description": "Larghezza minima etichetta in pixel per evitare ridimensionamenti",
@@ -3647,8 +3661,10 @@
       "day": "{count} giorno",
       "day-plural": "{count} giorni",
       "hour": "{count} ora",
+      "hour-compact": "{count}h",
       "hour-plural": "{count} ore",
       "minute": "{count} minuto",
+      "minute-compact": "{count}m",
       "minute-plural": "{count} minuti",
       "month": "{count} mese",
       "month-plural": "{count} mesi",
