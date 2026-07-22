@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <print>
 #include <string>
 #include <string_view>
@@ -54,13 +55,29 @@ int main() {
   }
 
   bool ok = true;
-  ok = expect(!scripting::supportsPluginApiVersion(2), "plugin API 2 should be too old") && ok;
-  ok = expect(scripting::supportsPluginApiVersion(3), "plugin API 3 should be supported") && ok;
-  ok = expect(scripting::supportsPluginApiVersion(4), "plugin API 4 should be supported") && ok;
-  ok = expect(scripting::supportsPluginApiVersion(5), "plugin API 5 should be supported") && ok;
-  ok = expect(scripting::supportsPluginApiVersion(6), "plugin API 6 should be supported") && ok;
-  ok = expect(scripting::supportsPluginApiVersion(7), "plugin API 7 should be supported") && ok;
-  ok = expect(!scripting::supportsPluginApiVersion(8), "plugin API 8 should be too new") && ok;
+  static_assert(scripting::kOldestSupportedPluginApiVersion > 0);
+  ok = expect(
+           !scripting::supportsPluginApiVersion(scripting::kOldestSupportedPluginApiVersion - 1),
+           "plugin API before oldest should be too old"
+       )
+      && ok;
+  ok = expect(
+           scripting::supportsPluginApiVersion(scripting::kOldestSupportedPluginApiVersion),
+           "oldest plugin API should be supported"
+       )
+      && ok;
+  ok = expect(
+           scripting::supportsPluginApiVersion(scripting::kCurrentPluginApiVersion),
+           "current plugin API should be supported"
+       )
+      && ok;
+  if constexpr (scripting::kCurrentPluginApiVersion < std::numeric_limits<std::uint32_t>::max()) {
+    ok = expect(
+             !scripting::supportsPluginApiVersion(scripting::kCurrentPluginApiVersion + 1),
+             "plugin API after current should be too new"
+         )
+        && ok;
+  }
   const auto defaultManifestPath = root / "defaults/plugin.toml";
   ok = writeText(defaultManifestPath, "id = \"me/defaults\"\nname = \"Defaults\"\nplugin_api = 3\n") && ok;
 
