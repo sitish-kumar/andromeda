@@ -566,6 +566,7 @@ _noctalia_sources = files(
   'src/scripting/script_worker_pool.cpp',
   'src/scripting/plugin_bindings.cpp',
   'src/security/encrypted_file_store.cpp',
+  'src/security/secret_store.cpp',
   'src/security/secure_buffer.cpp',
   'src/system/battery_warning_monitor.cpp',
   'src/shell/bar/bar.cpp',
@@ -1628,6 +1629,22 @@ security_primitives_test = executable('security_primitives_test',
 )
 
 test('security_primitives', security_primitives_test)
+
+secret_store_test = executable('secret_store_test',
+  sources: files(
+    'tests/secret_store_test.cpp',
+    'src/core/log.cpp',
+    'src/security/secret_store.cpp',
+    'src/security/secure_buffer.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [
+    libsecret_dep,
+    libsodium_dep,
+  ],
+)
+
+test('secret_store', secret_store_test)
 
 calendar_cache_permissions_test = executable('calendar_cache_permissions_test',
   sources: files(
