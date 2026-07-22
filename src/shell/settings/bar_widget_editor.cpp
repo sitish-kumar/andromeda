@@ -979,9 +979,32 @@ namespace settings {
       if (!spec.visibleWhen.has_value()) {
         return true;
       }
-      auto matches = [&](const std::string& key, const std::vector<std::string>& values) {
-        const auto currentValue = settingCurrentString(cfg, widgetName, key, allSpecs);
-        for (const auto& v : values) {
+      auto settingValueForKey = [&](const std::string& key) -> WidgetSettingValue {
+        if (const auto it = cfg.widgets.find(std::string(widgetName)); it != cfg.widgets.end()) {
+          if (const auto settingIt = it->second.settings.find(key); settingIt != it->second.settings.end()) {
+            return settingIt->second;
+          }
+        }
+        for (const auto& s : allSpecs) {
+          if (s.schema.key == key) {
+            return s.schema.defaultValue;
+          }
+        }
+        return {};
+      };
+      auto matches = [&](const WidgetSettingVisibilityCondition& condition) {
+        const WidgetSettingValue value = settingValueForKey(condition.key);
+        if (condition.nonEmpty) {
+          if (const auto* list = std::get_if<std::vector<std::string>>(&value)) {
+            return !list->empty();
+          }
+          if (const auto* str = std::get_if<std::string>(&value)) {
+            return !str->empty();
+          }
+          return false;
+        }
+        const auto currentValue = settingCurrentString(cfg, widgetName, condition.key, allSpecs);
+        for (const auto& v : condition.values) {
           if (v == currentValue) {
             return true;
           }
@@ -989,7 +1012,7 @@ namespace settings {
         return false;
       };
       for (const auto& condition : spec.visibleWhen->all) {
-        if (!matches(condition.key, condition.values)) {
+        if (!matches(condition)) {
           return false;
         }
       }
@@ -997,7 +1020,7 @@ namespace settings {
         return true;
       }
       for (const auto& condition : spec.visibleWhen->any) {
-        if (matches(condition.key, condition.values)) {
+        if (matches(condition)) {
           return true;
         }
       }

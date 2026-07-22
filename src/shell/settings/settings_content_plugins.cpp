@@ -452,6 +452,21 @@ namespace settings {
         return valueAsString(pluginSettingValue(cfg, pluginId, *depIt));
       };
       const auto matches = [&](const WidgetSettingVisibilityCondition& cond) {
+        if (cond.nonEmpty) {
+          const auto depIt =
+              std::ranges::find_if(allSpecs, [&](const WidgetSettingSpec& s) { return s.schema.key == cond.key; });
+          if (depIt == allSpecs.end()) {
+            return false;
+          }
+          const WidgetSettingValue value = pluginSettingValue(cfg, pluginId, *depIt);
+          if (const auto* list = std::get_if<std::vector<std::string>>(&value)) {
+            return !list->empty();
+          }
+          if (const auto* str = std::get_if<std::string>(&value)) {
+            return !str->empty();
+          }
+          return false;
+        }
         const std::string value = currentString(cond.key);
         return std::ranges::contains(cond.values, value);
       };

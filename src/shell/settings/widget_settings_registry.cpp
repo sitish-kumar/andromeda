@@ -953,6 +953,16 @@ namespace settings {
         add(std::move(pinned));
       }
       {
+        auto pinnedOpacity = withGroup(doubleSpec("pinned_opacity", 0.5, 0.0, 1.0, 0.01), "taskbar.windows");
+        WidgetSettingVisibility pinnedOpacitySettings;
+        pinnedOpacitySettings.all = {WidgetSettingVisibilityCondition{"pinned", {}, true}};
+        if (supportsTaskbarWorkspaceGrouping) {
+          pinnedOpacitySettings.all.push_back(WidgetSettingVisibilityCondition{"group_by_workspace", {"false"}});
+        }
+        pinnedOpacity.visibleWhen = std::move(pinnedOpacitySettings);
+        add(std::move(pinnedOpacity));
+      }
+      {
         // Window titles are only laid out when the taskbar is not grouping by workspace.
         auto showWindowTitle = withGroup(boolSpec("show_window_title", false), "taskbar.windows");
         WidgetSettingVisibility windowTitleSettings;

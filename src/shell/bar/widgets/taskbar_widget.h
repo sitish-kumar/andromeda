@@ -42,6 +42,7 @@ struct TaskbarWidgetOptions {
   bool showActiveIndicator = true;
   float activeOpacity = 1.0f;
   float inactiveOpacity = 1.0f;
+  float pinnedOpacity = 0.5f;
   ColorSpec focusedColor = colorSpecFromRole(ColorRole::Primary);
   ColorSpec occupiedColor = colorSpecFromRole(ColorRole::Secondary);
   ColorSpec emptyColor = colorSpecFromRole(ColorRole::Secondary);
@@ -160,6 +161,7 @@ private:
   bool m_showActiveIndicator = true;
   float m_activeOpacity = 1.0f;
   float m_inactiveOpacity = 1.0f;
+  float m_pinnedOpacity = 0.5f;
   ColorSpec m_focusedColor = colorSpecFromRole(ColorRole::Primary);
   ColorSpec m_occupiedColor = colorSpecFromRole(ColorRole::Secondary);
   ColorSpec m_emptyColor = colorSpecFromRole(ColorRole::Secondary);

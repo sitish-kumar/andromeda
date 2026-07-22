@@ -3396,6 +3396,10 @@
           "taskbar-description": "Desktop apps that stay on the taskbar when not running. Ignored while Group by Workspace is on.",
           "taskbar-label": "Pinned Apps"
         },
+        "pinned-opacity": {
+          "description": "Opacity of pinned apps that are not currently running",
+          "label": "Pinned App Opacity"
+        },
         "primary-click": {
           "description": "Action performed when left-clicking the bar button",
           "label": "Primary click"

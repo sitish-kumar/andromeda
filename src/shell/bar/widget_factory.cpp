@@ -568,6 +568,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .showActiveIndicator = wc != nullptr ? wc->getBool("show_active_indicator", true) : true,
         .activeOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("active_opacity", 1.0)) : 1.0f,
         .inactiveOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("inactive_opacity", 1.0)) : 1.0f,
+        .pinnedOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("pinned_opacity", 0.5)) : 0.5f,
         .focusedColor = wc != nullptr
             ? wc->getColorSpec(
                   "focused_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".focused_color"
