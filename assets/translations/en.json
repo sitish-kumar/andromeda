@@ -3630,7 +3630,7 @@
     "window": {
       "export-config": "Export Config…",
       "export-config-saved": "Config export saved.",
-      "filter-modified": "Modified",
+      "filter-overridden": "Overridden",
       "legacy-config-warning": "Legacy configuration is being migrated in memory: {issue}. Run noctalia config validate for all required changes.",
       "native-title": "Noctalia Settings",
       "no-results": "No settings found",

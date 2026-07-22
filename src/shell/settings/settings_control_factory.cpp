@@ -229,12 +229,7 @@ namespace settings {
     // Range sliders own a second config path (high/critical); both reset and report "override" together.
     const auto* rangeSlider = std::get_if<RangeSliderSetting>(&entry.control);
     const auto* selectSetting = std::get_if<SelectSetting>(&entry.control);
-    const auto isOverridden = [&](const std::vector<std::string>& p) {
-      return ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(p);
-    };
-    const bool overridden = isOverridden(entry.path)
-        || (rangeSlider != nullptr && isOverridden(rangeSlider->highPath))
-        || (selectSetting != nullptr && !selectSetting->linkedPath.empty() && isOverridden(selectSetting->linkedPath));
+    const bool overridden = ctx.configService != nullptr && settingEntryHasEffectiveOverride(entry, *ctx.configService);
     const bool redundantGuiOverride =
         ctx.configService != nullptr && ctx.configService->hasOverride(entry.path) && !overridden;
     const bool monitorSetting = isMonitorOverrideSettingPath(entry.path);

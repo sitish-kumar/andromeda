@@ -1215,7 +1215,7 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
   );
 
   auto overriddenLabel = makeLabel(
-      i18n::tr("settings.window.filter-modified"), Style::fontSizeBody * scale,
+      i18n::tr("settings.window.filter-overridden"), Style::fontSizeBody * scale,
       colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
   );
   filters->addChild(std::move(overriddenLabel));
