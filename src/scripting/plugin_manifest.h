@@ -115,6 +115,8 @@ namespace scripting {
     std::string panelPlacementDefault = "floating";
     std::string panelPositionDefault = "auto";
     bool panelOpenNearClickDefault = false;
+    // false: keep open on outside click (auth prompts)
+    bool panelDismissOnOutsideClick = true;
   };
 
   struct PluginManifest {
