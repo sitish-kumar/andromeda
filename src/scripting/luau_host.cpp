@@ -30,6 +30,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -161,6 +162,18 @@ namespace {
         timeoutMs, static_cast<double>(kMinCommandTimeout.count()), static_cast<double>(kMaxCommandTimeout.count())
     );
     return std::chrono::milliseconds(static_cast<int>(bounded));
+  }
+
+  // CPU time consumed by the calling thread. Callback budgets meter against this, so
+  // a worker thread descheduled by a system-wide stall stays within budget. The
+  // interrupt hook runs only between VM instructions, so a callback blocked in a
+  // syscall is not interruptible at all.
+  std::chrono::nanoseconds threadCpuTime() {
+    timespec ts{};
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) != 0) {
+      return std::chrono::nanoseconds::zero();
+    }
+    return std::chrono::seconds(ts.tv_sec) + std::chrono::nanoseconds(ts.tv_nsec);
   }
 
   void budgetInterrupt(lua_State* L, int /*gc*/) {
@@ -1971,12 +1984,15 @@ void LuauHost::interruptIfBudgetExceeded(lua_State* L) {
   if (!m_budgetActive) {
     return;
   }
-  if (std::chrono::steady_clock::now() <= m_callDeadline) {
+  if (threadCpuTime() <= m_callCpuDeadline) {
     return;
   }
   m_lastCallTimedOut = true;
   m_budgetActive = false;
-  luaL_error(L, "script callback '%s' timed out", m_currentCallName.empty() ? "(unknown)" : m_currentCallName.c_str());
+  luaL_error(
+      L, "script callback '%s' exceeded its CPU budget",
+      m_currentCallName.empty() ? "(unknown)" : m_currentCallName.c_str()
+  );
 }
 
 void LuauHost::loadTranslations() { m_translations.load(m_pluginDir); }
@@ -2067,7 +2083,7 @@ std::optional<std::string> LuauHost::scriptFocusedOutputName() const {
 
 void LuauHost::beginBudget(std::string_view name, std::chrono::milliseconds budget) {
   m_currentCallName = std::string(name);
-  m_callDeadline = std::chrono::steady_clock::now() + std::max(budget, std::chrono::milliseconds(1));
+  m_callCpuDeadline = threadCpuTime() + std::max(budget, std::chrono::milliseconds(1));
   m_lastCallTimedOut = false;
   m_budgetActive = true;
 }
