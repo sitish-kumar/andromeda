@@ -3015,9 +3015,11 @@
       "options": {
         "always": "Always",
         "auto": "Auto",
+        "count": "Count",
         "cpu-temp": "CPU Temperature",
         "cpu-usage": "CPU Usage",
         "disk-percent": "Disk Percent",
+        "dots": "Dots",
         "focus-hint": "Focus Hint",
         "full": "Full",
         "gauge": "Gauge",
@@ -3029,6 +3031,7 @@
         "graphic": "Graphic",
         "icon-and-text": "Icon and Text",
         "icon-only": "Icon Only",
+        "icons": "Icons",
         "id": "ID",
         "input": "Input",
         "instance": "Per Placement",
@@ -3237,8 +3240,12 @@
           "label": "Group by Workspace"
         },
         "group-single-icon-per-app": {
-          "description": "When grouping by workspace, collapse multiple windows from the same app into one icon with a count badge.",
+          "description": "When grouping by workspace with icons, collapse multiple windows from the same app into one icon with a count badge.",
           "label": "Single Icon per App"
+        },
+        "workspace-group-content": {
+          "description": "What each workspace group shows: app icons, a window count, or dots (up to five, then +N for the rest)",
+          "label": "Group Content"
         },
         "height": {
           "description": "Widget height in pixels",

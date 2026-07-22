@@ -219,6 +219,7 @@ void TaskbarWidget::syncWorkspaceGroupingCapability() {
   const bool hideEmptyWorkspaces = supported && m_configOptions.hideEmptyWorkspaces;
   const bool workspaceGroupCapsule = !supported || m_configOptions.workspaceGroupCapsule;
   const bool groupSingleIconPerApp = supported && m_configOptions.groupSingleIconPerApp;
+  const auto workspaceGroupContent = supported ? m_configOptions.workspaceGroupContent : WorkspaceGroupContent::Icons;
   const bool showWindowTitle =
       m_configOptions.showWindowTitle && m_barPosition != "left" && m_barPosition != "right" && !groupByWorkspace;
 
@@ -229,6 +230,7 @@ void TaskbarWidget::syncWorkspaceGroupingCapability() {
       || hideEmptyWorkspaces != m_hideEmptyWorkspaces
       || workspaceGroupCapsule != m_workspaceGroupCapsule
       || groupSingleIconPerApp != m_groupSingleIconPerApp
+      || workspaceGroupContent != m_workspaceGroupContent
       || showWindowTitle != m_showWindowTitle;
 
   m_groupByWorkspace = groupByWorkspace;
@@ -238,6 +240,7 @@ void TaskbarWidget::syncWorkspaceGroupingCapability() {
   m_hideEmptyWorkspaces = hideEmptyWorkspaces;
   m_workspaceGroupCapsule = workspaceGroupCapsule;
   m_groupSingleIconPerApp = groupSingleIconPerApp;
+  m_workspaceGroupContent = workspaceGroupContent;
   m_showWindowTitle = showWindowTitle;
 
   if (changed) {
@@ -1047,6 +1050,143 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       return badge;
     };
 
+    auto createWorkspaceWindowSummary = [&](const WorkspaceModel& ws, const std::vector<const TaskModel*>& tasks) {
+      const bool anyActive =
+          std::ranges::any_of(tasks, [](const TaskModel* task) { return task != nullptr && task->active; });
+      const float summaryOpacity = anyActive ? m_activeOpacity : m_inactiveOpacity;
+
+      auto area = std::make_unique<InputArea>();
+      area->setOpacity(summaryOpacity);
+      area->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
+      area->setOnAxisHandler(workspaceAxisHandler);
+      auto wsCopy = ws.workspace;
+      wl_output* const wsHost = workspaceHostOutput(ws);
+      area->setOnClick([this, wsCopy, wsHost](const InputArea::PointerData& data) {
+        if (data.button == BTN_LEFT) {
+          m_platform.activateWorkspace(wsHost, wsCopy);
+        }
+      });
+
+      if (m_workspaceGroupContent == WorkspaceGroupContent::Count) {
+        const std::string countText = std::to_string(tasks.size());
+        const float countFontSize = std::round(Style::fontSizeCaption * m_contentScale);
+        auto content = ui::flex(
+            FlexDirection::Horizontal,
+            {
+                .align = FlexAlign::Center,
+                .justify = FlexJustify::Center,
+                .width = tileSize,
+                .height = tileSize,
+            }
+        );
+        auto label = ui::label({
+            .text = countText,
+            .fontSize = countFontSize,
+            .fontWeight = fontWeight,
+            .fontFamily = fontFamily,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
+        });
+        label->measure(renderer);
+        content->addChild(std::move(label));
+        area->setFrameSize(tileSize, tileSize);
+        area->addChild(std::move(content));
+        attachHover(*area, tileSize, tileSize);
+        return area;
+      }
+
+      // Dots: one per window along the bar main axis. Cap visible dots and show +N for the rest.
+      constexpr std::size_t kMaxVisibleDots = 5;
+      std::vector<const TaskModel*> visibleDots;
+      visibleDots.reserve(std::min(tasks.size(), kMaxVisibleDots));
+      const std::size_t overflow = tasks.size() > kMaxVisibleDots ? tasks.size() - kMaxVisibleDots : 0;
+      if (overflow == 0) {
+        visibleDots = tasks;
+      } else {
+        const TaskModel* activeTask = nullptr;
+        for (const TaskModel* task : tasks) {
+          if (task != nullptr && task->active) {
+            activeTask = task;
+            break;
+          }
+        }
+        if (activeTask != nullptr) {
+          visibleDots.push_back(activeTask);
+        }
+        for (const TaskModel* task : tasks) {
+          if (visibleDots.size() >= kMaxVisibleDots) {
+            break;
+          }
+          if (task == activeTask) {
+            continue;
+          }
+          visibleDots.push_back(task);
+        }
+      }
+
+      const float dotSize = std::round(std::max(4.0f, Style::baseGlyphSize * 0.28f * m_contentScale));
+      const float dotGap = std::round(std::max(2.0f, Style::spaceXs * 0.5f * m_contentScale));
+      const float overflowFontSize = std::round(Style::fontSizeCaption * 0.85f * m_contentScale);
+      float overflowLabelWidth = 0.0f;
+      float overflowLabelHeight = 0.0f;
+      std::string overflowText;
+      if (overflow > 0) {
+        overflowText = "+" + std::to_string(overflow);
+        const TextMetrics tm = renderer.measureText(overflowText, overflowFontSize, fontWeight);
+        overflowLabelWidth = std::max(tm.right - tm.left, tm.inkRight - tm.inkLeft);
+        overflowLabelHeight = tm.bottom - tm.top;
+      }
+
+      const std::size_t visibleCount = visibleDots.size();
+      const float dotsRun = visibleCount == 0
+          ? 0.0f
+          : (dotSize * static_cast<float>(visibleCount)
+             + dotGap * static_cast<float>(visibleCount > 1 ? visibleCount - 1 : 0));
+      const float overflowRun = overflow > 0 ? (dotGap + overflowLabelWidth) : 0.0f;
+      const float run = dotsRun + overflowRun;
+      const float mainExtent = std::max(tileSize, run + Style::spaceXs * m_contentScale);
+      area->setFrameSize(m_vertical ? tileSize : mainExtent, m_vertical ? mainExtent : tileSize);
+
+      auto content = ui::flex(
+          m_vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
+          {
+              .align = FlexAlign::Center,
+              .justify = FlexJustify::Center,
+              .gap = dotGap,
+              .width = m_vertical ? tileSize : mainExtent,
+              .height = m_vertical ? mainExtent : tileSize,
+          }
+      );
+      for (const TaskModel* task : visibleDots) {
+        const bool highlight = task != nullptr && task->active && m_showActiveIndicator;
+        const ColorSpec fill = highlight ? colorSpecFromRole(ColorRole::Primary, 0.95f)
+                                         : colorSpecFromRole(ColorRole::OnSurface, anyActive ? 0.55f : 0.35f);
+        content->addChild(
+            ui::box({
+                .fill = fill,
+                .radius = resolvedBarCapsuleRadius(dotSize, dotSize),
+                .width = dotSize,
+                .height = dotSize,
+            })
+        );
+      }
+      if (overflow > 0) {
+        auto overflowLabel = ui::label({
+            .text = overflowText,
+            .fontSize = overflowFontSize,
+            .fontWeight = fontWeight,
+            .fontFamily = fontFamily,
+            .color = colorSpecFromRole(ColorRole::OnSurface, anyActive ? 0.7f : 0.5f),
+            .width = overflowLabelWidth,
+            .height = std::max(dotSize, overflowLabelHeight),
+        });
+        overflowLabel->measure(renderer);
+        content->addChild(std::move(overflowLabel));
+      }
+      area->addChild(std::move(content));
+      attachHover(*area, m_vertical ? tileSize : mainExtent, m_vertical ? mainExtent : tileSize);
+      return area;
+    };
+
     std::unordered_set<std::string> cycleKeysThisFrame;
     for (const auto& ws : m_workspaces) {
       std::vector<const TaskModel*> tasks;
@@ -1069,7 +1209,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       std::unordered_map<std::uintptr_t, std::vector<TaskModel>> cycleCandidatesByHandle;
       std::unordered_map<std::uintptr_t, std::string> cycleKeyByHandle;
       std::unordered_map<std::uintptr_t, std::size_t> badgeCountByHandle;
-      if (m_groupSingleIconPerApp && !tasks.empty()) {
+      if (m_workspaceGroupContent == WorkspaceGroupContent::Icons && m_groupSingleIconPerApp && !tasks.empty()) {
         struct GroupedTaskItem {
           const TaskModel* representative = nullptr;
           std::string cycleKey;
@@ -1122,7 +1262,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         }
       }
 
-      const bool emptyWorkspace = renderedTasks.empty();
+      const bool emptyWorkspace = tasks.empty();
       const auto surfaceFill = colorSpecFromRole(ColorRole::SurfaceVariant, ws.workspace.active ? 0.52f : 0.18f);
       const auto borderColor = colorSpecFromRole(ColorRole::Primary, ws.workspace.active ? 0.65f : 0.16f);
 
@@ -1211,7 +1351,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
             group->setMinHeight(groupPadTop + tileSize + groupPadBottom);
           }
         }
-      } else {
+      } else if (m_workspaceGroupContent == WorkspaceGroupContent::Icons) {
         for (const auto* task : renderedTasks) {
           const auto cycleIt = cycleCandidatesByHandle.find(task->handleKey);
           const auto cycleKeyIt = cycleKeyByHandle.find(task->handleKey);
@@ -1222,6 +1362,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
               cycleKeyIt != cycleKeyByHandle.end() ? cycleKeyIt->second : std::string{}, badgeCount
           ));
         }
+      } else {
+        group->addChild(createWorkspaceWindowSummary(ws, tasks));
       }
 
       if (externalBadge) {
