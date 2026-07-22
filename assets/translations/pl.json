@@ -402,10 +402,6 @@
         "wave-thickness": "Grubość fali",
         "widget-section": "Widget"
       },
-      "state": {
-        "grid-off": "Siatka wyłączona",
-        "grid-on": "Siatka włączona"
-      },
       "title": "Widgety pulpitu",
       "types": {
         "audio-visualizer": "Wizualizator audio",
@@ -2717,7 +2713,6 @@
     "window": {
       "export-config": "Eksportuj konfigurację…",
       "export-config-saved": "Konfiguracja wyeksportowana.",
-      "filter-modified": "Zmodyfikowane",
       "native-title": "Ustawienia Noctalia",
       "no-results": "Nie znaleziono ustawień",
       "no-results-hint": "Spróbuj innej nazwy ustawienia lub klucza konfiguracji.",

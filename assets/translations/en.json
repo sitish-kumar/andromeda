@@ -3243,10 +3243,6 @@
           "description": "When grouping by workspace with icons, collapse multiple windows from the same app into one icon with a count badge.",
           "label": "Single Icon per App"
         },
-        "workspace-group-content": {
-          "description": "What each workspace group shows: app icons, a window count, or dots (up to five, then +N for the rest)",
-          "label": "Group Content"
-        },
         "height": {
           "description": "Widget height in pixels",
           "label": "Height"
@@ -3591,6 +3587,10 @@
         "workspace-group-capsule": {
           "description": "Draw the background and border around each grouped workspace. Turn off to keep icon grouping and workspace disc labels only.",
           "label": "Workspace Group Capsule"
+        },
+        "workspace-group-content": {
+          "description": "What each workspace group shows: app icons, a window count, or dots (up to five, then +N for the rest)",
+          "label": "Group Content"
         },
         "workspace-label-placement": {
           "description": "Corner, centered on the edge, or inside the pill",

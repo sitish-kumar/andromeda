@@ -388,10 +388,6 @@
         "visualization-mode": "Läge",
         "visualization-mode-all": "Alla"
       },
-      "state": {
-        "grid-off": "Rutnät Av",
-        "grid-on": "Rutnät På"
-      },
       "types": {
         "button": "Knapp",
         "clock": "Klocka",

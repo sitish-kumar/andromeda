@@ -464,10 +464,12 @@
         "command": "Comando",
         "custom-color": "Personalizado",
         "description": "Descripción",
+        "device": "Dispositivo",
         "display": "Pantalla",
         "display-gauge": "Medidor",
         "display-graph": "Gráfico",
         "fade-when-idle": "Atenuar cuando esté inactivo",
+        "fill-color": "Color de relleno",
         "font-family": "Fuente",
         "font-family-default": "Fuente del sistema por defecto",
         "forecast-days": "Días de previsión",
@@ -498,10 +500,12 @@
         "reset-defaults": "Restablecer valores por defecto",
         "ring-opacity": "Opacidad del anillo",
         "rotation-speed": "Velocidad de rotación",
+        "scroll-step": "Pasos de desplazamiento",
         "secondary-color": "Color Secundario",
         "sensitivity": "Sensibilidad",
         "shadow": "Sombra",
         "show-caps-lock": "Advertencia de Bloq Mayús",
+        "show-device": "Mostrar dispositivo",
         "show-forecast": "Mostrar previsión",
         "show-keyboard-layout": "Distribución de teclado",
         "show-label": "Mostrar Etiqueta",
@@ -540,10 +544,6 @@
         "wave-thickness": "Grosor de la Ola",
         "widget-section": "Widget"
       },
-      "state": {
-        "grid-off": "Rejilla desactivada",
-        "grid-on": "Rejilla activada"
-      },
       "title": "Widgets de Escritorio",
       "types": {
         "audio-visualizer": "Visualizador de Audio",
@@ -555,11 +555,17 @@
         "media-player": "Reproductor Multimedia",
         "sticker": "Pegatina",
         "system-monitor": "Monitor de sistema",
+        "volume": "Volumen",
         "weather": "Clima"
       }
     },
     "media": {
       "nothing-playing": "Nada reproduciéndose"
+    },
+    "volume": {
+      "mic": "Mic",
+      "muted": "Silenciado",
+      "volume": "Volumen"
     },
     "weather": {
       "error": "Error",
@@ -839,12 +845,15 @@
       "add-title": "Agregar Cuenta de Calendario",
       "calendars-label": "Calendarios",
       "color-label": "Color",
+      "credential-source-file": "Archivo de contraseña",
+      "credential-source-label": "Almacen de credenciales",
       "delete-error": "No se pudo eliminar la cuenta de calendario.",
       "edit-title": "Modificar Cuenta de Calendario",
       "id-label": "ID de la Cuenta",
       "invalid": "Revisa los campos resaltados de la cuenta del calendario.",
       "name-label": "Nombre mostrado",
       "name-placeholder": "Calendario Personal",
+      "password-file-label": "Archivo de contraseña",
       "password-keep-placeholder": "Deje vacío para mantener la contraseña actual",
       "password-label": "Clave de aplicación",
       "password-placeholder": "Contraseña específica de la aplicación",
@@ -3447,7 +3456,6 @@
     "window": {
       "export-config": "Exportar configuración...",
       "export-config-saved": "Exportación de configuración guardada.",
-      "filter-modified": "Modificado",
       "native-title": "Ajustes de Noctalia",
       "no-results": "Ajustes no encontrados.",
       "no-results-hint": "Prueba con otro nombre de configuración o clave de config.",

@@ -76,6 +76,7 @@
         "signal": "Signal",
         "upload": "Envoi",
         "vpn": "VPN",
+        "wan-ip": "Adresse IP WAN",
         "wifi": "Wi-Fi",
         "wired": "Filaire",
         "yes": "Oui"
@@ -213,7 +214,8 @@
       "all-day": "Toute la journée",
       "events": "Événements",
       "no-events": "Pas d'événement.",
-      "today": "Aujourd'hui"
+      "today": "Aujourd'hui",
+      "toggle-events-card": "Afficher/masquer la carte des événements"
     },
     "display": {
       "disabled": "Désactivé",
@@ -251,6 +253,7 @@
     "network": {
       "connect": "Se connecter",
       "current-connection": "Connexion actuelle",
+      "external-ip": "WAN {ip}",
       "no-networks": "Aucun réseau à proximité",
       "not-connected": "Non connecté",
       "password": "Mot de passe",
@@ -461,10 +464,12 @@
         "command": "Commande",
         "custom-color": "Personnalisé",
         "description": "Description",
+        "device": "Périphérique",
         "display": "Ecran",
         "display-gauge": "Gauge",
         "display-graph": "Graphique",
         "fade-when-idle": "Masquer en inactivité",
+        "fill-color": "Couleur de remplissage",
         "font-family": "Police",
         "font-family-default": "Valeur système",
         "forecast-days": "Jours de prévision",
@@ -495,16 +500,18 @@
         "reset-defaults": "Réinitialiser les valeurs par défaut",
         "ring-opacity": "Opacité de l’anneau",
         "rotation-speed": "Vitesse de rotation",
+        "scroll-step": "Pas de défilement",
         "secondary-color": "Couleur secondaire",
         "sensitivity": "Sensibilité",
         "shadow": "Ombre",
         "show-caps-lock": "Avertissement de verrouillage des majuscules",
+        "show-device": "Afficher le périphérique",
         "show-forecast": "Afficher la prévision",
         "show-keyboard-layout": "Disposition du clavier",
         "show-label": "Afficher l’étiquette",
         "show-login-button": "Bouton de connexion",
         "show-password-hint": "Indice du mot de passe",
-        "show-vpn-label": "",
+        "show-vpn-label": "Afficher le libellé VPN",
         "show-when-idle": "Afficher si inactif",
         "stat": "Stat",
         "stat-cpu-temp": "Temp CPU",
@@ -519,6 +526,7 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Stat 2",
         "title": "Titre",
+        "track-color": "Couleur de la piste",
         "variant": "Style",
         "variant-default": "Defaut",
         "variant-destructive": "Destructif",
@@ -537,10 +545,6 @@
         "wave-thickness": "Épaisseur de l’onde",
         "widget-section": "Widget"
       },
-      "state": {
-        "grid-off": "Grille désactivée",
-        "grid-on": "Grille activée"
-      },
       "title": "Widgets du bureau",
       "types": {
         "audio-visualizer": "Visualiseur audio",
@@ -552,11 +556,17 @@
         "media-player": "Lecteur multimédia",
         "sticker": "Sticker",
         "system-monitor": "Moniteur système",
+        "volume": "Volume",
         "weather": "Météo"
       }
     },
     "media": {
       "nothing-playing": "Aucune lecture en cours"
+    },
+    "volume": {
+      "mic": "Micro",
+      "muted": "Muet",
+      "volume": "Volume"
     },
     "weather": {
       "error": "Erreur",
@@ -1944,7 +1954,7 @@
           "label": "Comportements"
         },
         "pre-action-fade": {
-          "description": "Détermine la durée d’assombrissement en plein écran avant l’exécution de la commande d’inactivité. Utilisez 0 pour désactiver cette fonctionnalité",
+          "description": "Détermine la durée de l'assombrissement en plein écran avant l'exécution de la commande d'inactivité. Définissez 0 pour désactiver cette fonctionnalité",
           "label": "Assombrissement avant inactivité"
         }
       },
@@ -2346,7 +2356,7 @@
             "label": "Intervalle de relevé disque"
           },
           "gpu-poll": {
-            "description": "Intervalle en secondes entre les mesures de température GPU et de VRAM. 0 désactive (par défaut), ce qui évite de réveiller un GPU dédié ; 5 est un bon intervalle si activé",
+            "description": "Intervalle, en secondes, entre les relevés de température du GPU et de la VRAM. 0 désactive cette fonctionnalité (par défaut), ce qui évite de réveiller un GPU dédié. Une valeur de 5 est recommandée si vous l'activez.",
             "label": "Intervalle de relevé GPU"
           },
           "label": "Moniteur système",
@@ -2500,7 +2510,7 @@
           "label": "Lancer les applications comme services systemd"
         },
         "launch-apps-custom-command": {
-          "description": "Commande personnalisée utilisée par le lanceur d'application, elle remplace $CMD par la commande d'origine.",
+          "description": "Commande personnalisée utilisée par le lanceur d'applications. Elle remplace $CMD par la commande d'origine.",
           "label": "Commande personnalisée du lanceur d'applications ",
           "placeholder": "$CMD"
         },
@@ -2694,11 +2704,11 @@
       },
       "system": {
         "battery-device-warning-threshold": {
-          "description": "Remplace le seuil d’avertissement de batterie pour ce périphérique. Définissez 0 pour désactiver les avertissements associés à ce périphérique.",
+          "description": "Remplace le seuil d'avertissement de batterie pour ce périphérique. Définissez cette valeur sur 0 pour désactiver les avertissements",
           "label": "Seuil d’avertissement de {device}"
         },
         "battery-warning-threshold": {
-          "description": "Pourcentage de batterie système à partir duquel le shell envoie une notification de batterie faible et les widgets de batterie utilisent leur couleur d’avertissement. Définissez 0 pour désactiver.",
+          "description": "Pourcentage de batterie système en dessous duquel le shell envoie une notification de batterie faible et les widgets de batterie affichent leur couleur d'avertissement. Définissez cette valeur sur 0 pour désactiver cette fonctionnalité.",
           "label": "Seuil d’avertissement de batterie"
         }
       },
@@ -3091,7 +3101,6 @@
     },
     "window": {
       "export-config": "Exporter la configuration...",
-      "filter-modified": "Modifié",
       "native-title": "Paramètres Noctalia",
       "no-results": "Pas de paramètre trouvé",
       "reset-page": "Réinitialiser la page",

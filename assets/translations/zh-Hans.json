@@ -545,10 +545,6 @@
         "wave-thickness": "波浪厚度",
         "widget-section": "小组件"
       },
-      "state": {
-        "grid-off": "网格关闭",
-        "grid-on": "网格开启"
-      },
       "title": "桌面小组件",
       "types": {
         "audio-visualizer": "音频可视化",
@@ -2401,7 +2397,7 @@
         "ddcutil": {
           "description": "通过 DDC/CI 控制外接屏幕的亮度",
           "label": "DDC/CI（ddcutil）",
-          "requires-ddcutil": "安装 ddcutil 以启用 DDC/CI 亮度控制"
+          "requires-ddcutil": "请安装 ddcutil 以启用 DDC/CI 亮度控制"
         },
         "force-night-light": {
           "description": "始终开启夜间模式，忽略时间设置",
@@ -3609,7 +3605,6 @@
     "window": {
       "export-config": "导出配置…",
       "export-config-saved": "配置导出已保存。",
-      "filter-modified": "已修改",
       "legacy-config-warning": "旧版配置项已在内存中临时转换：{issue}。请执行 noctalia config validate 命令查看所有需要的更改。",
       "native-title": "Noctalia 设置",
       "no-results": "未找到相关设置",

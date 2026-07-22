@@ -540,10 +540,6 @@
         "wave-thickness": "Spessore onda",
         "widget-section": "Widget"
       },
-      "state": {
-        "grid-off": "Griglia disattivata",
-        "grid-on": "Griglia attivata"
-      },
       "title": "Widget desktop",
       "types": {
         "audio-visualizer": "Visualizzatore audio",
@@ -3588,7 +3584,6 @@
     "window": {
       "export-config": "Esporta configurazione...",
       "export-config-saved": "Esportazione configurazione salvata.",
-      "filter-modified": "Modificate",
       "legacy-config-warning": "È in corso la migrazione della configurazione legacy in memoria: {issue}. Esegui la convalida della configurazione di noctalia per tutte le modifiche richieste.",
       "native-title": "Impostazioni Noctalia",
       "no-results": "Nessuna impostazione trovata",

@@ -540,10 +540,6 @@
         "wave-thickness": "Largura das Ondas",
         "widget-section": "Widget"
       },
-      "state": {
-        "grid-off": "Grade Desligada",
-        "grid-on": "Grade Ligada"
-      },
       "title": "Widgets da Área de Trabalho",
       "types": {
         "audio-visualizer": "Visualizador de Áudio",
@@ -3594,7 +3590,6 @@
     "window": {
       "export-config": "Exportar Config...",
       "export-config-saved": "Exportação de Config salvo.",
-      "filter-modified": "Modificado",
       "legacy-config-warning": "Configuração legada sendo migrada em memória: {issue}. Execute a noctalia config validate para todas as mudanças requeridas.",
       "native-title": "Configurações do Noctalia",
       "no-results": "Nenhuma configuração encontrada",
