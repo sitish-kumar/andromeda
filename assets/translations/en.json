@@ -546,8 +546,7 @@
         "widget-section": "Widget"
       },
       "state": {
-        "grid-off": "Grid Off",
-        "grid-on": "Grid On"
+        "grid": "Grid"
       },
       "title": "Desktop Widgets",
       "types": {
