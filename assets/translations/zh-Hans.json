@@ -76,6 +76,7 @@
         "signal": "信号",
         "upload": "上传",
         "vpn": "VPN",
+        "wan-ip": "WAN IP",
         "wifi": "Wi-Fi",
         "wired": "有线网络",
         "yes": "是"
@@ -207,7 +208,7 @@
       },
       "unavailable": "蓝牙服务不可用",
       "unknown-device": "未知设备",
-      "visible": "可被附近的设备发现"
+      "visible": "可被附近设备发现"
     },
     "calendar": {
       "all-day": "全天",
@@ -236,7 +237,7 @@
       },
       "select-avatar": "选择头像",
       "unknown": "未知",
-      "uptime": "已运行 - {uptime}",
+      "uptime": "已运行 – {uptime}",
       "weather": {
         "data-unavailable": "天气数据不可用。",
         "disabled": "天气已在配置中禁用。",
@@ -258,8 +259,8 @@
       "password": "密码",
       "password-prompt": "输入密码",
       "password-prompt-for": "输入 {ssid} 的密码",
-      "unavailable-detail": "安装并启用 NetworkManager 以在此管理网络。",
-      "unavailable-title": "NetworkManager 不可用",
+      "unavailable-detail": "请安装并启用 NetworkManager、wpa_supplicant 或 iwd 以在此管理网络。",
+      "unavailable-title": "网络服务不可用",
       "vpns": "VPN",
       "wi-fi": "Wi-Fi",
       "wifi": "Wi-Fi",
@@ -285,7 +286,7 @@
     },
     "power": {
       "battery": "电池",
-      "design-capacity": "设计容量",
+      "design-capacity": "相对于设计容量",
       "health": "电池健康度",
       "performance-inhibited": "性能模式不可用",
       "peripherals": "已连接设备",
@@ -675,7 +676,7 @@
     },
     "internal": {
       "battery": "电池",
-      "battery-critical-body": "{device}：{percent}% - 即将关机",
+      "battery-critical-body": "{device}：{percent}% – 即将关机",
       "battery-critical-title": "电量严重不足",
       "battery-device": "电池设备",
       "battery-low-body": "{device}：剩余 {percent}%",
@@ -887,7 +888,7 @@
       "bar": {
         "create": "创建",
         "delete": "删除",
-        "delete-confirm-desc": "此状态栏由 GUI 创建，将从 settings.toml 中移除。",
+        "delete-confirm-desc": "该状态栏由 GUI 创建，将从 settings.toml 中移除。",
         "delete-confirm-title": "删除“{name}”？",
         "id-placeholder": "状态栏 ID",
         "label": "状态栏：{name}",
@@ -901,7 +902,7 @@
       "monitor-override": {
         "create": "创建",
         "delete": "删除",
-        "delete-confirm-desc": "此屏幕设置由 GUI 创建，将从 settings.toml 中移除。",
+        "delete-confirm-desc": "该屏幕设置由 GUI 创建，将从 settings.toml 中移除。",
         "delete-confirm-title": "删除“{name}”？",
         "label": "屏幕：{name}",
         "management": "屏幕设置",
@@ -1440,6 +1441,8 @@
         "open-source": "打开插件源码仓库",
         "results-count": "共 {count} 个插件",
         "search-placeholder": "搜索插件…",
+        "source-all": "全部",
+        "sources": "源",
         "title": "插件商店"
       }
     },
@@ -1742,6 +1745,10 @@
           "description": "触碰右下角时执行的 Shell 命令",
           "label": "命令"
         },
+        "hot-corners-delay-ms": {
+          "description": "指针停留在角落多久后执行操作（0 = 立即）",
+          "label": "触发延迟"
+        },
         "hot-corners-enabled": {
           "description": "将鼠标指针移动至屏幕角落时触发指定操作",
           "label": "触发角"
@@ -1940,7 +1947,7 @@
             "label": "蓝牙启用时"
           },
           "colors-changed": {
-            "description": "当前配色方案更改时执行的命令",
+            "description": "当前配色方案改变时执行的命令",
             "label": "配色改变时"
           },
           "logging-out": {
@@ -2249,7 +2256,7 @@
           "label": "按使用情况排序"
         },
         "list-item-background": {
-          "description": "为每个启动器和剪贴板列表项绘制填充圆角背景",
+          "description": "为每个启动器和剪贴板列表项绘制圆角背景",
           "label": "列表项背景"
         },
         "open-near-click-clipboard": {
@@ -2589,7 +2596,7 @@
           "placeholder": "gimp {path} 或 satty -f -"
         },
         "date-format": {
-          "description": "Shell UI 默认日期格式",
+          "description": "Shell UI 的默认日期格式",
           "label": "日期格式"
         },
         "external-ip": {
@@ -2788,6 +2795,10 @@
           "description": "将截图以 PNG 文件保存到输出目录",
           "label": "保存到文件"
         },
+        "screenshot-show-cursor": {
+          "description": "在截图中包含鼠标指针",
+          "label": "显示光标"
+        },
         "show-location": {
           "description": "在天气小组件中显示位置",
           "label": "显示位置"
@@ -2802,7 +2813,7 @@
           "label": "发送匿名统计信息"
         },
         "time-format": {
-          "description": "Shell UI 默认时间格式",
+          "description": "Shell UI 的默认时间格式",
           "label": "时间格式"
         }
       },
@@ -3027,6 +3038,10 @@
           "description": "媒体专辑封面大小（像素）",
           "label": "封面大小"
         },
+        "artist-first": {
+          "description": "在曲目标题前显示艺术家（艺术家 - 标题）",
+          "label": "艺术家在前"
+        },
         "bands": {
           "description": "可视化频段数量",
           "label": "频段"
@@ -3213,11 +3228,11 @@
           "label": "充满时隐藏"
         },
         "hide-when-no-connected-device": {
-          "description": "没有已连接设备时隐藏蓝牙小组件",
-          "label": "无已连接设备时隐藏"
+          "description": "没有已连接的设备时隐藏蓝牙小组件",
+          "label": "无设备连接时隐藏"
         },
         "hide-when-no-media": {
-          "description": "没有活动的 MPRIS 播放器时隐藏媒体小组件",
+          "description": "没有可用的 MPRIS 播放器时隐藏媒体小组件",
           "label": "无播放内容时隐藏"
         },
         "hide-when-no-unread": {
@@ -3466,6 +3481,10 @@
           "description": "总宽度限制（像素）；窗口标题会自适应缩小，过窄时隐藏",
           "label": "任务栏最大宽度"
         },
+        "text": {
+          "description": "显示在状态栏的文本",
+          "label": "文本"
+        },
         "timezone": {
           "description": "时钟的时区标识符（例如 Europe/Berlin）；留空则使用系统本地时间",
           "label": "时区"
@@ -3543,6 +3562,7 @@
         "sysmon": "系统监视器",
         "taskbar": "任务栏",
         "test": "测试",
+        "text": "文本",
         "theme-mode": "主题模式",
         "tray": "托盘",
         "volume": "音量",

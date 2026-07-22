@@ -19,7 +19,7 @@
     },
     "polkit": {
       "authenticate": "Connexion",
-      "authenticating": "Connexion en cours...",
+      "authenticating": "Authentification en cours...",
       "default-message": "Connexion requise",
       "invalid-password": "Mot de passe invalide",
       "password-placeholder": "Mot de passe",
@@ -504,6 +504,7 @@
         "show-label": "Afficher l’étiquette",
         "show-login-button": "Bouton de connexion",
         "show-password-hint": "Indice du mot de passe",
+        "show-vpn-label": "",
         "show-when-idle": "Afficher si inactif",
         "stat": "Stat",
         "stat-cpu-temp": "Temp CPU",
@@ -668,7 +669,7 @@
     },
     "inline-reply": {
       "button": "Répondre",
-      "placeholder": "Écrire une réponse"
+      "placeholder": "Écrire une réponse..."
     },
     "internal": {
       "battery": "Batterie",
@@ -883,7 +884,7 @@
         "delete": "Supprimer",
         "delete-confirm-desc": "Cette barre créée via l’interface sera supprimée de settings.toml.",
         "delete-confirm-title": "Supprimer \"{name}\" ?",
-        "id-placeholder": "Id de la barre",
+        "id-placeholder": "ID de la barre",
         "label": "Barre : {name}",
         "management": "Barre",
         "move-down": "Descendre",
@@ -954,7 +955,7 @@
           "delete-confirm-desc": "Ce widget nommé sera supprimé de toutes les barres et ses paramètres seront effacés.",
           "delete-confirm-title": "Supprimer \"{name}\" ?",
           "id-description": "Utilisez uniquement des lettres, chiffres, underscores ou tirets. Pas d’espaces ; doit être unique.",
-          "id-placeholder": "Id du widget",
+          "id-placeholder": "ID du widget",
           "rename": "Renommer",
           "rename-save": "Sauvegarder"
         },
@@ -1403,7 +1404,7 @@
         "remove": "Retirer la source",
         "save": "Sauvegarder",
         "title": "Sources",
-        "update": "Mettre à jour"
+        "update": "Mettre à jour la source"
       },
       "store": {
         "add": "Ajoute à Noctalia",
@@ -2457,7 +2458,7 @@
       },
       "shell": {
         "avatar-path": {
-          "description": "Chemin vers une image d'avatar personnalisée. Les grandes images sont recadrées et redimensionnées",
+          "description": "Chemin vers une image d'avatar personnalisée. Les grandes images sont recadrées et redimensionnées automatiquement",
           "label": "Chemin de l'avatar",
           "placeholder": "/path/to/avatar.png"
         },
@@ -2882,7 +2883,7 @@
           "label": "Couleur active"
         },
         "active-opacity": {
-          "description": "Opacité de l'icône de la fenêtre active (ayant le focus).",
+          "description": "Opacité de l'icône de la fenêtre active (ayant le focus)",
           "label": "Couleur active"
         },
         "active-pill-size": {
@@ -2953,7 +2954,7 @@
           "label": "Commande clique gauche"
         },
         "custom-image": {
-          "description": "Chemin vers une image personnalisée. Laissez vide pour utiliser l'icon glyph.",
+          "description": "Chemin vers une image personnalisée. Laissez vide pour utiliser l'icon glyph",
           "dialog-title": "Sélectionnez l'image personnalisée ",
           "label": "Image personnalisée"
         },
@@ -3050,7 +3051,7 @@
           "label": "Largeur"
         },
         "workspace-label-placement": {
-          "description": "Coin, centré sur le bord ou dans la pilule."
+          "description": "Coin, centré sur le bord ou dans la pilule"
         }
       },
       "types": {

@@ -259,8 +259,8 @@
       "password": "Passwort",
       "password-prompt": "Passwort eingeben",
       "password-prompt-for": "Passwort für {ssid} eingeben",
-      "unavailable-detail": "Installiere und aktiviere NetworkManager, um Netzwerke von hier aus zu verwalten.",
-      "unavailable-title": "NetworkManager nicht verfügbar",
+      "unavailable-detail": "Installiere und aktiviere NetworkManager, wpa_supplicant oder iwd, um Netzwerke von hier aus zu verwalten.",
+      "unavailable-title": "Netzwerkdienst nicht verfügbar",
       "vpns": "VPNs",
       "wi-fi": "WLAN",
       "wifi": "WLAN",
@@ -319,7 +319,7 @@
         "dark": "Dunkler Modus",
         "light": "Heller Modus"
       },
-      "keyboard-layout": "Layout",
+      "keyboard-layout": "Tastaturlayout",
       "media": "Medien",
       "mic-mute": "Mikrofon",
       "nightlight": "Nachtlicht",
@@ -1141,7 +1141,7 @@
         "screen-time": "Bildschirmzeit",
         "screenshot": "Screenshot",
         "security": "Sicherheit",
-        "session-panel": "Sitzung",
+        "session-panel": "Sitzungsmenü",
         "shape": "Form",
         "system": "System",
         "theme": "Theme",
@@ -1369,7 +1369,7 @@
       "panels": {
         "open-near-click": {
           "description": "Platziere das Panel in der Nähe des Leisten-Widgets, das es geöffnet hat; ohne Trigger wird es zentriert",
-          "label": "In Klicknähe öffnen"
+          "label": "An der Leiste"
         },
         "placement": {
           "description": "Hefte das Panel an die Leiste an oder lasse es in der Nähe des Leistenrands schweben",
@@ -1745,6 +1745,10 @@
           "description": "Shell-Befehl, der beim Erreichen der unteren rechten Ecke ausgeführt wird",
           "label": "Befehl"
         },
+        "hot-corners-delay-ms": {
+          "description": "Wie lange der Zeiger in einer Ecke bleiben muss, bevor die Aktion ausgeführt wird (0 = sofort)",
+          "label": "Aktivierungsverzögerung"
+        },
         "hot-corners-enabled": {
           "description": "Löse Aktionen aus, indem du den Mauszeiger in die Bildschirmecken bewegst",
           "label": "Hot Corners"
@@ -1903,7 +1907,7 @@
           "description": "Werfe den globalen Oberflächenschatten vom Dock"
         },
         "show-dots": {
-          "description": "Zeige Punkte für laufende Fenster neben Dock-Icons",
+          "description": "Zeige Punkte für laufende Fenster unter Dock-Icons an",
           "label": "Punkte anzeigen"
         },
         "show-instance-count": {
@@ -1979,7 +1983,7 @@
             "label": "Beim Wechsel des Theme-Modus"
           },
           "wallpaper-changed": {
-            "description": "Befehl, der ausgeführt wird, wenn sich das Hintergrundbild ändert",
+            "description": "Befehl, der ausgeführt wird, wenn sich das Hintergrundbild ändert; stellt NOCTALIA_WALLPAPER_PATH und NOCTALIA_WALLPAPER_CONNECTOR bereit",
             "label": "Beim Wechsel des Hintergrundbilds"
           },
           "wifi-disabled": {
@@ -2187,7 +2191,7 @@
           "label": "Kompakte Zeilen"
         },
         "launcher-currency-exchange": {
-          "description": "Kurse aus Online-Quellen von Drittanbietern abrufen",
+          "description": "Lade Kurse von Drittanbieter-Onlinequellen",
           "label": "Währungsumrechnung"
         },
         "launcher-global-calculator": {
@@ -2333,7 +2337,7 @@
       },
       "power": {
         "session-actions": {
-          "description": "Einträge des Energiemenüs, Reihenfolge, benutzerdefinierte Befehle und Icons",
+          "description": "Einträge des Sitzungsmenüs, Reihenfolge, benutzerdefinierte Befehle und Icons",
           "label": "Einträge"
         },
         "session-grid": {
@@ -2657,8 +2661,8 @@
           "label": "Nicht stören"
         },
         "osd-kinds-keyboard-backlight": {
-          "description": "OSD-Popup anzeigen, wenn sich die Stufe der Tastaturbeleuchtung ändert",
-          "label": "Tastatur Beleuchtung"
+          "description": "Zeige ein OSD-Popup, wenn sich die Tastaturbeleuchtungsstufe ändert",
+          "label": "Tastaturbeleuchtung"
         },
         "osd-kinds-keyboard-layout": {
           "description": "Zeige ein OSD-Popup, wenn sich das Tastaturlayout ändert",
@@ -2790,6 +2794,10 @@
         "screenshot-save-to-file": {
           "description": "Speichere Screenshots als PNG-Dateien in das Ausgabeverzeichnis",
           "label": "In Datei speichern"
+        },
+        "screenshot-show-cursor": {
+          "description": "Zeige den Mauszeiger in Screenshots an",
+          "label": "Cursor anzeigen"
         },
         "show-location": {
           "description": "Zeige den Standortnamen in Wetter-Widgets an",
@@ -3030,6 +3038,10 @@
           "description": "Größe des Medien-Covers in Pixeln",
           "label": "Cover-Größe"
         },
+        "artist-first": {
+          "description": "Zeige den Künstler vor dem Titelnamen (Künstler - Titel)",
+          "label": "Künstler zuerst"
+        },
         "bands": {
           "description": "Anzahl der Visualizer-Bänder",
           "label": "Bänder"
@@ -3073,7 +3085,7 @@
           "label": "Zentriert"
         },
         "color": {
-          "description": "Farbe für den Widget-Vordergrund; feste Hex-Farben werden ebenfalls unterstützt",
+          "description": "Farbe für Icon und Beschriftung dieses Widgets; feste Hex-Farben werden ebenfalls unterstützt",
           "label": "Farbe"
         },
         "color-1": {
@@ -3094,7 +3106,7 @@
           "label": "Benutzerdefiniertes Bild"
         },
         "custom-image-colorize": {
-          "description": "Färbe das benutzerdefinierte Bild mit der Farbeinstellung des Widgets ein",
+          "description": "Färbe das benutzerdefinierte Bild mit der Icon-Farbeinstellung des Widgets ein",
           "label": "Benutzerdefiniertes Bild einfärben"
         },
         "custom-labels": {
@@ -3469,6 +3481,10 @@
           "description": "Gesamtbreite in Pixeln; Fenstertitel werden verkleinert und ausgeblendet, wenn der Platz zu gering ist",
           "label": "Maximale Taskleistenbreite"
         },
+        "text": {
+          "description": "Auf der Leiste angezeigter Text",
+          "label": "Text"
+        },
         "timezone": {
           "description": "Zeitzonenkennung (z. B. Europe/Berlin) für diese Uhr; leer lassen, um die lokale Systemzeit zu verwenden",
           "label": "Zeitzone"
@@ -3546,6 +3562,7 @@
         "sysmon": "Systemmonitor",
         "taskbar": "Taskleiste",
         "test": "Test",
+        "text": "Text",
         "theme-mode": "Theme-Modus",
         "tray": "Tray",
         "volume": "Lautstärke",

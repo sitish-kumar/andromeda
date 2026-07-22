@@ -1745,13 +1745,13 @@
           "description": "Shell command to run when hitting the bottom right corner",
           "label": "Command"
         },
-        "hot-corners-enabled": {
-          "description": "Trigger actions by pushing the mouse pointer into screen corners",
-          "label": "Hot Corners"
-        },
         "hot-corners-delay-ms": {
           "description": "How long the pointer must stay in a corner before the action runs (0 = immediate)",
           "label": "Activation Delay"
+        },
+        "hot-corners-enabled": {
+          "description": "Trigger actions by pushing the mouse pointer into screen corners",
+          "label": "Hot Corners"
         },
         "hot-corners-top-left": {
           "description": "Action when the pointer hits the top left corner",
@@ -2783,10 +2783,6 @@
           "description": "Capture the desktop before region selection so moving content stays still",
           "label": "Freeze Screen"
         },
-        "screenshot-show-cursor": {
-          "description": "Include the mouse pointer in screenshots",
-          "label": "Show Cursor"
-        },
         "screenshot-pipe-command": {
           "description": "Command run as /bin/sh -lc with the PNG on stdin; for annotators or uploaders (for example: swappy -f - or satty -f -)",
           "label": "Pipe Command",
@@ -2799,6 +2795,10 @@
         "screenshot-save-to-file": {
           "description": "Write screenshots as PNG files to the output directory",
           "label": "Save to File"
+        },
+        "screenshot-show-cursor": {
+          "description": "Include the mouse pointer in screenshots",
+          "label": "Show Cursor"
         },
         "show-location": {
           "description": "Show location name in weather widgets",
