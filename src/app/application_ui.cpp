@@ -911,6 +911,7 @@ void Application::initWidgetControllersAndCallbacks() {
       .configService = &m_configService,
   };
   const DesktopWidgetRuntimeServices desktopWidgetRuntime{
+      .pipewire = m_pipewireService.get(),
       .pipewireSpectrum = m_pipewireSpectrum.get(),
       .weather = &m_weatherService,
       .mpris = m_mprisService.get(),
@@ -1001,6 +1002,7 @@ void Application::initWidgetControllersAndCallbacks() {
         m_pipewireSpectrum->handleAudioStateChanged();
       }
       m_bar.refresh();
+      m_desktopWidgetsController.requestUpdate();
       if (shouldRefreshControlCenter()) {
         m_panelManager.refresh();
       }

@@ -464,10 +464,12 @@
         "command": "Command",
         "custom-color": "Custom",
         "description": "Description",
+        "device": "Device",
         "display": "Display",
         "display-gauge": "Gauge",
         "display-graph": "Graph",
         "fade-when-idle": "Fade When Idle",
+        "fill-color": "Fill Color",
         "font-family": "Font",
         "font-family-default": "System default",
         "forecast-days": "Forecast Days",
@@ -498,10 +500,12 @@
         "reset-defaults": "Reset to Defaults",
         "ring-opacity": "Ring Opacity",
         "rotation-speed": "Rotation Speed",
+        "scroll-step": "Scroll Step",
         "secondary-color": "Secondary Color",
         "sensitivity": "Sensitivity",
         "shadow": "Shadow",
         "show-caps-lock": "Caps Lock Warning",
+        "show-device": "Show Device",
         "show-forecast": "Show Forecast",
         "show-keyboard-layout": "Keyboard Layout",
         "show-label": "Show Label",
@@ -522,6 +526,7 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Stat 2",
         "title": "Title",
+        "track-color": "Track Color",
         "variant": "Style",
         "variant-default": "Default",
         "variant-destructive": "Destructive",
@@ -555,11 +560,17 @@
         "media-player": "Media Player",
         "sticker": "Sticker",
         "system-monitor": "System Monitor",
+        "volume": "Volume",
         "weather": "Weather"
       }
     },
     "media": {
       "nothing-playing": "Nothing playing"
+    },
+    "volume": {
+      "mic": "Mic",
+      "muted": "Muted",
+      "volume": "Volume"
     },
     "weather": {
       "error": "Error",
