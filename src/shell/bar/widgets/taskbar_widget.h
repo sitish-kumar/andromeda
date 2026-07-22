@@ -2,6 +2,7 @@
 
 #include "compositors/compositor_platform.h"
 #include "shell/bar/widget.h"
+#include "system/desktop_entry.h"
 #include "system/icon_resolver.h"
 #include "ui/palette.h"
 #include "ui/signal.h"
@@ -50,6 +51,8 @@ struct TaskbarWidgetOptions {
   float taskbarMaxWidth = 8192.0f;
   std::string barPosition;
   std::string barName;
+  // Config key for [widget.<name>] overrides (pin list lives here).
+  std::string widgetName;
 };
 
 class TaskbarWidget : public Widget {
@@ -75,8 +78,14 @@ private:
     std::string iconPath;
     std::string workspaceKey;
     std::string workspaceWindowId;
+    // Desktop entry id used for pin persistence / launch (empty for unmatched windows).
+    std::string desktopEntryId;
     std::uint64_t workspaceOrder = std::numeric_limits<std::uint64_t>::max();
+    std::size_t instanceCount = 1;
     bool active = false;
+    // Pinned flat-strip slot (empty when not running). Ignored while group_by_workspace is on.
+    bool pinned = false;
+    bool running = true;
     zwlr_foreign_toplevel_handle_v1* firstHandle = nullptr;
   };
 
@@ -123,6 +132,13 @@ private:
   [[nodiscard]] static bool taskInWorkspaceGroup(const TaskModel& task, const WorkspaceModel& ws);
   void activateTaskModel(const TaskModel& task);
   void closeTaskModel(const TaskModel& task);
+  void applyPinnedMerge(std::vector<TaskModel>& tasks);
+  void activateOrLaunchPinned(const TaskModel& task);
+  void launchDesktopEntry(const TaskModel& task);
+  [[nodiscard]] std::vector<std::string> pinnedConfigIds() const;
+  [[nodiscard]] static bool taskMatchesDesktopEntry(const TaskModel& task, const DesktopEntry& entry);
+  void setEntryPinned(const DesktopEntry& entry, bool pinned);
+  [[nodiscard]] std::optional<DesktopEntry> desktopEntryForTask(const TaskModel& task) const;
 
   CompositorPlatform& m_platform;
   ConfigService& m_configService;
@@ -153,6 +169,7 @@ private:
   float m_taskbarMaxWidth = 8192.0;
   std::string m_barPosition;
   std::string m_barName;
+  std::string m_widgetName;
   bool m_rebuildPending = true;
   bool m_vertical = false;
   float m_containerWidth = 0.0f;

@@ -592,6 +592,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .taskbarMaxWidth = static_cast<float>(wc != nullptr ? wc->getDouble("taskbar_max_width", 8192.0) : 8192.0),
         .barPosition = barPosition,
         .barName = barName,
+        .widgetName = name,
     };
     if (wc != nullptr) {
       const std::string placement = wc->getString("workspace_label_placement", "corner");

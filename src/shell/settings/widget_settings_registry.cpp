@@ -943,6 +943,16 @@ namespace settings {
       add(withGroup(doubleSpec("active_opacity", 1.0, 0.1, 1.0, 0.01), "taskbar.windows"));
       add(withGroup(doubleSpec("inactive_opacity", 1.0, 0.1, 1.0, 0.01), "taskbar.windows"));
       {
+        auto pinned = withGroup(stringListSpec("pinned"), "taskbar.windows");
+        pinned.labelKey = "settings.widgets.settings.pinned.taskbar-label";
+        pinned.descriptionKey = "settings.widgets.settings.pinned.taskbar-description";
+        if (supportsTaskbarWorkspaceGrouping) {
+          pinned.visibleWhen =
+              WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"false"}}};
+        }
+        add(std::move(pinned));
+      }
+      {
         // Window titles are only laid out when the taskbar is not grouping by workspace.
         auto showWindowTitle = withGroup(boolSpec("show_window_title", false), "taskbar.windows");
         WidgetSettingVisibility windowTitleSettings;

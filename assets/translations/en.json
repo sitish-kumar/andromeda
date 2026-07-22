@@ -3392,7 +3392,9 @@
         },
         "pinned": {
           "description": "Tray item IDs that stay visible in the bar when drawer mode is enabled",
-          "label": "Pinned Items"
+          "label": "Pinned Items",
+          "taskbar-description": "Desktop apps that stay on the taskbar when not running. Ignored while Group by Workspace is on.",
+          "taskbar-label": "Pinned Apps"
         },
         "primary-click": {
           "description": "Action performed when left-clicking the bar button",
