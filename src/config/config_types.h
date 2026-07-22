@@ -1061,8 +1061,9 @@ struct SystemConfig {
     bool enabled = true;
     std::string cpuTempSensorPath;
     float cpuPollSeconds = 2.0f;
-    // Disabled by default so laptops with a discrete GPU are not woken just to sample it.
-    float gpuPollSeconds = kDisabledPollSeconds;
+    // GPU probes only run while something displays a GPU stat (SystemMonitorService retain counts),
+    // so an idle machine never wakes a discrete GPU. Set to 0 to stop probing it entirely.
+    float gpuPollSeconds = 5.0f;
     float memoryPollSeconds = 2.0f;
     float networkPollSeconds = 3.0f;
     float diskPollSeconds = 10.0f;

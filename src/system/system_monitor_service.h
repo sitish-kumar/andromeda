@@ -169,6 +169,8 @@ private:
   int m_historyHead = 0;
   std::unordered_map<std::string, DiskHistory> m_diskHistories;
   std::unordered_map<std::string, NetIfaceBytes> m_prevNetBytes;
+  // Sampling thread only.
+  bool m_gpuSourcesLogged = false;
   std::unique_ptr<NvidiaNvmlReader> m_nvidiaNvmlReader;
   std::unique_ptr<AmdRsmiReader> m_amdRsmiReader;
   std::unique_ptr<IntelGpuReader> m_intelGpuReader;

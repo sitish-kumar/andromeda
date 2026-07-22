@@ -2458,7 +2458,7 @@
             "label": "Disk Poll Interval"
           },
           "gpu-poll": {
-            "description": "Seconds between GPU temperature and VRAM samples (0 disables, which avoids waking a discrete GPU; 5 is a good interval if you do enable it)",
+            "description": "Seconds between GPU temperature, usage, and VRAM samples. The GPU is only sampled while something displays a GPU stat, so an idle machine is never woken (0 disables it entirely)",
             "label": "GPU Poll Interval"
           },
           "label": "System Monitor",
