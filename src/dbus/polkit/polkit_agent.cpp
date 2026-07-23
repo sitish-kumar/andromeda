@@ -394,7 +394,7 @@ struct PolkitAgent::Impl {
         g_object_unref(subject);
       }
       if (readyCallback) {
-        readyCallback(false, std::move(message));
+        readyCallback(false, message);
       }
       return;
     }
