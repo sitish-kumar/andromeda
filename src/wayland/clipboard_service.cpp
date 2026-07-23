@@ -12,7 +12,6 @@
 #include <array>
 #include <cerrno>
 #include <chrono>
-#include <cstring>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
@@ -23,7 +22,6 @@
 #include <sodium.h>
 #include <stdexcept>
 #include <string_view>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <unordered_set>
 
@@ -37,12 +35,6 @@ namespace {
   constexpr std::size_t kPreviewBytes = 200;
   constexpr std::string_view kManifestPurpose = "clipboard-manifest-v1";
   constexpr std::string_view kPayloadPurpose = "clipboard-payload-v1";
-  const security::SecretId kClipboardKeyId{
-      .scope = "cache",
-      .owner = "clipboard-cache-v1",
-      .name = "data-key",
-  };
-
   constexpr std::array kTextMimeTypes = {
       std::string_view{"text/plain;charset=utf-8"},
       std::string_view{"text/plain"},
@@ -71,16 +63,6 @@ namespace {
 
   constexpr Logger kLog("clipboard");
   std::uint64_t gStorageCounter = 0;
-
-  [[nodiscard]] std::optional<std::uint8_t> decodeLowerHex(char value) {
-    if (value >= '0' && value <= '9') {
-      return static_cast<std::uint8_t>(value - '0');
-    }
-    if (value >= 'a' && value <= 'f') {
-      return static_cast<std::uint8_t>(value - 'a' + 10);
-    }
-    return std::nullopt;
-  }
 
   void secureFile(const std::filesystem::path& path) {
     std::error_code ec;
@@ -450,7 +432,8 @@ namespace {
 
 } // namespace
 
-ClipboardService::ClipboardService(security::SecretStore& secretStore) : m_secretStore(secretStore) {}
+ClipboardService::ClipboardService(security::StorageKeyProvider& storageKeyProvider)
+    : m_storageKeyProvider(storageKeyProvider) {}
 
 void ClipboardService::setHistoryRetentionEnabled(bool enabled) {
   if (m_historyRetention == enabled) {
@@ -494,10 +477,7 @@ void ClipboardService::setMaxHistoryEntries(std::size_t maxEntries) {
   notifyChanged();
 }
 
-ClipboardService::~ClipboardService() {
-  m_keyOperation.cancel();
-  cleanup();
-}
+ClipboardService::~ClipboardService() { cleanup(); }
 
 const DataControlOps* extDataControlOps() { return &kExtDataControlOps; }
 
@@ -573,227 +553,50 @@ ClipboardPersistenceState ClipboardService::persistenceState() const noexcept { 
 
 bool ClipboardService::persistenceMigrationPending() const noexcept { return m_persistenceMigrationPending; }
 
-void ClipboardService::configurePersistence(ClipboardKeySource keySource, std::string keyFile) {
-  if (m_persistenceConfigured && m_keySource == keySource && m_keyFile == keyFile) {
-    return;
-  }
-
-  m_keyOperation.cancel();
+void ClipboardService::syncPersistence() {
   m_dataKey.reset();
-  m_keySource = keySource;
-  m_keyFile = std::move(keyFile);
-  m_persistenceConfigured = true;
   setPersistenceState(ClipboardPersistenceState::Opening, m_persistenceMigrationPending);
 
-  if (!security::securityPrimitivesReady()) {
-    setPersistenceState(ClipboardPersistenceState::BackendError, false);
-    return;
-  }
-  if (m_keySource == ClipboardKeySource::File) {
-    loadPersistenceKeyFile();
-  } else {
-    lookupPersistenceKey();
-  }
-}
-
-void ClipboardService::retryPersistence() {
-  m_keyOperation.cancel();
-  setPersistenceState(ClipboardPersistenceState::Opening, m_persistenceMigrationPending);
-  if (m_keySource == ClipboardKeySource::File) {
-    m_dataKey.reset();
-    loadPersistenceKeyFile();
-    return;
-  }
-  if (m_dataKey.has_value()) {
-    activatePersistenceKey(std::move(*m_dataKey));
-    return;
-  }
-
-  m_keyOperation = m_secretStore.retryAvailabilityCheck([this](security::SecretStoreStatus status) {
-    if (status == security::SecretStoreStatus::Success) {
-      lookupPersistenceKey();
-      return;
-    }
-
-    ClipboardPersistenceState state = ClipboardPersistenceState::BackendError;
-    switch (status) {
-    case security::SecretStoreStatus::Unavailable:
-      state = ClipboardPersistenceState::Unavailable;
-      break;
-    case security::SecretStoreStatus::Cancelled:
-      state = ClipboardPersistenceState::Cancelled;
-      break;
-    case security::SecretStoreStatus::DeniedOrLocked:
-      state = ClipboardPersistenceState::DeniedOrLocked;
-      break;
-    case security::SecretStoreStatus::Success:
-    case security::SecretStoreStatus::NotFound:
-    case security::SecretStoreStatus::BackendError:
-      break;
-    }
-    setPersistenceState(state, m_persistenceMigrationPending);
-  });
-}
-
-void ClipboardService::loadPersistenceKeyFile() {
-  if (m_keyFile.empty()) {
-    kLog.warn("clipboard file key source has no configured key file");
-    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
-    return;
-  }
-
-  const int fd = ::open(m_keyFile.c_str(), O_RDONLY | O_CLOEXEC | O_NONBLOCK);
-  if (fd < 0) {
-    const int error = errno;
-    const ClipboardPersistenceState state = error == ENOENT || error == ENOTDIR ? ClipboardPersistenceState::MissingKey
-        : error == EACCES || error == EPERM ? ClipboardPersistenceState::DeniedOrLocked
-                                            : ClipboardPersistenceState::BackendError;
-    kLog.warn("failed to open configured clipboard key file: {}", std::strerror(error));
-    setPersistenceState(state, m_persistenceMigrationPending);
-    return;
-  }
-
-  struct stat info{};
-  if (::fstat(fd, &info) != 0 || !S_ISREG(info.st_mode) || (info.st_size != 64 && info.st_size != 65)) {
-    ::close(fd);
-    kLog.warn("clipboard key file must contain one 64-character lowercase hexadecimal key");
-    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
-    return;
-  }
-
-  const auto fileSize = static_cast<std::size_t>(info.st_size);
-  security::SecureBuffer encoded(fileSize);
-  std::size_t offset = 0;
-  while (offset < fileSize) {
-    const ssize_t count = ::read(fd, encoded.bytes().data() + offset, fileSize - offset);
-    if (count > 0) {
-      offset += static_cast<std::size_t>(count);
-      continue;
-    }
-    if (count < 0 && errno == EINTR) {
-      continue;
-    }
-    ::close(fd);
-    kLog.warn("failed to read configured clipboard key file");
-    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
-    return;
-  }
-  ::close(fd);
-
-  if (fileSize == 65 && encoded.bytes().back() != static_cast<std::uint8_t>('\n')) {
-    kLog.warn("clipboard key file has invalid trailing data");
-    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
-    return;
-  }
-
-  security::SecureBuffer keyBytes(security::SecureKey::Size);
-  for (std::size_t i = 0; i < security::SecureKey::Size; ++i) {
-    const auto high = decodeLowerHex(static_cast<char>(encoded.bytes()[i * 2]));
-    const auto low = decodeLowerHex(static_cast<char>(encoded.bytes()[i * 2 + 1]));
-    if (!high.has_value() || !low.has_value()) {
-      kLog.warn("clipboard key file must contain lowercase hexadecimal characters");
+  if (m_storageKeyProvider.state() == security::StorageKeyState::Ready) {
+    auto key = m_storageKeyProvider.deriveKey(security::StorageKeyPurpose::ClipboardHistory);
+    if (!key.has_value()) {
       setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
       return;
     }
-    keyBytes.bytes()[i] = static_cast<std::uint8_t>((*high << 4U) | *low);
-  }
-
-  auto key = security::SecureKey::fromBuffer(std::move(keyBytes));
-  if (!key.has_value()) {
-    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
-    return;
-  }
-  activatePersistenceKey(std::move(*key));
-}
-
-void ClipboardService::lookupPersistenceKey() {
-  setPersistenceState(ClipboardPersistenceState::Opening, m_persistenceMigrationPending);
-  m_keyOperation =
-      m_secretStore.lookup(kClipboardKeyId, [this](security::SecretStoreStatus status, security::SecureBuffer value) {
-        if (status == security::SecretStoreStatus::Success) {
-          auto key = security::SecureKey::fromBuffer(std::move(value));
-          if (!key.has_value()) {
-            kLog.warn("clipboard persistence key has an invalid size");
-            setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
-            return;
-          }
-          activatePersistenceKey(std::move(*key));
-          return;
-        }
-
-        if (status == security::SecretStoreStatus::NotFound) {
-          std::error_code ec;
-          if (std::filesystem::exists(manifestPath(), ec)) {
-            kLog.warn("encrypted clipboard history exists, but its data key is missing");
-            setPersistenceState(ClipboardPersistenceState::MissingKey, m_persistenceMigrationPending);
-            return;
-          }
-          if (ec) {
-            kLog.warn("failed to inspect encrypted clipboard history: {}", ec.message());
-            setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
-            return;
-          }
-          createPersistenceKey();
-          return;
-        }
-
-        ClipboardPersistenceState state = ClipboardPersistenceState::BackendError;
-        switch (status) {
-        case security::SecretStoreStatus::Unavailable:
-          state = ClipboardPersistenceState::Unavailable;
-          break;
-        case security::SecretStoreStatus::Cancelled:
-          state = ClipboardPersistenceState::Cancelled;
-          break;
-        case security::SecretStoreStatus::DeniedOrLocked:
-          state = ClipboardPersistenceState::DeniedOrLocked;
-          break;
-        case security::SecretStoreStatus::Success:
-        case security::SecretStoreStatus::NotFound:
-        case security::SecretStoreStatus::BackendError:
-          break;
-        }
-        setPersistenceState(state, m_persistenceMigrationPending);
-      });
-}
-
-void ClipboardService::createPersistenceKey() {
-  auto generated = security::SecureKey::generate();
-  if (!generated.has_value()) {
-    kLog.warn("failed to generate clipboard persistence key");
-    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    activatePersistenceKey(std::move(*key));
     return;
   }
 
-  auto key = std::make_shared<security::SecureKey>(std::move(*generated));
-  security::SecureBuffer storedValue(key->bytes());
-  m_keyOperation = m_secretStore.store(
-      kClipboardKeyId, std::move(storedValue), "Noctalia clipboard history key",
-      [this, key = std::move(key)](security::SecretStoreStatus status) mutable {
-        if (status == security::SecretStoreStatus::Success) {
-          activatePersistenceKey(std::move(*key));
-          return;
-        }
+  ClipboardPersistenceState state = ClipboardPersistenceState::BackendError;
+  switch (m_storageKeyProvider.state()) {
+  case security::StorageKeyState::Opening:
+    state = ClipboardPersistenceState::Opening;
+    break;
+  case security::StorageKeyState::Unavailable:
+    state = ClipboardPersistenceState::Unavailable;
+    break;
+  case security::StorageKeyState::Cancelled:
+    state = ClipboardPersistenceState::Cancelled;
+    break;
+  case security::StorageKeyState::DeniedOrLocked:
+    state = ClipboardPersistenceState::DeniedOrLocked;
+    break;
+  case security::StorageKeyState::MissingKey:
+    state = ClipboardPersistenceState::MissingKey;
+    break;
+  case security::StorageKeyState::Ready:
+  case security::StorageKeyState::BackendError:
+    break;
+  }
+  setPersistenceState(state, m_persistenceMigrationPending);
+}
 
-        ClipboardPersistenceState state = ClipboardPersistenceState::BackendError;
-        switch (status) {
-        case security::SecretStoreStatus::Unavailable:
-          state = ClipboardPersistenceState::Unavailable;
-          break;
-        case security::SecretStoreStatus::Cancelled:
-          state = ClipboardPersistenceState::Cancelled;
-          break;
-        case security::SecretStoreStatus::DeniedOrLocked:
-          state = ClipboardPersistenceState::DeniedOrLocked;
-          break;
-        case security::SecretStoreStatus::Success:
-        case security::SecretStoreStatus::NotFound:
-        case security::SecretStoreStatus::BackendError:
-          break;
-        }
-        setPersistenceState(state, m_persistenceMigrationPending);
-      }
-  );
+void ClipboardService::retryPersistence() { m_storageKeyProvider.retry(); }
+
+bool ClipboardService::hasEncryptedPersistence() const {
+  std::error_code ec;
+  const bool exists = std::filesystem::exists(manifestPath(), ec);
+  return !ec && exists;
 }
 
 void ClipboardService::activatePersistenceKey(security::SecureKey key) {
@@ -1789,6 +1592,7 @@ bool ClipboardService::persistHistory(bool force) {
         )) {
       throw std::runtime_error("failed to write clipboard manifest");
     }
+    m_storageKeyProvider.noteEncryptedDataExists();
 
     const fs::path entriesDir(entriesDirectory());
     if (fs::exists(entriesDir)) {

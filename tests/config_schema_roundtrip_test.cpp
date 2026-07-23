@@ -433,8 +433,8 @@ location = "https://example.invalid/bad"
     c.shell.passwordMaskStyle = PasswordMaskStyle::RandomIcons;
     c.shell.clipboardHistoryMaxEntries = 80;
     c.shell.clipboardAutoPaste = ClipboardAutoPasteMode::CtrlV;
-    c.shell.clipboardStorage.keySource = ClipboardKeySource::File;
-    c.shell.clipboardStorage.keyFile = "/run/agenix/noctalia-clipboard-key";
+    c.storage.keySource = StorageKeySource::File;
+    c.storage.keyFile = "/run/agenix/noctalia-storage-key";
     c.shell.avatarPath = "/home/u/face.png";
     c.shell.animation.speed = 1.5f;
     c.shell.shadow.direction = ShadowDirection::UpLeft;
@@ -624,56 +624,56 @@ credential_source = "automatic"
     }
   }
 
-  void checkClipboardKeySourceValidation() {
+  void checkStorageKeySourceValidation() {
     const auto parse = [](std::string_view storageConfig) {
       const toml::table table = toml::parse(storageConfig);
-      ShellConfig shell;
+      StorageConfig storage;
       Diagnostics diagnostics;
-      readInto(table, shell, shellSchema(), "shell", diagnostics);
+      readInto(table, storage, storageSchema(), "storage", diagnostics);
       return diagnostics;
     };
 
     const Diagnostics valid = parse(R"(
-[clipboard_storage]
 key_source = "file"
-key_file = "/run/agenix/noctalia-clipboard-key"
+key_file = "/run/agenix/noctalia-storage-key"
 )");
     if (valid.hasErrors()) {
-      fail("clipboard: valid file key source was rejected");
+      fail("storage: valid file key source was rejected");
     }
 
     const Diagnostics missingFile = parse(R"(
-[clipboard_storage]
 key_source = "file"
 )");
     if (!missingFile.hasErrors()) {
-      fail("clipboard: file key source accepted a missing key_file");
+      fail("storage: file key source accepted a missing key_file");
     }
 
     const Diagnostics conflictingFile = parse(R"(
-[clipboard_storage]
 key_source = "secret-service"
-key_file = "/run/agenix/noctalia-clipboard-key"
+key_file = "/run/agenix/noctalia-storage-key"
 )");
     if (!conflictingFile.hasErrors()) {
-      fail("clipboard: secret-service key source accepted key_file");
+      fail("storage: secret-service key source accepted key_file");
     }
 
     const Diagnostics relativeFile = parse(R"(
-[clipboard_storage]
 key_source = "file"
-key_file = "noctalia-clipboard-key"
+key_file = "noctalia-storage-key"
 )");
     if (!relativeFile.hasErrors()) {
-      fail("clipboard: file key source accepted a relative key_file");
+      fail("storage: file key source accepted a relative key_file");
     }
 
     const Diagnostics unknownSource = parse(R"(
-[clipboard_storage]
 key_source = "automatic"
 )");
     if (!unknownSource.hasErrors()) {
-      fail("clipboard: unknown key source was not an error");
+      fail("storage: unknown key source was not an error");
+    }
+    if (!isKnownConfigPath({"storage", "key_source"})
+        || !isKnownConfigPath({"storage", "key_file"})
+        || isKnownConfigPath({"shell", "clipboard_storage", "key_source"})) {
+      fail("storage: canonical config paths were not enforced");
     }
   }
 
@@ -980,7 +980,7 @@ widget_spacing = 8
   checkPluginIdValidation();
   checkPluginSourceNameValidation();
   checkCalendarCredentialSourceValidation();
-  checkClipboardKeySourceValidation();
+  checkStorageKeySourceValidation();
   checkClamps();
   checkCustomColorFallback();
   checkTemplateConfigCustomColorsExport();

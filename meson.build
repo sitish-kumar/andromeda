@@ -569,6 +569,7 @@ _noctalia_sources = files(
   'src/security/encrypted_file_store.cpp',
   'src/security/secret_store.cpp',
   'src/security/secure_buffer.cpp',
+  'src/security/storage_key_provider.cpp',
   'src/system/battery_warning_monitor.cpp',
   'src/shell/bar/bar.cpp',
   'src/shell/clipboard/clipboard_paste.cpp',
@@ -1669,8 +1670,13 @@ calendar_cache_permissions_test = executable('calendar_cache_permissions_test',
     'tests/calendar_cache_permissions_test.cpp',
     'src/calendar/calendar_cache.cpp',
     'src/config/atomic_file.cpp',
+    'src/security/encrypted_file_store.cpp',
+    'src/security/secure_buffer.cpp',
   ),
   include_directories: _noctalia_inc,
+  dependencies: [
+    libsodium_dep,
+  ],
 )
 
 test('calendar_cache_permissions', calendar_cache_permissions_test)
@@ -1683,6 +1689,7 @@ clipboard_storage_permissions_test = executable('clipboard_storage_permissions_t
     'src/security/encrypted_file_store.cpp',
     'src/security/secret_store.cpp',
     'src/security/secure_buffer.cpp',
+    'src/security/storage_key_provider.cpp',
     'src/wayland/clipboard_service.cpp',
   ) + _protocol_headers + _protocol_sources,
   include_directories: _noctalia_inc,

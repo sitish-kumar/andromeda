@@ -1,9 +1,8 @@
 #pragma once
 
 #include "config/config_limits.h"
-#include "config/config_types.h"
 #include "core/text_clipboard.h"
-#include "security/secret_store.h"
+#include "security/storage_key_provider.h"
 
 #include <chrono>
 #include <cstddef>
@@ -76,7 +75,7 @@ class ClipboardService : public TextClipboard {
 public:
   using ChangeCallback = std::function<void()>;
 
-  explicit ClipboardService(security::SecretStore& secretStore);
+  explicit ClipboardService(security::StorageKeyProvider& storageKeyProvider);
   ~ClipboardService();
 
   ClipboardService(const ClipboardService&) = delete;
@@ -92,8 +91,9 @@ public:
   [[nodiscard]] bool persistenceMigrationPending() const noexcept;
   [[nodiscard]] std::size_t addPollFds(std::vector<pollfd>& fds) const;
 
-  void configurePersistence(ClipboardKeySource keySource, std::string keyFile);
+  void syncPersistence();
   void retryPersistence();
+  [[nodiscard]] bool hasEncryptedPersistence() const;
   bool ensureEntryLoaded(std::size_t index);
   [[nodiscard]] std::optional<std::string> imageDataUri(std::size_t index);
   [[nodiscard]] std::optional<std::string> exportEntryForExternalTool(std::size_t index);
@@ -168,9 +168,6 @@ private:
   void finishRead(bool discard);
   void addToHistory(ClipboardEntry entry);
   [[nodiscard]] std::size_t pinnedCount() const noexcept;
-  void lookupPersistenceKey();
-  void loadPersistenceKeyFile();
-  void createPersistenceKey();
   void activatePersistenceKey(security::SecureKey key);
   void setPersistenceState(ClipboardPersistenceState state, bool migrationPending);
   [[nodiscard]] bool loadPersistedHistory();
@@ -220,12 +217,8 @@ private:
   std::uint64_t m_changeSerial = 0;
   bool m_historyRetention = true;
   std::size_t m_maxHistoryEntries = static_cast<std::size_t>(noctalia::config::kClipboardHistoryDefaultEntries);
-  security::SecretStore& m_secretStore;
-  security::SecretStoreOperation m_keyOperation;
+  security::StorageKeyProvider& m_storageKeyProvider;
   std::optional<security::SecureKey> m_dataKey;
-  ClipboardKeySource m_keySource = ClipboardKeySource::SecretService;
-  std::string m_keyFile;
-  bool m_persistenceConfigured = false;
   ClipboardPersistenceState m_persistenceState = ClipboardPersistenceState::Opening;
   bool m_persistenceMigrationPending = false;
   ChangeCallback m_changeCallback;

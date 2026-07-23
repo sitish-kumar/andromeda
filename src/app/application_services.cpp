@@ -316,7 +316,6 @@ void Application::syncScreenTimeService() {
 
 void Application::syncClipboardService() {
   const bool enabled = m_configService.config().shell.clipboardEnabled;
-  const auto& storage = m_configService.config().shell.clipboardStorage;
   const auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
 
   // The live clipboard transport (read current selection + set selection)
@@ -325,7 +324,6 @@ void Application::syncClipboardService() {
   // and the history UI.
   m_wayland.setClipboardService(&m_clipboardService);
   Input::setTextClipboard(&m_clipboardService);
-  m_clipboardService.configurePersistence(storage.keySource, storage.keyFile);
   m_clipboardService.setHistoryRetentionEnabled(enabled);
   m_clipboardService.setMaxHistoryEntries(
       static_cast<std::size_t>(m_configService.config().shell.clipboardHistoryMaxEntries)
@@ -344,10 +342,30 @@ void Application::syncClipboardService() {
   }
 }
 
+void Application::syncStorageKeyProvider() {
+  const StorageConfig& storage = m_configService.config().storage;
+  const bool encryptedDataExists =
+      m_clipboardService.hasEncryptedPersistence() || m_calendarService.hasEncryptedCache();
+  m_storageKeyProvider.configure(storage.keySource, storage.keyFile, encryptedDataExists);
+}
+
 void Application::initServices() {
   if (!security::initializeSecurityPrimitives()) {
     kLog.error("libsodium initialization failed; encrypted persistence is unavailable");
   }
+  m_storageKeyProvider.setChangeCallback([this]() {
+    m_clipboardService.syncPersistence();
+    m_calendarService.syncCachePersistence();
+  });
+  syncStorageKeyProvider();
+  m_configService.addReloadCallback(
+      [this]() {
+        if (m_configService.lastChange().storage) {
+          syncStorageKeyProvider();
+        }
+      },
+      "storage-key"
+  );
   m_secretStore.retryAvailabilityCheck();
   initStyleThemeAndWayland();
   initWaylandCallbacks();

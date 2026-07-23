@@ -1,7 +1,9 @@
 #include "security/secret_store.h"
 #include "security/secure_buffer.h"
+#include "security/storage_key_provider.h"
 #include "wayland/clipboard_service.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -141,6 +143,24 @@ namespace {
     std::size_t m_storeCount = 0;
   };
 
+  class ClipboardStorageHarness {
+  public:
+    explicit ClipboardStorageHarness(security::SecretStore& store) : m_keys(store), m_clipboard(m_keys) {
+      m_keys.setChangeCallback([this]() { m_clipboard.syncPersistence(); });
+    }
+
+    void configure(StorageKeySource source, std::string keyFile = {}) {
+      m_keys.configure(source, std::move(keyFile), m_clipboard.hasEncryptedPersistence());
+    }
+
+    [[nodiscard]] ClipboardService& clipboard() { return m_clipboard; }
+    [[nodiscard]] security::StorageKeyProvider& keys() { return m_keys; }
+
+  private:
+    security::StorageKeyProvider m_keys;
+    ClipboardService m_clipboard;
+  };
+
   std::filesystem::perms mode(const std::filesystem::path& path) {
     std::error_code ec;
     return std::filesystem::status(path, ec).permissions() & permissionMask();
@@ -222,8 +242,9 @@ namespace {
     bool ok = true;
 
     {
-      ClipboardService clipboard(store);
-      clipboard.configurePersistence(ClipboardKeySource::SecretService, {});
+      ClipboardStorageHarness harness(store);
+      ClipboardService& clipboard = harness.clipboard();
+      harness.configure(StorageKeySource::SecretService);
       ok = dispatchCompletion(store) && ok;
       ok = dispatchCompletion(store) && ok;
       ok = expect(
@@ -247,8 +268,9 @@ namespace {
     }
 
     {
-      ClipboardService clipboard(store);
-      clipboard.configurePersistence(ClipboardKeySource::SecretService, {});
+      ClipboardStorageHarness harness(store);
+      ClipboardService& clipboard = harness.clipboard();
+      harness.configure(StorageKeySource::SecretService);
       ok = dispatchCompletion(store) && ok;
       ok = expect(
                clipboard.persistenceState() == ClipboardPersistenceState::Ready,
@@ -276,8 +298,9 @@ namespace {
     auto* fake = backend.get();
     fake->setLookupStatus(SecretStoreStatus::Unavailable);
     security::SecretStore store(std::move(backend));
-    ClipboardService clipboard(store);
-    clipboard.configurePersistence(ClipboardKeySource::SecretService, {});
+    ClipboardStorageHarness harness(store);
+    ClipboardService& clipboard = harness.clipboard();
+    harness.configure(StorageKeySource::SecretService);
 
     bool ok = dispatchCompletion(store);
     ok = expect(
@@ -320,8 +343,9 @@ namespace {
     auto backend = std::make_unique<FakeSecretStoreBackend>();
     auto* fake = backend.get();
     security::SecretStore store(std::move(backend));
-    ClipboardService clipboard(store);
-    clipboard.configurePersistence(ClipboardKeySource::SecretService, {});
+    ClipboardStorageHarness harness(store);
+    ClipboardService& clipboard = harness.clipboard();
+    harness.configure(StorageKeySource::SecretService);
 
     bool ok = dispatchCompletion(store);
     ok = expect(
@@ -353,8 +377,9 @@ namespace {
     bool ok = true;
 
     {
-      ClipboardService clipboard(store);
-      clipboard.configurePersistence(ClipboardKeySource::File, keyFile.string());
+      ClipboardStorageHarness harness(store);
+      ClipboardService& clipboard = harness.clipboard();
+      harness.configure(StorageKeySource::File, keyFile.string());
       ok = expect(
                clipboard.persistenceState() == ClipboardPersistenceState::Ready,
                "file key source did not reach ready state"
@@ -365,6 +390,15 @@ namespace {
       ok = expect(
                !fs::exists(stateHome / "noctalia/clipboard/index.json"),
                "file key source left the legacy manifest behind"
+           )
+          && ok;
+      auto clipboardKey = harness.keys().deriveKey(security::StorageKeyPurpose::ClipboardHistory);
+      auto calendarKey = harness.keys().deriveKey(security::StorageKeyPurpose::CalendarEvents);
+      ok = expect(
+               clipboardKey.has_value()
+                   && calendarKey.has_value()
+                   && !std::ranges::equal(clipboardKey->bytes(), calendarKey->bytes()),
+               "storage master key did not derive distinct purpose keys"
            )
           && ok;
     }
@@ -378,8 +412,9 @@ namespace {
       output << keyB << '\n';
     }
     {
-      ClipboardService clipboard(store);
-      clipboard.configurePersistence(ClipboardKeySource::File, keyFile.string());
+      ClipboardStorageHarness harness(store);
+      ClipboardService& clipboard = harness.clipboard();
+      harness.configure(StorageKeySource::File, keyFile.string());
       ok = expect(
                clipboard.persistenceState() == ClipboardPersistenceState::BackendError,
                "changed file key did not fail authentication"
@@ -393,8 +428,9 @@ namespace {
       output << std::string(64, 'A');
     }
     {
-      ClipboardService clipboard(store);
-      clipboard.configurePersistence(ClipboardKeySource::File, keyFile.string());
+      ClipboardStorageHarness harness(store);
+      ClipboardService& clipboard = harness.clipboard();
+      harness.configure(StorageKeySource::File, keyFile.string());
       ok =
           expect(
               clipboard.persistenceState() == ClipboardPersistenceState::BackendError, "malformed file key was accepted"
@@ -405,8 +441,9 @@ namespace {
 
     fs::remove(keyFile);
     {
-      ClipboardService clipboard(store);
-      clipboard.configurePersistence(ClipboardKeySource::File, keyFile.string());
+      ClipboardStorageHarness harness(store);
+      ClipboardService& clipboard = harness.clipboard();
+      harness.configure(StorageKeySource::File, keyFile.string());
       ok = expect(
                clipboard.persistenceState() == ClipboardPersistenceState::MissingKey,
                "missing configured key file was not exposed"
