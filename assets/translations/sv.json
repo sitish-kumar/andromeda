@@ -88,6 +88,7 @@
       },
       "weather": {
         "default": "Väder",
+        "error": "Väder fel",
         "loading": "Väder...",
         "no-location": "Ingen plats",
         "off": "Väder av"
@@ -136,8 +137,11 @@
   },
   "control-center": {
     "audio": {
+      "application-volumes": "Programvolymer",
       "choose-effects-profile": "Välj en profil",
       "effects-profile": "Effekter",
+      "no-application-audio": "Inget programljud",
+      "no-application-audio-body": "Inga program spelar ljud just nu.",
       "no-input-devices": "Inga enheter för ljudinspelning",
       "no-input-selected": "Ingen enhet för ljudinspelning vald",
       "no-output-devices": "Inga enheter för ljuduppspelning",
@@ -296,8 +300,9 @@
     "weather": {
       "daily": {
         "tooltip": {
-          "high": "Hög",
-          "low": "Låg",
+          "condition": "Väder",
+          "high": "Högst",
+          "low": "Lägst",
           "sunrise": "Soluppgång",
           "sunset": "Solnedgång"
         }
@@ -307,6 +312,8 @@
         "elevation": "Altitud",
         "sunrise": "Soluppgång",
         "sunset": "Solnedgång",
+        "temp-max": "Högst temperatur",
+        "temp-min": "Lägst temperatur",
         "timezone": "Tidzon",
         "uv-index": "UV-index",
         "wind": "Vind"
@@ -319,18 +326,20 @@
         "temperature": "10 / 4°C"
       },
       "forecast-view": {
-        "daily": "Dagligen",
+        "daily": "Dagar",
         "hourly": "Timvis"
       },
       "hourly": {
         "summary": "{condition} / Regn {precip}%",
         "tooltip": {
+          "condition": "Väder",
           "humidity": "Luftfuktighet",
           "rain": "Regn",
           "wind": "Vind"
         }
       },
       "location-unavailable": "Plats otillgänglig",
+      "no-location-body": "Lägg till din adress eller sätt på autoplats i platsinställningarna.",
       "no-location-title": "Ingen plats vald",
       "refreshing": "Uppdaterar väder...",
       "waiting": "Väntar på väderdata"
@@ -396,6 +405,7 @@
       }
     },
     "weather": {
+      "error": "Fel",
       "loading": "Laddar...",
       "no-location": "Ingen plats",
       "off": "Väder av"
@@ -603,6 +613,11 @@
         }
       }
     },
+    "navigation": {
+      "groups": {
+        "weather": "Väder"
+      }
+    },
     "options": {
       "bar": {
         "auto-hide": {
@@ -621,6 +636,12 @@
         "light": "Tunn",
         "medium": "Medium",
         "regular": "Vanlig"
+      },
+      "weather": {
+        "unit": {
+          "imperial": "Imperiska",
+          "metric": "Metriska"
+        }
       }
     },
     "plugins": {
@@ -646,6 +667,24 @@
         },
         "dead-zone-right-command": {
           "label": "Högerklick"
+        }
+      },
+      "services": {
+        "weather": {
+          "description": "Sätt på vädertjänsten via open-meteo.com",
+          "label": "Väder"
+        },
+        "weather-effects": {
+          "description": "Visa visuella vädereffekter",
+          "label": "Vädereffekter"
+        },
+        "weather-refresh-interval": {
+          "description": "Hur ofta väderdatan ska förnyas (minuter)",
+          "label": "Uppdateringsfrekvens"
+        },
+        "weather-unit": {
+          "description": "Enheter för väderdata",
+          "label": "Enheter"
         }
       }
     },

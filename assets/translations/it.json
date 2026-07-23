@@ -94,6 +94,10 @@
         "cpu": "CPU",
         "cpu-temp": "Temperatura CPU",
         "disk": "Disco",
+        "disk-free": "Spazio libero",
+        "disk-free-pct": "% spazio libero",
+        "disk-used": "Spazio occupato",
+        "disk-used-pct": "% spazio occupato",
         "download": "Download",
         "gpu-temp": "Temperatura GPU",
         "gpu-usage": "Utilizzo GPU",
@@ -464,10 +468,12 @@
         "command": "Comando",
         "custom-color": "Personalizzato",
         "description": "Descrizione",
+        "device": "Dispositivo",
         "display": "Schermo",
         "display-gauge": "Gauge",
         "display-graph": "Grafico",
         "fade-when-idle": "Dissolvi quando inattivo",
+        "fill-color": "Colore riempimento",
         "font-family": "Carattere",
         "font-family-default": "Predefinito di sistema",
         "forecast-days": "Numero di giorni",
@@ -498,10 +504,12 @@
         "reset-defaults": "Ripristina predefiniti",
         "ring-opacity": "Opacità anello",
         "rotation-speed": "Velocità rotazione",
+        "scroll-step": "Step scorrimento",
         "secondary-color": "Colore secondario",
         "sensitivity": "Sensibilità",
         "shadow": "Ombra",
         "show-caps-lock": "Avviso Caps Lock",
+        "show-device": "Mostra dispositivo",
         "show-forecast": "Più giorni",
         "show-keyboard-layout": "Layout tastiera",
         "show-label": "Mostra etichette",
@@ -522,6 +530,7 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Statistica 2",
         "title": "Titolo",
+        "track-color": "Colore traccia",
         "variant": "Stile",
         "variant-default": "Default",
         "variant-destructive": "Distruttivo",
@@ -540,6 +549,9 @@
         "wave-thickness": "Spessore onda",
         "widget-section": "Widget"
       },
+      "state": {
+        "grid": "Griglia"
+      },
       "title": "Widget desktop",
       "types": {
         "audio-visualizer": "Visualizzatore audio",
@@ -551,11 +563,17 @@
         "media-player": "Lettore multimediale",
         "sticker": "Sticker",
         "system-monitor": "Monitor di sistema",
+        "volume": "Volume",
         "weather": "Meteo"
       }
     },
     "media": {
       "nothing-playing": "Niente in riproduzione"
+    },
+    "volume": {
+      "mic": "Mic",
+      "muted": "Muto",
+      "volume": "Volume"
     },
     "weather": {
       "error": "Errore",
@@ -679,6 +697,7 @@
       "battery-low-title": "Batteria scarica",
       "calendar": "Calendario",
       "calendar-google-connect-browser-failed": "Impossibile avviare un browser per l'autorizzazione Google. Controlla il browser predefinito o la configurazione di xdg-open.",
+      "calendar-google-connect-credential-store-failed": "Autorizzazione completata, ma non è stato possibile salvare il token di aggiornamento. Sblocca o avvia il servizio segreti, quindi connettiti di nuovo.",
       "calendar-google-connect-expired": "L'autorizzazione Google è scaduta prima del completamento dell'accesso. Avvia di nuovo la connessione.",
       "calendar-google-connect-failed-title": "Connessione a Google Calendar non riuscita",
       "calendar-google-connect-missing-account": "Nessun account calendario Google configurato corrisponde a \"{account}\".",
@@ -820,6 +839,7 @@
   },
   "settings": {
     "actions": {
+      "confirm-reset": "Conferma reset",
       "reset": "Ripristina"
     },
     "badges": {
@@ -835,12 +855,17 @@
       "add-title": "Aggiungi account calendario",
       "calendars-label": "Calendari",
       "color-label": "Colore",
+      "credential-source-file": "File password",
+      "credential-source-keyring": "Keyring",
+      "credential-source-label": "Archivio credenziali",
       "delete-error": "Impossibile eliminare l'account calendario.",
       "edit-title": "Modifica account calendario",
       "id-label": "ID account",
       "invalid": "Controlla i campi dell'account calendario evidenziati.",
       "name-label": "Nome visualizzato",
       "name-placeholder": "Calendario personale",
+      "password-file-error": "Impossibile leggere il password file configurato. Verifica che esista, che sia un file leggibile e che contenga una password.",
+      "password-file-label": "File password",
       "password-keep-placeholder": "Lascia vuoto per mantenere la password corrente",
       "password-label": "Password app",
       "password-placeholder": "Password specifica per app",
@@ -854,6 +879,11 @@
       "save": "Salva",
       "save-connect": "Salva e connetti",
       "save-error": "Impossibile salvare l'account calendario.",
+      "secret-cleanup-error": "Non è stato possibile salvare l'account e le relative credenziali del portachiavi non possono essere ripristinate o ripulite. Riprova dopo aver sbloccato il servizio segreti.",
+      "secret-service-cancelled": "Il prompt del servizio segreti è stato annullato. Riprova quando sei pronto per sbloccarlo.",
+      "secret-service-error": "Impossibile accedere alle credenziali del calendario nel servizio segreti. Riprovare l'operazione.",
+      "secret-service-locked": "Le credenziali del calendario sono bloccate o l'accesso è stato negato. Sblocca il servizio segreti e riprova.",
+      "secret-service-unavailable": "Nessun fornitore di servizio segreti è disponibile. Avvia un provider compatibile e riprova.",
       "server-url-label": "URL server",
       "username-label": "Nome utente",
       "username-placeholder": "nome@example.com"
@@ -2178,6 +2208,10 @@
           "description": "Mostra una griglia di icone delle applicazioni con le etichette sottostanti quando i risultati riguardano solo le app",
           "label": "Vista app a griglia"
         },
+        "launcher-auto-paste": {
+          "description": "Dopo calcolatrice, emoji e altre azioni di copia, incolla nella finestra evidenziata (stesse scorciatoie dell'incolla automatico dagli appunti)",
+          "label": "Incolla automatico"
+        },
         "launcher-categories": {
           "description": "Mostra filtri categoria nel launcher; mostra con F6, poi scorri con F6 e Shift+F6",
           "label": "Mostra categorie"
@@ -2363,9 +2397,27 @@
           "description": "Aggiungi account iCloud, CalDAV o Google",
           "label": "Account calendario"
         },
+        "calendar-credentials": {
+          "button": "Riprova",
+          "description-cancelled": "Il prompt del servizio segreti è stato annullato. Riprova quando sei pronto.",
+          "description-error": "Non è stato possibile accedere alle credenziali del calendario tramite un servizio segreti.",
+          "description-locked": "Le credenziali del calendario sono bloccate o l'accesso è stato negato. Sblocca i servizio segreti e riprova.",
+          "description-migration": "Le credenziali del calendario in testo normale sono in attesa di essere trasferite al  servizio segreti. Non vengono utilizzati per la sincronizzazione del calendario.",
+          "description-opening": "Le credenziali del calendario vengono aperte tramite un servizio segreti.",
+          "description-unavailable": "Nessun fornitore di servizio segreti è disponibile in questa sessione.",
+          "label": "Archiviazione delle credenziali del calendario"
+        },
         "calendar-edit": {
           "button": "Modifica",
           "description": "Aggiorna questo account calendario"
+        },
+        "calendar-event-date-format": {
+          "description": "Il formato della data mostrato nella scheda evento per la data selezionata",
+          "label": "Formato data evento"
+        },
+        "calendar-event-time-format": {
+          "description": "Il formato dell'ora mostrato per gli eventi del calendario",
+          "label": "Formato tempo evento"
         },
         "calendar-refresh-interval": {
           "description": "Frequenza di sincronizzazione degli eventi calendario (minuti)",
@@ -2458,7 +2510,7 @@
             "label": "Intervallo disco"
           },
           "gpu-poll": {
-            "description": "Secondi tra campioni di temperatura GPU e VRAM (0 disabilita, evitando di risvegliare una GPU dedicata; 5 è un buon intervallo se viene abilitato)",
+            "description": "Secondi tra valori campione di temperatura GPU, utilizzo e VRAM. La GPU viene campionata solo mentre qualcosa visualizza una statistica GPU, quindi a sistema inattivo non viene mai riattivata (0 la disabilita completamente)",
             "label": "Intervallo GPU"
           },
           "label": "Monitor di sistema",
@@ -2473,7 +2525,11 @@
           "stats": {
             "cpu-temp": "Temp CPU",
             "cpu-usage": "Uso CPU",
+            "disk-free": "Spazio disco libero",
+            "disk-free-pct": "% spazio libero su disco",
             "disk-usage": "Uso disco",
+            "disk-used": "Spazio disco utilizzato",
+            "disk-used-pct": "% spazio disco utilizzato",
             "gpu-temp": "Temp GPU",
             "gpu-usage": "Uso GPU",
             "gpu-vram": "VRAM GPU",
@@ -2973,10 +3029,19 @@
         "value": "Valore"
       },
       "options": {
+        "after": "Dopo",
         "always": "Sempre",
         "auto": "Auto",
+        "before": "Prima",
+        "both": "Entrambi",
+        "count": "Conteggio",
         "cpu-temp": "Temperatura CPU",
         "cpu-usage": "Uso CPU",
+        "disk-free": "Spazio disco libero",
+        "disk-free-percent": "Percentuale di disco libero",
+        "disk-used": "Disco utilizzato",
+        "disk-used-percent": "Percentuale disco utilizzato",
+        "dots": "Punti",
         "focus-hint": "Focalizzato",
         "full": "Completo",
         "gauge": "Indicatore",
@@ -2986,8 +3051,10 @@
         "gpu-vram": "VRAM GPU",
         "graph": "Grafico",
         "graphic": "Grafico",
+        "hidden": "Nascosto",
         "icon-and-text": "Icona e testo",
         "icon-only": "Solo icona",
+        "icons": "Icone",
         "id": "ID",
         "input": "Ingresso",
         "instance": "Per posizionamento",
@@ -3005,6 +3072,7 @@
         "ram-used": "RAM usata",
         "rate": "Livello",
         "regular": "Normale",
+        "replace": "Sostituisci",
         "screenshot-primary-fullscreen": "Schermo intero",
         "screenshot-primary-region": "Area",
         "shared": "Condiviso",
@@ -3136,7 +3204,7 @@
           "label": "Visualizzazione"
         },
         "display-mode": {
-          "description": "Visualizza la batteria solo in forma grafica, glifo tab o etichetta",
+          "description": "Visualizza la batteria solo in forma grafica, glifo tab o solo etichetta",
           "label": "Modalità visualizzazione"
         },
         "drawer": {
@@ -3191,12 +3259,16 @@
           "sysmon-description": "Glifo icona personalizzato; lasciare vuoto per usare l'icona della metrica selezionata",
           "volume-description": "Glifo personalizzato; lascia vuoto per utilizzare le icone dinamiche integrate"
         },
+        "glyph-position": {
+          "description": "In quale ordine visualizzare il glifo in relazione al testo/grafico/indicatore",
+          "label": "Posizione glifo"
+        },
         "group-by-workspace": {
           "description": "Raggruppa le icone della taskbar in capsule workspace quando i dati del compositor sono disponibili",
           "label": "Raggruppa per workspace"
         },
         "group-single-icon-per-app": {
-          "description": "Quando si raggruppa per workspace, comprime più finestre della stessa app in un'icona con badge conteggio.",
+          "description": "Quando si raggruppa per area di lavoro con icone, comprimi più finestre della stessa app in un'unica icona con un badge di conteggio.",
           "label": "Un'icona per app"
         },
         "height": {
@@ -3309,6 +3381,10 @@
           "description": "Larghezza minima etichetta in pixel per evitare ridimensionamenti",
           "label": "Larghezza min etichetta"
         },
+        "label-show-units": {
+          "description": "Mostra unità come percentuale / GiB / ° C",
+          "label": "Mostra unità"
+        },
         "labels-only-when-occupied": {
           "description": "Nasconde le etichette workspace su workspace vuoti e inattivi",
           "label": "Etichette solo se occupati",
@@ -3387,7 +3463,13 @@
         },
         "pinned": {
           "description": "ID elementi vassoio che restano visibili nella barra quando la modalità cassetto è abilitata",
-          "label": "Elementi fissati"
+          "label": "Elementi fissati",
+          "taskbar-description": "App desktop che rimangono sulla barra delle applicazioni quando non sono in esecuzione. Ignorato mentre il raggruppamento per area di lavoro è attivo.",
+          "taskbar-label": "App fissate"
+        },
+        "pinned-opacity": {
+          "description": "Opacità delle app fissate che non sono attualmente in esecuzione",
+          "label": "Opacità app fissata"
         },
         "primary-click": {
           "description": "Azione eseguita al click sinistro sul pulsante barra",
@@ -3462,7 +3544,7 @@
           "label": "Mostra temperatura"
         },
         "show-vpn-label": {
-          "description": "Mostra l'etichetta VPN invece dell'etichetta dell'interfaccia accanto all'icona",
+          "description": "Mostra nome VPN: sostituisce l'etichetta di rete in modalità sostituzione, aggiunge l'etichetta accanto all'icona VPN in entrambe le modalità",
           "label": "Mostra etichetta VPN"
         },
         "show-when-idle": {
@@ -3522,6 +3604,10 @@
           "description": "Formato opzionale usato sulle barre verticali",
           "label": "Formato verticale"
         },
+        "vpn-status": {
+          "description": "Come visualizzare lo stato della VPN: sostituisci scambia l'icona della rete con uno scudo VPN, entrambi vengono mostrati fianco a fianco, nascosto disabilita l'indicatore VPN",
+          "label": "Stato VPN"
+        },
         "warning-color": {
           "description": "Colore applicato quando la carica è pari o inferiore alla soglia di sistema di avviso batteria",
           "label": "Colore avviso"
@@ -3537,6 +3623,10 @@
         "workspace-group-capsule": {
           "description": "Disegna sfondo e bordo attorno a ogni workspace raggruppato. Disattiva per mantenere solo raggruppamento icone ed etichette disco workspace.",
           "label": "Capsula gruppo workspace"
+        },
+        "workspace-group-content": {
+          "description": "Cosa mostra ciascun gruppo di aree di lavoro: icone delle app, conteggio delle finestre o punti (fino a cinque, quindi +N per il resto)",
+          "label": "Raggruppa contenuto"
         },
         "workspace-label-placement": {
           "description": "Angolo, centrata sul bordo o dentro la pillola",
@@ -3583,6 +3673,7 @@
     "window": {
       "export-config": "Esporta configurazione...",
       "export-config-saved": "Esportazione configurazione salvata.",
+      "filter-overridden": "Sovrascritto",
       "legacy-config-warning": "È in corso la migrazione della configurazione legacy in memoria: {issue}. Esegui la convalida della configurazione di noctalia per tutte le modifiche richieste.",
       "native-title": "Impostazioni Noctalia",
       "no-results": "Nessuna impostazione trovata",

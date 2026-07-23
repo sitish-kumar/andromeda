@@ -2180,10 +2180,6 @@
           "description": "Draw an outline on panels and section cards inside panels",
           "label": "Borders"
         },
-        "panel-anchor-bar": {
-          "description": "Which bar panels attach to when opened from a shortcut or the dock. Leave empty to follow the widget that opened them",
-          "label": "Anchor Bar"
-        },
         "control-center-sidebar": {
           "description": "Choose how to display the sidebar",
           "label": "Sidebar"
@@ -2313,6 +2309,10 @@
           "description": "Position the wallpaper picker near the bar widget that opened it; openings without a bar trigger are centered",
           "label": "Along Bar"
         },
+        "panel-anchor-bar": {
+          "description": "Which bar panels attach to when opened from a shortcut or the dock. Leave empty to follow the widget that opened them",
+          "label": "Anchor Bar"
+        },
         "placement-clipboard": {
           "description": "Choose whether the clipboard attaches to the bar or floats at a chosen screen position",
           "label": "Placement"
@@ -2411,17 +2411,6 @@
           "description-unavailable": "No Secret Service provider is available in this session.",
           "label": "Calendar Credential Storage"
         },
-        "calendar-storage": {
-          "button": "Retry",
-          "description-cancelled": "The encrypted storage prompt was cancelled. Calendar events remain available for this session only.",
-          "description-error": "The encrypted calendar event cache could not be opened or saved.",
-          "description-locked": "Encrypted storage is locked or access was denied. Fix access and retry.",
-          "description-migration": "The plaintext calendar event cache is waiting to be encrypted. It is preserved until migration succeeds.",
-          "description-missing-key": "The configured encrypted storage key is missing. Existing calendar cache files have been preserved.",
-          "description-opening": "The encrypted calendar event cache is being opened.",
-          "description-unavailable": "No Secret Service provider is available. Calendar events remain available for this session only.",
-          "label": "Calendar Event Storage"
-        },
         "calendar-edit": {
           "button": "Edit",
           "description": "Update this calendar account"
@@ -2437,6 +2426,17 @@
         "calendar-refresh-interval": {
           "description": "How often to sync calendar events (minutes)",
           "label": "Refresh Interval"
+        },
+        "calendar-storage": {
+          "button": "Retry",
+          "description-cancelled": "The encrypted storage prompt was cancelled. Calendar events remain available for this session only.",
+          "description-error": "The encrypted calendar event cache could not be opened or saved.",
+          "description-locked": "Encrypted storage is locked or access was denied. Fix access and retry.",
+          "description-migration": "The plaintext calendar event cache is waiting to be encrypted. It is preserved until migration succeeds.",
+          "description-missing-key": "The configured encrypted storage key is missing. Existing calendar cache files have been preserved.",
+          "description-opening": "The encrypted calendar event cache is being opened.",
+          "description-unavailable": "No Secret Service provider is available. Calendar events remain available for this session only.",
+          "label": "Calendar Event Storage"
         },
         "custom-schedule": {
           "description": "Use manual sunrise/sunset times instead of computing from coordinates",

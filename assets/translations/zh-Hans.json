@@ -94,6 +94,10 @@
         "cpu": "CPU",
         "cpu-temp": "CPU 温度",
         "disk": "磁盘",
+        "disk-free": "可用磁盘空间",
+        "disk-free-pct": "可用磁盘空间百分比",
+        "disk-used": "已用磁盘空间",
+        "disk-used-pct": "已用磁盘空间百分比",
         "download": "下载",
         "gpu-temp": "GPU 温度",
         "gpu-usage": "GPU 使用率",
@@ -545,6 +549,9 @@
         "wave-thickness": "波浪厚度",
         "widget-section": "小组件"
       },
+      "state": {
+        "grid": "网格"
+      },
       "title": "桌面小组件",
       "types": {
         "audio-visualizer": "音频可视化",
@@ -690,6 +697,7 @@
       "battery-low-title": "电量低",
       "calendar": "日历",
       "calendar-google-connect-browser-failed": "未找到可用于 Google 授权的浏览器。请检查默认浏览器或 xdg-open 设置。",
+      "calendar-google-connect-credential-store-failed": "授权完成，但无法保存刷新令牌。解锁或启动 Secret Service，然后重试连接。",
       "calendar-google-connect-expired": "Google 授权在登录完成前已过期。请重新发起连接。",
       "calendar-google-connect-failed-title": "Google 日历连接失败",
       "calendar-google-connect-missing-account": "未找到与“{account}”匹配的已配置 Google 日历账户。",
@@ -831,6 +839,7 @@
   },
   "settings": {
     "actions": {
+      "confirm-reset": "确认重置",
       "reset": "重置"
     },
     "badges": {
@@ -846,12 +855,17 @@
       "add-title": "添加日历账户",
       "calendars-label": "日历",
       "color-label": "颜色",
+      "credential-source-file": "密码文件",
+      "credential-source-keyring": "密钥环",
+      "credential-source-label": "凭据存储",
       "delete-error": "无法删除日历账户。",
       "edit-title": "编辑日历账户",
       "id-label": "账户 ID",
       "invalid": "请检查高亮的日历账户字段。",
       "name-label": "显示名称",
       "name-placeholder": "个人日历",
+      "password-file-error": "无法读取配置的密码文件。请检查文件是否存在、为可读的普通文件且包含密码。",
+      "password-file-label": "密码文件",
       "password-keep-placeholder": "留空以保持当前密码",
       "password-label": "应用密码",
       "password-placeholder": "应用专用密码",
@@ -865,6 +879,11 @@
       "save": "保存",
       "save-connect": "保存并连接",
       "save-error": "无法保存日历账户。",
+      "secret-cleanup-error": "无法保存账号，且无法恢复或清理其密钥环凭据。请在解锁 Secret Service 后重试。",
+      "secret-service-cancelled": "Secret Service 提示已取消。请在准备好解锁时重试。",
+      "secret-service-error": "无法访问 Secret Service 中的日历凭据。请重试此操作。",
+      "secret-service-locked": "日历凭据已被锁定或访问被拒绝。请解锁 Secret Service 后重试。",
+      "secret-service-unavailable": "无可用的 Secret Service 提供程序。请启动兼容的提供程序后重试。",
       "server-url-label": "服务器 URL",
       "username-label": "用户名",
       "username-placeholder": "name@example.com"
@@ -2378,9 +2397,27 @@
           "description": "添加 iCloud、CalDAV 或 Google 账户",
           "label": "日历账户"
         },
+        "calendar-credentials": {
+          "button": "重试",
+          "description-cancelled": "Secret Service 提示已取消。请在准备好时重试。",
+          "description-error": "无法通过 Secret Service 访问日历凭据。",
+          "description-locked": "日历凭据已被锁定或访问被拒绝。解锁 Secret Service 后重试。",
+          "description-migration": "明文日历凭据正等待移动到 Secret Service。目前未用于日历同步。",
+          "description-opening": "正在通过 Secret Service 打开日历凭据。",
+          "description-unavailable": "当前会话中无可用的 Secret Service 提供程序。",
+          "label": "日历凭据存储"
+        },
         "calendar-edit": {
           "button": "编辑",
           "description": "更新日历账户"
+        },
+        "calendar-event-date-format": {
+          "description": "所选日期在事件卡片中显示的日期格式",
+          "label": "事件日期格式"
+        },
+        "calendar-event-time-format": {
+          "description": "日历事件显示的时间格式",
+          "label": "事件时间格式"
         },
         "calendar-refresh-interval": {
           "description": "同步日历事件的频率（分钟）",
@@ -2473,7 +2510,7 @@
             "label": "磁盘轮询间隔"
           },
           "gpu-poll": {
-            "description": "GPU 温度和显存的采样间隔秒数（设为 0 时禁用，可避免唤醒独立显卡；如需启用，建议为 5 秒）",
+            "description": "GPU 温度、使用率和显存的采样间隔秒数。仅当有程序显示 GPU 状态时才会对 GPU 进行采样，因此空闲的机器永远不会被唤醒（0 表示完全禁用）。",
             "label": "GPU 轮询间隔"
           },
           "label": "系统监视器",
@@ -2488,7 +2525,11 @@
           "stats": {
             "cpu-temp": "CPU 温度",
             "cpu-usage": "CPU 使用率",
+            "disk-free": "可用磁盘空间",
+            "disk-free-pct": "可用磁盘空间百分比",
             "disk-usage": "磁盘使用率",
+            "disk-used": "已用磁盘空间",
+            "disk-used-pct": "已用磁盘空间百分比",
             "gpu-temp": "GPU 温度",
             "gpu-usage": "GPU 使用率",
             "gpu-vram": "GPU 显存",
@@ -2988,10 +3029,19 @@
         "value": "值"
       },
       "options": {
+        "after": "之后",
         "always": "始终",
         "auto": "自动",
+        "before": "之前",
+        "both": "两者均显示",
+        "count": "数量",
         "cpu-temp": "CPU 温度",
         "cpu-usage": "CPU 使用率",
+        "disk-free": "可用磁盘空间",
+        "disk-free-percent": "可用磁盘空间百分比",
+        "disk-used": "已用磁盘空间",
+        "disk-used-percent": "已用磁盘空间百分比",
+        "dots": "圆点",
         "focus-hint": "焦点提示",
         "full": "完整",
         "gauge": "仪表",
@@ -3001,8 +3051,10 @@
         "gpu-vram": "GPU 显存",
         "graph": "图表",
         "graphic": "图形",
+        "hidden": "隐藏",
         "icon-and-text": "图标与文字",
         "icon-only": "仅图标",
+        "icons": "图标",
         "id": "ID",
         "input": "输入",
         "instance": "独立运行",
@@ -3020,6 +3072,7 @@
         "ram-used": "内存使用量",
         "rate": "功耗",
         "regular": "常规",
+        "replace": "替换",
         "screenshot-primary-fullscreen": "全屏",
         "screenshot-primary-region": "区域",
         "shared": "共享运行",
@@ -3206,12 +3259,16 @@
           "sysmon-description": "自定义图标；留空时使用所选统计项对应的图标",
           "volume-description": "自定义图标；留空时使用内置的动态图标"
         },
+        "glyph-position": {
+          "description": "图标相对于文本/图表/仪表盘的显示顺序",
+          "label": "图标位置"
+        },
         "group-by-workspace": {
           "description": "可获取合成器数据时，按工作区将任务栏图标分组到胶囊中",
           "label": "按工作区分组"
         },
         "group-single-icon-per-app": {
-          "description": "按工作区分组时，同一应用的多个窗口将合并为一个图标，并显示窗口数量徽标。",
+          "description": "按工作区及图标分组时，同一应用的多个窗口将合并为一个图标，并显示窗口数量徽标。",
           "label": "应用合并为单个图标"
         },
         "height": {
@@ -3324,6 +3381,10 @@
           "description": "标签的最小宽度（像素），防止因内容变化而调整大小",
           "label": "标签最小宽度"
         },
+        "label-show-units": {
+          "description": "显示百分比 / GiB / °C 等单位",
+          "label": "显示单位"
+        },
         "labels-only-when-occupied": {
           "description": "在无窗口、非活动工作区上隐藏工作区标签",
           "label": "仅在有窗口时显示标签",
@@ -3403,7 +3464,7 @@
         "pinned": {
           "description": "启用抽屉模式时，仍显示在状态栏的托盘项 ID",
           "label": "固定项目",
-          "taskbar-description": "未运行时仍保留在任务栏上的桌面应用；启用“按工作区分组”时将忽略此设置",
+          "taskbar-description": "未运行时仍保留在任务栏上的桌面应用。启用“按工作区分组”时将忽略此设置。",
           "taskbar-label": "已固定应用"
         },
         "pinned-opacity": {
@@ -3483,7 +3544,7 @@
           "label": "显示气温"
         },
         "show-vpn-label": {
-          "description": "在图标旁显示 VPN 标签而不是接口标签",
+          "description": "显示 VPN 名称：“替换”模式下替换网络标签，“两者均显示”模式下在 VPN 图标旁添加标签",
           "label": "显示 VPN 标签"
         },
         "show-when-idle": {
@@ -3543,6 +3604,10 @@
           "description": "可选的垂直状态栏格式",
           "label": "垂直格式"
         },
+        "vpn-status": {
+          "description": "如何显示 VPN 状态：“替换”将网络图标替换为 VPN 盾牌图标，“两者均显示”并排显示两者，“隐藏”禁用 VPN 指示器",
+          "label": "VPN 状态"
+        },
         "warning-color": {
           "description": "电量处于或低于系统电池警告阈值时的颜色",
           "label": "警告颜色"
@@ -3558,6 +3623,10 @@
         "workspace-group-capsule": {
           "description": "为每个工作区分组绘制背景和边框。关闭后仅保留图标分组和工作区标签。",
           "label": "工作区分组胶囊"
+        },
+        "workspace-group-content": {
+          "description": "每个工作区分组显示的内容：应用图标、窗口数量或圆点（最多五个，其余显示 +N）",
+          "label": "分组内容"
         },
         "workspace-label-placement": {
           "description": "显示在角落、边缘居中或胶囊内部",
@@ -3604,6 +3673,7 @@
     "window": {
       "export-config": "导出配置…",
       "export-config-saved": "配置导出已保存。",
+      "filter-overridden": "已覆盖",
       "legacy-config-warning": "旧版配置项已在内存中临时转换：{issue}。请执行 noctalia config validate 命令查看所有需要的更改。",
       "native-title": "Noctalia 设置",
       "no-results": "未找到相关设置",

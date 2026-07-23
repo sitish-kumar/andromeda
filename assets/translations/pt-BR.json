@@ -94,6 +94,10 @@
         "cpu": "CPU",
         "cpu-temp": "Temperatura da CPU",
         "disk": "Disco",
+        "disk-free": "Disco Livre",
+        "disk-free-pct": "Disco Livre %",
+        "disk-used": "Disco Usado",
+        "disk-used-pct": "Disco Livre %",
         "download": "Download",
         "gpu-temp": "Temperatura da GPU",
         "gpu-usage": "Uso da GPU",
@@ -1398,7 +1402,7 @@
           "label": "Posicionamento"
         },
         "position": {
-          "description": "Posição da tela quando o painel está flutuando",
+          "description": "Posição na tela quando o painel está flutuando",
           "label": "Posição"
         }
       },
@@ -2521,7 +2525,11 @@
           "stats": {
             "cpu-temp": "Temp da CPU",
             "cpu-usage": "Uso da CPU",
+            "disk-free": "Disco Livre",
+            "disk-free-pct": "Disco Livre %",
             "disk-usage": "Uso do Disco",
+            "disk-used": "Disco Usado",
+            "disk-used-pct": "Disco Usado %",
             "gpu-temp": "Temp da GPU",
             "gpu-usage": "Uso da GPU",
             "gpu-vram": "VRAM da GPU",
@@ -2819,9 +2827,9 @@
           "label": "Copiar para a Área de Transferência"
         },
         "screenshot-directory": {
-          "description": "Pasta para salvar arquivos PNG; deixe vazia para usar ~/Pictures",
+          "description": "Pasta para salvar arquivos PNG; deixe vazia para usar ~/Imagens",
           "label": "Diretório de Saída",
-          "placeholder": "~/Pictures"
+          "placeholder": "~/Imagens"
         },
         "screenshot-filename-pattern": {
           "description": "Padrão strftime sem extensão (.png é adicionado); use %s para a unix epoch.",
@@ -2921,12 +2929,12 @@
         "directory-dark": {
           "description": "Pasta de papéis de parede usada no modo de tema escuro",
           "label": "Diretório do Modo Escuro",
-          "placeholder": "~/Pictures/Wallpapers"
+          "placeholder": "~/Imagens/Papéis de Parede"
         },
         "directory-light": {
           "description": "Pasta de papéis de parede usada no modo de tema claro",
           "label": "Diretório do Modo Claro",
-          "placeholder": "~/Pictures/Wallpapers"
+          "placeholder": "~/Imagens/Papéis de Parede"
         },
         "edge-smoothness": {
           "description": "Suavização das extremidades de transição entre papéis de parede",
@@ -2948,11 +2956,11 @@
         },
         "monitor-directory-dark": {
           "label": "Diretório do Modo Escuro",
-          "placeholder": "~/Pictures/Wallpapers"
+          "placeholder": "~/Imagens/Papéis de Parede"
         },
         "monitor-directory-light": {
           "label": "Diretório do Modo Claro",
-          "placeholder": "~/Pictures/Wallpapers"
+          "placeholder": "~/Imagens/Papéis de Parede"
         },
         "panel": {
           "button": "Abrir Painel",
@@ -3021,11 +3029,18 @@
         "value": "Valor"
       },
       "options": {
+        "after": "Depois",
         "always": "Sempre",
         "auto": "Auto",
+        "before": "Antes",
+        "both": "Ambos",
         "count": "Contar",
         "cpu-temp": "Temperatura da CPU",
         "cpu-usage": "Uso da CPU",
+        "disk-free": "Disco Livre",
+        "disk-free-percent": "Porcentagem de Disco Livre",
+        "disk-used": "Disco Usado",
+        "disk-used-percent": "Porcentagem de Disco Usado",
         "dots": "Pontos",
         "focus-hint": "Indicação de Foco",
         "full": "Cheio",
@@ -3036,6 +3051,7 @@
         "gpu-vram": "VRAM da GPU",
         "graph": "Gráfico",
         "graphic": "Gráfico",
+        "hidden": "Oculto",
         "icon-and-text": "Ícone e Texto",
         "icon-only": "Apenas Ícone",
         "icons": "Ícones",
@@ -3056,6 +3072,7 @@
         "ram-used": "Uso de RAM",
         "rate": "Consumo",
         "regular": "Normal",
+        "replace": "Substituir",
         "screenshot-primary-fullscreen": "Tela Cheia",
         "screenshot-primary-region": "Região",
         "shared": "Compartilhado",
@@ -3183,12 +3200,12 @@
         },
         "display": {
           "active-window-description": "Ícone, título ou ambos em barras horizontais; barras verticais permanecem apenas com ícone",
-          "description": "Modo de Tela para este widget",
-          "label": "Tela"
+          "description": "Modo de exibição para este widget",
+          "label": "Exibição"
         },
         "display-mode": {
           "description": "Representar a bateria como uma forma gráfica, um símbolo do Tabler ou apenas rótulo",
-          "label": "Modo da Tela"
+          "label": "Modo de Exibição"
         },
         "drawer": {
           "description": "Exibir um botão de tray na barra e abrir itens em um painel",
@@ -3237,10 +3254,14 @@
           "label": "Formato"
         },
         "glyph": {
-          "description": "Nome do Símbolo do Ícone",
+          "description": "Nome do símbolo do ícone",
           "label": "Símbolo",
           "sysmon-description": "Símbolo de ícone personalizado; Deixe em branco para usar o ícone da estatística selecionada.",
           "volume-description": "Símbolo de ícone personalizado; Deixe em branco para usar os ícones dinâmicos integrados"
+        },
+        "glyph-position": {
+          "description": "Em qual ordem mostrar o símbolo em relação ao texto/gráfico/medidor",
+          "label": "Posição do Símbolo"
         },
         "group-by-workspace": {
           "description": "Agrupe os ícones da barra de tarefas em cápsulas do espaço de trabalho quando os dados do compositor estiverem disponíveis",
@@ -3360,6 +3381,10 @@
           "description": "Largura mínima do rótulo em pixels para evitar redimensionamento.",
           "label": "Largura Mínima do Rótulo"
         },
+        "label-show-units": {
+          "description": "Mostrar unidades como porcentagem / GiB / °C",
+          "label": "Mostrar Unidades"
+        },
         "labels-only-when-occupied": {
           "description": "Oculta rótulos de espaços de trabalho vazios e inativos",
           "label": "Rótulos Somente Quando Ocupado",
@@ -3409,7 +3434,7 @@
         },
         "mute-glyph": {
           "description": "Símbolo de ícone usado ao mutar ou em 0% de volume; Deixe vazio para usar o ícone de mutar interno.",
-          "label": "Mutar Ícone"
+          "label": "Símbolo de Mutado"
         },
         "network-speed-compact": {
           "description": "Use sufixos de unidade curtos, como 1,2M, em vez de 1,2 MB/s",
@@ -3472,7 +3497,7 @@
         },
         "scroll-step": {
           "description": "Variação percentual aplicada a cada passo da rolagem do mouse",
-          "label": "Passo de Rolagem"
+          "label": "Graduação de Rolagem"
         },
         "scroll-up-command": {
           "description": "O comando do shell é executado ao rolar para cima sobre este botão",
@@ -3519,7 +3544,7 @@
           "label": "Exibir Temperatura"
         },
         "show-vpn-label": {
-          "description": "Mostrar rótulo VPN ao invés do rótulo de interface próximo ao ícone",
+          "description": "Mostrar nome de VPN: substitui rótulo de rede em modo de substituição, adiciona rótulo próximo ao ícone de VPN em ambos modos",
           "label": "Mostrar Rótulo VPN"
         },
         "show-when-idle": {
@@ -3557,7 +3582,7 @@
         },
         "title-scroll": {
           "description": "Quando o título do widget deve rolar",
-          "label": "Rolamento de Título"
+          "label": "Rolagem de Título"
         },
         "tooltip": {
           "description": "Tooltip exibido ao passar o mouse sobre este botão",
@@ -3578,6 +3603,10 @@
         "vertical-format": {
           "description": "Formato opcional usado em barras verticais",
           "label": "Formato vertical"
+        },
+        "vpn-status": {
+          "description": "Como mostrar o status da VPN: troca o ícone de rede para um escudo VPN, ambos mostrar lado a lado, oculto desativa o indicador da VPN",
+          "label": "Estado da VPN"
         },
         "warning-color": {
           "description": "Cor aplicada quando a carga está no limite ou abaixo do limite do aviso de bateria do sistema",
