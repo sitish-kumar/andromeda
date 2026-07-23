@@ -358,6 +358,7 @@ private:
   CalendarPollSource m_calendarPollSource{m_calendarService};
   Timer m_trayInitTimer;
   Timer m_polkitInitTimer;
+  Timer m_polkitIdleCloseTimer;
   Timer m_greeterSyncTimeoutTimer;
   Timer m_greeterAutoSyncTimer;
   Timer m_clipboardAutoPasteTimer;
