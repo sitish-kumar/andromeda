@@ -367,7 +367,9 @@ namespace settings {
     }
 
     const auto selectedIndex = optionIndex(setting.options, setting.selectedValue);
-    const bool clearSelection = !selectedIndex.has_value() && !setting.selectedValue.empty();
+    const bool missingSelection = !selectedIndex.has_value();
+    const bool unknownValue = missingSelection && !setting.selectedValue.empty();
+    const bool clearSelection = unknownValue || (missingSelection && setting.allowEmptySelection);
     const float selectWidth = setting.preferredWidth > 0.0f ? setting.preferredWidth : 190.0f;
     auto options = setting.options;
     const bool clearOnEmpty = setting.clearOnEmpty;
@@ -377,10 +379,10 @@ namespace settings {
         .options = optionLabels(setting.options),
         .selectedIndex = selectedIndex,
         .clearSelection = clearSelection,
-        .placeholder = clearSelection ? std::optional<std::string>{i18n::tr(
-                                            "settings.controls.select.unknown-value", "value", setting.selectedValue
-                                        )}
-                                      : std::nullopt,
+        .placeholder = unknownValue ? std::optional<std::string>{i18n::tr(
+                                          "settings.controls.select.unknown-value", "value", setting.selectedValue
+                                      )}
+                                    : std::nullopt,
         .fontSize = Style::fontSizeBody * scale,
         .controlHeight = Style::controlHeight * scale,
         .glyphSize = Style::fontSizeBody * scale,

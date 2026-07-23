@@ -1058,6 +1058,19 @@ namespace settings {
     ));
 
     // Panels
+    {
+      SelectSetting anchorBarSelect;
+      for (const auto& name : barNames(cfg)) {
+        anchorBarSelect.options.push_back(SelectOption{name, name});
+      }
+      anchorBarSelect.selectedValue = cfg.shell.panelAnchorBar;
+      anchorBarSelect.allowEmptySelection = true;
+      entries.push_back(makeEntry(
+          SettingsSection::Panels, "general", tr("settings.schema.panels.panel-anchor-bar.label"),
+          tr("settings.schema.panels.panel-anchor-bar.description"), {"shell", "panel_anchor_bar"},
+          std::move(anchorBarSelect), "anchor attach bar panel wallpaper launcher"
+      ));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "effects", tr("settings.schema.panels.transparency-mode.label"),
         tr("settings.schema.panels.transparency-mode.description"), {"shell", "panel", "transparency_mode"},

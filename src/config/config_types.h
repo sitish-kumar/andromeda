@@ -992,6 +992,9 @@ struct ShellConfig {
   std::string timeFormat = "{:%H:%M}";
   std::string dateFormat = "%A, %x";
   bool offlineMode = false;
+  /// Bar name panels attach to when opened without a source bar (IPC, shortcuts, dock).
+  /// Empty keeps per-source resolution (widget click bar, else first enabled bar).
+  std::string panelAnchorBar;
   /// Resolve and show the connection's external (WAN) IP in the Control Center network tab.
   bool externalIpEnabled = false;
   bool telemetryEnabled = false;

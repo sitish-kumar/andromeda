@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <optional>
 #include <string>
 
 PanelManager* PanelManager::s_instance = nullptr;
@@ -114,38 +115,57 @@ namespace {
     return InputRect{minX, minY, maxX - minX, maxY - minY};
   }
 
-  BarConfig resolvePanelBarConfig(
+  // Resolves the bar a panel should attach to / position relative to.
+  // `barName` is the opening source bar when present. Otherwise `shell.panel_anchor_bar`
+  // is used when set. A named bar that is missing or disabled on the output fails
+  // loudly (nullopt). With no name set, the first enabled bar on the output is used.
+  std::optional<BarConfig> resolvePanelBarConfig(
       ConfigService* configService, CompositorPlatform* platform, wl_output* output, std::string_view barName = {}
   ) {
-    BarConfig barConfig;
     if (configService == nullptr || configService->config().bars.empty()) {
-      return barConfig;
+      return BarConfig{};
     }
 
     const auto& bars = configService->config().bars;
-    bool found = false;
-    if (!barName.empty()) {
+    const std::string_view effectiveName =
+        !barName.empty() ? barName : std::string_view(configService->config().shell.panelAnchorBar);
+
+    const WaylandOutput* wlOutput = nullptr;
+    if (platform != nullptr && output != nullptr) {
+      wlOutput = platform->findOutputByWl(output);
+    }
+
+    const auto resolve = [wlOutput](const BarConfig& bar) {
+      return wlOutput != nullptr ? ConfigService::resolveForOutput(bar, *wlOutput) : bar;
+    };
+
+    if (!effectiveName.empty()) {
       for (const auto& bar : bars) {
-        if (bar.name == barName) {
-          barConfig = bar;
-          found = true;
-          break;
+        if (bar.name != effectiveName) {
+          continue;
         }
+        BarConfig resolved = resolve(bar);
+        if (!resolved.enabled) {
+          kLog.error(
+              "panel: bar \"{}\" is disabled on this output (source bar or shell.panel_anchor_bar)", effectiveName
+          );
+          return std::nullopt;
+        }
+        return resolved;
+      }
+      kLog.error("panel: bar \"{}\" not found (source bar or shell.panel_anchor_bar)", effectiveName);
+      return std::nullopt;
+    }
+
+    for (const auto& bar : bars) {
+      BarConfig resolved = resolve(bar);
+      if (resolved.enabled) {
+        return resolved;
       }
     }
-    if (!found) {
-      barConfig = bars.front();
-    }
 
-    if (platform == nullptr || output == nullptr) {
-      return barConfig;
-    }
-
-    if (const auto* wlOutput = platform->findOutputByWl(output); wlOutput != nullptr) {
-      return ConfigService::resolveForOutput(barConfig, *wlOutput);
-    }
-
-    return barConfig;
+    kLog.error("panel: no enabled bar available for panel attachment");
+    return std::nullopt;
   }
 
   bool hasMultipleEnabledBarsOnEdge(
@@ -476,6 +496,12 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     return;
   }
 
+  auto barConfigOpt = resolvePanelBarConfig(m_config, m_platform, request.output, request.sourceBarName);
+  if (!barConfigOpt.has_value()) {
+    return;
+  }
+  auto barConfig = std::move(*barConfigOpt);
+
   m_activePanel = it->second.get();
   m_activePanelId = panelId;
   m_activePanel->setContentScale(resolvePanelContentScale(m_config));
@@ -484,7 +510,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
 
   auto panelWidth = static_cast<std::uint32_t>(m_activePanel->preferredWidth());
   auto panelHeight = static_cast<std::uint32_t>(m_activePanel->preferredHeight());
-  auto barConfig = resolvePanelBarConfig(m_config, m_platform, request.output, request.sourceBarName);
   m_sourceBarName = request.sourceBarName.empty() ? barConfig.name : std::string(request.sourceBarName);
   if (m_attachedPanelLayerProvider != nullptr) {
     if (auto layer = m_attachedPanelLayerProvider(request.output, m_sourceBarName); layer.has_value()) {
@@ -2082,7 +2107,11 @@ void PanelManager::onConfigReloaded() {
     return;
   }
 
-  const auto barConfig = resolvePanelBarConfig(m_config, m_platform, m_output, m_sourceBarName);
+  const auto barConfigOpt = resolvePanelBarConfig(m_config, m_platform, m_output, m_sourceBarName);
+  if (!barConfigOpt.has_value()) {
+    return;
+  }
+  const auto& barConfig = *barConfigOpt;
   bool changed = false;
   if (m_activePanel->inheritsBarBackgroundOpacity()) {
     const float newOpacity = barConfig.backgroundOpacity;

@@ -2180,6 +2180,10 @@
           "description": "Draw an outline on panels and section cards inside panels",
           "label": "Borders"
         },
+        "panel-anchor-bar": {
+          "description": "Which bar panels attach to when opened from a shortcut or the dock. Leave empty to follow the widget that opened them",
+          "label": "Anchor Bar"
+        },
         "control-center-sidebar": {
           "description": "Choose how to display the sidebar",
           "label": "Sidebar"
