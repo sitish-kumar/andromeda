@@ -36,7 +36,10 @@ enum class SysmonStat {
   RamUsed,
   RamPct,
   SwapPct,
-  DiskPct,
+  DiskUsedPct,
+  DiskUsed,
+  DiskFreePct,
+  DiskFree,
   NetRx,
   NetTx
 };
