@@ -593,6 +593,43 @@ void ClipboardService::syncPersistence() {
 
 void ClipboardService::retryPersistence() { m_storageKeyProvider.retry(); }
 
+bool ClipboardService::clearEncryptedPersistenceForRecovery() {
+  namespace fs = std::filesystem;
+
+  m_dataKey.reset();
+  std::error_code ec;
+  fs::remove(manifestPath(), ec);
+  if (ec) {
+    kLog.warn("failed to remove encrypted clipboard manifest during recovery");
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return false;
+  }
+
+  const fs::path entriesDir(entriesDirectory());
+  if (fs::exists(entriesDir, ec)) {
+    for (const auto& entry : fs::directory_iterator(entriesDir, ec)) {
+      if (entry.is_regular_file(ec) && entry.path().extension() == ".enc") {
+        fs::remove(entry.path(), ec);
+      }
+      if (ec) {
+        break;
+      }
+    }
+  }
+  if (ec) {
+    kLog.warn("failed to remove encrypted clipboard payloads during recovery");
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return false;
+  }
+
+  m_history.clear();
+  m_historyBytes = 0;
+  ++m_changeSerial;
+  notifyChanged();
+  setPersistenceState(ClipboardPersistenceState::Opening, m_persistenceMigrationPending);
+  return true;
+}
+
 bool ClipboardService::hasEncryptedPersistence() const {
   std::error_code ec;
   const bool exists = std::filesystem::exists(manifestPath(), ec);
@@ -602,7 +639,9 @@ bool ClipboardService::hasEncryptedPersistence() const {
 void ClipboardService::activatePersistenceKey(security::SecureKey key) {
   m_dataKey = std::move(key);
   if (!loadPersistedHistory()) {
-    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    if (m_persistenceState == ClipboardPersistenceState::Opening) {
+      setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    }
     return;
   }
 
@@ -1334,12 +1373,20 @@ bool ClipboardService::loadEncryptedHistory() {
   );
   if (!result.succeeded()) {
     kLog.warn("failed to decrypt clipboard manifest (status={})", static_cast<int>(result.status));
+    if (result.status != security::EncryptedReadStatus::IoError) {
+      setPersistenceState(ClipboardPersistenceState::RecoveryRequired, m_persistenceMigrationPending);
+    }
     return false;
   }
 
   std::deque<ClipboardEntry> entries;
   if (!parseManifest(result.plaintext, false, entries)) {
     kLog.warn("decrypted clipboard manifest is invalid");
+    setPersistenceState(
+        result.status == security::EncryptedReadStatus::IoError ? ClipboardPersistenceState::BackendError
+                                                                : ClipboardPersistenceState::RecoveryRequired,
+        m_persistenceMigrationPending
+    );
     return false;
   }
 
@@ -1660,6 +1707,7 @@ bool ClipboardService::loadEntryPayload(ClipboardEntry& entry) {
     if (result.status != security::EncryptedReadStatus::NotFound) {
       kLog.warn("failed to decrypt clipboard payload {} (status={})", entry.storageId, static_cast<int>(result.status));
     }
+    setPersistenceState(ClipboardPersistenceState::RecoveryRequired, m_persistenceMigrationPending);
     return false;
   }
 

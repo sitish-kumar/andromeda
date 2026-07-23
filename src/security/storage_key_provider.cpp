@@ -50,6 +50,7 @@ namespace security {
     }
 
     m_operation.cancel();
+    finishReset(false);
     m_masterKey.reset();
     m_source = source;
     m_keyFile = std::move(keyFile);
@@ -70,6 +71,7 @@ namespace security {
 
   void StorageKeyProvider::retry() {
     m_operation.cancel();
+    finishReset(false);
     m_masterKey.reset();
     setState(StorageKeyState::Opening);
     if (!securityPrimitivesReady()) {
@@ -86,6 +88,34 @@ namespace security {
       } else {
         setState(stateForSecretStoreStatus(status));
       }
+    });
+  }
+
+  void StorageKeyProvider::resetAfterEncryptedDataCleared(ResetCallback callback) {
+    m_operation.cancel();
+    finishReset(false);
+    m_resetCallback = std::move(callback);
+    m_masterKey.reset();
+    m_encryptedDataExists = false;
+    setState(StorageKeyState::Opening);
+
+    if (!securityPrimitivesReady()) {
+      setState(StorageKeyState::BackendError);
+      finishReset(false);
+      return;
+    }
+    if (m_source == StorageKeySource::File) {
+      loadKeyFile();
+      return;
+    }
+
+    m_operation = m_secretStore.erase(kStorageMasterKeyId, [this](SecretStoreStatus status) {
+      if (status == SecretStoreStatus::Success || status == SecretStoreStatus::NotFound) {
+        createKey();
+        return;
+      }
+      setState(stateForSecretStoreStatus(status));
+      finishReset(false);
     });
   }
 
@@ -229,6 +259,7 @@ namespace security {
   void StorageKeyProvider::activateKey(SecureKey key) {
     m_masterKey = std::move(key);
     setState(StorageKeyState::Ready, true);
+    finishReset(true);
   }
 
   void StorageKeyProvider::setState(StorageKeyState state, bool forceNotify) {
@@ -239,6 +270,17 @@ namespace security {
     if (m_changeCallback) {
       m_changeCallback();
     }
+    if (state != StorageKeyState::Opening && state != StorageKeyState::Ready) {
+      finishReset(false);
+    }
+  }
+
+  void StorageKeyProvider::finishReset(bool success) {
+    if (!m_resetCallback) {
+      return;
+    }
+    auto callback = std::move(m_resetCallback);
+    callback(success);
   }
 
   StorageKeyState StorageKeyProvider::stateForSecretStoreStatus(SecretStoreStatus status) {

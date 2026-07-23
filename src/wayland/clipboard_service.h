@@ -27,6 +27,7 @@ enum class ClipboardPersistenceState {
   Cancelled,
   DeniedOrLocked,
   MissingKey,
+  RecoveryRequired,
   BackendError,
 };
 
@@ -93,6 +94,7 @@ public:
 
   void syncPersistence();
   void retryPersistence();
+  [[nodiscard]] bool clearEncryptedPersistenceForRecovery();
   [[nodiscard]] bool hasEncryptedPersistence() const;
   bool ensureEntryLoaded(std::size_t index);
   [[nodiscard]] std::optional<std::string> imageDataUri(std::size_t index);

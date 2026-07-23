@@ -1459,6 +1459,9 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
     case CalendarService::CachePersistenceState::MissingKey:
       descriptionKey = "settings.schema.services.calendar-storage.description-missing-key";
       break;
+    case CalendarService::CachePersistenceState::RecoveryRequired:
+      descriptionKey = "settings.schema.services.calendar-storage.description-recovery";
+      break;
     case CalendarService::CachePersistenceState::BackendError:
     case CalendarService::CachePersistenceState::Ready:
       break;
@@ -1513,6 +1516,9 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
     case ClipboardPersistenceState::MissingKey:
       descriptionKey = "settings.schema.shell.clipboard-storage.description-missing-key";
       break;
+    case ClipboardPersistenceState::RecoveryRequired:
+      descriptionKey = "settings.schema.shell.clipboard-storage.description-recovery";
+      break;
     case ClipboardPersistenceState::BackendError:
     case ClipboardPersistenceState::Ready:
       break;
@@ -1545,6 +1551,63 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
         .visibleWhen = [](const Config& config) { return config.shell.clipboardEnabled; },
     };
     m_settingsRegistry.insert(it, std::move(retry));
+  }
+
+  const bool calendarStorageRecovery = m_calendarService != nullptr
+      && (m_calendarService->cachePersistenceState() == CalendarService::CachePersistenceState::MissingKey
+          || m_calendarService->cachePersistenceState() == CalendarService::CachePersistenceState::RecoveryRequired);
+  const bool clipboardStorageRecovery = m_clipboardService != nullptr
+      && (m_clipboardService->persistenceState() == ClipboardPersistenceState::MissingKey
+          || m_clipboardService->persistenceState() == ClipboardPersistenceState::RecoveryRequired);
+  if (!calendarStorageRecovery && !clipboardStorageRecovery) {
+    m_pendingEncryptedStorageReset = false;
+  }
+
+  const auto insertStorageRecovery = [this](settings::SettingsSection section, std::string group) {
+    auto it = std::ranges::find_if(m_settingsRegistry, [section, &group](const settings::SettingEntry& entry) {
+      return entry.section == section && entry.group == group;
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    const bool pendingConfirmation = m_pendingEncryptedStorageReset;
+    settings::SettingEntry recovery{
+        .section = section,
+        .group = std::move(group),
+        .title = i18n::tr("settings.storage-recovery.label"),
+        .subtitle = i18n::tr("settings.storage-recovery.description"),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr(
+                    pendingConfirmation ? "settings.storage-recovery.button-confirm"
+                                        : "settings.storage-recovery.button"
+                ),
+                .action =
+                    [this, pendingConfirmation]() {
+                      if (!pendingConfirmation) {
+                        m_pendingEncryptedStorageReset = true;
+                        onExternalOptionsChanged();
+                        return;
+                      }
+                      m_pendingEncryptedStorageReset = false;
+                      if (m_resetEncryptedStorage) {
+                        m_resetEncryptedStorage();
+                      }
+                    },
+                .glyph = pendingConfirmation ? "warning" : "trash",
+                .destructive = pendingConfirmation,
+            },
+        .searchText = "reset recover encrypted private storage clipboard calendar key",
+    };
+    m_settingsRegistry.insert(it, std::move(recovery));
+  };
+
+  if (calendarStorageRecovery && m_resetEncryptedStorage) {
+    insertStorageRecovery(settings::SettingsSection::Services, "calendar");
+  }
+  if (clipboardStorageRecovery && m_resetEncryptedStorage) {
+    insertStorageRecovery(settings::SettingsSection::Shell, "clipboard");
   }
 
   if (m_syncGreeterAppearance && env.greeterSyncAvailable) {

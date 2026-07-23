@@ -28,6 +28,7 @@ namespace security {
   class StorageKeyProvider {
   public:
     using ChangeCallback = std::function<void()>;
+    using ResetCallback = std::function<void(bool)>;
 
     explicit StorageKeyProvider(SecretStore& secretStore);
     ~StorageKeyProvider();
@@ -37,6 +38,7 @@ namespace security {
 
     void configure(StorageKeySource source, std::string keyFile, bool encryptedDataExists);
     void retry();
+    void resetAfterEncryptedDataCleared(ResetCallback callback);
     void noteEncryptedDataExists() noexcept { m_encryptedDataExists = true; }
     void setChangeCallback(ChangeCallback callback);
 
@@ -49,6 +51,7 @@ namespace security {
     void createKey();
     void activateKey(SecureKey key);
     void setState(StorageKeyState state, bool forceNotify = false);
+    void finishReset(bool success);
     [[nodiscard]] static StorageKeyState stateForSecretStoreStatus(SecretStoreStatus status);
 
     SecretStore& m_secretStore;
@@ -60,6 +63,7 @@ namespace security {
     bool m_configured = false;
     StorageKeyState m_state = StorageKeyState::Opening;
     ChangeCallback m_changeCallback;
+    ResetCallback m_resetCallback;
   };
 
 } // namespace security

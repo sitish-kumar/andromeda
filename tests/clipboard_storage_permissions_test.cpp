@@ -113,7 +113,10 @@ namespace {
     }
 
     SecretStoreBackendResult
-    erase(const security::SecretStoreAttributes&, security::SecretStoreCancellation&) override {
+    erase(const security::SecretStoreAttributes& attributes, security::SecretStoreCancellation&) override {
+      std::scoped_lock lock(m_mutex);
+      ++m_eraseCount;
+      m_values.erase(keyFor(attributes));
       return {
           .status = SecretStoreStatus::Success,
           .errorCategory = SecretStoreErrorCategory::None,
@@ -135,12 +138,18 @@ namespace {
       return m_lookupCount;
     }
 
+    [[nodiscard]] std::size_t eraseCount() const {
+      std::scoped_lock lock(m_mutex);
+      return m_eraseCount;
+    }
+
   private:
     mutable std::mutex m_mutex;
     std::map<std::string, std::vector<std::uint8_t>> m_values;
     std::optional<SecretStoreStatus> m_lookupStatus;
     std::size_t m_lookupCount = 0;
     std::size_t m_storeCount = 0;
+    std::size_t m_eraseCount = 0;
   };
 
   class ClipboardStorageHarness {
@@ -358,6 +367,61 @@ namespace {
     return ok;
   }
 
+  bool secretServiceRecoveryReset(const std::filesystem::path& stateHome) {
+    namespace fs = std::filesystem;
+    const fs::path clipboardDir = stateHome / "noctalia/clipboard";
+    const fs::path entriesDir = clipboardDir / "entries";
+    const fs::path manifest = clipboardDir / "index.enc";
+    const fs::path encryptedPayload = entriesDir / "entry.enc";
+    const fs::path legacyPayload = entriesDir / "legacy.bin";
+    fs::create_directories(entriesDir);
+    {
+      std::ofstream output(manifest, std::ios::binary | std::ios::trunc);
+      output << "unrecoverable-manifest";
+    }
+    {
+      std::ofstream output(encryptedPayload, std::ios::binary | std::ios::trunc);
+      output << "unrecoverable-payload";
+    }
+    {
+      std::ofstream output(legacyPayload, std::ios::binary | std::ios::trunc);
+      output << "legacy-payload";
+    }
+
+    auto backend = std::make_unique<FakeSecretStoreBackend>();
+    auto* fake = backend.get();
+    security::SecretStore store(std::move(backend));
+    ClipboardStorageHarness harness(store);
+    ClipboardService& clipboard = harness.clipboard();
+    harness.configure(StorageKeySource::SecretService);
+
+    bool ok = dispatchCompletion(store);
+    ok = expect(
+             clipboard.persistenceState() == ClipboardPersistenceState::MissingKey,
+             "recovery fixture did not expose its missing key"
+         )
+        && ok;
+    ok = expect(clipboard.clearEncryptedPersistenceForRecovery(), "failed to clear encrypted clipboard storage") && ok;
+    ok = expect(!fs::exists(manifest), "recovery left the encrypted manifest behind") && ok;
+    ok = expect(!fs::exists(encryptedPayload), "recovery left an encrypted payload behind") && ok;
+    ok = expect(fs::exists(legacyPayload), "recovery removed a legacy plaintext payload") && ok;
+    ok = expect(clipboard.history().empty(), "recovery retained clipboard history metadata") && ok;
+
+    std::optional<bool> resetResult;
+    harness.keys().resetAfterEncryptedDataCleared([&resetResult](bool success) { resetResult = success; });
+    ok = dispatchCompletion(store) && ok;
+    ok = dispatchCompletion(store) && ok;
+    ok = expect(resetResult == true, "Secret Service recovery did not complete successfully") && ok;
+    ok = expect(
+             clipboard.persistenceState() == ClipboardPersistenceState::Ready,
+             "Secret Service recovery did not reopen clipboard persistence"
+         )
+        && ok;
+    ok = expect(fake->eraseCount() == 1, "Secret Service recovery did not erase the old master key") && ok;
+    ok = expect(fake->storeCount() == 1, "Secret Service recovery did not store one replacement master key") && ok;
+    return ok;
+  }
+
   bool fileKeySource(const std::filesystem::path& stateHome) {
     namespace fs = std::filesystem;
     constexpr std::string_view keyA = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
@@ -416,7 +480,7 @@ namespace {
       ClipboardService& clipboard = harness.clipboard();
       harness.configure(StorageKeySource::File, keyFile.string());
       ok = expect(
-               clipboard.persistenceState() == ClipboardPersistenceState::BackendError,
+               clipboard.persistenceState() == ClipboardPersistenceState::RecoveryRequired,
                "changed file key did not fail authentication"
            )
           && ok;
@@ -462,10 +526,28 @@ namespace {
            )
           && ok;
       ok = expect(clipboard.clipboardText() == "secret", "retried file key decrypted the wrong payload") && ok;
+
+      const std::string keyFileBeforeReset = readFile(keyFile);
+      ok = expect(
+               clipboard.clearEncryptedPersistenceForRecovery(),
+               "file-backed recovery failed to clear encrypted clipboard storage"
+           )
+          && ok;
+      std::optional<bool> resetResult;
+      harness.keys().resetAfterEncryptedDataCleared([&resetResult](bool success) { resetResult = success; });
+      ok = expect(resetResult == true, "file-backed recovery did not reopen storage") && ok;
+      ok = expect(
+               clipboard.persistenceState() == ClipboardPersistenceState::Ready,
+               "file-backed recovery did not restore ready state"
+           )
+          && ok;
+      ok = expect(readFile(keyFile) == keyFileBeforeReset, "file-backed recovery modified the managed key file") && ok;
+      ok = expect(!fs::exists(encryptedManifest), "file-backed recovery left encrypted history behind") && ok;
     }
 
     ok = expect(fake->lookupCount() == 0, "file key source fell back to Secret Service") && ok;
     ok = expect(fake->storeCount() == 0, "file key source mutated Secret Service") && ok;
+    ok = expect(fake->eraseCount() == 0, "file key source erased a Secret Service key") && ok;
     return ok;
   }
 } // namespace
@@ -497,6 +579,10 @@ int main() {
   ok = expect(::setenv("NOCTALIA_STATE_HOME", missingKeyHome.c_str(), 1) == 0, "failed to set missing-key state home")
       && ok;
   ok = missingKeyPreservesEncryptedFiles(missingKeyHome) && ok;
+
+  const fs::path recoveryHome = root / "recovery";
+  ok = expect(::setenv("NOCTALIA_STATE_HOME", recoveryHome.c_str(), 1) == 0, "failed to set recovery state home") && ok;
+  ok = secretServiceRecoveryReset(recoveryHome) && ok;
 
   const fs::path fileKeyHome = root / "file-key";
   ok = expect(::setenv("NOCTALIA_STATE_HOME", fileKeyHome.c_str(), 1) == 0, "failed to set file-key state home") && ok;

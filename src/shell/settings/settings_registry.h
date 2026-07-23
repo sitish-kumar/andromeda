@@ -241,6 +241,7 @@ namespace settings {
     std::string label;
     std::function<void()> action;
     std::string glyph;
+    bool destructive = false;
   };
 
   struct ColorSpecPickerSetting {

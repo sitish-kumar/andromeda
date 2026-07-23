@@ -40,6 +40,7 @@ public:
     Cancelled,
     DeniedOrLocked,
     MissingKey,
+    RecoveryRequired,
     BackendError,
   };
   enum class CredentialOperationResult : std::uint8_t {
@@ -82,6 +83,7 @@ public:
   void retryCredentialMigration();
   void syncCachePersistence();
   void retryCachePersistence();
+  [[nodiscard]] bool clearEncryptedCacheForRecovery();
   // Schedule an immediate sync (used after saving CalDAV credentials).
   void requestRefresh();
   [[nodiscard]] ConnectState connectState() const noexcept { return m_connect.state; }
