@@ -31,6 +31,7 @@ class Box;
 class Button;
 class AccountsService;
 class CalendarService;
+class ClipboardService;
 class ConfigService;
 class CompositorPlatform;
 class DependencyService;
@@ -93,6 +94,7 @@ public:
     m_saveWallpaperPaletteAsCustom = std::move(callback);
   }
   void setCalendarService(CalendarService* service) { m_calendarService = service; }
+  void setClipboardService(ClipboardService* service) { m_clipboardService = service; }
 
   void onSecondTick();
   void onIdleLiveStatusChanged();
@@ -205,6 +207,7 @@ private:
   UPowerService* m_upower = nullptr;
   AccountsService* m_accounts = nullptr;
   CalendarService* m_calendarService = nullptr;
+  ClipboardService* m_clipboardService = nullptr;
   Label* m_idleLiveStatusLabel = nullptr;
   std::vector<Label*> m_sessionActionSummaryLabels;
   std::shared_ptr<std::vector<SessionPanelActionConfig>> m_sessionActionsEditState;

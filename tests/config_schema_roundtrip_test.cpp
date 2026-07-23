@@ -343,17 +343,16 @@ location = "https://example.invalid/bad"
         .offsetY = 6,
         .monitors = {"DP-2"},
         .collapseOnDismiss = false,
-        .filters =
-            {NotificationFilterConfig{
-                .name = "discord",
-                .enabled = true,
-                .match = "discord",
-                .showToast = false,
-                .saveHistory = false,
-                .playSound = false,
-                .allowPermanent = false,
-                .allowedUrgencies = {"normal", "critical"},
-            }},
+        .filters = {NotificationFilterConfig{
+            .name = "discord",
+            .enabled = true,
+            .match = "discord",
+            .showToast = false,
+            .saveHistory = false,
+            .playSound = false,
+            .allowPermanent = false,
+            .allowedUrgencies = {"normal", "critical"},
+        }},
     };
     c.dock.enabled = true;
     c.dock.position = DockEdge::Left;
@@ -434,6 +433,8 @@ location = "https://example.invalid/bad"
     c.shell.passwordMaskStyle = PasswordMaskStyle::RandomIcons;
     c.shell.clipboardHistoryMaxEntries = 80;
     c.shell.clipboardAutoPaste = ClipboardAutoPasteMode::CtrlV;
+    c.shell.clipboardStorage.keySource = ClipboardKeySource::File;
+    c.shell.clipboardStorage.keyFile = "/run/agenix/noctalia-clipboard-key";
     c.shell.avatarPath = "/home/u/face.png";
     c.shell.animation.speed = 1.5f;
     c.shell.shadow.direction = ShadowDirection::UpLeft;
@@ -451,8 +452,7 @@ location = "https://example.invalid/bad"
     c.shell.launcher.dmenu.entries = {notifyDmenu};
     c.shell.launcher.providerPrefix = ".";
     c.shell.launcher.providers = {
-        LauncherProviderConfig{"session", "s", true},
-        LauncherProviderConfig{"wallpaper", "w"}
+        LauncherProviderConfig{"session", "s", true}, LauncherProviderConfig{"wallpaper", "w"}
     };
     c.shell.screenCorners.enabled = true;
     c.shell.screenCorners.size = 24;
@@ -621,6 +621,59 @@ credential_source = "automatic"
 )");
     if (!unknownSource.hasErrors()) {
       fail("calendar: unknown credential source was not an error");
+    }
+  }
+
+  void checkClipboardKeySourceValidation() {
+    const auto parse = [](std::string_view storageConfig) {
+      const toml::table table = toml::parse(storageConfig);
+      ShellConfig shell;
+      Diagnostics diagnostics;
+      readInto(table, shell, shellSchema(), "shell", diagnostics);
+      return diagnostics;
+    };
+
+    const Diagnostics valid = parse(R"(
+[clipboard_storage]
+key_source = "file"
+key_file = "/run/agenix/noctalia-clipboard-key"
+)");
+    if (valid.hasErrors()) {
+      fail("clipboard: valid file key source was rejected");
+    }
+
+    const Diagnostics missingFile = parse(R"(
+[clipboard_storage]
+key_source = "file"
+)");
+    if (!missingFile.hasErrors()) {
+      fail("clipboard: file key source accepted a missing key_file");
+    }
+
+    const Diagnostics conflictingFile = parse(R"(
+[clipboard_storage]
+key_source = "secret-service"
+key_file = "/run/agenix/noctalia-clipboard-key"
+)");
+    if (!conflictingFile.hasErrors()) {
+      fail("clipboard: secret-service key source accepted key_file");
+    }
+
+    const Diagnostics relativeFile = parse(R"(
+[clipboard_storage]
+key_source = "file"
+key_file = "noctalia-clipboard-key"
+)");
+    if (!relativeFile.hasErrors()) {
+      fail("clipboard: file key source accepted a relative key_file");
+    }
+
+    const Diagnostics unknownSource = parse(R"(
+[clipboard_storage]
+key_source = "automatic"
+)");
+    if (!unknownSource.hasErrors()) {
+      fail("clipboard: unknown key source was not an error");
     }
   }
 
@@ -927,6 +980,7 @@ widget_spacing = 8
   checkPluginIdValidation();
   checkPluginSourceNameValidation();
   checkCalendarCredentialSourceValidation();
+  checkClipboardKeySourceValidation();
   checkClamps();
   checkCustomColorFallback();
   checkTemplateConfigCustomColorsExport();

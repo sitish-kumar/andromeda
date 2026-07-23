@@ -4,6 +4,7 @@
 #include "config/config_limits.h"
 #include "core/log.h"
 #include "ext-data-control-v1-client-protocol.h"
+#include "security/encrypted_file_store.h"
 #include "util/file_utils.h"
 #include "wlr-data-control-unstable-v1-client-protocol.h"
 
@@ -11,14 +12,18 @@
 #include <array>
 #include <cerrno>
 #include <chrono>
+#include <cstring>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <poll.h>
+#include <sodium.h>
 #include <stdexcept>
 #include <string_view>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <unordered_set>
 
@@ -28,7 +33,15 @@ namespace {
   constexpr std::size_t kMaxHistoryMaxEntries = static_cast<std::size_t>(noctalia::config::kClipboardHistoryMaxEntries);
   constexpr std::size_t kMaxHistoryBytes = 64U * 1024U * 1024U;
   constexpr std::size_t kMaxEntryBytes = 10U * 1024U * 1024U;
+  constexpr std::size_t kMaxManifestBytes = 16U * 1024U * 1024U;
   constexpr std::size_t kPreviewBytes = 200;
+  constexpr std::string_view kManifestPurpose = "clipboard-manifest-v1";
+  constexpr std::string_view kPayloadPurpose = "clipboard-payload-v1";
+  const security::SecretId kClipboardKeyId{
+      .scope = "cache",
+      .owner = "clipboard-cache-v1",
+      .name = "data-key",
+  };
 
   constexpr std::array kTextMimeTypes = {
       std::string_view{"text/plain;charset=utf-8"},
@@ -58,6 +71,16 @@ namespace {
 
   constexpr Logger kLog("clipboard");
   std::uint64_t gStorageCounter = 0;
+
+  [[nodiscard]] std::optional<std::uint8_t> decodeLowerHex(char value) {
+    if (value >= '0' && value <= '9') {
+      return static_cast<std::uint8_t>(value - '0');
+    }
+    if (value >= 'a' && value <= 'f') {
+      return static_cast<std::uint8_t>(value - 'a' + 10);
+    }
+    return std::nullopt;
+  }
 
   void secureFile(const std::filesystem::path& path) {
     std::error_code ec;
@@ -427,7 +450,7 @@ namespace {
 
 } // namespace
 
-ClipboardService::ClipboardService() { loadPersistedHistory(); }
+ClipboardService::ClipboardService(security::SecretStore& secretStore) : m_secretStore(secretStore) {}
 
 void ClipboardService::setHistoryRetentionEnabled(bool enabled) {
   if (m_historyRetention == enabled) {
@@ -436,8 +459,9 @@ void ClipboardService::setHistoryRetentionEnabled(bool enabled) {
   m_historyRetention = enabled;
 
   if (enabled) {
-    // Restore the persisted history that was set aside while retention was off.
-    loadPersistedHistory();
+    if (m_dataKey.has_value()) {
+      (void)loadPersistedHistory();
+    }
   } else {
     // Keep only the live selection (most recent unpinned entry) in memory so
     // paste keeps working; drop pins and older/persisted history.
@@ -470,7 +494,10 @@ void ClipboardService::setMaxHistoryEntries(std::size_t maxEntries) {
   notifyChanged();
 }
 
-ClipboardService::~ClipboardService() { cleanup(); }
+ClipboardService::~ClipboardService() {
+  m_keyOperation.cancel();
+  cleanup();
+}
 
 const DataControlOps* extDataControlOps() { return &kExtDataControlOps; }
 
@@ -542,6 +569,267 @@ const std::deque<ClipboardEntry>& ClipboardService::history() const noexcept { r
 
 std::uint64_t ClipboardService::changeSerial() const noexcept { return m_changeSerial; }
 
+ClipboardPersistenceState ClipboardService::persistenceState() const noexcept { return m_persistenceState; }
+
+bool ClipboardService::persistenceMigrationPending() const noexcept { return m_persistenceMigrationPending; }
+
+void ClipboardService::configurePersistence(ClipboardKeySource keySource, std::string keyFile) {
+  if (m_persistenceConfigured && m_keySource == keySource && m_keyFile == keyFile) {
+    return;
+  }
+
+  m_keyOperation.cancel();
+  m_dataKey.reset();
+  m_keySource = keySource;
+  m_keyFile = std::move(keyFile);
+  m_persistenceConfigured = true;
+  setPersistenceState(ClipboardPersistenceState::Opening, m_persistenceMigrationPending);
+
+  if (!security::securityPrimitivesReady()) {
+    setPersistenceState(ClipboardPersistenceState::BackendError, false);
+    return;
+  }
+  if (m_keySource == ClipboardKeySource::File) {
+    loadPersistenceKeyFile();
+  } else {
+    lookupPersistenceKey();
+  }
+}
+
+void ClipboardService::retryPersistence() {
+  m_keyOperation.cancel();
+  setPersistenceState(ClipboardPersistenceState::Opening, m_persistenceMigrationPending);
+  if (m_keySource == ClipboardKeySource::File) {
+    m_dataKey.reset();
+    loadPersistenceKeyFile();
+    return;
+  }
+  if (m_dataKey.has_value()) {
+    activatePersistenceKey(std::move(*m_dataKey));
+    return;
+  }
+
+  m_keyOperation = m_secretStore.retryAvailabilityCheck([this](security::SecretStoreStatus status) {
+    if (status == security::SecretStoreStatus::Success) {
+      lookupPersistenceKey();
+      return;
+    }
+
+    ClipboardPersistenceState state = ClipboardPersistenceState::BackendError;
+    switch (status) {
+    case security::SecretStoreStatus::Unavailable:
+      state = ClipboardPersistenceState::Unavailable;
+      break;
+    case security::SecretStoreStatus::Cancelled:
+      state = ClipboardPersistenceState::Cancelled;
+      break;
+    case security::SecretStoreStatus::DeniedOrLocked:
+      state = ClipboardPersistenceState::DeniedOrLocked;
+      break;
+    case security::SecretStoreStatus::Success:
+    case security::SecretStoreStatus::NotFound:
+    case security::SecretStoreStatus::BackendError:
+      break;
+    }
+    setPersistenceState(state, m_persistenceMigrationPending);
+  });
+}
+
+void ClipboardService::loadPersistenceKeyFile() {
+  if (m_keyFile.empty()) {
+    kLog.warn("clipboard file key source has no configured key file");
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return;
+  }
+
+  const int fd = ::open(m_keyFile.c_str(), O_RDONLY | O_CLOEXEC | O_NONBLOCK);
+  if (fd < 0) {
+    const int error = errno;
+    const ClipboardPersistenceState state = error == ENOENT || error == ENOTDIR ? ClipboardPersistenceState::MissingKey
+        : error == EACCES || error == EPERM ? ClipboardPersistenceState::DeniedOrLocked
+                                            : ClipboardPersistenceState::BackendError;
+    kLog.warn("failed to open configured clipboard key file: {}", std::strerror(error));
+    setPersistenceState(state, m_persistenceMigrationPending);
+    return;
+  }
+
+  struct stat info{};
+  if (::fstat(fd, &info) != 0 || !S_ISREG(info.st_mode) || (info.st_size != 64 && info.st_size != 65)) {
+    ::close(fd);
+    kLog.warn("clipboard key file must contain one 64-character lowercase hexadecimal key");
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return;
+  }
+
+  const auto fileSize = static_cast<std::size_t>(info.st_size);
+  security::SecureBuffer encoded(fileSize);
+  std::size_t offset = 0;
+  while (offset < fileSize) {
+    const ssize_t count = ::read(fd, encoded.bytes().data() + offset, fileSize - offset);
+    if (count > 0) {
+      offset += static_cast<std::size_t>(count);
+      continue;
+    }
+    if (count < 0 && errno == EINTR) {
+      continue;
+    }
+    ::close(fd);
+    kLog.warn("failed to read configured clipboard key file");
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return;
+  }
+  ::close(fd);
+
+  if (fileSize == 65 && encoded.bytes().back() != static_cast<std::uint8_t>('\n')) {
+    kLog.warn("clipboard key file has invalid trailing data");
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return;
+  }
+
+  security::SecureBuffer keyBytes(security::SecureKey::Size);
+  for (std::size_t i = 0; i < security::SecureKey::Size; ++i) {
+    const auto high = decodeLowerHex(static_cast<char>(encoded.bytes()[i * 2]));
+    const auto low = decodeLowerHex(static_cast<char>(encoded.bytes()[i * 2 + 1]));
+    if (!high.has_value() || !low.has_value()) {
+      kLog.warn("clipboard key file must contain lowercase hexadecimal characters");
+      setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+      return;
+    }
+    keyBytes.bytes()[i] = static_cast<std::uint8_t>((*high << 4U) | *low);
+  }
+
+  auto key = security::SecureKey::fromBuffer(std::move(keyBytes));
+  if (!key.has_value()) {
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return;
+  }
+  activatePersistenceKey(std::move(*key));
+}
+
+void ClipboardService::lookupPersistenceKey() {
+  setPersistenceState(ClipboardPersistenceState::Opening, m_persistenceMigrationPending);
+  m_keyOperation =
+      m_secretStore.lookup(kClipboardKeyId, [this](security::SecretStoreStatus status, security::SecureBuffer value) {
+        if (status == security::SecretStoreStatus::Success) {
+          auto key = security::SecureKey::fromBuffer(std::move(value));
+          if (!key.has_value()) {
+            kLog.warn("clipboard persistence key has an invalid size");
+            setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+            return;
+          }
+          activatePersistenceKey(std::move(*key));
+          return;
+        }
+
+        if (status == security::SecretStoreStatus::NotFound) {
+          std::error_code ec;
+          if (std::filesystem::exists(manifestPath(), ec)) {
+            kLog.warn("encrypted clipboard history exists, but its data key is missing");
+            setPersistenceState(ClipboardPersistenceState::MissingKey, m_persistenceMigrationPending);
+            return;
+          }
+          if (ec) {
+            kLog.warn("failed to inspect encrypted clipboard history: {}", ec.message());
+            setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+            return;
+          }
+          createPersistenceKey();
+          return;
+        }
+
+        ClipboardPersistenceState state = ClipboardPersistenceState::BackendError;
+        switch (status) {
+        case security::SecretStoreStatus::Unavailable:
+          state = ClipboardPersistenceState::Unavailable;
+          break;
+        case security::SecretStoreStatus::Cancelled:
+          state = ClipboardPersistenceState::Cancelled;
+          break;
+        case security::SecretStoreStatus::DeniedOrLocked:
+          state = ClipboardPersistenceState::DeniedOrLocked;
+          break;
+        case security::SecretStoreStatus::Success:
+        case security::SecretStoreStatus::NotFound:
+        case security::SecretStoreStatus::BackendError:
+          break;
+        }
+        setPersistenceState(state, m_persistenceMigrationPending);
+      });
+}
+
+void ClipboardService::createPersistenceKey() {
+  auto generated = security::SecureKey::generate();
+  if (!generated.has_value()) {
+    kLog.warn("failed to generate clipboard persistence key");
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return;
+  }
+
+  auto key = std::make_shared<security::SecureKey>(std::move(*generated));
+  security::SecureBuffer storedValue(key->bytes());
+  m_keyOperation = m_secretStore.store(
+      kClipboardKeyId, std::move(storedValue), "Noctalia clipboard history key",
+      [this, key = std::move(key)](security::SecretStoreStatus status) mutable {
+        if (status == security::SecretStoreStatus::Success) {
+          activatePersistenceKey(std::move(*key));
+          return;
+        }
+
+        ClipboardPersistenceState state = ClipboardPersistenceState::BackendError;
+        switch (status) {
+        case security::SecretStoreStatus::Unavailable:
+          state = ClipboardPersistenceState::Unavailable;
+          break;
+        case security::SecretStoreStatus::Cancelled:
+          state = ClipboardPersistenceState::Cancelled;
+          break;
+        case security::SecretStoreStatus::DeniedOrLocked:
+          state = ClipboardPersistenceState::DeniedOrLocked;
+          break;
+        case security::SecretStoreStatus::Success:
+        case security::SecretStoreStatus::NotFound:
+        case security::SecretStoreStatus::BackendError:
+          break;
+        }
+        setPersistenceState(state, m_persistenceMigrationPending);
+      }
+  );
+}
+
+void ClipboardService::activatePersistenceKey(security::SecureKey key) {
+  m_dataKey = std::move(key);
+  if (!loadPersistedHistory()) {
+    setPersistenceState(ClipboardPersistenceState::BackendError, m_persistenceMigrationPending);
+    return;
+  }
+
+  std::error_code ec;
+  bool migrationPending = std::filesystem::exists(legacyManifestPath(), ec);
+  if (!ec && !migrationPending && std::filesystem::exists(entriesDirectory(), ec)) {
+    for (const auto& entry : std::filesystem::directory_iterator(entriesDirectory(), ec)) {
+      if (entry.is_regular_file(ec) && entry.path().extension() == ".bin") {
+        migrationPending = true;
+        break;
+      }
+      if (ec) {
+        break;
+      }
+    }
+  }
+  setPersistenceState(ClipboardPersistenceState::Ready, !ec && migrationPending);
+}
+
+void ClipboardService::setPersistenceState(ClipboardPersistenceState state, bool migrationPending) {
+  if (m_persistenceState == state && m_persistenceMigrationPending == migrationPending) {
+    return;
+  }
+  m_persistenceState = state;
+  m_persistenceMigrationPending = migrationPending;
+  if (m_persistenceChangeCallback) {
+    m_persistenceChangeCallback();
+  }
+}
+
 std::size_t ClipboardService::addPollFds(std::vector<pollfd>& fds) const {
   const std::size_t start = fds.size();
   if (m_activeRead.fd >= 0) {
@@ -560,6 +848,27 @@ bool ClipboardService::ensureEntryLoaded(std::size_t index) {
     return false;
   }
   return loadEntryPayload(m_history[index]);
+}
+
+std::optional<std::string> ClipboardService::imageDataUri(std::size_t index) {
+  if (index >= m_history.size() || !m_history[index].isImage() || !loadEntryPayload(m_history[index])) {
+    return std::nullopt;
+  }
+
+  const ClipboardEntry& entry = m_history[index];
+  const std::size_t encodedSize = sodium_base64_encoded_len(entry.data.size(), sodium_base64_VARIANT_ORIGINAL);
+  std::string source = "data:application/octet-stream;base64,";
+  const std::size_t prefixSize = source.size();
+  source.resize(prefixSize + encodedSize);
+  if (sodium_bin2base64(
+          source.data() + static_cast<std::ptrdiff_t>(prefixSize), encodedSize, entry.data.data(), entry.data.size(),
+          sodium_base64_VARIANT_ORIGINAL
+      )
+      == nullptr) {
+    return std::nullopt;
+  }
+  source.resize(prefixSize + std::char_traits<char>::length(source.c_str() + static_cast<std::ptrdiff_t>(prefixSize)));
+  return source;
 }
 
 std::optional<std::string> ClipboardService::exportEntryForExternalTool(std::size_t index) {
@@ -608,6 +917,14 @@ std::optional<std::string> ClipboardService::exportEntryForExternalTool(std::siz
 
 void ClipboardService::evictEntryPayload(std::size_t index) {
   if (index >= m_history.size()) {
+    return;
+  }
+  const ClipboardEntry& entry = m_history[index];
+  if (!m_dataKey.has_value() || !isValidStorageId(entry.storageId)) {
+    return;
+  }
+  std::error_code ec;
+  if (!std::filesystem::is_regular_file(payloadPathForId(entry.storageId), ec) || ec) {
     return;
   }
   evictPayloadData(m_history[index]);
@@ -818,6 +1135,10 @@ bool ClipboardService::copyData(std::vector<std::string> mimeTypes, std::vector<
 }
 
 void ClipboardService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
+
+void ClipboardService::setPersistenceChangeCallback(ChangeCallback callback) {
+  m_persistenceChangeCallback = std::move(callback);
+}
 
 void ClipboardService::dispatchReadEvents(short revents) {
   if (m_activeRead.fd < 0) {
@@ -1176,68 +1497,240 @@ void ClipboardService::addToHistory(ClipboardEntry entry) {
   notifyChanged();
 }
 
-void ClipboardService::loadPersistedHistory() {
+bool ClipboardService::loadPersistedHistory() {
   namespace fs = std::filesystem;
 
-  m_history.clear();
-  m_historyBytes = 0;
+  if (!m_dataKey.has_value()) {
+    return false;
+  }
 
   secureClipboardStorage(stateDirectory());
 
-  const fs::path path(manifestPath());
-  if (!fs::exists(path)) {
-    return;
+  std::error_code ec;
+  if (fs::exists(manifestPath(), ec)) {
+    return !ec && loadEncryptedHistory();
+  }
+  if (ec) {
+    kLog.warn("failed to inspect encrypted clipboard manifest: {}", ec.message());
+    return false;
+  }
+  if (fs::exists(legacyManifestPath(), ec)) {
+    return !ec && migrateLegacyHistory();
+  }
+  if (ec) {
+    kLog.warn("failed to inspect legacy clipboard manifest: {}", ec.message());
+    return false;
+  }
+  return true;
+}
+
+bool ClipboardService::loadEncryptedHistory() {
+  const auto result = security::readEncryptedFile(
+      manifestPath(), *m_dataKey,
+      security::EncryptionContext{.purpose = std::string(kManifestPurpose), .objectId = "index"}, kMaxManifestBytes
+  );
+  if (!result.succeeded()) {
+    kLog.warn("failed to decrypt clipboard manifest (status={})", static_cast<int>(result.status));
+    return false;
   }
 
-  std::ifstream file(path);
+  std::deque<ClipboardEntry> entries;
+  if (!parseManifest(result.plaintext, false, entries)) {
+    kLog.warn("decrypted clipboard manifest is invalid");
+    return false;
+  }
+
+  if (m_historyRetention) {
+    mergePersistedHistory(std::move(entries));
+    trimHistoryToBudget();
+    ++m_changeSerial;
+    notifyChanged();
+  }
+
+  if (!removeLegacyStorage()) {
+    kLog.warn("encrypted clipboard history loaded, but legacy plaintext cleanup is incomplete");
+  }
+  kLog.info("loaded encrypted clipboard history");
+  return true;
+}
+
+bool ClipboardService::migrateLegacyHistory() {
+  std::ifstream file(legacyManifestPath(), std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
-    return;
+    kLog.warn("failed to open legacy clipboard manifest");
+    return false;
+  }
+  const auto manifestSize = file.tellg();
+  if (manifestSize <= 0 || static_cast<std::uintmax_t>(manifestSize) > kMaxManifestBytes) {
+    kLog.warn("legacy clipboard manifest has an invalid size");
+    return false;
   }
 
+  std::vector<std::uint8_t> contents(static_cast<std::size_t>(manifestSize));
+  file.seekg(0);
+  file.read(reinterpret_cast<char*>(contents.data()), manifestSize);
+  if (!file.good()) {
+    kLog.warn("failed to read legacy clipboard manifest");
+    return false;
+  }
+
+  std::deque<ClipboardEntry> legacyEntries;
+  if (!parseManifest(contents, true, legacyEntries)) {
+    kLog.warn("legacy clipboard manifest is invalid");
+    return false;
+  }
+  for (auto& entry : legacyEntries) {
+    if (!loadLegacyEntryPayload(entry) || entry.data.size() != entry.byteSize) {
+      kLog.warn("failed to read legacy clipboard payload {}", entry.storageId);
+      return false;
+    }
+  }
+
+  auto sessionEntries = std::move(m_history);
+  m_history.clear();
+  m_historyBytes = 0;
+  if (m_historyRetention) {
+    m_history = std::move(sessionEntries);
+    for (const auto& entry : m_history) {
+      m_historyBytes += entry.byteSize;
+    }
+    mergePersistedHistory(std::move(legacyEntries));
+  } else {
+    m_history = std::move(legacyEntries);
+    for (const auto& entry : m_history) {
+      m_historyBytes += entry.byteSize;
+    }
+  }
+
+  if (!persistHistory(true)) {
+    if (!m_historyRetention) {
+      m_history = std::move(sessionEntries);
+      m_historyBytes = 0;
+      for (const auto& entry : m_history) {
+        m_historyBytes += entry.byteSize;
+      }
+    }
+    return false;
+  }
+
+  if (!removeLegacyStorage()) {
+    if (!m_historyRetention) {
+      m_history = std::move(sessionEntries);
+      m_historyBytes = 0;
+      for (const auto& entry : m_history) {
+        m_historyBytes += entry.byteSize;
+      }
+    }
+    return true;
+  }
+
+  if (!m_historyRetention) {
+    m_history = std::move(sessionEntries);
+    m_historyBytes = 0;
+    for (const auto& entry : m_history) {
+      m_historyBytes += entry.byteSize;
+    }
+  } else {
+    trimHistoryToBudget();
+    ++m_changeSerial;
+    notifyChanged();
+  }
+  kLog.info("migrated clipboard history to encrypted storage");
+  return true;
+}
+
+bool ClipboardService::parseManifest(
+    std::span<const std::uint8_t> contents, bool legacy, std::deque<ClipboardEntry>& entries
+) const {
   try {
-    nlohmann::json json;
-    file >> json;
-    if (!json.is_object() || !json["entries"].is_array()) {
-      return;
+    const nlohmann::json json = nlohmann::json::parse(contents.begin(), contents.end());
+    if (!json.is_object() || !json.contains("entries") || !json.at("entries").is_array()) {
+      return false;
     }
 
-    for (const auto& item : json["entries"]) {
+    std::size_t totalBytes = 0;
+    std::unordered_set<std::string> ids;
+    for (const auto& item : json.at("entries")) {
+      if (!item.is_object()) {
+        return false;
+      }
+
       ClipboardEntry entry;
-      entry.storageId = item.value("id", "");
-      entry.payloadPath = item.value("payload_path", payloadPathForId(entry.storageId));
-      entry.mimeTypes = item.value("mime_types", std::vector<std::string>{});
-      entry.dataMimeType = item.value("data_mime_type", "");
+      entry.storageId = item.at("id").get<std::string>();
+      entry.mimeTypes = item.at("mime_types").get<std::vector<std::string>>();
+      entry.dataMimeType = item.at("data_mime_type").get<std::string>();
       entry.textPreview = item.value("text_preview", "");
-      entry.byteSize = item.value("byte_size", static_cast<std::size_t>(0));
+      entry.byteSize = item.at("byte_size").get<std::size_t>();
       entry.pinned = item.value("pinned", false);
       entry.payloadLoaded = false;
 
       const auto capturedAtMs = item.value("captured_at_ms", std::int64_t{0});
       entry.capturedAt = std::chrono::system_clock::time_point(std::chrono::milliseconds(capturedAtMs));
 
-      if (entry.storageId.empty() || entry.dataMimeType.empty() || entry.byteSize == 0) {
-        continue;
+      if (!isValidStorageId(entry.storageId)
+          || !ids.insert(entry.storageId).second
+          || entry.dataMimeType.empty()
+          || entry.byteSize == 0
+          || entry.byteSize > kMaxEntryBytes
+          || totalBytes > std::numeric_limits<std::size_t>::max() - entry.byteSize) {
+        return false;
       }
-
-      m_history.push_back(std::move(entry));
-      m_historyBytes += m_history.back().byteSize;
+      totalBytes += entry.byteSize;
+      entry.payloadPath = legacy ? legacyPayloadPathForId(entry.storageId) : payloadPathForId(entry.storageId);
+      entries.push_back(std::move(entry));
     }
 
-    // Enforce the storage invariant: pinned block first (relative order
-    // preserved = most-recently-pinned first), then the unpinned region.
-    std::ranges::stable_partition(m_history, [](const ClipboardEntry& entry) { return entry.pinned; });
-
-    trimHistoryToBudget();
-    kLog.info("loaded {} persisted clipboard entries", m_history.size());
-  } catch (const std::exception& e) {
-    kLog.warn("failed to load clipboard history: {}", e.what());
-    m_history.clear();
-    m_historyBytes = 0;
+    std::ranges::stable_partition(entries, [](const ClipboardEntry& entry) { return entry.pinned; });
+    return true;
+  } catch (const std::exception&) {
+    return false;
   }
 }
 
-bool ClipboardService::persistHistory() {
-  if (!m_historyRetention) {
+void ClipboardService::mergePersistedHistory(std::deque<ClipboardEntry> entries) {
+  std::unordered_set<std::string> activeIds;
+  activeIds.reserve(m_history.size() + entries.size());
+  for (const auto& entry : m_history) {
+    activeIds.insert(entry.storageId);
+  }
+
+  for (auto& entry : entries) {
+    if (!activeIds.insert(entry.storageId).second) {
+      continue;
+    }
+    m_historyBytes += entry.byteSize;
+    if (entry.pinned) {
+      m_history.insert(m_history.begin() + static_cast<std::ptrdiff_t>(pinnedCount()), std::move(entry));
+    } else {
+      m_history.push_back(std::move(entry));
+    }
+  }
+}
+
+bool ClipboardService::removeLegacyStorage() {
+  namespace fs = std::filesystem;
+
+  std::error_code ec;
+  const fs::path entriesDir(entriesDirectory());
+  if (fs::exists(entriesDir, ec)) {
+    for (const auto& entry : fs::directory_iterator(entriesDir, ec)) {
+      if (entry.is_regular_file(ec) && entry.path().extension() == ".bin") {
+        fs::remove(entry.path(), ec);
+      }
+      if (ec) {
+        return false;
+      }
+    }
+  }
+  if (ec) {
+    return false;
+  }
+  fs::remove(legacyManifestPath(), ec);
+  return !ec;
+}
+
+bool ClipboardService::persistHistory(bool force) {
+  if ((!m_historyRetention && !force) || !m_dataKey.has_value()) {
     return false;
   }
 
@@ -1248,20 +1741,27 @@ bool ClipboardService::persistHistory() {
     ensurePrivateDirectory(entriesDirectory());
 
     nlohmann::json entries = nlohmann::json::array();
-    std::unordered_set<std::string> activePayloadPaths;
-    activePayloadPaths.reserve(m_history.size());
+    std::unordered_set<std::string> activeStorageIds;
+    activeStorageIds.reserve(m_history.size());
 
     for (auto& entry : m_history) {
       if (entry.storageId.empty()) {
         entry.storageId = generateStorageId();
       }
-      if (entry.payloadPath.empty()) {
-        entry.payloadPath = payloadPathForId(entry.storageId);
+      if (!isValidStorageId(entry.storageId)) {
+        throw std::runtime_error("invalid clipboard storage id");
       }
+      entry.payloadPath = payloadPathForId(entry.storageId);
 
-      activePayloadPaths.insert(entry.payloadPath);
+      activeStorageIds.insert(entry.storageId);
       if (entry.payloadLoaded && !entry.data.empty()) {
-        if (!writeTextFileAtomic(entry.payloadPath, binaryView(entry.data), FileUtils::privateFileMode())) {
+        if (!security::writeEncryptedFile(
+                entry.payloadPath, entry.data, *m_dataKey,
+                security::EncryptionContext{
+                    .purpose = std::string(kPayloadPurpose),
+                    .objectId = entry.storageId,
+                }
+            )) {
           throw std::runtime_error("failed to write clipboard payload");
         }
       }
@@ -1270,7 +1770,6 @@ bool ClipboardService::persistHistory() {
           std::chrono::duration_cast<std::chrono::milliseconds>(entry.capturedAt.time_since_epoch()).count();
       entries.push_back({
           {"id", entry.storageId},
-          {"payload_path", entry.payloadPath},
           {"mime_types", entry.mimeTypes},
           {"data_mime_type", entry.dataMimeType},
           {"text_preview", entry.textPreview},
@@ -1282,15 +1781,21 @@ bool ClipboardService::persistHistory() {
 
     const fs::path manifest(manifestPath());
     const std::string manifestContent = nlohmann::json{{"entries", entries}}.dump(2);
-    if (!writeTextFileAtomic(manifest, manifestContent, FileUtils::privateFileMode())) {
+    const auto manifestBytes =
+        std::span(reinterpret_cast<const std::uint8_t*>(manifestContent.data()), manifestContent.size());
+    if (!security::writeEncryptedFile(
+            manifest, manifestBytes, *m_dataKey,
+            security::EncryptionContext{.purpose = std::string(kManifestPurpose), .objectId = "index"}
+        )) {
       throw std::runtime_error("failed to write clipboard manifest");
     }
 
     const fs::path entriesDir(entriesDirectory());
     if (fs::exists(entriesDir)) {
       for (const auto& dirEntry : fs::directory_iterator(entriesDir)) {
-        const auto filePath = dirEntry.path().string();
-        if (!activePayloadPaths.contains(filePath)) {
+        if (dirEntry.is_regular_file()
+            && dirEntry.path().extension() == ".enc"
+            && !activeStorageIds.contains(dirEntry.path().stem().string())) {
           fs::remove(dirEntry.path());
         }
       }
@@ -1334,21 +1839,52 @@ bool ClipboardService::loadEntryPayload(ClipboardEntry& entry) {
   if (entry.payloadLoaded) {
     return !entry.data.empty();
   }
-  if (entry.payloadPath.empty()) {
-    entry.payloadPath = payloadPathForId(entry.storageId);
+  if (!m_dataKey.has_value() || !isValidStorageId(entry.storageId)) {
+    return false;
   }
+  entry.payloadPath = payloadPathForId(entry.storageId);
+
+  auto result = security::readEncryptedFile(
+      entry.payloadPath, *m_dataKey,
+      security::EncryptionContext{
+          .purpose = std::string(kPayloadPurpose),
+          .objectId = entry.storageId,
+      },
+      kMaxEntryBytes
+  );
+  if (!result.succeeded() || result.plaintext.empty() || result.plaintext.size() != entry.byteSize) {
+    if (result.status != security::EncryptedReadStatus::NotFound) {
+      kLog.warn("failed to decrypt clipboard payload {} (status={})", entry.storageId, static_cast<int>(result.status));
+    }
+    return false;
+  }
+
+  entry.data = std::move(result.plaintext);
+  entry.payloadLoaded = true;
+  if (entry.textPreview.empty() && isTextMimeType(entry.dataMimeType)) {
+    entry.textPreview = buildTextPreview(entry.data);
+  }
+  return true;
+}
+
+bool ClipboardService::loadLegacyEntryPayload(ClipboardEntry& entry) {
+  if (!isValidStorageId(entry.storageId) || entry.byteSize == 0 || entry.byteSize > kMaxEntryBytes) {
+    return false;
+  }
+  entry.payloadPath = legacyPayloadPathForId(entry.storageId);
 
   std::ifstream file(entry.payloadPath, std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
     return false;
   }
-
   const auto size = file.tellg();
-  if (size <= 0) {
+  if (size <= 0
+      || static_cast<std::uintmax_t>(size) > kMaxEntryBytes
+      || static_cast<std::size_t>(size) != entry.byteSize) {
     return false;
   }
 
-  entry.data.resize(static_cast<std::size_t>(size));
+  entry.data.resize(entry.byteSize);
   file.seekg(0);
   file.read(reinterpret_cast<char*>(entry.data.data()), size);
   if (!file.good()) {
@@ -1357,9 +1893,6 @@ bool ClipboardService::loadEntryPayload(ClipboardEntry& entry) {
     return false;
   }
   entry.payloadLoaded = true;
-  if (entry.byteSize == 0) {
-    entry.byteSize = entry.data.size();
-  }
   if (entry.textPreview.empty() && isTextMimeType(entry.dataMimeType)) {
     entry.textPreview = buildTextPreview(entry.data);
   }
@@ -1383,12 +1916,24 @@ std::string ClipboardService::stateDirectory() {
   return "/tmp/noctalia-clipboard";
 }
 
-std::string ClipboardService::manifestPath() { return stateDirectory() + "/index.json"; }
+std::string ClipboardService::manifestPath() { return stateDirectory() + "/index.enc"; }
+
+std::string ClipboardService::legacyManifestPath() { return stateDirectory() + "/index.json"; }
 
 std::string ClipboardService::entriesDirectory() { return stateDirectory() + "/entries"; }
 
 std::string ClipboardService::payloadPathForId(std::string_view storageId) {
+  return entriesDirectory() + "/" + std::string(storageId) + ".enc";
+}
+
+std::string ClipboardService::legacyPayloadPathForId(std::string_view storageId) {
   return entriesDirectory() + "/" + std::string(storageId) + ".bin";
+}
+
+bool ClipboardService::isValidStorageId(std::string_view storageId) {
+  return !storageId.empty() && storageId.size() <= 128 && std::ranges::all_of(storageId, [](char ch) {
+    return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
+  });
 }
 
 std::string ClipboardService::generateStorageId() {

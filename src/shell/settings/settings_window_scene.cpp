@@ -36,6 +36,7 @@
 #include "ui/style.h"
 #include "util/string_utils.h"
 #include "util/sys_utils.h"
+#include "wayland/clipboard_service.h"
 #include "wayland/toplevel_surface.h"
 #include "wayland/wayland_connection.h"
 
@@ -1434,6 +1435,60 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
                 .glyph = "refresh",
             },
         .searchText = "calendar credentials keyring secret service retry migration unlock",
+    };
+    m_settingsRegistry.insert(it, std::move(retry));
+  }
+
+  if (m_clipboardService != nullptr
+      && (m_clipboardService->persistenceMigrationPending()
+          || m_clipboardService->persistenceState() != ClipboardPersistenceState::Ready)) {
+    std::string descriptionKey = "settings.schema.shell.clipboard-storage.description-error";
+    switch (m_clipboardService->persistenceState()) {
+    case ClipboardPersistenceState::Opening:
+      descriptionKey = "settings.schema.shell.clipboard-storage.description-opening";
+      break;
+    case ClipboardPersistenceState::Unavailable:
+      descriptionKey = "settings.schema.shell.clipboard-storage.description-unavailable";
+      break;
+    case ClipboardPersistenceState::Cancelled:
+      descriptionKey = "settings.schema.shell.clipboard-storage.description-cancelled";
+      break;
+    case ClipboardPersistenceState::DeniedOrLocked:
+      descriptionKey = "settings.schema.shell.clipboard-storage.description-locked";
+      break;
+    case ClipboardPersistenceState::MissingKey:
+      descriptionKey = "settings.schema.shell.clipboard-storage.description-missing-key";
+      break;
+    case ClipboardPersistenceState::BackendError:
+    case ClipboardPersistenceState::Ready:
+      break;
+    }
+    if (m_clipboardService->persistenceMigrationPending()
+        && (m_clipboardService->persistenceState() == ClipboardPersistenceState::Opening
+            || m_clipboardService->persistenceState() == ClipboardPersistenceState::Ready)) {
+      descriptionKey = "settings.schema.shell.clipboard-storage.description-migration";
+    }
+
+    auto it = std::ranges::find_if(m_settingsRegistry, [](const settings::SettingEntry& entry) {
+      return entry.section == settings::SettingsSection::Shell && entry.group == "clipboard";
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    settings::SettingEntry retry{
+        .section = settings::SettingsSection::Shell,
+        .group = "clipboard",
+        .title = i18n::tr("settings.schema.shell.clipboard-storage.label"),
+        .subtitle = i18n::tr(descriptionKey),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr("settings.schema.shell.clipboard-storage.button"),
+                .action = [this]() { m_clipboardService->retryPersistence(); },
+                .glyph = "refresh",
+            },
+        .searchText = "clipboard history encryption keyring secret service retry migration unlock",
+        .visibleWhen = [](const Config& config) { return config.shell.clipboardEnabled; },
     };
     m_settingsRegistry.insert(it, std::move(retry));
   }

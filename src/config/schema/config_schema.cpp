@@ -1332,6 +1332,50 @@ namespace noctalia::config::schema {
       return s;
     }
 
+    const Schema<ShellConfig::ClipboardStorageConfig>& shellClipboardStorageSchema() {
+      static const Schema<ShellConfig::ClipboardStorageConfig> s = {
+          custom<ShellConfig::ClipboardStorageConfig>(
+              "key_source",
+              [](const toml::table& table, ShellConfig::ClipboardStorageConfig& out, std::string_view parentPath,
+                 Diagnostics& diag) {
+                const auto value = table["key_source"].value<std::string>();
+                if (!value.has_value()) {
+                  return;
+                }
+                const std::string source = StringUtils::trim(*value);
+                if (source == "secret-service") {
+                  out.keySource = ClipboardKeySource::SecretService;
+                } else if (source == "file") {
+                  out.keySource = ClipboardKeySource::File;
+                } else {
+                  diag.error(joinPath(parentPath, "key_source"), R"(key_source must be "secret-service" or "file")");
+                }
+              },
+              [](toml::table& table, const ShellConfig::ClipboardStorageConfig& in) {
+                table.insert_or_assign(
+                    "key_source", in.keySource == ClipboardKeySource::File ? "file" : "secret-service"
+                );
+              }
+          ),
+          pathStringField(&ShellConfig::ClipboardStorageConfig::keyFile, "key_file"),
+          finalize<ShellConfig::ClipboardStorageConfig>([](ShellConfig::ClipboardStorageConfig& out,
+                                                           std::string_view parentPath, Diagnostics& diag) {
+            if (out.keySource == ClipboardKeySource::File) {
+              if (out.keyFile.empty()) {
+                diag.error(
+                    joinPath(parentPath, "key_file"), R"(clipboard storage with key_source = "file" requires key_file)"
+                );
+              } else if (!std::filesystem::path(out.keyFile).is_absolute()) {
+                diag.error(joinPath(parentPath, "key_file"), "key_file must resolve to an absolute path");
+              }
+            } else if (!out.keyFile.empty()) {
+              diag.error(joinPath(parentPath, "key_file"), R"(key_file requires key_source = "file")");
+            }
+          }),
+      };
+      return s;
+    }
+
     // command/label/glyph are stored trimmed-or-nullopt but always emitted (value_or("")).
     Field<SessionPanelActionConfig>
     sessionOptionalString(std::optional<std::string> SessionPanelActionConfig::* member, std::string_view key) {
@@ -1470,6 +1514,7 @@ namespace noctalia::config::schema {
         field(&ShellConfig::disableMipmaps, "disable_mipmaps"),
         enumField(&ShellConfig::clipboardAutoPaste, "clipboard_auto_paste", kClipboardAutoPasteModes),
         field(&ShellConfig::clipboardImageActionCommand, "clipboard_image_action_command"),
+        subTable(&ShellConfig::clipboardStorage, "clipboard_storage", shellClipboardStorageSchema()),
         pathStringField(&ShellConfig::avatarPath, "avatar_path"),
         subTable(&ShellConfig::animation, "animation", shellAnimationSchema()),
         subTable(&ShellConfig::shadow, "shadow", shellShadowSchema()),

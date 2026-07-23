@@ -217,7 +217,7 @@ private:
   WorkspaceAlertService m_workspaceAlertService;
   CompositorPlatform m_compositorPlatform{m_wayland};
   security::SecretStore m_secretStore;
-  ClipboardService m_clipboardService;
+  ClipboardService m_clipboardService{m_secretStore};
   TextInputService m_textInputService;
   VirtualKeyboardService m_virtualKeyboardService;
   ConfigService m_configService;

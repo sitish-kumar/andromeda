@@ -503,9 +503,9 @@ void Application::initPanelManagerAndPanels() {
   });
   m_settingsWindow.setCalendarService(&m_calendarService);
   m_calendarService.setCredentialChangeCallback([this]() { m_settingsWindow.onExternalOptionsChanged(); });
-  auto clipboardPanel = std::make_unique<ClipboardPanel>(
-      &m_clipboardService, &m_configService, &m_thumbnailService, &m_asyncTextureCache
-  );
+  m_settingsWindow.setClipboardService(&m_clipboardService);
+  m_clipboardService.setPersistenceChangeCallback([this]() { m_settingsWindow.onExternalOptionsChanged(); });
+  auto clipboardPanel = std::make_unique<ClipboardPanel>(&m_clipboardService, &m_configService, &m_asyncTextureCache);
   clipboardPanel->setActivateCallback([this](const ClipboardEntry& entry) {
     const ClipboardAutoPasteMode mode = m_configService.config().shell.clipboardAutoPaste;
     if (mode == ClipboardAutoPasteMode::Off) {
