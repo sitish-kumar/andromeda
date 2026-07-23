@@ -213,8 +213,13 @@ namespace {
     ok = expect(attributes.version == "1", "version attribute changed") && ok;
     ok = expect(security::isValidSecretId(id), "valid calendar id was rejected") && ok;
     ok = expect(
-             security::isValidSecretId({.scope = "cache", .owner = "clipboard-cache-v1", .name = "data-key"}),
-             "valid cache id was rejected"
+             security::isValidSecretId({.scope = "storage", .owner = "encrypted-state", .name = "master-key"}),
+             "valid storage master key id was rejected"
+         )
+        && ok;
+    ok = expect(
+             !security::isValidSecretId({.scope = "cache", .owner = "clipboard-cache-v1", .name = "data-key"}),
+             "obsolete clipboard key id was accepted"
          )
         && ok;
     ok = expect(
@@ -246,7 +251,7 @@ namespace {
     auto backend = std::make_unique<FakeSecretStoreBackend>();
     auto* fake = backend.get();
     security::SecretStore store(std::move(backend));
-    const security::SecretId id{.scope = "cache", .owner = "clipboard-cache-v1", .name = "data-key"};
+    const security::SecretId id{.scope = "storage", .owner = "encrypted-state", .name = "master-key"};
     const std::array<std::uint8_t, 5> first = {1, 0, 2, 0, 3};
     const std::array<std::uint8_t, 4> replacement = {9, 0, 8, 7};
     bool ok = true;

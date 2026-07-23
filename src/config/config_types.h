@@ -712,7 +712,7 @@ constexpr EnumOption<ClipboardAutoPasteMode> kClipboardAutoPasteModes[] = {
     {ClipboardAutoPasteMode::ShiftInsert, "shift_insert", "settings.options.clipboard.auto-paste.shift-insert"},
 };
 
-enum class ClipboardKeySource : std::uint8_t {
+enum class StorageKeySource : std::uint8_t {
   SecretService = 0,
   File = 1,
 };
@@ -975,13 +975,6 @@ struct ShellConfig {
     bool operator==(const PrivacyConfig&) const = default;
   };
 
-  struct ClipboardStorageConfig {
-    ClipboardKeySource keySource = ClipboardKeySource::SecretService;
-    std::string keyFile;
-
-    bool operator==(const ClipboardStorageConfig&) const = default;
-  };
-
   float cornerRadiusScale = 1.0f;
   bool buttonBorders = true;
   bool inputBorders = true;
@@ -1023,7 +1016,6 @@ struct ShellConfig {
   bool disableMipmaps = false;
   ClipboardAutoPasteMode clipboardAutoPaste = ClipboardAutoPasteMode::Auto;
   std::string clipboardImageActionCommand;
-  ClipboardStorageConfig clipboardStorage;
   ShadowConfig shadow;
   PanelConfig panel;
   LauncherConfig launcher;
@@ -1044,6 +1036,13 @@ struct WeatherConfig {
   std::string unit = "metric";
 
   bool operator==(const WeatherConfig&) const = default;
+};
+
+struct StorageConfig {
+  StorageKeySource keySource = StorageKeySource::SecretService;
+  std::string keyFile;
+
+  bool operator==(const StorageConfig&) const = default;
 };
 
 enum class CalendarCredentialSource : std::uint8_t {
@@ -1521,6 +1520,7 @@ struct Config {
   DockConfig dock;
   DesktopWidgetsConfig desktopWidgets;
   HotCornersConfig hotCorners;
+  StorageConfig storage;
   ShellConfig shell;
   OsdConfig osd;
   NotificationConfig notification;
@@ -1570,6 +1570,7 @@ struct ConfigChangeSet {
   bool controlCenter = true;
   bool plugins = true;
   bool hotCorners = true;
+  bool storage = true;
   bool accessibility = true;
 
   [[nodiscard]] bool any() const noexcept {
@@ -1599,6 +1600,7 @@ struct ConfigChangeSet {
         || controlCenter
         || plugins
         || hotCorners
+        || storage
         || accessibility;
   }
 };

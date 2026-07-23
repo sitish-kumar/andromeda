@@ -1439,6 +1439,60 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
     m_settingsRegistry.insert(it, std::move(retry));
   }
 
+  if (m_calendarService != nullptr
+      && (m_calendarService->cacheMigrationPending()
+          || m_calendarService->cachePersistenceState() != CalendarService::CachePersistenceState::Ready)) {
+    std::string descriptionKey = "settings.schema.services.calendar-storage.description-error";
+    switch (m_calendarService->cachePersistenceState()) {
+    case CalendarService::CachePersistenceState::Opening:
+      descriptionKey = "settings.schema.services.calendar-storage.description-opening";
+      break;
+    case CalendarService::CachePersistenceState::Unavailable:
+      descriptionKey = "settings.schema.services.calendar-storage.description-unavailable";
+      break;
+    case CalendarService::CachePersistenceState::Cancelled:
+      descriptionKey = "settings.schema.services.calendar-storage.description-cancelled";
+      break;
+    case CalendarService::CachePersistenceState::DeniedOrLocked:
+      descriptionKey = "settings.schema.services.calendar-storage.description-locked";
+      break;
+    case CalendarService::CachePersistenceState::MissingKey:
+      descriptionKey = "settings.schema.services.calendar-storage.description-missing-key";
+      break;
+    case CalendarService::CachePersistenceState::BackendError:
+    case CalendarService::CachePersistenceState::Ready:
+      break;
+    }
+    if (m_calendarService->cacheMigrationPending()
+        && (m_calendarService->cachePersistenceState() == CalendarService::CachePersistenceState::Opening
+            || m_calendarService->cachePersistenceState() == CalendarService::CachePersistenceState::Ready)) {
+      descriptionKey = "settings.schema.services.calendar-storage.description-migration";
+    }
+
+    auto it = std::ranges::find_if(m_settingsRegistry, [](const settings::SettingEntry& entry) {
+      return entry.section == settings::SettingsSection::Services && entry.group == "calendar";
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    settings::SettingEntry retry{
+        .section = settings::SettingsSection::Services,
+        .group = "calendar",
+        .title = i18n::tr("settings.schema.services.calendar-storage.label"),
+        .subtitle = i18n::tr(descriptionKey),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr("settings.schema.services.calendar-storage.button"),
+                .action = [this]() { m_calendarService->retryCachePersistence(); },
+                .glyph = "refresh",
+            },
+        .searchText = "calendar events cache encryption storage keyring retry migration unlock",
+        .visibleWhen = [](const Config& config) { return config.calendar.enabled; },
+    };
+    m_settingsRegistry.insert(it, std::move(retry));
+  }
+
   if (m_clipboardService != nullptr
       && (m_clipboardService->persistenceMigrationPending()
           || m_clipboardService->persistenceState() != ClipboardPersistenceState::Ready)) {

@@ -206,8 +206,8 @@ KWallet, or KeePassXC. `libsecret` is the client library and does not provide th
 continues to run when no provider is available, but features requiring durable secrets cannot persist them.
 CalDAV accounts may instead read their password from one explicitly configured regular file, which supports secret
 provisioners such as agenix and sops-nix without installing a Secret Service provider. Google refresh tokens and
-other writable credentials still require Secret Service. Clipboard history may instead read its encryption key from
-one explicitly configured file.
+other writable credentials still require Secret Service. Encrypted state, including clipboard history and the calendar
+event cache, may instead read one storage master key from an explicitly configured file.
 
 `jemalloc` is recommended but optional. It reduces memory fragmentation in long-running sessions, and on glibc systems
 it is used automatically when detected. Use Meson's `-Djemalloc=enabled` or `-Djemalloc=disabled` option to require or
