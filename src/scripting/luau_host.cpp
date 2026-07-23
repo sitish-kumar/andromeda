@@ -14,6 +14,7 @@
 #include "scripting/plugin_bindings.h"
 #include "scripting/plugin_state_store.h"
 #include "scripting/script_api_context.h"
+#include "scripting/ui_handler_table.h"
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
 #include "system/icon_resolver.h"
@@ -2131,9 +2132,24 @@ bool LuauHost::loadString(std::string_view chunkName, std::string_view source) {
 
 bool LuauHost::run() { return callWithBudget("chunk", 0, 0, std::chrono::milliseconds(100)); }
 
+bool LuauHost::pushCallback(const char* name) {
+  if (!std::string_view(name).starts_with(scripting::kUiHandlerPrefix)) {
+    lua_getglobal(m_T, name);
+    return lua_isfunction(m_T, -1);
+  }
+  // A handler of a superseded render is simply absent from the live table, so
+  // the click lands on nil and the caller drops it.
+  lua_getglobal(m_T, scripting::kUiHandlerTable);
+  if (!lua_istable(m_T, -1)) {
+    return false;
+  }
+  lua_getfield(m_T, -1, name);
+  lua_remove(m_T, -2);
+  return lua_isfunction(m_T, -1);
+}
+
 bool LuauHost::hasGlobal(const char* name) {
-  lua_getglobal(m_T, name);
-  bool exists = lua_isfunction(m_T, -1);
+  bool exists = pushCallback(name);
   lua_pop(m_T, 1);
   return exists;
 }
@@ -2141,8 +2157,7 @@ bool LuauHost::hasGlobal(const char* name) {
 bool LuauHost::callGlobal(const char* name) { return callGlobalWithBudget(name, std::chrono::milliseconds(25)); }
 
 bool LuauHost::callGlobalWithBudget(const char* name, std::chrono::milliseconds budget) {
-  lua_getglobal(m_T, name);
-  if (!lua_isfunction(m_T, -1)) {
+  if (!pushCallback(name)) {
     lua_pop(m_T, 1);
     return false;
   }
@@ -2152,8 +2167,7 @@ bool LuauHost::callGlobalWithBudget(const char* name, std::chrono::milliseconds 
 bool LuauHost::callGlobalWithArgsAndBudget(
     const char* name, std::span<const scripting::ScriptArg> args, std::chrono::milliseconds budget
 ) {
-  lua_getglobal(m_T, name);
-  if (!lua_isfunction(m_T, -1)) {
+  if (!pushCallback(name)) {
     lua_pop(m_T, 1);
     return false;
   }

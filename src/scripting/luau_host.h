@@ -61,6 +61,9 @@ public:
   // Convenience: loadString + run.
   bool exec(std::string_view chunkName, std::string_view source) { return loadString(chunkName, source) && run(); }
 
+  // Callback lookup by name, shared by the call helpers below: a name generated
+  // by a ui-tree render (see ui_handler_table.h) resolves in that render's
+  // handler table, any other name is a plugin global.
   bool callGlobal(const char* name);
   bool hasGlobal(const char* name);
   std::optional<std::string> callGlobalReturningString(const char* name);
@@ -197,6 +200,9 @@ private:
 
   void stopAllStreams() noexcept;
   void stopAllHttpStreams() noexcept;
+  // Pushes the callback `name` resolves to and reports whether it is callable.
+  // Exactly one value is left on the stack either way, so callers pop one.
+  bool pushCallback(const char* name);
   bool callGlobalInternal(const char* name, int args, std::chrono::milliseconds budget);
   bool callWithBudget(const char* name, int args, int results, std::chrono::milliseconds budget);
   void beginBudget(std::string_view name, std::chrono::milliseconds budget);
