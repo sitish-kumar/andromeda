@@ -1740,7 +1740,7 @@
           "label": "Widgetkapszulák"
         },
         "widget-color": {
-          "description": "Alapértelmezett ikon és címke szín szerepe a sávon lévő widgetekhez; rögzített hexadecimális színek is támogatottak",
+          "description": "Az ezen a sávon található widgetek alapértelmezett ikon- és felirat-színe; a fix hexadecimális színek is támogatottak",
           "label": "Widget színe"
         },
         "widget-icon-color": {
@@ -2179,7 +2179,7 @@
           "label": "Szegélyek"
         },
         "control-center-sidebar": {
-          "description": "Kezdőképernyő és általános megnyitások",
+          "description": "Válaszd ki az oldalsáv megjelenítési módját",
           "label": "Oldalsáv"
         },
         "control-center-sidebar-section": {
@@ -2307,16 +2307,20 @@
           "description": "A háttérképválasztó panelt az azt megnyitó sáv-widget közelében, egyéb esetben pedig középen helyezze el.",
           "label": "Sáv mentén"
         },
+        "panel-anchor-bar": {
+          "description": "Melyik sávhoz kapcsolódnak a panelek, ha parancsikonnal vagy a dokkból nyitják meg őket. Ha üresen hagyod, akkor azt a widgetet követik, amelyik megnyitotta őket.",
+          "label": "Sáv rögzítése"
+        },
         "placement-clipboard": {
-          "description": "Válaszd ki, hogy a vágólap rögzül-e a sávhoz, lebeg-e a közelében, vagy középen nyílik meg",
+          "description": "Válaszd ki, hogy a vágólap a sávhoz legyen rögzítve, vagy a képernyőn egy kiválasztott pozícióban lebegjen",
           "label": "Elhelyezés"
         },
         "placement-control-center": {
-          "description": "Válaszd ki, hogy a Központ rögzüljön-e a Sávhoz, lebegjen-e mellette, vagy középen nyíljon meg",
+          "description": "Válaszd ki, hogy a Vezérlőközpont a sávhoz legyen rögzítve, vagy a képernyőn egy kiválasztott pozícióban lebegjen",
           "label": "Elhelyezés"
         },
         "placement-launcher": {
-          "description": "Válaszd ki, hogy az indító rögzüljön-e a sávhoz, lebegjen-e a közelében, vagy középen nyíljon meg",
+          "description": "Válaszd ki, hogy az Indító a sávhoz legyen rögzítve, vagy a képernyőn egy kiválasztott pozícióban lebegjen",
           "label": "Elhelyezés"
         },
         "placement-polkit": {
@@ -2328,7 +2332,7 @@
           "label": "Elhelyezés"
         },
         "placement-wallpaper": {
-          "description": "Válaszd ki, hogy a háttérképválasztó a sávhoz rögzül-e, lebeg-e mellette, vagy középen nyílik meg",
+          "description": "Válaszd ki, hogy a Háttérkép-választó a sávhoz legyen rögzítve, vagy a képernyőn egy kiválasztott pozícióban lebegjen",
           "label": "Elhelyezés"
         },
         "position-clipboard": {
@@ -2359,7 +2363,7 @@
           "description": "Vetítsd a globális felületi árnyékot a Panel felületeiről"
         },
         "transparency-mode": {
-          "description": "Panel üveg stílus, beleértve a lebegő/középre igazított panel átlátszatlanságát és a kártya áttetszőségét",
+          "description": "A panel üvegstílusa, beleértve a lebegő panel átlátszatlanságát és a kártya áttetszőségét",
           "label": "Átlátszóság"
         }
       },
@@ -2420,6 +2424,17 @@
         "calendar-refresh-interval": {
           "description": "Milyen gyakran szinkronizálja a naptáreseményeket (perc)",
           "label": "Frissítési időintervallum"
+        },
+        "calendar-storage": {
+          "button": "Újrapróbál",
+          "description-cancelled": "A titkosított tárolásra vonatkozó kérés megszakításra került. A naptári események kizárólag ebben a munkamenetben maradnak elérhetőek.",
+          "description-error": "A titkosított naptári események gyorsítótárát nem sikerült megnyitni vagy elmenteni.",
+          "description-locked": "A titkosított tárhely zárolva van, vagy a hozzáférés megtagadásra került. Javítsd a hozzáférési problémát, majd próbáld meg újra.",
+          "description-migration": "A naptári események sima szöveges gyorsítótára titkosításra vár. Az adatok a migráció sikeres befejezéséig megmaradnak.",
+          "description-missing-key": "Hiányzik a beállított titkosított tárolási kulcs. A meglévő naptár-gyorsítótár-fájlok megmaradtak.",
+          "description-opening": "A titkosított naptári események gyorsítótárának megnyitása folyamatban van.",
+          "description-unavailable": "Nincs elérhető Secret Service-szolgáltató. A naptári események kizárólag ebben a munkamenetben maradnak elérhetőek.",
+          "label": "Naptári események tárhely"
         },
         "custom-schedule": {
           "description": "A koordinátákból történő kiszámítás helyett használja a napkelte/napnyugta manuálisan bevitt értékeit",
@@ -2648,6 +2663,17 @@
           "description": "Parancs, amit futtatni kell a képvágólap bejegyzéseiből; használd a {path}-t a fájl elérési útjához, a {stdin}-t az stdin pozíció jelölésére, vagy hagyd el a {path}-t az automatikus pipe-oláshoz",
           "label": "Képműveleti parancs",
           "placeholder": "gimp {path} vagy satty -f -"
+        },
+        "clipboard-storage": {
+          "button": "Újrapróbál",
+          "description-cancelled": "A Secret Service kérés megszakításra került. A vágólap előzményei továbbra is elérhetők, de csak ebben a munkamenetben.",
+          "description-error": "A titkosított vágólap-előzményeket nem sikerült megnyitni vagy elmenteni.",
+          "description-locked": "A vágólap kulcsainak tárolója zárolva van, vagy a hozzáférést megtagadták. Javítsd a hozzáférési problémát, majd próbáld meg újra.",
+          "description-migration": "A vágólap szöveges előzményei titkosításra várnak. A meglévő fájlok a migráció sikeres befejezéséig megmaradnak.",
+          "description-missing-key": "Hiányzik a beállított titkosított tárolási kulcs. A vágólap előzményfájljait megőriztük.",
+          "description-opening": "A titkosított vágólap-előzmények megnyitása folyamatban van.",
+          "description-unavailable": "Nincs elérhető Secret Service-szolgáltató. A vágólap előzményei kizárólag ebben a munkamenetben maradnak elérhetők.",
+          "label": "A vágólap előzmény-tárhelye"
         },
         "date-format": {
           "description": "Alapértelmezett dátumformátum a shell UI-hoz, saját beállítás nélkül",
@@ -3154,7 +3180,7 @@
           "label": "Középre"
         },
         "color": {
-          "description": "Színszerep a widget előteréhez; rögzített hexadecimális színek is támogatottak",
+          "description": "A widget ikonjának és feliratának színe; a fix hexadecimális színek is támogatottak",
           "label": "Szín"
         },
         "color-1": {
@@ -3175,7 +3201,7 @@
           "label": "Egyéni kép"
         },
         "custom-image-colorize": {
-          "description": "Színezd az egyéni képet a widget Szín beállításával",
+          "description": "Az egyéni kép színének beállítása a widget „Ikon színe” beállításával",
           "label": "Egyéni kép színezése"
         },
         "custom-labels": {

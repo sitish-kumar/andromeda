@@ -697,7 +697,7 @@
       "battery-low-title": "电量低",
       "calendar": "日历",
       "calendar-google-connect-browser-failed": "未找到可用于 Google 授权的浏览器。请检查默认浏览器或 xdg-open 设置。",
-      "calendar-google-connect-credential-store-failed": "授权完成，但无法保存刷新令牌。解锁或启动 Secret Service，然后重试连接。",
+      "calendar-google-connect-credential-store-failed": "授权已完成，但无法保存刷新令牌。请解锁或启动 Secret Service，然后重新连接。",
       "calendar-google-connect-expired": "Google 授权在登录完成前已过期。请重新发起连接。",
       "calendar-google-connect-failed-title": "Google 日历连接失败",
       "calendar-google-connect-missing-account": "未找到与“{account}”匹配的已配置 Google 日历账户。",
@@ -864,7 +864,7 @@
       "invalid": "请检查高亮的日历账户字段。",
       "name-label": "显示名称",
       "name-placeholder": "个人日历",
-      "password-file-error": "无法读取配置的密码文件。请检查文件是否存在、为可读的普通文件且包含密码。",
+      "password-file-error": "无法读取已配置的密码文件。请检查该文件是否存在、是否为可读的普通文件，以及是否包含密码。",
       "password-file-label": "密码文件",
       "password-keep-placeholder": "留空以保持当前密码",
       "password-label": "应用密码",
@@ -879,11 +879,11 @@
       "save": "保存",
       "save-connect": "保存并连接",
       "save-error": "无法保存日历账户。",
-      "secret-cleanup-error": "无法保存账号，且无法恢复或清理其密钥环凭据。请在解锁 Secret Service 后重试。",
-      "secret-service-cancelled": "Secret Service 提示已取消。请在准备好解锁时重试。",
+      "secret-cleanup-error": "无法保存账号，且无法恢复或清理其密钥环凭据。请解锁 Secret Service 后重试。",
+      "secret-service-cancelled": "Secret Service 解锁提示已取消。请在准备好解锁时重试。",
       "secret-service-error": "无法访问 Secret Service 中的日历凭据。请重试此操作。",
       "secret-service-locked": "日历凭据已被锁定或访问被拒绝。请解锁 Secret Service 后重试。",
-      "secret-service-unavailable": "无可用的 Secret Service 提供程序。请启动兼容的提供程序后重试。",
+      "secret-service-unavailable": "没有可用的 Secret Service 提供程序。请启动兼容的提供程序后重试。",
       "server-url-label": "服务器 URL",
       "username-label": "用户名",
       "username-placeholder": "name@example.com"
@@ -2401,10 +2401,10 @@
           "button": "重试",
           "description-cancelled": "Secret Service 提示已取消。请在准备好时重试。",
           "description-error": "无法通过 Secret Service 访问日历凭据。",
-          "description-locked": "日历凭据已被锁定或访问被拒绝。解锁 Secret Service 后重试。",
-          "description-migration": "明文日历凭据正等待移动到 Secret Service。目前未用于日历同步。",
-          "description-opening": "正在通过 Secret Service 打开日历凭据。",
-          "description-unavailable": "当前会话中无可用的 Secret Service 提供程序。",
+          "description-locked": "日历凭据已被锁定或访问被拒绝。请解锁 Secret Service 后重试。",
+          "description-migration": "以明文存储的日历凭据正等待迁移到 Secret Service，迁移前不会用于日历同步。",
+          "description-opening": "正在通过 Secret Service 访问日历凭据。",
+          "description-unavailable": "当前会话中没有可用的 Secret Service 提供程序。",
           "label": "日历凭据存储"
         },
         "calendar-edit": {
@@ -2412,7 +2412,7 @@
           "description": "更新日历账户"
         },
         "calendar-event-date-format": {
-          "description": "所选日期在事件卡片中显示的日期格式",
+          "description": "事件卡片中所选日期的显示格式",
           "label": "事件日期格式"
         },
         "calendar-event-time-format": {
@@ -2525,7 +2525,7 @@
           "stats": {
             "cpu-temp": "CPU 温度",
             "cpu-usage": "CPU 使用率",
-            "disk-free": "可用磁盘空间",
+            "disk-free": "磁盘可用空间",
             "disk-free-pct": "可用磁盘空间百分比",
             "disk-usage": "磁盘使用率",
             "disk-used": "已用磁盘空间",
@@ -3029,18 +3029,18 @@
         "value": "值"
       },
       "options": {
-        "after": "之后",
+        "after": "后置",
         "always": "始终",
         "auto": "自动",
-        "before": "之前",
+        "before": "前置",
         "both": "两者均显示",
         "count": "数量",
         "cpu-temp": "CPU 温度",
         "cpu-usage": "CPU 使用率",
         "disk-free": "可用磁盘空间",
-        "disk-free-percent": "可用磁盘空间百分比",
-        "disk-used": "已用磁盘空间",
-        "disk-used-percent": "已用磁盘空间百分比",
+        "disk-free-percent": "磁盘可用率",
+        "disk-used": "磁盘已用空间",
+        "disk-used-percent": "磁盘使用率",
         "dots": "圆点",
         "focus-hint": "焦点提示",
         "full": "完整",
@@ -3260,7 +3260,7 @@
           "volume-description": "自定义图标；留空时使用内置的动态图标"
         },
         "glyph-position": {
-          "description": "图标相对于文本/图表/仪表盘的显示顺序",
+          "description": "图标相对于文本/图表/仪表的显示顺序",
           "label": "图标位置"
         },
         "group-by-workspace": {
@@ -3382,7 +3382,7 @@
           "label": "标签最小宽度"
         },
         "label-show-units": {
-          "description": "显示百分比 / GiB / °C 等单位",
+          "description": "显示 % / GiB / °C 等单位",
           "label": "显示单位"
         },
         "labels-only-when-occupied": {
@@ -3625,7 +3625,7 @@
           "label": "工作区分组胶囊"
         },
         "workspace-group-content": {
-          "description": "每个工作区分组显示的内容：应用图标、窗口数量或圆点（最多五个，其余显示 +N）",
+          "description": "每个工作区分组显示的内容：应用图标、窗口数量或圆点（最多显示五个，其余为 +N）",
           "label": "分组内容"
         },
         "workspace-label-placement": {

@@ -2309,6 +2309,9 @@
           "description": "Posicionar o seletor de papéis de parede perto do widget da barra que o acionou; se aberto sem um gatilho, fica centralizado",
           "label": "Abrir Próximo ao Clique"
         },
+        "panel-anchor-bar": {
+          "description": "A quais barras os painéis se anexam quando abertos por um atalho ou pelo dock. Deixe vazio para seguir o widget que os abriu"
+        },
         "placement-clipboard": {
           "description": "Escolha se a área de transferência fica acoplada à barra ou flutua em uma posição escolhida na tela",
           "label": "Posicionamento"
@@ -2422,6 +2425,9 @@
         "calendar-refresh-interval": {
           "description": "Com que frequência sincronizar eventos do calendário (minutos)",
           "label": "Intervalo de Atualização"
+        },
+        "calendar-storage": {
+          "button": "Tentar Novamente"
         },
         "custom-schedule": {
           "description": "Usar horários manuais de amanhecer e anoitecer ao invés de computar à partir das coordenadas",

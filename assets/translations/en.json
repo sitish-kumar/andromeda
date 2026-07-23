@@ -842,15 +842,6 @@
       "confirm-reset": "Confirm Reset",
       "reset": "Reset"
     },
-    "storage-recovery": {
-      "button": "Reset Private Storage",
-      "button-confirm": "Confirm Storage Reset",
-      "description": "Permanently delete saved clipboard history and the calendar event cache, then reopen private storage. A configured key file is never modified.",
-      "error-delete": "Some private storage files could not be deleted. The storage key was preserved.",
-      "error-key": "Private storage files were deleted, but secure storage could not be reopened. Fix access and retry.",
-      "label": "Recover Private Storage",
-      "success": "Private storage was reset successfully."
-    },
     "badges": {
       "advanced": "Advanced",
       "community": "Community",
@@ -3045,6 +3036,15 @@
         "secondary": "Secondary"
       },
       "variant-label": "Button style"
+    },
+    "storage-recovery": {
+      "button": "Reset Private Storage",
+      "button-confirm": "Confirm Storage Reset",
+      "description": "Permanently delete saved clipboard history and the calendar event cache, then reopen private storage. A configured key file is never modified.",
+      "error-delete": "Some private storage files could not be deleted. The storage key was preserved.",
+      "error-key": "Private storage files were deleted, but secure storage could not be reopened. Fix access and retry.",
+      "label": "Recover Private Storage",
+      "success": "Private storage was reset successfully."
     },
     "widgets": {
       "instances": {
