@@ -3038,7 +3038,6 @@
         "cpu-usage": "CPU Usage",
         "disk-free": "Disk Free",
         "disk-free-percent": "Disk Free Percent",
-        "disk-percent": "Disk Percent",
         "disk-used": "Disk Used",
         "disk-used-percent": "Disk Used Percent",
         "dots": "Dots",

@@ -2733,7 +2733,6 @@
         "auto": "Automaticky",
         "cpu-temp": "Teplota procesoru",
         "cpu-usage": "Vytížení procesoru",
-        "disk-percent": "Procento disku",
         "full": "Plný",
         "gauge": "Ukazatel",
         "glyph": "Ikona",

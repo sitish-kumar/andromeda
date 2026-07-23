@@ -2879,7 +2879,6 @@
         "auto": "Auto",
         "cpu-temp": "Temperatura de la CPU",
         "cpu-usage": "Uso de la CPU",
-        "disk-percent": "Porcentaje de disco",
         "full": "Lleno",
         "gauge": "Gauge",
         "glyph": "Glifo",

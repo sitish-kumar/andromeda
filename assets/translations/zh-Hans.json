@@ -2992,7 +2992,6 @@
         "auto": "自动",
         "cpu-temp": "CPU 温度",
         "cpu-usage": "CPU 使用率",
-        "disk-percent": "磁盘使用率",
         "focus-hint": "焦点提示",
         "full": "完整",
         "gauge": "仪表",

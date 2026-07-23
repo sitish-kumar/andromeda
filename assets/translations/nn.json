@@ -2864,7 +2864,6 @@
         "auto": "Auto",
         "cpu-temp": "Prosessortemperatur",
         "cpu-usage": "Prosessorbruk",
-        "disk-percent": "Disk prosent",
         "full": "Full",
         "gauge": "Målar",
         "glyph": "Symbol",

@@ -2260,7 +2260,6 @@
         "always": "Zawsze",
         "cpu-temp": "Temperatura CPU",
         "cpu-usage": "Użycie CPU",
-        "disk-percent": "Procent dysku",
         "full": "Pełny",
         "gauge": "Gauge",
         "glyph": "Symbol",
