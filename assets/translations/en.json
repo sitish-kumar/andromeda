@@ -307,6 +307,8 @@
       "hour-18": "6 PM",
       "hour-6": "6 AM",
       "most-used": "MOST USED",
+      "back": "Back",
+      "view-day": "View day details",
       "range": {
         "14-days": "14 days",
         "3-days": "3 days",
