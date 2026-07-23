@@ -3033,6 +3033,7 @@
         "always": "Always",
         "auto": "Auto",
         "before": "Before",
+        "both": "Both",
         "count": "Count",
         "cpu-temp": "CPU Temperature",
         "cpu-usage": "CPU Usage",
@@ -3050,6 +3051,7 @@
         "gpu-vram": "GPU VRAM",
         "graph": "Graph",
         "graphic": "Graphic",
+        "hidden": "Hidden",
         "icon-and-text": "Icon and Text",
         "icon-only": "Icon Only",
         "icons": "Icons",
@@ -3070,6 +3072,7 @@
         "ram-used": "RAM Used",
         "rate": "Rate",
         "regular": "Regular",
+        "replace": "Replace",
         "screenshot-primary-fullscreen": "Fullscreen",
         "screenshot-primary-region": "Region",
         "shared": "Shared",
@@ -3541,7 +3544,7 @@
           "label": "Show Temperature"
         },
         "show-vpn-label": {
-          "description": "Show VPN label instead of interface label next to the icon",
+          "description": "Show VPN name: replaces network label in replace mode, adds label next to VPN icon in both mode",
           "label": "Show VPN Label"
         },
         "show-when-idle": {
@@ -3600,6 +3603,10 @@
         "vertical-format": {
           "description": "Optional format used on vertical bars",
           "label": "Vertical Format"
+        },
+        "vpn-status": {
+          "description": "How to display VPN status: replace swaps the network icon for a VPN shield, both shows them side by side, hidden disables the VPN indicator",
+          "label": "VPN Status"
         },
         "warning-color": {
           "description": "Color applied when charge is at or below the System battery warning threshold",

@@ -685,6 +685,11 @@ namespace settings {
         {"kb", "settings.widgets.options.kilobytes"},
         {"mb", "settings.widgets.options.megabytes"},
     };
+    const std::vector<WidgetSettingSelectOption> vpnStatusMode = {
+        {"replace", "settings.widgets.options.replace"},
+        {"both", "settings.widgets.options.both"},
+        {"hidden", "settings.widgets.options.hidden"},
+    };
     const std::vector<WidgetSettingSelectOption> glyphPositionOptions = {
         {"before", "settings.widgets.options.before"},
         {"after", "settings.widgets.options.after"},
@@ -883,10 +888,13 @@ namespace settings {
       add(boolSpec("hide_when_no_media", false));
       add(boolSpec("enable_scroll", true));
     } else if (type == "network") {
+      add(selectSpec("vpn_status", "replace", vpnStatusMode));
       add(boolSpec("show_label", true));
       {
         auto vpnName = boolSpec("show_vpn_label", false);
-        vpnName.visibleWhen = WidgetSettingVisibility{"show_label", {"true"}};
+        WidgetSettingVisibility vis;
+        vis.all = {{"show_label", {"true"}}, {"vpn_status", {"replace", "both"}}};
+        vpnName.visibleWhen = std::move(vis);
         add(std::move(vpnName));
       }
     } else if (type == "notifications") {
