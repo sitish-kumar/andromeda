@@ -95,8 +95,8 @@
         "cpu-temp": "CPU Temp",
         "disk": "Disk",
         "disk-free": "Disk Free",
-        "disk-used": "Disk Used",
         "disk-free-pct": "Disk Free %",
+        "disk-used": "Disk Used",
         "disk-used-pct": "Disk Used %",
         "download": "Download",
         "gpu-temp": "GPU Temp",
@@ -2525,11 +2525,11 @@
           "stats": {
             "cpu-temp": "CPU Temp",
             "cpu-usage": "CPU Usage",
-            "disk-usage": "Disk Usage",
-            "disk-used-pct": "Disk Used %",
-            "disk-used": "Disk Used",
-            "disk-free-pct": "Disk Free %",
             "disk-free": "Disk Free",
+            "disk-free-pct": "Disk Free %",
+            "disk-usage": "Disk Usage",
+            "disk-used": "Disk Used",
+            "disk-used-pct": "Disk Used %",
             "gpu-temp": "GPU Temp",
             "gpu-usage": "GPU Usage",
             "gpu-vram": "GPU VRAM",
@@ -3038,6 +3038,7 @@
         "cpu-usage": "CPU Usage",
         "disk-free": "Disk Free",
         "disk-free-percent": "Disk Free Percent",
+        "disk-percent": "Disk Percent",
         "disk-used": "Disk Used",
         "disk-used-percent": "Disk Used Percent",
         "dots": "Dots",
@@ -3257,8 +3258,8 @@
           "volume-description": "Custom icon glyph; leave empty to use the built-in dynamic icons"
         },
         "glyph-position": {
-          "label": "Glyph Position",
-          "description": "In which order to display the glyph in relation to the text/graph/gauge"
+          "description": "In which order to display the glyph in relation to the text/graph/gauge",
+          "label": "Glyph Position"
         },
         "group-by-workspace": {
           "description": "Group taskbar icons into workspace capsules when compositor data is available",
@@ -3379,8 +3380,8 @@
           "label": "Label Min Width"
         },
         "label-show-units": {
-          "label": "Show Units",
-          "description": "Show units like percent / GiB / °C"
+          "description": "Show units like percent / GiB / °C",
+          "label": "Show Units"
         },
         "labels-only-when-occupied": {
           "description": "Hide workspace labels on empty, inactive workspaces",

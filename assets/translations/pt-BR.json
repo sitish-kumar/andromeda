@@ -464,10 +464,12 @@
         "command": "Comando",
         "custom-color": "Personalizada",
         "description": "Descrição",
+        "device": "Dispositivo",
         "display": "Tela",
         "display-gauge": "Medidor",
         "display-graph": "Gráfico",
         "fade-when-idle": "Esmaecer Quando Ocioso",
+        "fill-color": "Cor de Preenchimento",
         "font-family": "Fonte",
         "font-family-default": "Padrão do sistema",
         "forecast-days": "Dias de Previsão do Tempo",
@@ -498,10 +500,12 @@
         "reset-defaults": "Redefinir para Padrão",
         "ring-opacity": "Opacidade do Anel",
         "rotation-speed": "Velocidade de Rotação",
+        "scroll-step": "Graduação de Rolagem",
         "secondary-color": "Cor Secundária",
         "sensitivity": "Sensibilidade",
         "shadow": "Sombra",
         "show-caps-lock": "Aviso de Caps Lock",
+        "show-device": "Mostrar Dispositivo",
         "show-forecast": "Mostrar Previsão do Tempo",
         "show-keyboard-layout": "Layout do Teclado",
         "show-label": "Exibir Rótulo",
@@ -522,6 +526,7 @@
         "stat-swap-pct": "% Swap",
         "stat2": "Estatísticas 2",
         "title": "Título",
+        "track-color": "Cor da Faixa",
         "variant": "Estilo",
         "variant-default": "Padrão",
         "variant-destructive": "Destrutivo",
@@ -540,6 +545,9 @@
         "wave-thickness": "Largura das Ondas",
         "widget-section": "Widget"
       },
+      "state": {
+        "grid": "Grade"
+      },
       "title": "Widgets da Área de Trabalho",
       "types": {
         "audio-visualizer": "Visualizador de Áudio",
@@ -551,11 +559,17 @@
         "media-player": "Reprodutor de Mídia",
         "sticker": "Adesivo",
         "system-monitor": "Monitor do Sistema",
+        "volume": "Volume",
         "weather": "Clima"
       }
     },
     "media": {
       "nothing-playing": "Nada reproduzindo"
+    },
+    "volume": {
+      "mic": "Mic",
+      "muted": "Mutado",
+      "volume": "Volume"
     },
     "weather": {
       "error": "Erro",
@@ -679,6 +693,7 @@
       "battery-low-title": "Bateria baixa",
       "calendar": "Calendário",
       "calendar-google-connect-browser-failed": "Não foi possível abrir nenhum navegador com a autorização do Google. Verifique seu navegador padrão ou a configuração do xdg-open.",
+      "calendar-google-connect-credential-store-failed": "A autorização foi concluída, mas não foi possível salvar o token de atualização. Desbloqueie ou inicie o Secret Service e, em seguida, conecte-se novamente.",
       "calendar-google-connect-expired": "A autorização do Google expirou antes da conclusão do login. Inicie a conexão novamente.",
       "calendar-google-connect-failed-title": "A conexão com o Google Calendar falhou",
       "calendar-google-connect-missing-account": "Nenhuma conta configurada do google Calendar corresponde a \"{account}\".",
@@ -695,10 +710,10 @@
       "greeter-sync": "Noctalia Greeter",
       "greeter-sync-pending": "Aguardando aprovação do administrador para gravar no greeter.",
       "greeter-sync-pending-console": "Aguardando aprovação do administrador. Aprove o prompt do polkit no Noctalia, em um TTY ou console, ou execute o pkexec manualmente.",
-      "greeter-sync-pending-manual": "Os arquivos estão preparados. Execute no terminal: pkexec noctalia-greeter-apply-appearance \\\"$XDG_RUNTIME_DIR/noctalia-greeter-sync\\\". Ou defina shell.greeter_sync.privilege_command (por exemplo, ghostty -e pkexec) e sincronize novamente.",
+      "greeter-sync-pending-manual": "Os arquivos estão preparados. Execute no terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\". Ou defina shell.greeter_sync.privilege_command (por exemplo, ghostty -e pkexec) e sincronize novamente.",
       "greeter-sync-success": "Aparência sincronizada. As alterações serão aplicadas na próxima tela de login.",
       "greeter-sync-timeout": "A sincronização do Greeter ainda está aguardando a aprovação do administrador. Verifique se há um prompt do polkit em um TTY ou console, habilite o agente polkit nas configurações de Segurança ou execute o pkexec manualmente.",
-      "greeter-sync-timeout-manual": "A sincronização do Greeter ainda precisa da aprovação do administrador. Execute no terminal: pkexec noctalia-greeter-apply-appearance \\\"$XDG_RUNTIME_DIR/noctalia-greeter-sync\\\"",
+      "greeter-sync-timeout-manual": "A sincronização do Greeter ainda precisa da aprovação do administrador. Execute no terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "Este atalho aceita uma única tecla sem modificadores.",
       "keybind-invalid-printable": "Teclas imprimíveis (letras, números, símbolos) requerem uma tecla modificadora como Ctrl ou Alt.",
@@ -820,6 +835,7 @@
   },
   "settings": {
     "actions": {
+      "confirm-reset": "Confirmar Redefinição",
       "reset": "Redefinir"
     },
     "badges": {
@@ -835,12 +851,17 @@
       "add-title": "Adicionar Conta de Calendário",
       "calendars-label": "Calendários",
       "color-label": "Cor",
+      "credential-source-file": "Arquivo de Senha",
+      "credential-source-keyring": "Chaveiro",
+      "credential-source-label": "Armazenamento de Credenciais",
       "delete-error": "Não foi possível deletar conta de calendário",
       "edit-title": "Editar Conta de Calendário",
       "id-label": "ID da Conta",
       "invalid": "Verifique os campos de conta de calendário destacados.",
       "name-label": "Nome de Exibição",
       "name-placeholder": "Calendário Pessoal",
+      "password-file-error": "Não foi possível ler o arquivo de senhas configurado. Verifique se ele existe, se é um arquivo normal legível e se contém uma senha.",
+      "password-file-label": "Arquivo de Senha",
       "password-keep-placeholder": "Deixe em branco para manter a senha atual",
       "password-label": "Senha do App",
       "password-placeholder": "Senha específica do App",
@@ -854,6 +875,11 @@
       "save": "Salvar",
       "save-connect": "Salvar e Conectar",
       "save-error": "Não foi possível salvar a conta de calendário.",
+      "secret-cleanup-error": "Não foi possível salvar a conta, e as credenciais do chaveiro não puderam ser restauradas ou removidas. Tente novamente após desbloquear o Secret Service.",
+      "secret-service-cancelled": "A solicitação do Secret Service foi cancelada. Tente novamente quando estiver pronto para desbloqueá-la.",
+      "secret-service-error": "Não foi possível acessar as credenciais do calendário no Secret Service. Tente novamente a operação.",
+      "secret-service-locked": "As credenciais do calendário estão bloqueadas ou o acesso foi negado. Desbloqueie o Secret Service e tente novamente.",
+      "secret-service-unavailable": "Não há nenhum provedor de Secret Service disponível. Inicie um provedor compatível e tente novamente.",
       "server-url-label": "URL do servidor",
       "username-label": "Nome de usuário",
       "username-placeholder": "nome@exemplo.com"
@@ -1033,7 +1059,7 @@
       "support-report": "Falha em salvar o relatório de suporte.",
       "sync-greeter": "Não foi possível sincronizar a aparência com o Noctalia Greeter.",
       "sync-greeter-timeout": "A sincronização do Greeter ainda está aguardando a aprovação do administrador. Verifique se há um prompt do polkit em um TTY ou console, habilite o agente polkit nas configurações de Segurança ou execute o pkexec manualmente.",
-      "sync-greeter-timeout-manual": "A sincronização do Greeter ainda precisa da aprovação do administrador. Execute no terminal: pkexec noctalia-greeter-apply-appearance \\\"$XDG_RUNTIME_DIR/noctalia-greeter-sync\\\"",
+      "sync-greeter-timeout-manual": "A sincronização do Greeter ainda precisa da aprovação do administrador. Execute no terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "widget": {
         "rename": "Não foi possível renomar o widget nomeado."
       },
@@ -1382,7 +1408,7 @@
         "delete-confirm-desc": "Este plug-in será desinstalado e removido do disco.",
         "delete-confirm-title": "Apagar \"{name}\"?",
         "deprecated": "Obsoleto",
-        "empty": "Nenhum plugin encontrado. Adicione uma fonte ou cheque sua conexão.",
+        "empty": "Nenhum plugin ativado.",
         "incompatible-plugin-api": "APi de plugin incoompatível",
         "loading": "Carregando plugins...",
         "refreshing": "Atualizando plugins...",
@@ -2178,6 +2204,10 @@
           "description": "Exibe uma grade de ícones de aplicativos com legendas abaixo deles quando os resultados forem apenas aplicativos",
           "label": "Visão em Grade de Apps"
         },
+        "launcher-auto-paste": {
+          "description": "Após ativar a calculadora, os emojis e outras funções de cópia, cole na janela em foco (os mesmos atalhos da colagem automática da área de transferência)",
+          "label": "Colagem Automática"
+        },
         "launcher-categories": {
           "description": "Exibir filtros de categoria no launcher; revele com F6 e depois alterne com F6 e Shift+F6.",
           "label": "Exibir Categorias"
@@ -2248,7 +2278,7 @@
           "label": "Exibir Ícones dos Apps"
         },
         "launcher-sort-by-usage": {
-          "description": "Colocar os aplicativos usados com mais frequência no topo e exibir um filtro da categoria \\\"Usados recentemente\\\"\"",
+          "description": "Colocar os aplicativos usados com mais frequência no topo e exibir um filtro da categoria \"Usados recentemente\"",
           "label": "Organizar por Uso"
         },
         "list-item-background": {
@@ -2363,9 +2393,27 @@
           "description": "Adicionar contas iCloud, CalDAV ou Google",
           "label": "Contas de Calendário"
         },
+        "calendar-credentials": {
+          "button": "Tentar Novamente",
+          "description-cancelled": "A solicitação do Secret Service foi cancelada. Tente novamente quando estiver pronto.",
+          "description-error": "Não foi possível acessar as credenciais do calendário por meio do Secret Service.",
+          "description-locked": "As credenciais do calendário estão bloqueadas ou o acesso foi negado. Desbloqueie o Secret Service e tente novamente.",
+          "description-migration": "As credenciais do calendário em texto simples estão aguardando para serem transferidas para o Secret Service. Elas não são usadas para a sincronização do calendário.",
+          "description-opening": "As credenciais para o calendário estão sendo abertas através do Secret Service.",
+          "description-unavailable": "Nenhum provedor de Secret Service disponível nesta sessão.",
+          "label": "Armazenamento de Credenciais de Calendário"
+        },
         "calendar-edit": {
           "button": "Editar",
           "description": "Atualizar essa conta de Calendário"
+        },
+        "calendar-event-date-format": {
+          "description": "O formato de hora mostrado no cartão do evento para a data selecionada",
+          "label": "Formato de Data do Evento"
+        },
+        "calendar-event-time-format": {
+          "description": "O formato de hora mostrado em eventos do calendário",
+          "label": "Formato de Hora do Evento"
         },
         "calendar-refresh-interval": {
           "description": "Com que frequência sincronizar eventos do calendário (minutos)",
@@ -2458,7 +2506,7 @@
             "label": "Intervalo de Polling do Disco"
           },
           "gpu-poll": {
-            "description": "Segundos entre as coletas de temperatura da GPU e uso da VRAM (0 desativa, evitando acordar uma GPU dedicada; 5 é um bom intervalo se você ativar)",
+            "description": "Segundos entre as coletas de temperatura da GPU, uso  e amostras da VRAM. Amostra da GPU são coletadas somente quando algo mostra estatísticas da GPU, ou seja, uma máquina em modo de espera nunca é acordada (0 desativa completamente)",
             "label": "Intervalo de Polling da GPU"
           },
           "label": "Monitor do Sistema",
@@ -2671,7 +2719,7 @@
         },
         "osd-kinds-lock-keys": {
           "description": "Exibir um OSD para alterações nas teclas Caps Lock, Num Lock e Scroll Lock",
-          "label": "Teclas \\\"Lock\\\""
+          "label": "Teclas \"Lock\""
         },
         "osd-kinds-media": {
           "description": "Exibir um OSD quando uma nova faixa começar a tocar",
@@ -2975,9 +3023,11 @@
       "options": {
         "always": "Sempre",
         "auto": "Auto",
+        "count": "Contar",
         "cpu-temp": "Temperatura da CPU",
         "cpu-usage": "Uso da CPU",
         "disk-percent": "Porcentagem do Disco",
+        "dots": "Pontos",
         "focus-hint": "Indicação de Foco",
         "full": "Cheio",
         "gauge": "Medidor",
@@ -2989,6 +3039,7 @@
         "graphic": "Gráfico",
         "icon-and-text": "Ícone e Texto",
         "icon-only": "Apenas Ícone",
+        "icons": "Ícones",
         "id": "ID",
         "input": "Entrada",
         "instance": "Por Posicionamento",
@@ -3137,7 +3188,7 @@
           "label": "Tela"
         },
         "display-mode": {
-          "description": "Exibir a bateria como uma forma gráfica, um símbolo do Tabler ou apenas o rótulo",
+          "description": "Representar a bateria como uma forma gráfica, um símbolo do Tabler ou apenas rótulo",
           "label": "Modo da Tela"
         },
         "drawer": {
@@ -3197,7 +3248,7 @@
           "label": "Agrupar por Espaço de Trabalho"
         },
         "group-single-icon-per-app": {
-          "description": "Ao agrupar por espaço de trabalho, recolha várias janelas do mesmo app num único ícone com um indicador de contagem.",
+          "description": "Ao agrupar por espaço de trabalho com ícones, recolha várias janelas do mesmo app num único ícone com um indicador de contagem.",
           "label": "Ícone único por App"
         },
         "height": {
@@ -3313,7 +3364,7 @@
         "labels-only-when-occupied": {
           "description": "Oculta rótulos de espaços de trabalho vazios e inativos",
           "label": "Rótulos Somente Quando Ocupado",
-          "workspaces-description": "Mostra o id do espaço de trabalho ou nome do rótulo nos espaços de trabalho com janelas abertas e no espaço de trabalho ativo, mesmo quando estiver vazio; outras tags vazias permanecem sem rótulo"
+          "workspaces-description": "Mostra rótulos de ID ou nome em espaços de trabalho com janelas abertas e em espaços de trabalho ativos mesmo quando estão vazios; Outras etiquetas vazias permanecem sem rótulo"
         },
         "length": {
           "description": "Comprimento do espaçador em pixels",
@@ -3345,7 +3396,7 @@
           "label": "Comprimento Mínimo"
         },
         "minimal": {
-          "description": "Exibir apenas o nome do rótulo ou id do espaço de trabalho, sem as pílulas animadas.",
+          "description": "Exibir apenas rótulos de ID ou nome, sem pílulas animadas",
           "label": "Estilo Simplificado",
           "taskbar-description": "Rótulo de espaços de trabalho somente texto sem discos coloridos de fundo"
         },
@@ -3389,7 +3440,7 @@
         "pinned": {
           "description": "IDs dos itens do tray que permanecem visíveis na barra com o modo drawer ativado",
           "label": "Itens Fixados",
-          "taskbar-description": "Apps que permanecem na barra de tarefas quando não estão em execução; ignorados quando Agrupar por Espaço de Trabalho está ativado",
+          "taskbar-description": "Apps de área de trabalho que permanecem na barra de tarefas quando não estão em execução. Ignorados quando Agrupar por Espaço de Trabalho está ativada.",
           "taskbar-label": "Apps Fixados"
         },
         "pinned-opacity": {
@@ -3409,7 +3460,7 @@
           "label": "Escala"
         },
         "scope": {
-          "description": "Execute um script por widget ativo ou compartilhe um script entre barras com o mesmo id de widget",
+          "description": "Execute um ambiente de execução de script por posicionamento de widget ativo ou compartilhe um único ambiente de execução entre barras com o mesmo ID de widget",
           "label": "Escopo de Execução"
         },
         "script": {
@@ -3545,8 +3596,12 @@
           "description": "Desenha o fundo e a borda ao redor de cada workspace agrupado; desative para manter apenas o agrupamento de ícones e os rótulos circulares dos workspaces",
           "label": "Cápsula do grupo de Espaço de Trabalho"
         },
+        "workspace-group-content": {
+          "description": "O que cada grupo de espaços de trabalho exibe: ícones de aplicativos, o número de janelas ou pontos (até cinco, e depois +N para o restante)",
+          "label": "Agrupar Conteúdo"
+        },
         "workspace-label-placement": {
-          "description": "No canto, centralizado na borda ou dentro de uma cápsula",
+          "description": "No canto, centralizado na extremidade ou dentro de uma pílula",
           "label": "Posicionamento do rótulo do espaço de trabalho"
         }
       },
@@ -3590,6 +3645,7 @@
     "window": {
       "export-config": "Exportar Config...",
       "export-config-saved": "Exportação de Config salvo.",
+      "filter-overridden": "Sobrescrito",
       "legacy-config-warning": "Configuração legada sendo migrada em memória: {issue}. Execute a noctalia config validate para todas as mudanças requeridas.",
       "native-title": "Configurações do Noctalia",
       "no-results": "Nenhuma configuração encontrada",
