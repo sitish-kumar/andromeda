@@ -9,7 +9,9 @@ namespace scripting {
   inline constexpr std::uint32_t kAllowInsecureTlsPluginApiVersion = 7;
   inline constexpr std::uint32_t kPanelDismissOnOutsideClickPluginApiVersion = 8;
   inline constexpr std::uint32_t kUiCallbackClosurePluginApiVersion = 9;
-  inline constexpr std::uint32_t kCurrentPluginApiVersion = kUiCallbackClosurePluginApiVersion;
+  inline constexpr std::uint32_t kPanelKeyboardFocusPluginApiVersion = 10;
+  inline constexpr std::uint32_t kPersistentPanelPluginApiVersion = 11;
+  inline constexpr std::uint32_t kCurrentPluginApiVersion = kPersistentPanelPluginApiVersion;
 
   static_assert(kOldestSupportedPluginApiVersion <= kCurrentPluginApiVersion);
 

@@ -21,6 +21,22 @@ namespace {
   constexpr float kDefaultPanelWidth = 480.0f;
   constexpr float kDefaultPanelHeight = 400.0f;
 
+  // Manifest vocabulary (scripting::kPanelKeyboardFocusModes) to layer-shell mode.
+  // The manifest parser rejects anything else, so an unknown token here means the
+  // two lists drifted apart.
+  LayerShellKeyboard keyboardModeFromManifest(std::string_view value) {
+    if (value == "none") {
+      return LayerShellKeyboard::None;
+    }
+    if (value == "exclusive") {
+      return LayerShellKeyboard::Exclusive;
+    }
+    if (value != "on_demand") {
+      kLog.warn("unknown keyboard_focus \"{}\", using on_demand", value);
+    }
+    return LayerShellKeyboard::OnDemand;
+  }
+
   std::string readFile(const std::filesystem::path& path) {
     std::ifstream f(path);
     if (!f) {
@@ -40,7 +56,9 @@ PluginPanel::PluginPanel(scripting::PluginRuntimeContext context, PluginPanelOpt
       m_preferredWidth(options.width > 0.0 ? static_cast<float>(options.width) : kDefaultPanelWidth),
       m_preferredHeight(options.height > 0.0 ? static_cast<float>(options.height) : kDefaultPanelHeight),
       m_widthFill(options.widthFill), m_heightFill(options.heightFill),
-      m_dismissOnOutsideClick(options.dismissOnOutsideClick), m_shellConfig(options.shellConfig) {
+      m_dismissOnOutsideClick(options.dismissOnOutsideClick),
+      m_keyboardMode(keyboardModeFromManifest(options.keyboardFocus)), m_persistent(options.persistent),
+      m_shellConfig(options.shellConfig) {
   scripting::PluginIpcRouter::instance().registerEndpoint(this);
 }
 
@@ -218,15 +236,13 @@ void PluginPanel::handleScriptResult(scripting::ScriptResult result) {
     startTickTimer();
   }
   if (patch.requestClose.value_or(false)) {
-    PanelManager::instance().closePanel();
+    PanelManager::instance().closePanelById(m_entryId);
     return;
   }
   if (patch.uiTree.has_value() && (!m_tree.has_value() || *patch.uiTree != *m_tree)) {
     m_tree = *patch.uiTree;
     m_treeDirty = true;
-    if (PanelManager::instance().isOpenPanel(m_entryId)) {
-      PanelManager::instance().refresh();
-    }
+    PanelManager::instance().refreshPanel(m_entryId);
   }
 }
 
