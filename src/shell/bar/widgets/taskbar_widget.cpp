@@ -1885,6 +1885,26 @@ void TaskbarWidget::updateModels() {
         used[*index] = true;
       }
 
+      // Bind focused compositor window id to the active toplevel before title match.
+      if (const auto focusedId = m_platform.focusedCompositorWindowId(); focusedId.has_value()) {
+        if (const auto index = assignmentIndexForWindowId(*focusedId); index.has_value() && !used[*index]) {
+          TaskModel* activeTask = nullptr;
+          for (auto& task : nextTasks) {
+            if (task.active) {
+              activeTask = &task;
+              break;
+            }
+          }
+          if (activeTask != nullptr && matchesApp(*activeTask, workspaceAssignments[*index])) {
+            const auto& assignment = workspaceAssignments[*index];
+            activeTask->workspaceKey = assignment.workspaceKey;
+            activeTask->workspaceWindowId = assignment.windowId;
+            activeTask->workspaceOrder = *index;
+            used[*index] = true;
+          }
+        }
+      }
+
       auto assignMatch = [&](TaskModel& task, bool requireTitle,
                              const std::function<bool(const WorkspaceWindowAssignment&)>& extraPredicate) -> bool {
         if (const auto existing = assignmentIndexForWindowId(task.workspaceWindowId); existing.has_value()) {
@@ -2057,6 +2077,22 @@ void TaskbarWidget::updateModels() {
           task.workspaceWindowId = assignment.windowId;
           used[i] = true;
           break;
+        }
+      }
+
+      // Active indicator follows the focused compositor window id when bound.
+      if (const auto focusedId = m_platform.focusedCompositorWindowId(); focusedId.has_value()) {
+        TaskModel* focusedTask = nullptr;
+        for (auto& task : nextTasks) {
+          if (!task.workspaceWindowId.empty() && windowIdsMatch(task.workspaceWindowId, *focusedId)) {
+            focusedTask = &task;
+            break;
+          }
+        }
+        if (focusedTask != nullptr) {
+          for (auto& task : nextTasks) {
+            task.active = (&task == focusedTask);
+          }
         }
       }
 
