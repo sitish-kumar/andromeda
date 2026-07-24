@@ -461,7 +461,7 @@ bool NiriWorkspaceBackend::handleWindowOpenedOrChanged(const nlohmann::json& pay
   if (const auto focused = jsonOptionalBool(*window, "is_focused"); focused.has_value()) {
     if (*focused) {
       if (m_focusedWindowId != *id) {
-        m_focusedWindowId = *id;
+        m_focusedWindowId = id;
         focusUpdated = true;
       }
     } else if (m_focusedWindowId == *id) {
