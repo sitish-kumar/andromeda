@@ -1183,6 +1183,19 @@ audio_glyphs_test = executable('audio_glyphs_test',
 
 test('audio_glyphs', audio_glyphs_test)
 
+math_provider_test = executable('math_provider_test',
+  sources: files(
+    'tests/math_provider_test.cpp',
+    'src/launcher/math_provider.cpp',
+  ),
+  dependencies: [
+    libqalculate_dep,
+  ],
+  include_directories: _noctalia_inc,
+)
+
+test('math_provider', math_provider_test)
+
 hook_manager_test = executable('hook_manager_test',
   sources: files(
     'tests/hook_manager_test.cpp',

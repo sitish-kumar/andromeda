@@ -1274,7 +1274,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     };
 
     if (activeProvider != nullptr) {
-      m_allResults = activeProvider->query(queryText);
+      m_allResults = activeProvider->queryPrefixed(queryText);
       if (activeProvider->trackUsage()) {
         applyUsageBoost(m_allResults, *activeProvider);
         if (sortByUsage && m_usageTracker.getRecentlyUsedCount(activeProvider->id()) > 0) {

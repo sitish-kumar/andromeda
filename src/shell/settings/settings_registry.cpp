@@ -1224,7 +1224,7 @@ namespace settings {
           SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-calculator.label"),
           tr("settings.schema.panels.launcher-prefix-calculator.description"),
           {"shell", "launcher", "providers", "calculator", "prefix"},
-          TextSetting{.value = storedPrefix("calculator"), .placeholder = ""}, "launcher calculator prefix trigger"
+          TextSetting{.value = storedPrefix("calculator"), .placeholder = "calc"}, "launcher calculator prefix trigger"
       ));
       entries.push_back(makeEntry(
           SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-calculator.label"),
