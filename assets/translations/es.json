@@ -94,6 +94,10 @@
         "cpu": "CPU",
         "cpu-temp": "Temp. de CPU",
         "disk": "Disco",
+        "disk-free": "Disco disponible",
+        "disk-free-pct": "% Disco Disponible",
+        "disk-used": "Disco Usado",
+        "disk-used-pct": "% Disco Usado",
         "download": "Descarga",
         "gpu-temp": "Temp. de GPU",
         "gpu-usage": "Uso de GPU",
@@ -2280,9 +2284,23 @@
           "description": "Añadir cuentas de iCloud, CalDAV o Google",
           "label": "Cuentas del calendario"
         },
+        "calendar-credentials": {
+          "description-locked": "Las credenciales del calendario estan bloqueadas o el acceso ha sido denegado. Desbloquee el Servicio Secreto y renintentelo",
+          "description-migration": "Las credenciales del calendario en texto plano se moverán al Servicio Secreto. No se usaran para sincronizar el calendario.",
+          "description-opening": "Las credenciales del calendario se usan con el Servicio Secreto",
+          "label": "Almacenamiento de las credenciales del Calendario"
+        },
         "calendar-edit": {
           "button": "Editar",
           "description": "Actualizar esta cuenta de calendario"
+        },
+        "calendar-event-date-format": {
+          "description": "El formato de la fecha mostrada en el panel de los eventos para la fecha seleccionada",
+          "label": "Formato fecha Eventos"
+        },
+        "calendar-event-time-format": {
+          "description": "El formato de la hora mostrado para eventos del calendario",
+          "label": "Formato Hora para Eventos"
         },
         "calendar-refresh-interval": {
           "description": "Con qué frecuencia sincronizar los eventos del calendario (minutos)",

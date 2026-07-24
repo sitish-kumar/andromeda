@@ -260,7 +260,7 @@
       "password-prompt": "Saisir le mot de passe",
       "password-prompt-for": "Saisir le mot de passe pour {ssid}",
       "unavailable-detail": "Installer et activer NetworkManager pour gérer les réseaux depuis cette interface.",
-      "unavailable-title": "NetworkManager indisponible",
+      "unavailable-title": "Service réseau indisponible",
       "vpns": "VPNs",
       "wi-fi": "Wi-Fi",
       "wifi": "Wi-Fi",
@@ -1132,7 +1132,7 @@
         "screen-time": "Temps d’écran",
         "screenshot": "Capture d'écran",
         "security": "Sécurité",
-        "session-panel": "Session",
+        "session-panel": "Panneau de session",
         "shape": "Forme",
         "system": "Système",
         "theme": "Thème",
@@ -1532,7 +1532,7 @@
       },
       "bar": {
         "auto-hide": {
-          "description": "Masque automatiquement la barre lorsqu’elle n’est pas utilisée"
+          "description": "'Désactivé' garde la barre visible ; 'Activé' le masque jusqu'à ce que vous déplaciez le pointeur vers le bord de l'écran ; 'Intelligent' affiche la barre sur un espace de travail vide et la masque lorsque les fenêtres sont ouvertes"
         },
         "background-opacity": {
           "description": "Opacité de fond de la barre"
@@ -1762,7 +1762,7 @@
           "label": "Écran actif uniquement"
         },
         "auto-hide": {
-          "description": "Masque automatiquement le dock lorsqu’il n’est pas utilisé"
+          "description": "'Désactivé' garde le dock visible ; 'Activé' le masque jusqu'à ce que vous déplaciez le pointeur vers le bord de l'écran ; 'Intelligent' affiche le dock sur un espace de travail vide et le masque lorsque les fenêtres sont ouvertes"
         },
         "background-opacity": {
           "description": "Opacité de fond du dock"
@@ -2163,11 +2163,11 @@
         },
         "open-near-click-clipboard": {
           "description": "Positionne le panneau du presse-papiers près du point de clic sur la barre au lieu de le centrer sur celle-ci",
-          "label": "Ouvrir près du clic"
+          "label": "Le long de la barre"
         },
         "open-near-click-control-center": {
           "description": "Positionne le centre de contrôle près du point de clic sur la barre au lieu de le centrer sur celle-ci",
-          "label": "Ouvrir près du clic"
+          "label": "Le long de la barre"
         },
         "open-near-click-launcher": {
           "description": "Positionne le lanceur près du point de clic sur la barre au lieu de le centrer sur celle-ci",
@@ -2233,7 +2233,7 @@
           "description": "Projette l’ombre globale des surfaces depuis les panneaux"
         },
         "transparency-mode": {
-          "description": "Style d'effet de verre du panel, incluant l'opacité du panel flottant/centré et des cards",
+          "description": "Style d'effet de verre du panel, incluant l'opacité du panel flottant et des cards",
           "label": "Transparence"
         }
       },
@@ -2296,7 +2296,7 @@
           "placeholder": "Ville, Pays"
         },
         "location-auto-locate": {
-          "description": "Détecte la localisation à partir de l’adresse IP",
+          "description": "Détecte vote position automatiquement à partir de votre adresse IP via noctalia.dev",
           "label": "Localisation automatique (IP)"
         },
         "longitude": {
@@ -2391,7 +2391,7 @@
           "placeholder": "/chemin/vers/le/son.wav"
         },
         "weather": {
-          "description": "Active les services météo",
+          "description": "Active le service météo via open-meteo.com",
           "label": "Météo"
         },
         "weather-effects": {

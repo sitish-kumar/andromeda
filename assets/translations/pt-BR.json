@@ -300,6 +300,7 @@
       "unknown-device": "Dispositivo desconhecido"
     },
     "screen-time": {
+      "back": "Voltar",
       "disabled": "O monitoramento de tempo de tela está desligado. habilite-o nas Configurações para registrar o uso por aplicativo",
       "empty": "Ainda não foi registado qualquer uso da aplicação. Selecione uma janela para iniciar a monitorização.",
       "hour-0": "12 AM",
@@ -311,7 +312,8 @@
         "14-days": "14 dias",
         "3-days": "3 dias",
         "today": "Hoje"
-      }
+      },
+      "view-day": "Ver detalhes do dia"
     },
     "shortcuts": {
       "audio": "Áudio",
@@ -1904,6 +1906,10 @@
           "description": "Mostra um botão do launcher no início ou fim do dock",
           "label": "Botão do Launcher"
         },
+        "layer": {
+          "description": "Use Overlay para mostrar o dock acima de apps em tela cheia",
+          "label": "Camada Wayland"
+        },
         "magnification": {
           "description": "Ampliar ícones do Dock próximos ao cursor, estilo macOS",
           "label": "Ampliação"
@@ -2310,7 +2316,8 @@
           "label": "Abrir Próximo ao Clique"
         },
         "panel-anchor-bar": {
-          "description": "A quais barras os painéis se anexam quando abertos por um atalho ou pelo dock. Deixe vazio para seguir o widget que os abriu"
+          "description": "A quais barras os painéis se anexam quando abertos por um atalho ou pelo dock. Deixe vazio para seguir o widget que os abriu",
+          "label": "Barra Âncora"
         },
         "placement-clipboard": {
           "description": "Escolha se a área de transferência fica acoplada à barra ou flutua em uma posição escolhida na tela",
@@ -2427,7 +2434,16 @@
           "label": "Intervalo de Atualização"
         },
         "calendar-storage": {
-          "button": "Tentar Novamente"
+          "button": "Tentar Novamente",
+          "description-cancelled": "O prompt de armazenamento criptografado foi cancelado. Os eventos do calendário permanecerão disponíveis apenas nesta sessão.",
+          "description-error": "Não foi possível abrir ou salvar o cache criptografado de eventos do calendário.",
+          "description-locked": "O armazenamento criptografado está bloqueado ou o acesso foi negado. Corrija o acesso e tente novamente.",
+          "description-migration": "O cache de eventos do calendário em texto simples está aguardando criptografia. Ele será preservado até que a migração seja concluída com sucesso.",
+          "description-missing-key": "A chave de armazenamento criptografado configurada está ausente. Os arquivos de cache do calendário existentes foram preservados.",
+          "description-opening": "O cache criptografado de eventos do calendário está sendo aberto.",
+          "description-recovery": "O evento de calendário não pôde ser autenticado ou está danificado. Tente novamente depois de restaurar a chave correta, ou redefina o armazenamento privado.",
+          "description-unavailable": "Nenhum provedor do Secret Service está disponível. Os eventos do calendário permanecerão disponíveis apenas nesta sessão.",
+          "label": "Armazenamento de Eventos do Calendário"
         },
         "custom-schedule": {
           "description": "Usar horários manuais de amanhecer e anoitecer ao invés de computar à partir das coordenadas",
@@ -2656,6 +2672,18 @@
           "description": "Comando a ser executado a partir de entradas da área de transferência de imagens; use {path} para o caminho do arquivo, {stdin} para marcar a posição da entrada padrão (stdin) ou omita {path} para redirecionar automaticamente a saída",
           "label": "Comando de Ação de Imagem",
           "placeholder": "gimp {path} ou satty -f -"
+        },
+        "clipboard-storage": {
+          "button": "Tentar Novamente",
+          "description-cancelled": "O prompt do Secret Service foi cancelado. O histórico da área de transferência permanecerá disponível apenas nesta sessão.",
+          "description-error": "Não foi possível abrir ou salvar o histórico criptografado da área de transferência.",
+          "description-locked": "O armazenamento da chave da área de transferência está bloqueado ou o acesso foi negado. Corrija o acesso e tente novamente.",
+          "description-migration": "O histórico da área de transferência em texto simples está aguardando criptografia. Os arquivos existentes serão preservados até que a migração seja concluída com sucesso.",
+          "description-missing-key": "A chave de armazenamento criptografado configurada está ausente. Os arquivos existentes do histórico da área de transferência foram preservados.",
+          "description-opening": "O histórico criptografado da área de transferência está sendo aberto.",
+          "description-recovery": "O histórico da área de transferência não pôde ser autenticado ou está danificado. Tente novamente depois de restaurar a chave correta, ou redefina o armazenamento privado.",
+          "description-unavailable": "Nenhum provedor do Secret Service está disponível. O histórico da área de transferência permanecerá disponível apenas nesta sessão.",
+          "label": "Armazenamento do Histórico da Área de Transferência"
         },
         "date-format": {
           "description": "Formato de data padrão para a interface do usuário do shell sem configuração própria",
@@ -3014,6 +3042,15 @@
         "secondary": "Secundário"
       },
       "variant-label": "Estilo do botão"
+    },
+    "storage-recovery": {
+      "button": "Redefinir Armazenamento Privado",
+      "button-confirm": "Confirmar Redefinição de Armazenamento",
+      "description": "Apague permanentemente a área de transferência armazenada e o cache de evento de calendário, então re-abra o armazenamento privado. Um arquivo de chave configurado nunca é modificado.",
+      "error-delete": "Alguns arquivos do armazenamento privado não puderam ser apagados. A chave de armazenamento foi preservada.",
+      "error-key": "Arquivos do armazenamento privado foram apagados, mas o armazenamento seguro não pôde ser reaberto. Corrija o acesso e tente novamente.",
+      "label": "Recuperar Armazenamento Privado",
+      "success": "Redefinição do armazenamento privado bem sucedida"
     },
     "widgets": {
       "instances": {

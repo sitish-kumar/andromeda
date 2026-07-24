@@ -300,6 +300,7 @@
       "unknown-device": "Dispositivo sconosciuto"
     },
     "screen-time": {
+      "back": "Indietro",
       "disabled": "Monitoraggio del tempo di utilizzo disattivato. Abilitalo nelle Impostazioni per registrare l'uso per app.",
       "empty": "Nessun tempo di utilizzo app registrato. Seleziona una finestra per iniziare il monitoraggio.",
       "hour-0": "12:00",
@@ -311,7 +312,8 @@
         "14-days": "14 giorni",
         "3-days": "3 giorni",
         "today": "Oggi"
-      }
+      },
+      "view-day": "Visualizza dettagli giorno"
     },
     "shortcuts": {
       "audio": "Audio",
@@ -697,7 +699,7 @@
       "battery-low-title": "Batteria scarica",
       "calendar": "Calendario",
       "calendar-google-connect-browser-failed": "Impossibile avviare un browser per l'autorizzazione Google. Controlla il browser predefinito o la configurazione di xdg-open.",
-      "calendar-google-connect-credential-store-failed": "Autorizzazione completata, ma non è stato possibile salvare il token di aggiornamento. Sblocca o avvia il servizio segreti, quindi connettiti di nuovo.",
+      "calendar-google-connect-credential-store-failed": "Autorizzazione completata, ma non è stato possibile salvare il token di aggiornamento. Sblocca o avvia il Secret Service, quindi connettiti di nuovo.",
       "calendar-google-connect-expired": "L'autorizzazione Google è scaduta prima del completamento dell'accesso. Avvia di nuovo la connessione.",
       "calendar-google-connect-failed-title": "Connessione a Google Calendar non riuscita",
       "calendar-google-connect-missing-account": "Nessun account calendario Google configurato corrisponde a \"{account}\".",
@@ -879,11 +881,11 @@
       "save": "Salva",
       "save-connect": "Salva e connetti",
       "save-error": "Impossibile salvare l'account calendario.",
-      "secret-cleanup-error": "Non è stato possibile salvare l'account e le relative credenziali del portachiavi non possono essere ripristinate o ripulite. Riprova dopo aver sbloccato il servizio segreti.",
-      "secret-service-cancelled": "Il prompt del servizio segreti è stato annullato. Riprova quando sei pronto per sbloccarlo.",
-      "secret-service-error": "Impossibile accedere alle credenziali del calendario nel servizio segreti. Riprovare l'operazione.",
-      "secret-service-locked": "Le credenziali del calendario sono bloccate o l'accesso è stato negato. Sblocca il servizio segreti e riprova.",
-      "secret-service-unavailable": "Nessun fornitore di servizio segreti è disponibile. Avvia un provider compatibile e riprova.",
+      "secret-cleanup-error": "Non è stato possibile salvare l'account e le relative credenziali del portachiavi non possono essere ripristinate o ripulite. Riprova dopo aver sbloccato il Secret Service.",
+      "secret-service-cancelled": "Il prompt del Secret Service è stato annullato. Riprova quando sei pronto per sbloccarlo.",
+      "secret-service-error": "Impossibile accedere alle credenziali del calendario nel Secret Service. Riprovare l'operazione.",
+      "secret-service-locked": "Le credenziali del calendario sono bloccate o l'accesso è stato negato. Sblocca il Secret Service e riprova.",
+      "secret-service-unavailable": "Nessun provider Secret Service è disponibile. Avvia un provider compatibile e riprova.",
       "server-url-label": "URL server",
       "username-label": "Nome utente",
       "username-placeholder": "nome@example.com"
@@ -2309,6 +2311,10 @@
           "description": "Posiziona il selettore di sfondi vicino al widget della barra che lo ha aperto; le aperture senza barra di attivazione sono centrate",
           "label": "Lungo la barra"
         },
+        "panel-anchor-bar": {
+          "description": "Quali pannelli della barra si collegano quando vengono aperti da un collegamento o dal dock. Lascia vuoto per seguire il widget che li ha aperti",
+          "label": "Barra di ancoraggio"
+        },
         "placement-clipboard": {
           "description": "Scegli se il pannello appunti si attacca alla barra, fluttua vicino a essa o si apre centrato",
           "label": "Posizionamento"
@@ -2399,12 +2405,12 @@
         },
         "calendar-credentials": {
           "button": "Riprova",
-          "description-cancelled": "Il prompt del servizio segreti è stato annullato. Riprova quando sei pronto.",
-          "description-error": "Non è stato possibile accedere alle credenziali del calendario tramite un servizio segreti.",
-          "description-locked": "Le credenziali del calendario sono bloccate o l'accesso è stato negato. Sblocca i servizio segreti e riprova.",
-          "description-migration": "Le credenziali del calendario in testo normale sono in attesa di essere trasferite al  servizio segreti. Non vengono utilizzati per la sincronizzazione del calendario.",
-          "description-opening": "Le credenziali del calendario vengono aperte tramite un servizio segreti.",
-          "description-unavailable": "Nessun fornitore di servizio segreti è disponibile in questa sessione.",
+          "description-cancelled": "Il prompt del Secret Service è stato annullato. Riprova quando sei pronto.",
+          "description-error": "Non è stato possibile accedere alle credenziali del calendario tramite Secret Service.",
+          "description-locked": "Le credenziali del calendario sono bloccate o l'accesso è stato negato. Sblocca il Secret Service e riprova.",
+          "description-migration": "Le credenziali del calendario in testo normale sono in attesa di essere trasferite al  Secret Service. Non vengono utilizzati per la sincronizzazione del calendario.",
+          "description-opening": "Le credenziali del calendario vengono aperte tramite Secret Service.",
+          "description-unavailable": "Nessun provider di Secret Service è disponibile in questa sessione.",
           "label": "Archiviazione delle credenziali del calendario"
         },
         "calendar-edit": {
@@ -2422,6 +2428,18 @@
         "calendar-refresh-interval": {
           "description": "Frequenza di sincronizzazione degli eventi calendario (minuti)",
           "label": "Intervallo aggiornamento"
+        },
+        "calendar-storage": {
+          "button": "Riprova",
+          "description-cancelled": "La richiesta di archiviazione crittografata è stata annullata. Gli eventi del calendario rimangono disponibili solo per questa sessione.",
+          "description-error": "Impossibile aprire o salvare la cache degli eventi del calendario crittografata.",
+          "description-locked": "L'archivio crittografato è bloccato o l'accesso è stato negato. Correggi l'accesso e riprova.",
+          "description-migration": "La cache degli eventi del calendario in testo normale è in attesa di essere crittografata. Viene conservata finché la migrazione non ha esito positivo.",
+          "description-missing-key": "Manca la configurazione della chiave di archiviazione crittografata. I file della cache del calendario esistenti sono stati conservati.",
+          "description-opening": "È in corso l'apertura della cache degli eventi del calendario crittografati.",
+          "description-recovery": "Non è stato possibile accedere alla cache eventi del calendario o la stessa è danneggiata. Riprovare dopo aver ripristinato la chiave corretta o reimpostato l'archivio privato.",
+          "description-unavailable": "Nessun provider di Secret Service è disponibile. Gli eventi del calendario rimangono disponibili solo per questa sessione.",
+          "label": "Storage degli eventi del calendario"
         },
         "custom-schedule": {
           "description": "Utilizza gli orari di alba/tramonto manuali invece di calcolare in base alle coordinate",
@@ -2650,6 +2668,18 @@
           "description": "Comando da eseguire dalle voci immagine negli appunti; usa {path} per il percorso file, {stdin} per segnare la posizione stdin, oppure ometti {path} per inviare automaticamente in pipe",
           "label": "Comando azione immagine",
           "placeholder": "gimp {path} o satty -f -"
+        },
+        "clipboard-storage": {
+          "button": "Riprova",
+          "description-cancelled": "Il prompt del Secret Service è stata annullato. La cronologia degli appunti rimane disponibile solo per questa sessione.",
+          "description-error": "Impossibile aprire o salvare la cronologia degli appunti crittografata.",
+          "description-locked": "La memorizzazione della chiave degli Appunti è bloccata o l'accesso è stato negato. Correggi l'accesso e riprova.",
+          "description-migration": "La cronologia degli appunti in testo normale è in attesa di essere crittografata. I file esistenti vengono conservati fino al completamento della migrazione.",
+          "description-missing-key": "Manca la chiave di archiviazione crittografata configurata. I file di cronologia degli appunti esistenti sono stati conservati.",
+          "description-opening": "È in corso l'apertura della cronologia degli appunti crittografata.",
+          "description-recovery": "Non è stato possibile autenticare la cronologia degli appunti o è danneggiata. Riprovare dopo aver ripristinato la chiave corretta o reimpostato l'archivio privato.",
+          "description-unavailable": "Nessun provider di Secret Service è disponibile. La cronologia degli appunti rimane disponibile solo per questa sessione.",
+          "label": "Archiviazione della cronologia degli appunti"
         },
         "date-format": {
           "description": "Formato data predefinito per la shell UI senza impostazione propria",
@@ -3008,6 +3038,15 @@
         "secondary": "Colore secondario"
       },
       "variant-label": "Stile pulsante"
+    },
+    "storage-recovery": {
+      "button": "Reimposta storage privato",
+      "button-confirm": "Conferma il ripristino dello storage",
+      "description": "Elimina definitivamente la cronologia degli appunti salvata e la cache degli eventi del calendario, quindi riapri l'archivio privato. Un file di chiave configurato non viene mai modificato.",
+      "error-delete": "Non è stato possibile eliminare alcuni file di archiviazione privata. La chiave di archiviazione è stata conservata.",
+      "error-key": "I file dell'archivio privato sono stati eliminati, ma non è stato possibile riaprire l'archivio protetto. Correggi l'accesso e riprova.",
+      "label": "Recupera l'archiviazione privata",
+      "success": "L'archiviazione privata è stata reimpostata correttamente."
     },
     "widgets": {
       "instances": {
