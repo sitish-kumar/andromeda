@@ -117,8 +117,10 @@ namespace {
 
   // Resolves the bar a panel should attach to / position relative to.
   // `barName` is the opening source bar when present. Otherwise `shell.panel_anchor_bar`
-  // is used when set. A named bar that is missing or disabled on the output fails
-  // loudly (nullopt). With no name set, the first enabled bar on the output is used.
+  // is used when set. A named bar that does not exist fails loudly (nullopt).
+  // Prefer an enabled bar on the output; if none is enabled there (e.g. a bar-less
+  // monitor), still return a resolved bar so openPanel can fall back to centered
+  // floating via attached-panel availability.
   std::optional<BarConfig> resolvePanelBarConfig(
       ConfigService* configService, CompositorPlatform* platform, wl_output* output, std::string_view barName = {}
   ) {
@@ -146,10 +148,7 @@ namespace {
         }
         BarConfig resolved = resolve(bar);
         if (!resolved.enabled) {
-          kLog.error(
-              "panel: bar \"{}\" is disabled on this output (source bar or shell.panel_anchor_bar)", effectiveName
-          );
-          return std::nullopt;
+          kLog.warn("panel: bar \"{}\" is disabled on this output; opening without bar attachment", effectiveName);
         }
         return resolved;
       }
@@ -164,8 +163,8 @@ namespace {
       }
     }
 
-    kLog.error("panel: no enabled bar available for panel attachment");
-    return std::nullopt;
+    // Bar-less output: keep opening panels (centered/floating), not abort.
+    return resolve(bars.front());
   }
 
   bool hasMultipleEnabledBarsOnEdge(
