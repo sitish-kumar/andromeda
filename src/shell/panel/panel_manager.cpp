@@ -40,6 +40,38 @@ PanelManager* PanelManager::s_instance = nullptr;
 namespace {
 
   constexpr Logger kLog("panel");
+  constexpr auto kKeyboardRelaxDelay = std::chrono::milliseconds(100);
+
+  // Layer-shell keyboard interactivity for a panel surface: `initial` is applied at
+  // map time, `relaxed` (when set) shortly after by m_keyboardRelaxTimer.
+  struct PanelKeyboardPlan {
+    LayerShellKeyboard initial = LayerShellKeyboard::None;
+    std::optional<LayerShellKeyboard> relaxed;
+  };
+
+  // A panel asking for None never takes keyboard focus, so the app the user is
+  // typing into keeps it. Everything else reproduces the per-path behavior the
+  // compositor workarounds need: a focus grab maps Exclusive so the panel wins the
+  // keyboard from the grab and hands it back once settled, and an attached panel
+  // takes focus only after the bar-anchored map, which the reveal would otherwise
+  // race. `mode` therefore only selects between OnDemand and Exclusive on the
+  // detached path of a compositor without focus-grab support.
+  PanelKeyboardPlan
+  resolvePanelKeyboardPlan(LayerShellKeyboard mode, bool hasFocusGrab, bool grabWillActivate, bool attached) {
+    if (mode == LayerShellKeyboard::None) {
+      return {.initial = LayerShellKeyboard::None, .relaxed = std::nullopt};
+    }
+    if (hasFocusGrab) {
+      return {
+          .initial = LayerShellKeyboard::Exclusive,
+          .relaxed = grabWillActivate ? std::optional{LayerShellKeyboard::OnDemand} : std::nullopt
+      };
+    }
+    if (attached) {
+      return {.initial = LayerShellKeyboard::None, .relaxed = LayerShellKeyboard::Exclusive};
+    }
+    return {.initial = mode, .relaxed = std::nullopt};
+  }
 
   bool blurTraceEnabled() {
     static const bool enabled = SysUtils::isEnvFlagOn("NOCTALIA_BLUR_TRACE");
@@ -715,9 +747,23 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   const LayerShellLayer panelLayer =
       useAttachedPlacement ? layerShellLayerFromConfig(barConfig.layer) : m_activePanel->layer();
 
+  const bool hasFocusGrab =
+      m_platform != nullptr && m_platform->focusGrabService() != nullptr && m_platform->focusGrabService()->available();
+  // Neither outside-click mechanism works for a panel that must not take keyboard
+  // focus: the click shield swallows the click meant for the app below, and the
+  // compositor focus grab takes the keyboard.
+  const bool wantsOutsideDismiss =
+      m_activePanel->dismissOnOutsideClick() && m_activePanel->keyboardMode() != LayerShellKeyboard::None;
+  // Two plans: the attached branch falls back to the standalone surface when its
+  // layer-shell init fails, and that surface is placed detached.
+  const PanelKeyboardPlan keyboardPlan =
+      resolvePanelKeyboardPlan(m_activePanel->keyboardMode(), hasFocusGrab, hasFocusGrab && wantsOutsideDismiss, false);
+  const PanelKeyboardPlan attachedKeyboardPlan =
+      resolvePanelKeyboardPlan(m_activePanel->keyboardMode(), hasFocusGrab, hasFocusGrab && wantsOutsideDismiss, true);
+
   // Map shields BEFORE the panel surface is created or committed.
   // Within a single layer, wlroots stacks surfaces by mapping order.
-  if (m_activePanel->dismissOnOutsideClick()) {
+  if (wantsOutsideDismiss) {
     activateClickShield(panelLayer);
   }
 
@@ -734,11 +780,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       .marginRight = standaloneMarginRight,
       .marginBottom = standaloneMarginBottom,
       .marginLeft = standaloneMarginLeft,
-      .keyboard = (m_platform != nullptr
-                   && m_platform->focusGrabService() != nullptr
-                   && m_platform->focusGrabService()->available())
-          ? LayerShellKeyboard::Exclusive
-          : m_activePanel->keyboardMode(),
+      .keyboard = keyboardPlan.initial,
       .defaultWidth = fallbackSurfaceWidth,
       .defaultHeight = fallbackSurfaceHeight,
       .prewarmBlur = true,
@@ -979,11 +1021,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
         .marginRight = attachedMarginRight,
         .marginBottom = attachedMarginBottom,
         .marginLeft = attachedMarginLeft,
-        .keyboard = (m_platform != nullptr
-                     && m_platform->focusGrabService() != nullptr
-                     && m_platform->focusGrabService()->available())
-            ? LayerShellKeyboard::Exclusive
-            : LayerShellKeyboard::None,
+        .keyboard = attachedKeyboardPlan.initial,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeight,
         .prewarmBlur = true,
@@ -1007,24 +1045,17 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       m_surface->setBlurRegion({});
       publishAttachedPanelGeometry(m_attachedRevealProgress);
       m_surface->requestRedraw();
-      const bool hasFocusGrab = m_platform != nullptr
-          && m_platform->focusGrabService() != nullptr
-          && m_platform->focusGrabService()->available();
-      const std::uint64_t gen = m_destroyGeneration;
-      if (hasFocusGrab && m_activePanel->dismissOnOutsideClick()) {
+      if (hasFocusGrab && wantsOutsideDismiss) {
         activateFocusGrab();
-        m_keyboardRelaxTimer.start(std::chrono::milliseconds(100), [this, gen]() {
+      }
+      if (attachedKeyboardPlan.relaxed.has_value()) {
+        const std::uint64_t gen = m_destroyGeneration;
+        const LayerShellKeyboard relaxed = *attachedKeyboardPlan.relaxed;
+        m_keyboardRelaxTimer.start(kKeyboardRelaxDelay, [this, gen, relaxed]() {
           if (m_destroyGeneration != gen || !isAttachedOpen() || m_layerSurface == nullptr || m_closing) {
             return;
           }
-          m_layerSurface->setKeyboardInteractivity(LayerShellKeyboard::OnDemand);
-        });
-      } else {
-        m_keyboardRelaxTimer.start(std::chrono::milliseconds(100), [this, gen]() {
-          if (m_destroyGeneration != gen || !isAttachedOpen() || m_layerSurface == nullptr || m_closing) {
-            return;
-          }
-          m_layerSurface->setKeyboardInteractivity(LayerShellKeyboard::Exclusive);
+          m_layerSurface->setKeyboardInteractivity(relaxed);
         });
       }
       kLog.debug("panel manager: opened \"{}\" as attached layer-shell", panelId);
@@ -1096,16 +1127,17 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   );
   m_surface->setBlurRegion({});
   // Activate outside-click dismissal (focus grab or click shield).
-  const bool hasFocusGrab =
-      m_platform != nullptr && m_platform->focusGrabService() != nullptr && m_platform->focusGrabService()->available();
-  const std::uint64_t gen = m_destroyGeneration;
-  if (hasFocusGrab && m_activePanel->dismissOnOutsideClick()) {
+  if (hasFocusGrab && wantsOutsideDismiss) {
     activateFocusGrab();
-    m_keyboardRelaxTimer.start(std::chrono::milliseconds(100), [this, gen]() {
+  }
+  if (keyboardPlan.relaxed.has_value()) {
+    const std::uint64_t gen = m_destroyGeneration;
+    const LayerShellKeyboard relaxed = *keyboardPlan.relaxed;
+    m_keyboardRelaxTimer.start(kKeyboardRelaxDelay, [this, gen, relaxed]() {
       if (m_destroyGeneration != gen || m_layerSurface == nullptr || m_closing) {
         return;
       }
-      m_layerSurface->setKeyboardInteractivity(LayerShellKeyboard::OnDemand);
+      m_layerSurface->setKeyboardInteractivity(relaxed);
     });
   }
   kLog.debug("panel manager: opened \"{}\"", panelId);

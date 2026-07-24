@@ -36,6 +36,8 @@ struct PluginPanelOptions {
   bool widthFill = false;
   bool heightFill = false;
   bool dismissOnOutsideClick = true;
+  // One of scripting::kPanelKeyboardFocusModes.
+  std::string keyboardFocus = "on_demand";
   scripting::PluginPanelShellConfig shellConfig;
 };
 
@@ -58,6 +60,7 @@ public:
   [[nodiscard]] bool fillsWidth() const noexcept override { return m_widthFill; }
   [[nodiscard]] bool fillsHeight() const noexcept override { return m_heightFill; }
   [[nodiscard]] bool dismissOnOutsideClick() const override { return m_dismissOnOutsideClick; }
+  [[nodiscard]] LayerShellKeyboard keyboardMode() const override { return m_keyboardMode; }
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override { return m_shellConfig.placement; }
   [[nodiscard]] std::string panelScreenPosition() const override { return m_shellConfig.position; }
   [[nodiscard]] bool panelOpenNearClick() const override { return m_shellConfig.openNearClick; }
@@ -112,6 +115,7 @@ private:
   bool m_widthFill = false;
   bool m_heightFill = false;
   bool m_dismissOnOutsideClick = true;
+  LayerShellKeyboard m_keyboardMode = LayerShellKeyboard::OnDemand;
   scripting::PluginPanelShellConfig m_shellConfig;
   std::shared_ptr<bool> m_alive = std::make_shared<bool>(true);
 };

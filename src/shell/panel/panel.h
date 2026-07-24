@@ -58,6 +58,13 @@ public:
   [[nodiscard]] virtual bool fillsHeight() const noexcept { return false; }
   [[nodiscard]] virtual bool hasDecoration() const { return true; }
   [[nodiscard]] virtual LayerShellLayer layer() const { return LayerShellLayer::Top; }
+  // Keyboard focus policy. `None` means the panel never takes keyboard focus, so the
+  // app the user is typing into keeps it — that also rules out outside-click
+  // dismissal, which needs either the click shield (it would swallow the click meant
+  // for the app) or a compositor focus grab (it takes the keyboard). OnDemand vs
+  // Exclusive only decides whether the panel takes focus on open, and only on the
+  // detached path of a compositor without focus-grab support; see
+  // resolvePanelKeyboardPlan in panel_manager.cpp.
   [[nodiscard]] virtual LayerShellKeyboard keyboardMode() const { return LayerShellKeyboard::OnDemand; }
   [[nodiscard]] virtual InputArea* initialFocusArea() const { return nullptr; }
   // Dynamic focus: consumed (returned once, then cleared) by PanelManager after

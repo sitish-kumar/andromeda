@@ -407,6 +407,31 @@ namespace scripting {
               return false;
             }
           }
+          if ((*entryTable)["keyboard_focus"]) {
+            if (manifest.pluginApiVersion < kPanelKeyboardFocusPluginApiVersion) {
+              error = "panel entry '"
+                  + entry.id
+                  + "': keyboard_focus requires plugin_api >= "
+                  + std::to_string(kPanelKeyboardFocusPluginApiVersion);
+              return false;
+            }
+            const auto* keyboardFocus = (*entryTable)["keyboard_focus"].as_string();
+            if (keyboardFocus == nullptr || !isValidPanelKeyboardFocus(keyboardFocus->get())) {
+              error = "panel entry '" + entry.id + R"(': keyboard_focus must be "on_demand", "exclusive" or "none")";
+              return false;
+            }
+            entry.panelKeyboardFocus = keyboardFocus->get();
+            // Outside-click dismissal is served either by the click shield (which
+            // swallows the click meant for the app below) or by a compositor focus
+            // grab (which takes keyboard focus). Neither is compatible with a panel
+            // that must never touch focus.
+            if (entry.panelKeyboardFocus == "none" && entry.panelDismissOnOutsideClick) {
+              error = "panel entry '"
+                  + entry.id
+                  + R"(': keyboard_focus = "none" requires dismiss_on_outside_click = false)";
+              return false;
+            }
+          }
           injectStandardPanelShellSettings(entry);
         }
         if (kind == PluginEntryKind::LauncherProvider) {

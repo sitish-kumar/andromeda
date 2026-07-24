@@ -603,6 +603,111 @@ int main() {
         && ok;
   }
 
+  const auto oldApiKeyboardPath = root / "old-api-keyboard/plugin.toml";
+  ok = writeText(
+           oldApiKeyboardPath,
+           "id = \"me/old-api-keyboard\"\n"
+           "name = \"Old API Keyboard\"\n"
+           "plugin_api = 9\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "keyboard_focus = \"none\"\n"
+       )
+      && ok;
+  error.clear();
+  const auto oldApiKeyboard = scripting::parsePluginManifest(oldApiKeyboardPath, &error);
+  ok = expect(!oldApiKeyboard.has_value(), "keyboard_focus should require plugin API 10") && ok;
+  ok = expectEq(error, "panel entry 'panel': keyboard_focus requires plugin_api >= 10", "keyboard focus API gate error")
+      && ok;
+
+  const auto badKeyboardPath = root / "bad-keyboard/plugin.toml";
+  ok = writeText(
+           badKeyboardPath,
+           "id = \"me/bad-keyboard\"\n"
+           "name = \"Bad Keyboard\"\n"
+           "plugin_api = 10\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "keyboard_focus = \"sometimes\"\n"
+       )
+      && ok;
+  error.clear();
+  const auto badKeyboard = scripting::parsePluginManifest(badKeyboardPath, &error);
+  ok = expect(!badKeyboard.has_value(), "unknown keyboard_focus token should fail") && ok;
+  ok = expectEq(
+           error, R"(panel entry 'panel': keyboard_focus must be "on_demand", "exclusive" or "none")",
+           "keyboard focus token error"
+       )
+      && ok;
+
+  const auto keyboardDismissPath = root / "keyboard-dismiss/plugin.toml";
+  ok = writeText(
+           keyboardDismissPath,
+           "id = \"me/keyboard-dismiss\"\n"
+           "name = \"Keyboard Dismiss\"\n"
+           "plugin_api = 10\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "keyboard_focus = \"none\"\n"
+       )
+      && ok;
+  error.clear();
+  const auto keyboardDismiss = scripting::parsePluginManifest(keyboardDismissPath, &error);
+  ok = expect(!keyboardDismiss.has_value(), R"(keyboard_focus "none" should require dismiss_on_outside_click false)")
+      && ok;
+  ok = expectEq(
+           error, R"(panel entry 'panel': keyboard_focus = "none" requires dismiss_on_outside_click = false)",
+           "keyboard focus dismiss pairing error"
+       )
+      && ok;
+
+  const auto keyboardPanelPath = root / "keyboard-panel/plugin.toml";
+  ok = writeText(
+           keyboardPanelPath,
+           "id = \"me/keyboard-panel\"\n"
+           "name = \"Keyboard Panel\"\n"
+           "plugin_api = 10\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "keyboard_focus = \"none\"\n"
+           "dismiss_on_outside_click = false\n"
+       )
+      && ok;
+  error.clear();
+  const auto keyboardPanel = scripting::parsePluginManifest(keyboardPanelPath, &error);
+  ok = expect(keyboardPanel.has_value(), error.empty() ? "failed to parse keyboard panel manifest" : error.c_str())
+      && ok;
+  if (keyboardPanel.has_value() && expect(keyboardPanel->entries.size() == 1, "one keyboard panel entry expected")) {
+    ok = expectEq(keyboardPanel->entries.front().panelKeyboardFocus, "none", "keyboard_focus none should parse") && ok;
+  }
+
+  const auto defaultKeyboardPath = root / "default-keyboard/plugin.toml";
+  ok = writeText(
+           defaultKeyboardPath,
+           "id = \"me/default-keyboard\"\n"
+           "name = \"Default Keyboard\"\n"
+           "plugin_api = 10\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+       )
+      && ok;
+  error.clear();
+  const auto defaultKeyboard = scripting::parsePluginManifest(defaultKeyboardPath, &error);
+  ok = expect(defaultKeyboard.has_value(), error.empty() ? "failed to parse default keyboard manifest" : error.c_str())
+      && ok;
+  if (defaultKeyboard.has_value()
+      && expect(defaultKeyboard->entries.size() == 1, "one default keyboard entry expected")) {
+    ok = expectEq(
+             defaultKeyboard->entries.front().panelKeyboardFocus, "on_demand", "keyboard_focus defaults to on_demand"
+         )
+        && ok;
+  }
+
   std::error_code ec;
   std::filesystem::remove_all(root, ec);
   return ok ? 0 : 1;

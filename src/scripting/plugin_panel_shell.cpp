@@ -107,6 +107,10 @@ namespace scripting {
 
   bool isValidPanelPosition(std::string_view value) noexcept { return std::ranges::contains(kPanelPositions, value); }
 
+  bool isValidPanelKeyboardFocus(std::string_view value) noexcept {
+    return std::ranges::contains(kPanelKeyboardFocusModes, value);
+  }
+
   bool isPanelShellSettingKey(std::string_view entryId, std::string_view key) noexcept {
     return key == panelShellSettingKey(entryId, "placement")
         || key == panelShellSettingKey(entryId, "position")
