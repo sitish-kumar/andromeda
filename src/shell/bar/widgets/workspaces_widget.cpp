@@ -124,9 +124,6 @@ void WorkspacesWidget::create() {
     if (steps == 0.0f) {
       return;
     }
-    if (!m_wheelActionGate.tryConsume()) {
-      return;
-    }
     // Wayland reports positive wheel deltas for "scroll down", so treat that
     // as moving to the next workspace and negative as previous.
     activateAdjacentWorkspace(steps > 0.0f ? 1 : -1);

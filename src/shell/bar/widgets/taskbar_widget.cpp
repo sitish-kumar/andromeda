@@ -529,9 +529,6 @@ void TaskbarWidget::create() {
     if (steps == 0.0f) {
       return false;
     }
-    if (!m_wheelActionGate.tryConsume()) {
-      return true;
-    }
     if (m_groupByWorkspace) {
       activateAdjacentWorkspace(steps > 0.0f ? 1 : -1);
     } else {
@@ -696,9 +693,6 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     const float steps = data.scrollSteps();
     if (steps == 0.0f) {
       return false;
-    }
-    if (!m_wheelActionGate.tryConsume()) {
-      return true;
     }
 
     activateAdjacentWorkspace(steps > 0.0f ? 1 : -1);

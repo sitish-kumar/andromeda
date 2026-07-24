@@ -1,7 +1,6 @@
 #pragma once
 
 #include "compositors/compositor_platform.h"
-#include "core/input/wheel_action_gate.h"
 #include "render/animation/animation_manager.h"
 #include "shell/bar/widget.h"
 #include "system/icon_resolver.h"
@@ -156,7 +155,6 @@ private:
   bool m_focusedPill = false;
   bool m_focusedOutputOnly = false;
   bool m_enableScroll = true;
-  WheelActionGate m_wheelActionGate;
   bool m_wasFocusedOutput = true;
   bool m_activeUsesFocusedColor = true;
   std::string m_cachedActiveWindowAppId;
