@@ -576,8 +576,7 @@ int main() {
   const auto oldApiDismiss = scripting::parsePluginManifest(oldApiDismissPath, &error);
   ok = expect(!oldApiDismiss.has_value(), "dismiss_on_outside_click should require plugin API 8") && ok;
   ok = expectEq(
-           error,
-           "panel entry 'panel': dismiss_on_outside_click requires plugin_api >= 8",
+           error, "panel entry 'panel': dismiss_on_outside_click requires plugin_api >= 8",
            "dismiss outside-click API gate error"
        )
       && ok;
@@ -596,10 +595,10 @@ int main() {
       && ok;
   error.clear();
   const auto dismissPanel = scripting::parsePluginManifest(dismissPanelPath, &error);
-  ok = expect(dismissPanel.has_value(), error.empty() ? "failed to parse dismiss panel manifest" : error.c_str())
-      && ok;
+  ok = expect(dismissPanel.has_value(), error.empty() ? "failed to parse dismiss panel manifest" : error.c_str()) && ok;
   if (dismissPanel.has_value() && expect(dismissPanel->entries.size() == 1, "one dismiss panel entry expected")) {
-    ok = expect(!dismissPanel->entries.front().panelDismissOnOutsideClick, "dismiss_on_outside_click false should parse")
+    ok =
+        expect(!dismissPanel->entries.front().panelDismissOnOutsideClick, "dismiss_on_outside_click false should parse")
         && ok;
   }
 
