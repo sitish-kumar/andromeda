@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compositors/compositor_platform.h"
+#include "core/input/wheel_action_gate.h"
 #include "shell/bar/widget.h"
 #include "system/desktop_entry.h"
 #include "system/icon_resolver.h"
@@ -166,6 +167,7 @@ private:
   bool m_minimal = false;
   bool m_groupSingleIconPerApp = false;
   bool m_enableScroll = true;
+  WheelActionGate m_wheelActionGate;
   bool m_showActiveIndicator = true;
   float m_activeOpacity = 1.0f;
   float m_inactiveOpacity = 1.0f;
