@@ -1889,6 +1889,10 @@
           "description": "Space between dock items",
           "label": "Item Spacing"
         },
+        "layer": {
+          "description": "Use Overlay to show the dock above fullscreen apps",
+          "label": "Wayland Layer"
+        },
         "launcher-custom-image": {
           "description": "Use an image on the dock launcher button instead of an icon",
           "label": "Launcher Custom Image",

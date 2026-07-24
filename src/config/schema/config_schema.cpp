@@ -1794,6 +1794,20 @@ namespace noctalia::config::schema {
         field(&DockConfig::showRunning, "show_running"),
         field(&DockConfig::autoHide, "auto_hide"),
         field(&DockConfig::smartAutoHide, "smart_auto_hide"),
+        // layer accepts top|overlay; anything else warns and leaves the default.
+        custom<DockConfig>(
+            "layer",
+            [](const toml::table& tbl, DockConfig& out, std::string_view parentPath, Diagnostics& diag) {
+              if (auto v = tbl["layer"].value<std::string>()) {
+                if (*v == "top" || *v == "overlay") {
+                  out.layer = *v;
+                } else {
+                  diag.warn(joinPath(parentPath, "layer"), "expected top or overlay, got \"" + *v + "\"");
+                }
+              }
+            },
+            [](toml::table& tbl, const DockConfig& in) { tbl.insert_or_assign("layer", in.layer); }
+        ),
         field(&DockConfig::reserveSpace, "reserve_space"),
         field(&DockConfig::activeScale, "active_scale", kDockActiveScaleRange),
         field(&DockConfig::inactiveScale, "inactive_scale", kDockInactiveScaleRange),
