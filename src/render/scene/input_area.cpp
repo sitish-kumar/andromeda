@@ -18,9 +18,9 @@ namespace {
   // fresh so a partial detent left over from a free-spin flick can't bank into
   // the following one and tip it into an extra step.
   constexpr auto kScrollGestureGap = std::chrono::milliseconds(100);
-  // With scrollStepsOnePerGesture, the first non-zero step wins until axis
-  // events go idle for this long (collapses free-spin / hi-res bursts).
-  constexpr auto kScrollOnePerGestureIdle = std::chrono::milliseconds(50);
+  // First non-zero scrollSteps() wins until axis events go idle for this long
+  // (collapses free-spin / hi-res bursts into one discrete action).
+  constexpr auto kScrollStepIdle = std::chrono::milliseconds(50);
 
   bool isWheelSource(std::uint32_t axisSource) noexcept {
     return axisSource == WL_POINTER_AXIS_SOURCE_WHEEL || axisSource == WL_POINTER_AXIS_SOURCE_WHEEL_TILT;
@@ -246,7 +246,7 @@ bool InputArea::dispatchAxis(
   if (sincePreviousAxis > kScrollGestureGap) {
     resetScrollAccumulators();
   }
-  if (m_scrollStepsOnePerGesture && sincePreviousAxis > kScrollOnePerGestureIdle) {
+  if (sincePreviousAxis > kScrollStepIdle) {
     m_scrollStepEmittedThisGesture = false;
   }
   m_lastAxisTime = now;
@@ -266,7 +266,8 @@ bool InputArea::dispatchAxis(
     }
   }
 
-  if (m_scrollStepsOnePerGesture && axisSteps != 0.0f) {
+  // One discrete action per gesture: first non-zero step wins until idle.
+  if (axisSteps != 0.0f) {
     if (m_scrollStepEmittedThisGesture) {
       axisSteps = 0.0f;
     } else {
