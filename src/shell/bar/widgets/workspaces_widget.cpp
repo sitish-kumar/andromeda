@@ -113,6 +113,7 @@ bool WorkspacesWidget::isWorkspaceHidden(const Workspace& workspace) const noexc
 
 void WorkspacesWidget::create() {
   auto container = std::make_unique<InputArea>();
+  container->setScrollStepsOnePerGesture(true);
   container->setOnAxis([this](const InputArea::PointerData& data) {
     if (!m_enableScroll) {
       return;

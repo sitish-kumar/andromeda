@@ -18,6 +18,9 @@ namespace {
   // fresh so a partial detent left over from a free-spin flick can't bank into
   // the following one and tip it into an extra step.
   constexpr auto kScrollGestureGap = std::chrono::milliseconds(100);
+  // With scrollStepsOnePerGesture, the first non-zero step wins until axis
+  // events go idle for this long (collapses free-spin / hi-res bursts).
+  constexpr auto kScrollOnePerGestureIdle = std::chrono::milliseconds(50);
 
   bool isWheelSource(std::uint32_t axisSource) noexcept {
     return axisSource == WL_POINTER_AXIS_SOURCE_WHEEL || axisSource == WL_POINTER_AXIS_SOURCE_WHEEL_TILT;
@@ -173,6 +176,8 @@ void InputArea::dispatchEnter(float localX, float localY) {
   }
 }
 
+void InputArea::resetScrollAccumulators() noexcept { m_scrollStepAccum.fill(0.0f); }
+
 void InputArea::dispatchLeave() {
   m_hovered = false;
   m_pressed = false;
@@ -182,8 +187,6 @@ void InputArea::dispatchLeave() {
     m_onLeave();
   }
 }
-
-void InputArea::resetScrollAccumulators() noexcept { m_scrollStepAccum.fill(0.0f); }
 
 void InputArea::dispatchMotion(float localX, float localY) {
   if (m_onMotion) {
@@ -239,8 +242,12 @@ bool InputArea::dispatchAxis(
   // (touchpads) accrue axisValue until a detent-equivalent is reached.
   // Scrolling content stays on scrollDelta() and keeps the scaling.
   const auto now = std::chrono::steady_clock::now();
-  if (now - m_lastAxisTime > kScrollGestureGap) {
+  const auto sincePreviousAxis = now - m_lastAxisTime;
+  if (sincePreviousAxis > kScrollGestureGap) {
     resetScrollAccumulators();
+  }
+  if (m_scrollStepsOnePerGesture && sincePreviousAxis > kScrollOnePerGestureIdle) {
+    m_scrollStepEmittedThisGesture = false;
   }
   m_lastAxisTime = now;
 
@@ -256,6 +263,15 @@ bool InputArea::dispatchAxis(
     accum -= axisSteps;
     if (isWheelSource(axisSource)) {
       axisSteps = std::clamp(axisSteps, -1.0f, 1.0f);
+    }
+  }
+
+  if (m_scrollStepsOnePerGesture && axisSteps != 0.0f) {
+    if (m_scrollStepEmittedThisGesture) {
+      axisSteps = 0.0f;
+    } else {
+      m_scrollStepEmittedThisGesture = true;
+      axisSteps = std::copysign(1.0f, axisSteps);
     }
   }
 
