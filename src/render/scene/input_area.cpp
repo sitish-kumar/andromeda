@@ -3,6 +3,7 @@
 #include "cursor-shape-v1-client-protocol.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
 namespace {
@@ -13,6 +14,10 @@ namespace {
   // detent convention is 15 units; we require a bit more so touchpad swipes
   // step deliberately rather than racing the finger.
   constexpr float kScrollUnitsPerStep = 20.0f;
+  // A pause longer than this ends a scroll gesture: the next axis event starts
+  // fresh so a partial detent left over from a free-spin flick can't bank into
+  // the following one and tip it into an extra step.
+  constexpr auto kScrollGestureGap = std::chrono::milliseconds(100);
 
   bool isWheelSource(std::uint32_t axisSource) noexcept {
     return axisSource == WL_POINTER_AXIS_SOURCE_WHEEL || axisSource == WL_POINTER_AXIS_SOURCE_WHEEL_TILT;
@@ -233,6 +238,12 @@ bool InputArea::dispatchAxis(
   // frames that must first accrue to a full detent. Continuous sources
   // (touchpads) accrue axisValue until a detent-equivalent is reached.
   // Scrolling content stays on scrollDelta() and keeps the scaling.
+  const auto now = std::chrono::steady_clock::now();
+  if (now - m_lastAxisTime > kScrollGestureGap) {
+    resetScrollAccumulators();
+  }
+  m_lastAxisTime = now;
+
   float axisSteps = 0.0f;
   if (axis < m_scrollStepAccum.size()) {
     float& accum = m_scrollStepAccum[axis];

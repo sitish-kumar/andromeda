@@ -193,6 +193,9 @@ private:
   std::uint32_t m_pressedButton = 0;
   // Detent-unit scroll accumulators, indexed by wl_pointer axis (vertical, horizontal).
   std::array<float, 2> m_scrollStepAccum{};
+  // When the last axis event landed; a gap resets the accumulators so leftover
+  // fraction from one gesture can't bank into the next.
+  std::chrono::steady_clock::time_point m_lastAxisTime;
   bool m_focusable = false;
   bool m_tabStop = true;
   std::string m_tabFocusKey;
