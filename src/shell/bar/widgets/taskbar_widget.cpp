@@ -517,7 +517,6 @@ bool TaskbarWidget::reservesMiddleClick(float sceneX, float sceneY) const noexce
 
 void TaskbarWidget::create() {
   auto container = std::make_unique<InputArea>();
-  container->setScrollStepsOnePerGesture(true);
   container->setOnAxisHandler([this](const InputArea::PointerData& data) {
     if (!m_enableScroll) {
       return false;
