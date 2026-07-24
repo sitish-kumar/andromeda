@@ -48,6 +48,10 @@ public:
     // (touchpads) emit a step only once a full detent-equivalent has accrued —
     // use this instead of scrollDelta() for discrete stepping (volume,
     // workspace cycling, ...).
+    //
+    // With setScrollStepsOnePerGesture(true), only the first non-zero step wins
+    // until the axis stream goes idle (workspace/taskbar); leave it off for
+    // cumulative controls (volume, brightness).
     [[nodiscard]] float scrollSteps() const noexcept { return axisSteps; }
   };
 
@@ -120,6 +124,11 @@ public:
   [[nodiscard]] bool enabled() const noexcept { return m_enabled; }
   void setHitShape(HitShape shape);
   [[nodiscard]] HitShape hitShape() const noexcept { return m_hitShape; }
+
+  // When true, scrollSteps() reports at most one non-zero step until the axis
+  // stream goes idle. Off by default so volume-style controls keep accumulating.
+  void setScrollStepsOnePerGesture(bool enabled) noexcept { m_scrollStepsOnePerGesture = enabled; }
+  [[nodiscard]] bool scrollStepsOnePerGesture() const noexcept { return m_scrollStepsOnePerGesture; }
 
   // Tooltip
   void setTooltip(std::string text);
@@ -196,6 +205,9 @@ private:
   // When the last axis event landed; a gap resets the accumulators so leftover
   // fraction from one gesture can't bank into the next.
   std::chrono::steady_clock::time_point m_lastAxisTime;
+  // One-per-gesture: set after delivering a non-zero step; cleared after idle.
+  bool m_scrollStepEmittedThisGesture = false;
+  bool m_scrollStepsOnePerGesture = false;
   bool m_focusable = false;
   bool m_tabStop = true;
   std::string m_tabFocusKey;

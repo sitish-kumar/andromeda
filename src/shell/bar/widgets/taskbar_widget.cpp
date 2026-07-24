@@ -517,6 +517,7 @@ bool TaskbarWidget::reservesMiddleClick(float sceneX, float sceneY) const noexce
 
 void TaskbarWidget::create() {
   auto container = std::make_unique<InputArea>();
+  container->setScrollStepsOnePerGesture(true);
   container->setOnAxisHandler([this](const InputArea::PointerData& data) {
     if (!m_enableScroll) {
       return false;
@@ -682,23 +683,6 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   const bool showWindowTitle = m_showWindowTitle && windowTitleWidth > minWindowTitleWidth;
   const float tileWidthWithTitle = tileSize + (showWindowTitle ? windowTitleWidth + windowTitleGap : 0.0f);
 
-  const auto workspaceAxisHandler = [this](const InputArea::PointerData& data) -> bool {
-    if (!m_enableScroll || !m_groupByWorkspace) {
-      return false;
-    }
-    if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL && data.axis != WL_POINTER_AXIS_HORIZONTAL_SCROLL) {
-      return false;
-    }
-
-    const float steps = data.scrollSteps();
-    if (steps == 0.0f) {
-      return false;
-    }
-
-    activateAdjacentWorkspace(steps > 0.0f ? 1 : -1);
-    return true;
-  };
-
   auto attachHover = [this](InputArea& area, float width, float height) {
     auto hoverBox = ui::box({
         .radius = resolvedBarCapsuleRadius(width, height),
@@ -762,7 +746,6 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     }
     area->setOpacity(tileOpacity);
     area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT, BTN_MIDDLE}));
-    area->setOnAxisHandler(workspaceAxisHandler);
 
     const WorkspaceModel* taskWorkspace = nullptr;
     if (m_groupByWorkspace && !task.workspaceKey.empty()) {
@@ -1043,7 +1026,6 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       auto wsCopy = ws.workspace;
       wl_output* const wsHost = workspaceHostOutput(ws);
       badge->setOnClick([this, wsCopy, wsHost]() { m_platform.activateWorkspace(wsHost, wsCopy); });
-      badge->inputArea()->setOnAxisHandler(workspaceAxisHandler);
 
       if (hover) {
         attachHover(*badge->inputArea(), disc.width, disc.height);
@@ -1059,7 +1041,6 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       auto area = std::make_unique<InputArea>();
       area->setOpacity(summaryOpacity);
       area->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
-      area->setOnAxisHandler(workspaceAxisHandler);
       auto wsCopy = ws.workspace;
       wl_output* const wsHost = workspaceHostOutput(ws);
       area->setOnClick([this, wsCopy, wsHost](const InputArea::PointerData& data) {
@@ -1335,7 +1316,6 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           auto switcher = std::make_unique<InputArea>();
           switcher->setFrameSize(tileSize, tileSize);
           switcher->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
-          switcher->setOnAxisHandler(workspaceAxisHandler);
           auto wsCopy = ws.workspace;
           wl_output* const wsHost = workspaceHostOutput(ws);
           switcher->setOnClick([this, wsCopy, wsHost](const InputArea::PointerData& data) {
