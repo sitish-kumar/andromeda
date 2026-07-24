@@ -165,6 +165,10 @@ Application::Application()
 }
 
 Application::~Application() {
+  // m_systemMonitor is declared after the plugin hosts, so it is destroyed first; drop the script
+  // API's pointer to it here, while both are still alive, or a plugin that used noctalia.cpuCores
+  // releases its reference through a dangling pointer as its host is torn down.
+  m_scriptApi.setSystemMonitor(nullptr);
   TooltipManager::instance().shutdown();
   m_notificationManager.flushPersistedHistory();
   m_wayland.setClipboardService(nullptr);

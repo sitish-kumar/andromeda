@@ -122,6 +122,11 @@ public:
   bool callHttpStreamCloseCallback(int streamKey, bool ok, int status, std::chrono::milliseconds budget);
   [[nodiscard]] bool hasHttpStream(int streamKey) const;
 
+  // noctalia.cpuCores - opt this host into per-core CPU sampling on first use. Sampling is
+  // refcounted in SystemMonitorService and released in ~LuauHost, so a plugin that never asks for
+  // per-core data costs nothing and a reloaded one does not leak a reference.
+  void ensureCpuCoresRetained();
+
   // Load the plugin's own translations/<lang>.json (over en.json) into a flat dotted-key
   // catalog. Call after setPluginDir().
   void loadTranslations();
@@ -242,6 +247,7 @@ private:
   std::size_t m_memUsed = 0; // bytes tracked by allocate(); guarded by the worker-thread serialization
   std::chrono::nanoseconds m_callCpuDeadline{};
   std::string m_currentCallName;
+  bool m_cpuCoresRetained = false; // this host holds a SystemMonitorService per-core reference
   bool m_budgetActive = false;
   bool m_lastCallTimedOut = false;
   bool m_muteErrors = false;

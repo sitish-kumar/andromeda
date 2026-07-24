@@ -763,6 +763,7 @@ _noctalia_sources = files(
   'src/shell/bar/widgets/screenshot_widget.cpp',
   'src/system/rfkill_helper.cpp',
   'src/system/screen_time_service.cpp',
+  'src/system/cpu_stat.cpp',
   'src/system/cpu_temp_sensor.cpp',
   'src/system/intel_gpu.cpp',
   'src/system/system_monitor_service.cpp',
@@ -1299,6 +1300,16 @@ cpu_temp_sensor_test = executable('cpu_temp_sensor_test',
 )
 
 test('cpu_temp_sensor', cpu_temp_sensor_test)
+
+cpu_stat_test = executable('cpu_stat_test',
+  sources: files(
+    'tests/cpu_stat_test.cpp',
+    'src/system/cpu_stat.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('cpu_stat', cpu_stat_test)
 
 i18n_language_tag_test = executable('i18n_language_tag_test',
   sources: files(

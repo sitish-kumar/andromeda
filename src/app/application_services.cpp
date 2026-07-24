@@ -805,6 +805,7 @@ void Application::initAuxServicesAndHooks() {
 
   try {
     m_systemMonitor = std::make_unique<SystemMonitorService>(m_configService.config().system.monitor);
+    m_scriptApi.setSystemMonitor(m_systemMonitor.get());
     if (m_systemMonitor->isRunning()) {
       kLog.info("system monitor service active");
     } else {
@@ -834,6 +835,7 @@ void Application::initAuxServicesAndHooks() {
     });
   } catch (const std::exception& e) {
     kLog.warn("system monitor service disabled: {}", e.what());
+    m_scriptApi.setSystemMonitor(nullptr);
     m_systemMonitor.reset();
   }
 }
