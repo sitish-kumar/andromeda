@@ -708,6 +708,126 @@ int main() {
         && ok;
   }
 
+  const auto oldApiPersistentPath = root / "old-api-persistent/plugin.toml";
+  ok = writeText(
+           oldApiPersistentPath,
+           "id = \"me/old-api-persistent\"\n"
+           "name = \"Old API Persistent\"\n"
+           "plugin_api = 10\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "persistent = true\n"
+       )
+      && ok;
+  error.clear();
+  const auto oldApiPersistent = scripting::parsePluginManifest(oldApiPersistentPath, &error);
+  ok = expect(!oldApiPersistent.has_value(), "persistent should require plugin API 11") && ok;
+  ok = expectEq(error, "panel entry 'panel': persistent requires plugin_api >= 11", "persistent API gate error") && ok;
+
+  const auto persistentDismissPath = root / "persistent-dismiss/plugin.toml";
+  ok = writeText(
+           persistentDismissPath,
+           "id = \"me/persistent-dismiss\"\n"
+           "name = \"Persistent Dismiss\"\n"
+           "plugin_api = 11\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "persistent = true\n"
+       )
+      && ok;
+  error.clear();
+  const auto persistentDismiss = scripting::parsePluginManifest(persistentDismissPath, &error);
+  ok = expect(!persistentDismiss.has_value(), "persistent should require dismiss_on_outside_click false") && ok;
+  ok = expectEq(
+           error, "panel entry 'panel': persistent = true requires dismiss_on_outside_click = false",
+           "persistent dismiss pairing error"
+       )
+      && ok;
+
+  const auto persistentExclusivePath = root / "persistent-exclusive/plugin.toml";
+  ok = writeText(
+           persistentExclusivePath,
+           "id = \"me/persistent-exclusive\"\n"
+           "name = \"Persistent Exclusive\"\n"
+           "plugin_api = 11\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "keyboard_focus = \"exclusive\"\n"
+           "dismiss_on_outside_click = false\n"
+           "persistent = true\n"
+       )
+      && ok;
+  error.clear();
+  const auto persistentExclusive = scripting::parsePluginManifest(persistentExclusivePath, &error);
+  ok = expect(!persistentExclusive.has_value(), "persistent should reject exclusive keyboard focus") && ok;
+  ok = expectEq(
+           error, R"(panel entry 'panel': persistent = true is incompatible with keyboard_focus = "exclusive")",
+           "persistent exclusive keyboard error"
+       )
+      && ok;
+
+  const auto persistentAttachedPath = root / "persistent-attached/plugin.toml";
+  ok = writeText(
+           persistentAttachedPath,
+           "id = \"me/persistent-attached\"\n"
+           "name = \"Persistent Attached\"\n"
+           "plugin_api = 11\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "placement = \"attached\"\n"
+           "dismiss_on_outside_click = false\n"
+           "persistent = true\n"
+       )
+      && ok;
+  error.clear();
+  const auto persistentAttached = scripting::parsePluginManifest(persistentAttachedPath, &error);
+  ok = expect(!persistentAttached.has_value(), "persistent should reject attached placement") && ok;
+  ok = expectEq(
+           error, R"(panel entry 'panel': persistent = true requires placement = "floating")",
+           "persistent attached placement error"
+       )
+      && ok;
+
+  const auto oskPanelPath = root / "osk-panel/plugin.toml";
+  ok = writeText(
+           oskPanelPath,
+           "id = \"me/osk-panel\"\n"
+           "name = \"OSK Panel\"\n"
+           "plugin_api = 11\n"
+           "[[panel]]\n"
+           "id = \"panel\"\n"
+           "entry = \"panel.luau\"\n"
+           "width = \"fill\"\n"
+           "position = \"bottom_center\"\n"
+           "keyboard_focus = \"none\"\n"
+           "dismiss_on_outside_click = false\n"
+           "persistent = true\n"
+       )
+      && ok;
+  error.clear();
+  const auto oskPanel = scripting::parsePluginManifest(oskPanelPath, &error);
+  ok = expect(oskPanel.has_value(), error.empty() ? "failed to parse osk panel manifest" : error.c_str()) && ok;
+  if (oskPanel.has_value() && expect(oskPanel->entries.size() == 1, "one osk panel entry expected")) {
+    const auto& entry = oskPanel->entries.front();
+    ok = expect(entry.panelPersistent, "persistent true should parse") && ok;
+    ok = expectEq(entry.panelKeyboardFocus, "none", "osk keyboard_focus should parse") && ok;
+    ok = expect(entry.panelWidthFill, "osk width fill should parse") && ok;
+    // A persistent panel gets no placement / open_near_click settings: it is always
+    // floating and never opened from a bar widget's anchor.
+    const bool hasPlacement = std::ranges::any_of(entry.settings, [](const scripting::ManifestField& field) {
+      return field.key == "panel_placement";
+    });
+    const bool hasPosition = std::ranges::any_of(entry.settings, [](const scripting::ManifestField& field) {
+      return field.key == "panel_position";
+    });
+    ok = expect(!hasPlacement, "persistent panel should not seed a placement setting") && ok;
+    ok = expect(hasPosition, "persistent panel should still seed a position setting") && ok;
+  }
+
   std::error_code ec;
   std::filesystem::remove_all(root, ec);
   return ok ? 0 : 1;

@@ -330,6 +330,7 @@ void PanelManager::initialize(CompositorPlatform& platform, ConfigService* confi
   m_config = config;
   m_renderContext = renderContext;
   m_clickShield.initialize(platform.wayland());
+  m_persistentHost.initialize(platform, config, renderContext);
 }
 
 void PanelManager::setOpenSettingsWindowCallback(std::function<void(std::string)> callback) {
@@ -424,10 +425,18 @@ void PanelManager::onAttachedBarRevealSettled(wl_output* output, std::string_vie
 }
 
 void PanelManager::registerPanel(const std::string& id, std::unique_ptr<Panel> content) {
+  if (content != nullptr && content->isPersistent()) {
+    m_persistentHost.registerPanel(id, std::move(content));
+    return;
+  }
   m_panels[id] = std::move(content);
 }
 
 void PanelManager::unregisterPanel(const std::string& id) {
+  if (m_persistentHost.hasPanel(id)) {
+    m_persistentHost.unregisterPanel(id);
+    return;
+  }
   auto it = m_panels.find(id);
   if (it == m_panels.end()) {
     return;
@@ -470,6 +479,13 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       );
       return;
     }
+  }
+
+  // Persistent panels live in their own host: opening one must leave the active
+  // panel (and any other persistent panel) alone.
+  if (m_persistentHost.hasPanel(panelId)) {
+    m_persistentHost.open(panelId, request.output, request.context);
+    return;
   }
 
   if (m_closeDesktopWidgetsEditor) {
@@ -1327,6 +1343,14 @@ void PanelManager::destroyPanel() {
 }
 
 void PanelManager::togglePanel(const std::string& panelId, PanelOpenRequest request) {
+  if (m_persistentHost.hasPanel(panelId)) {
+    if (m_persistentHost.isOpen(panelId)) {
+      m_persistentHost.close(panelId);
+      return;
+    }
+    openPanel(panelId, request);
+    return;
+  }
   // Treat a closing panel as closed: re-clicking while it animates out reopens it immediately.
   if (isOpen() && !m_closing && m_activePanelId == panelId) {
     if (!request.context.empty() && m_activePanel != nullptr) {
@@ -1351,6 +1375,14 @@ void PanelManager::togglePanel(const std::string& panelId, PanelOpenRequest requ
 }
 
 void PanelManager::togglePanel(const std::string& panelId) {
+  if (m_persistentHost.hasPanel(panelId)) {
+    if (m_persistentHost.isOpen(panelId)) {
+      m_persistentHost.close(panelId);
+      return;
+    }
+    openPanel(panelId, PanelOpenRequest{});
+    return;
+  }
   if (isOpen() && !m_closing && m_activePanelId == panelId) {
     closePanel();
     return;
@@ -1370,6 +1402,10 @@ void PanelManager::clearClipboardHistory() {
 }
 
 bool PanelManager::onPointerEvent(const PointerEvent& event) {
+  // Persistent panels own separate surfaces; the host claims only its own.
+  if (m_persistentHost.onPointerEvent(event)) {
+    return true;
+  }
   if (!isOpen() || m_inTransition) {
     return false;
   }
@@ -1477,6 +1513,9 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
 bool PanelManager::isOpen() const noexcept { return m_surface != nullptr && m_activePanel != nullptr; }
 
 bool PanelManager::isOpenPanel(std::string_view panelId) const noexcept {
+  if (m_persistentHost.hasPanel(panelId)) {
+    return m_persistentHost.isOpen(panelId);
+  }
   return isOpen() && m_activePanelId == panelId;
 }
 
@@ -1509,6 +1548,7 @@ bool PanelManager::isActivePanelContext(std::string_view context) const noexcept
 }
 
 void PanelManager::refresh() {
+  m_persistentHost.refresh();
   if (!isOpen() || m_renderContext == nullptr || m_activePanel == nullptr || m_surface == nullptr) {
     return;
   }
@@ -1519,7 +1559,28 @@ void PanelManager::refresh() {
   m_surface->requestUpdate();
 }
 
+void PanelManager::refreshPanel(std::string_view panelId) {
+  if (m_persistentHost.hasPanel(panelId)) {
+    m_persistentHost.refreshPanel(panelId);
+    return;
+  }
+  if (isOpenPanel(panelId)) {
+    refresh();
+  }
+}
+
+void PanelManager::closePanelById(std::string_view panelId) {
+  if (m_persistentHost.hasPanel(panelId)) {
+    m_persistentHost.close(std::string(panelId));
+    return;
+  }
+  if (isOpenPanel(panelId)) {
+    closePanel();
+  }
+}
+
 void PanelManager::onIconThemeChanged() {
+  m_persistentHost.onIconThemeChanged();
   if (!isOpen() || m_activePanel == nullptr || m_surface == nullptr) {
     return;
   }
@@ -1640,6 +1701,9 @@ std::optional<LayerPopupParentContext> PanelManager::fallbackPopupParentContext(
 }
 
 void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
+  if (m_persistentHost.onKeyboardEvent(event)) {
+    return;
+  }
   // m_inTransition means the surface is still initializing.
   // Keyboard events during this window must be ignored.
   if (!isOpen() || m_inTransition) {
@@ -2059,6 +2123,7 @@ void PanelManager::applyAttachedDecorationStyle() {
 }
 
 void PanelManager::onConfigReloaded() {
+  m_persistentHost.onConfigReloaded();
   if (!isOpen() || m_config == nullptr || m_activePanel == nullptr) {
     return;
   }
@@ -2452,6 +2517,7 @@ void PanelManager::registerIpc(IpcService& ipc) {
     for (const auto& entry : m_panels) {
       ids.push_back(entry.first);
     }
+    m_persistentHost.appendPanelIds(ids);
     std::ranges::sort(ids);
 
     std::string error = "error: unknown panel \"" + std::string(panelId) + "\"";
@@ -2470,7 +2536,7 @@ void PanelManager::registerIpc(IpcService& ipc) {
         if (auto error = parseOpenArgs(args, "panel-toggle", panelId, context)) {
           return *error;
         }
-        if (!m_panels.contains(panelId)) {
+        if (!m_panels.contains(panelId) && !m_persistentHost.hasPanel(panelId)) {
           return unknownPanelError(panelId);
         }
         // Output left unset: openPanel resolves it (focus source, else compositor probe).
@@ -2493,7 +2559,7 @@ void PanelManager::registerIpc(IpcService& ipc) {
         if (auto error = parseOpenArgs(args, "panel-open", panelId, context)) {
           return *error;
         }
-        if (!m_panels.contains(panelId)) {
+        if (!m_panels.contains(panelId) && !m_persistentHost.hasPanel(panelId)) {
           return unknownPanelError(panelId);
         }
 
@@ -2520,10 +2586,14 @@ void PanelManager::registerIpc(IpcService& ipc) {
         if (!panelId.empty() && StringUtils::splitWhitespace(panelId).size() != 1) {
           return "error: panel-close accepts at most one panel id\n";
         }
-        if (!panelId.empty() && !m_panels.contains(panelId)) {
+        if (!panelId.empty() && !m_panels.contains(panelId) && !m_persistentHost.hasPanel(panelId)) {
           return unknownPanelError(panelId);
         }
 
+        if (!panelId.empty() && m_persistentHost.hasPanel(panelId)) {
+          m_persistentHost.close(panelId);
+          return "ok\n";
+        }
         if (panelId.empty() || isOpenPanel(panelId)) {
           closePanel();
         }

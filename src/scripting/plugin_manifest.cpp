@@ -432,6 +432,42 @@ namespace scripting {
               return false;
             }
           }
+          if ((*entryTable)["persistent"]) {
+            if (manifest.pluginApiVersion < kPersistentPanelPluginApiVersion) {
+              error = "panel entry '"
+                  + entry.id
+                  + "': persistent requires plugin_api >= "
+                  + std::to_string(kPersistentPanelPluginApiVersion);
+              return false;
+            }
+            const auto* persistent = (*entryTable)["persistent"].as_boolean();
+            if (persistent == nullptr) {
+              error = "panel entry '" + entry.id + "': persistent must be a bool";
+              return false;
+            }
+            entry.panelPersistent = persistent->get();
+          }
+          if (entry.panelPersistent) {
+            // A persistent panel has neither click shield nor focus grab.
+            if (entry.panelDismissOnOutsideClick) {
+              error = "panel entry '" + entry.id + "': persistent = true requires dismiss_on_outside_click = false";
+              return false;
+            }
+            // Exclusive keyboard focus on a surface that is never dismissed would
+            // hold the keyboard away from every other window for good.
+            if (entry.panelKeyboardFocus == "exclusive") {
+              error = "panel entry '"
+                  + entry.id
+                  + R"(': persistent = true is incompatible with keyboard_focus = "exclusive")";
+              return false;
+            }
+            // Attached placement is resolved pre-commit against a live bar, which a
+            // panel outside the active-panel slot has no relationship to.
+            if (entry.panelPlacementDefault == "attached") {
+              error = "panel entry '" + entry.id + R"(': persistent = true requires placement = "floating")";
+              return false;
+            }
+          }
           injectStandardPanelShellSettings(entry);
         }
         if (kind == PluginEntryKind::LauncherProvider) {

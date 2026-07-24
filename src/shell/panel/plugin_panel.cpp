@@ -57,7 +57,8 @@ PluginPanel::PluginPanel(scripting::PluginRuntimeContext context, PluginPanelOpt
       m_preferredHeight(options.height > 0.0 ? static_cast<float>(options.height) : kDefaultPanelHeight),
       m_widthFill(options.widthFill), m_heightFill(options.heightFill),
       m_dismissOnOutsideClick(options.dismissOnOutsideClick),
-      m_keyboardMode(keyboardModeFromManifest(options.keyboardFocus)), m_shellConfig(options.shellConfig) {
+      m_keyboardMode(keyboardModeFromManifest(options.keyboardFocus)), m_persistent(options.persistent),
+      m_shellConfig(options.shellConfig) {
   scripting::PluginIpcRouter::instance().registerEndpoint(this);
 }
 
@@ -235,15 +236,13 @@ void PluginPanel::handleScriptResult(scripting::ScriptResult result) {
     startTickTimer();
   }
   if (patch.requestClose.value_or(false)) {
-    PanelManager::instance().closePanel();
+    PanelManager::instance().closePanelById(m_entryId);
     return;
   }
   if (patch.uiTree.has_value() && (!m_tree.has_value() || *patch.uiTree != *m_tree)) {
     m_tree = *patch.uiTree;
     m_treeDirty = true;
-    if (PanelManager::instance().isOpenPanel(m_entryId)) {
-      PanelManager::instance().refresh();
-    }
+    PanelManager::instance().refreshPanel(m_entryId);
   }
 }
 

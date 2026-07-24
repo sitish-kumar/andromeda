@@ -125,6 +125,7 @@ void Application::reloadPluginPanels() {
                 .heightFill = resolved.entry->panelHeightFill,
                 .dismissOnOutsideClick = resolved.entry->panelDismissOnOutsideClick,
                 .keyboardFocus = resolved.entry->panelKeyboardFocus,
+                .persistent = resolved.entry->panelPersistent,
                 .shellConfig = shellConfig,
             }
         )

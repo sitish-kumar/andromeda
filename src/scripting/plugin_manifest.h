@@ -121,6 +121,9 @@ namespace scripting {
     // open), or "none" (never focus, so the panel can drive the app the user is
     // actually typing into). "none" requires panelDismissOnOutsideClick = false.
     std::string panelKeyboardFocus = "on_demand";
+    // true: live outside PanelManager's single active-panel slot, so opening another
+    // panel leaves this one on screen. Requires panelDismissOnOutsideClick = false.
+    bool panelPersistent = false;
   };
 
   struct PluginManifest {
