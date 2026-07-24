@@ -119,8 +119,7 @@ int main() {
   for (const auto& [source, expectedKey] :
        {std::pair{"panel.render(ui.label({ key = 'k', text = 'x' }))", "k"},
         std::pair{"panel.render(ui.label({ key = 7, text = 'x' }))", ""},
-        std::pair{"panel.render(ui.label({ text = 'x' }))", ""},
-        std::pair{"panel.render(ui.label())", ""}}) {
+        std::pair{"panel.render(ui.label({ text = 'x' }))", ""}, std::pair{"panel.render(ui.label())", ""}}) {
     context.patch = {};
     ok = expect(runLuau(state, "=key-extraction", source), "failed to render a node for key extraction") && ok;
     if (!expect(context.patch.uiTree.has_value(), "key extraction render should produce a UI tree")) {
