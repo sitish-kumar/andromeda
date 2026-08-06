@@ -474,7 +474,7 @@ int main(int argc, char** argv)
 
   gtk_init();
 
-  GtkApplication* app = gtk_application_new("io.github.noctalia.UmbrielSharePicker", G_APPLICATION_NON_UNIQUE);
+  GtkApplication* app = gtk_application_new("dev.noctalia.UmbrielSharePicker", G_APPLICATION_NON_UNIQUE);
   g_signal_connect(app, "activate", G_CALLBACK(onActivate), &state);
   const int status = g_application_run(G_APPLICATION(app), argc, argv);
   if (!state.responding) {
