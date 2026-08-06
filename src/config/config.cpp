@@ -91,8 +91,6 @@ Config loadConfig() {
     readString(table, "screenshot", "cmd", config.screenshot.cmd);
     readString(table, "screenshot", "color_pick_cmd", config.screenshot.colorPickCmd);
 
-    readString(table, "settings", "color-scheme", config.settings.colorScheme);
-    readString(table, "settings", "accent-color", config.settings.accentColor);
   } catch (const toml::parse_error& error) {
     const std::string description(error.description());
     std::fprintf(stderr, "config: unable to parse %s: %s\n", path.c_str(), description.c_str());

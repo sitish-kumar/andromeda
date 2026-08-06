@@ -5,7 +5,3 @@ max_fps = 0
 [screenshot]
 cmd = ""
 color_pick_cmd = ""
-
-[settings]
-color-scheme = "none"
-accent-color = ""

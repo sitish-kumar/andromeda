@@ -25,12 +25,6 @@ struct Config {
     bool operator==(const Screenshot&) const = default;
   } screenshot;
 
-  struct Settings {
-    std::string colorScheme = "none";
-    std::string accentColor;
-
-    bool operator==(const Settings&) const = default;
-  } settings;
 
   bool operator==(const Config&) const = default;
 };

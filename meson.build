@@ -70,7 +70,6 @@ daemon_sources = files(
   'src/loop/loop.cpp',
   'src/config/config.cpp',
   'src/dbus/dbus.cpp',
-  'src/dbus/settings.cpp',
   'src/dbus/screenshot.cpp',
   'src/dbus/screencast.cpp',
   'src/dbus/request.cpp',

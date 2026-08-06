@@ -3,7 +3,6 @@
 #include "config/config.h"
 #include "dbus/screencast.h"
 #include "dbus/screenshot.h"
-#include "dbus/settings.h"
 #include "loop/loop.h"
 #include "pipewire/pipewire.h"
 #include "wayland/wayland.h"
@@ -52,7 +51,6 @@ struct DbusPortal::Impl {
   PipeWireContext& pipewire;
   std::unique_ptr<sdbus::IConnection> connection;
   std::unique_ptr<sdbus::IObject> desktopObject;
-  std::unique_ptr<SettingsPortal> settings;
   std::unique_ptr<ScreenshotPortal> screenshot;
   std::unique_ptr<ScreenCastPortal> screencast;
   int busFd = -1;
@@ -67,7 +65,6 @@ struct DbusPortal::Impl {
     connection = sdbus::createSessionBusConnection(sdbus::ServiceName{kBusName});
     desktopObject = sdbus::createObject(*connection, sdbus::ObjectPath{kDesktopPath});
 
-    settings = std::make_unique<SettingsPortal>(*desktopObject, this->config);
     screenshot = std::make_unique<ScreenshotPortal>(loop, *connection, *desktopObject, this->config, wayland);
     screencast = std::make_unique<ScreenCastPortal>(loop, *connection, *desktopObject, this->config, wayland, pipewire);
 
@@ -90,7 +87,6 @@ struct DbusPortal::Impl {
     }
     screencast.reset();
     screenshot.reset();
-    settings.reset();
     desktopObject.reset();
     connection.reset();
   }
@@ -171,9 +167,6 @@ DbusPortal::~DbusPortal() = default;
 
 void DbusPortal::onConfigChanged(const Config& oldCfg, const Config& newCfg) {
   m_impl->config = newCfg;
-  if (m_impl->settings) {
-    m_impl->settings->onConfigChanged(oldCfg, newCfg);
-  }
   if (m_impl->screenshot) {
     m_impl->screenshot->onConfigChanged(oldCfg, newCfg);
   }
