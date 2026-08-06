@@ -7,12 +7,14 @@
   wayland-scanner,
   wayland,
   wayland-protocols,
-  sdbus-cpp,
+  sdbus-cpp_2,
+  systemd,
   pipewire,
   libdrm,
-  mesa,
+  libgbm,
   cairo,
   tomlplusplus,
+  nlohmann_json,
   gtk4,
 }:
 let
@@ -35,12 +37,14 @@ stdenv.mkDerivation {
   buildInputs = [
     wayland
     wayland-protocols
-    sdbus-cpp
+    sdbus-cpp_2
+    systemd
     pipewire
     libdrm
-    mesa
+    libgbm
     cairo
     tomlplusplus
+    nlohmann_json
     gtk4
   ];
 
