@@ -1,0 +1,76 @@
+.umbriel-picker {
+  background-color: @BACKGROUND@;
+  color: @TEXT_PRIMARY@;
+}
+
+.umbriel-picker,
+.umbriel-picker decoration {
+  border-radius: @RADIUS@;
+}
+
+.umbriel-picker button,
+.umbriel-picker row,
+.umbriel-picker list,
+.umbriel-picker scrolledwindow,
+.umbriel-picker stackswitcher,
+.umbriel-picker scrollbar,
+.umbriel-picker trough,
+.umbriel-picker slider {
+  border-radius: @RADIUS@;
+}
+
+.umbriel-picker headerbar windowcontrols button,
+.umbriel-picker headerbar button.titlebutton,
+.umbriel-picker headerbar windowcontrols button > image,
+.umbriel-picker headerbar button.titlebutton > image {
+  border-radius: @RADIUS@;
+}
+
+.umbriel-picker headerbar {
+  border-radius: @RADIUS@ @RADIUS@ 0 0;
+}
+
+.umbriel-picker headerbar,
+.umbriel-picker stack,
+.umbriel-picker scrolledwindow,
+.umbriel-picker list {
+  background-color: @BACKGROUND@;
+  color: @TEXT_PRIMARY@;
+}
+
+.umbriel-picker row {
+  color: @TEXT_PRIMARY@;
+}
+
+.umbriel-picker row:hover {
+  background-color: @ACCENT_PRIMARY@;
+  color: @BACKGROUND@;
+}
+
+.umbriel-picker row:selected {
+  background-color: @ACCENT_SECONDARY@;
+  color: @BACKGROUND@;
+}
+
+.umbriel-picker .dim-label {
+  color: @TEXT_MUTED@;
+}
+
+.umbriel-picker row:hover label,
+.umbriel-picker row:selected label {
+  color: @BACKGROUND@;
+}
+
+.umbriel-picker row:hover .dim-label,
+.umbriel-picker row:selected .dim-label {
+  opacity: 0.72;
+}
+
+.umbriel-picker button.suggested-action {
+  background-color: @ACCENT_PRIMARY@;
+  color: @BACKGROUND@;
+}
+
+.umbriel-picker button.suggested-action:focus-visible {
+  outline-color: @ACCENT_SECONDARY@;
+}

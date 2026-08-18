@@ -11,6 +11,8 @@ project(
   ],
 )
 
+gnome = import('gnome')
+
 # --- dependencies -----------------------------------------------------------
 
 sdbus_dep = dependency('sdbus-c++', version: '>=2.0')
@@ -22,7 +24,7 @@ gbm_dep = dependency('gbm')
 cairo_dep = dependency('cairo')
 tomlplusplus_dep = dependency('tomlplusplus')
 
-gtk4_dep = dependency('gtk4', required: get_option('picker'))
+gtk4_dep = dependency('gtk4', version: '>=4.12', required: get_option('picker'))
 
 # --- wayland protocol codegen ------------------------------------------------
 
@@ -98,9 +100,14 @@ executable(
 # --- picker ------------------------------------------------------------------
 
 if gtk4_dep.found()
+  picker_resources = gnome.compile_resources(
+    'picker-resources',
+    'src/picker/resources.gresource.xml',
+    source_dir: 'src/picker',
+  )
   executable(
     'umbriel-share-picker',
-    files('src/picker/main.cpp'),
+    files('src/picker/main.cpp') + picker_resources,
     include_directories: include_directories('src'),
     dependencies: [gtk4_dep],
     install: true,

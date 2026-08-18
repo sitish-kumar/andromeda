@@ -5,6 +5,8 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
+#include <glib-unix.h>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -44,6 +46,7 @@ struct Palette {
   std::string accentSecondary;
   std::string warning;
   std::string error;
+  int cornerRadius = 0;
 
   bool operator==(const Palette&) const = default;
 };
@@ -63,11 +66,13 @@ struct AppState {
   GtkWidget* shareButton = nullptr;
   GtkCssProvider* paletteProvider = nullptr;
   GdkDisplay* display = nullptr;
-  guint paletteTimer = 0;
+  int paletteFd = -1;
+  guint paletteWatch = 0;
+  std::string paletteBuffer;
   std::optional<Palette> palette;
 };
 
-constexpr guint kPaletteRefreshMs = 500;
+constexpr size_t kMaxPaletteMessageSize = 65536;
 
 void closeFd(int fd)
 {
@@ -96,11 +101,14 @@ std::optional<std::string> validatedColor(const json& colors, const char* key)
   return result;
 }
 
-std::optional<Palette> parsePaletteResponse(std::string_view response)
+std::optional<Palette> parseThemeEvent(std::string_view response)
 {
   try {
     const json envelope = json::parse(response);
-    const auto values = envelope.find("ok");
+    if (envelope.value("event", "") != "theme") {
+      return std::nullopt;
+    }
+    const auto values = envelope.find("data");
     if (values == envelope.end() || !values->is_object()) {
       return std::nullopt;
     }
@@ -112,7 +120,13 @@ std::optional<Palette> parsePaletteResponse(std::string_view response)
     const auto accentSecondary = validatedColor(*values, "accent_secondary");
     const auto warning = validatedColor(*values, "warning");
     const auto error = validatedColor(*values, "error");
-    if (!background || !textPrimary || !textMuted || !accentPrimary || !accentSecondary || !warning || !error) {
+    const auto cornerRadius = values->find("corner_radius");
+    if (!background || !textPrimary || !textMuted || !accentPrimary || !accentSecondary || !warning || !error ||
+        cornerRadius == values->end() || !cornerRadius->is_number_integer()) {
+      return std::nullopt;
+    }
+    const int radius = cornerRadius->get<int>();
+    if (radius < 0 || radius > 500) {
       return std::nullopt;
     }
 
@@ -124,53 +138,56 @@ std::optional<Palette> parsePaletteResponse(std::string_view response)
         .accentSecondary = *accentSecondary,
         .warning = *warning,
         .error = *error,
+        .cornerRadius = radius,
     };
   } catch (const json::exception&) {
     return std::nullopt;
   }
 }
 
-std::optional<Palette> queryPalette()
+std::string paletteSocketPath()
 {
-  std::string socketPath;
   if (const char* configured = std::getenv("UMBRIEL_SOCKET"); configured != nullptr && configured[0] != '\0') {
-    socketPath = configured;
-  } else {
-    const char* runtimeDir = std::getenv("XDG_RUNTIME_DIR");
-    const char* waylandDisplay = std::getenv("WAYLAND_DISPLAY");
-    if (runtimeDir != nullptr && runtimeDir[0] != '\0' && waylandDisplay != nullptr && waylandDisplay[0] != '\0') {
-      socketPath = std::string(runtimeDir) + "/umbriel-" + waylandDisplay + ".sock";
-    }
+    return configured;
   }
+  const char* runtimeDir = std::getenv("XDG_RUNTIME_DIR");
+  const char* waylandDisplay = std::getenv("WAYLAND_DISPLAY");
+  if (runtimeDir != nullptr && runtimeDir[0] != '\0' && waylandDisplay != nullptr && waylandDisplay[0] != '\0') {
+    return std::string(runtimeDir) + "/umbriel-" + waylandDisplay + ".sock";
+  }
+  return {};
+}
+
+int openPaletteSubscription()
+{
+  const std::string socketPath = paletteSocketPath();
   if (socketPath.empty()) {
-    return std::nullopt;
+    return -1;
   }
 
   const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if (fd < 0) {
-    return std::nullopt;
+    return -1;
   }
 
-  timeval timeout{.tv_sec = 0, .tv_usec = 100000};
+  timeval timeout{.tv_sec = 0, .tv_usec = 250000};
   setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
   sockaddr_un address{};
   address.sun_family = AF_UNIX;
   const size_t pathLength = socketPath.size();
   if (pathLength >= sizeof(address.sun_path)) {
     closeFd(fd);
-    return std::nullopt;
+    return -1;
   }
   std::memcpy(address.sun_path, socketPath.data(), pathLength);
 
   if (connect(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0) {
     closeFd(fd);
-    return std::nullopt;
+    return -1;
   }
 
-  constexpr std::string_view request = R"({"cmd":"colors"}
-)";
+  constexpr std::string_view request = "{\"cmd\":\"subscribe\",\"events\":[\"theme\"]}\n";
   size_t sent = 0;
   while (sent < request.size()) {
     const ssize_t size = send(fd, request.data() + sent, request.size() - sent, MSG_NOSIGNAL);
@@ -179,78 +196,121 @@ std::optional<Palette> queryPalette()
     }
     if (size <= 0) {
       closeFd(fd);
-      return std::nullopt;
+      return -1;
     }
     sent += static_cast<size_t>(size);
   }
 
-  std::string response;
-  char chunk[4096];
-  while (response.size() <= 65536) {
-    const ssize_t size = recv(fd, chunk, sizeof(chunk), 0);
-    if (size > 0) {
-      response.append(chunk, static_cast<size_t>(size));
-      continue;
-    }
-    if (size < 0 && errno == EINTR) {
-      continue;
-    }
-    break;
+  const int flags = fcntl(fd, F_GETFL, 0);
+  if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+    closeFd(fd);
+    return -1;
   }
-  closeFd(fd);
+  return fd;
+}
 
-  if (response.empty() || response.size() > 65536) {
-    return std::nullopt;
+const std::string& pickerStyleTemplate()
+{
+  static const std::string style = [] {
+    GError* error = nullptr;
+    GBytes* bytes =
+        g_resources_lookup_data("/dev/noctalia/umbriel/picker/style.css", G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
+    if (bytes == nullptr) {
+      std::cerr << "umbriel-share-picker: unable to load style resource: "
+                << (error != nullptr ? error->message : "unknown error") << '\n';
+      g_clear_error(&error);
+      return std::string{};
+    }
+
+    gsize size = 0;
+    const auto* data = static_cast<const char*>(g_bytes_get_data(bytes, &size));
+    std::string result(data, size);
+    g_bytes_unref(bytes);
+    return result;
+  }();
+  return style;
+}
+
+void replaceAll(std::string& text, std::string_view token, std::string_view value)
+{
+  size_t position = 0;
+  while ((position = text.find(token, position)) != std::string::npos) {
+    text.replace(position, token.size(), value.data(), value.size());
+    position += value.size();
   }
-  return parsePaletteResponse(response);
+}
+
+std::string renderPickerStyle(const Palette& palette)
+{
+  std::string css = pickerStyleTemplate();
+  replaceAll(css, "@BACKGROUND@", palette.background);
+  replaceAll(css, "@TEXT_PRIMARY@", palette.textPrimary);
+  replaceAll(css, "@TEXT_MUTED@", palette.textMuted);
+  replaceAll(css, "@ACCENT_PRIMARY@", palette.accentPrimary);
+  replaceAll(css, "@ACCENT_SECONDARY@", palette.accentSecondary);
+  replaceAll(css, "@RADIUS@", std::to_string(palette.cornerRadius) + "px");
+  return css;
 }
 
 void applyPalette(AppState& state, const Palette& palette)
 {
-  const std::string css =
-      ".umbriel-picker { background-color: " + palette.background + "; color: " + palette.textPrimary +
-      "; }\n"
-      ".umbriel-picker headerbar, .umbriel-picker stack, .umbriel-picker scrolledwindow, "
-      ".umbriel-picker list { background-color: " +
-      palette.background + "; color: " + palette.textPrimary +
-      "; }\n"
-      ".umbriel-picker row { color: " +
-      palette.textPrimary +
-      "; }\n"
-      ".umbriel-picker row:hover { background-color: " +
-      palette.accentPrimary + "; color: " + palette.background +
-      "; }\n"
-      ".umbriel-picker row:selected { background-color: " +
-      palette.accentSecondary + "; color: " + palette.background +
-      "; }\n"
-      ".umbriel-picker .dim-label { color: " +
-      palette.textMuted +
-      "; }\n"
-      ".umbriel-picker row:hover label, .umbriel-picker row:selected label { color: " +
-      palette.background +
-      "; }\n"
-      ".umbriel-picker row:hover .dim-label, .umbriel-picker row:selected .dim-label { opacity: 0.72; }\n"
-      ".umbriel-picker button.suggested-action { background-color: " +
-      palette.accentPrimary + "; color: " + palette.background +
-      "; }\n"
-      ".umbriel-picker button.suggested-action:focus-visible { outline-color: " +
-      palette.accentSecondary + "; }\n";
+  const std::string css = renderPickerStyle(palette);
+  if (css.empty()) {
+    return;
+  }
 
   if (state.paletteProvider == nullptr) {
     state.paletteProvider = gtk_css_provider_new();
     gtk_style_context_add_provider_for_display(state.display, GTK_STYLE_PROVIDER(state.paletteProvider),
                                                GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
   }
-  gtk_css_provider_load_from_data(state.paletteProvider, css.c_str(), static_cast<gssize>(css.size()));
+  gtk_css_provider_load_from_string(state.paletteProvider, css.c_str());
 }
 
-gboolean refreshPalette(gpointer userData)
+gboolean onPaletteEvent(gint fd, GIOCondition condition, gpointer userData)
 {
   auto* state = static_cast<AppState*>(userData);
-  const auto next = queryPalette();
-  if (next && next != state->palette) {
-    applyPalette(*state, *next);
-    state->palette = next;
+  bool disconnected = (condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) != 0;
+
+  char chunk[4096];
+  while (true) {
+    const ssize_t size = recv(fd, chunk, sizeof(chunk), 0);
+    if (size > 0) {
+      state->paletteBuffer.append(chunk, static_cast<size_t>(size));
+      if (state->paletteBuffer.size() > kMaxPaletteMessageSize) {
+        disconnected = true;
+        break;
+      }
+      continue;
+    }
+    if (size == 0) {
+      disconnected = true;
+      break;
+    }
+    if (errno == EINTR) {
+      continue;
+    }
+    if (errno != EAGAIN && errno != EWOULDBLOCK) {
+      disconnected = true;
+    }
+    break;
+  }
+
+  size_t newline = 0;
+  while ((newline = state->paletteBuffer.find('\n')) != std::string::npos) {
+    const auto next = parseThemeEvent(std::string_view(state->paletteBuffer).substr(0, newline));
+    state->paletteBuffer.erase(0, newline + 1);
+    if (next && next != state->palette) {
+      applyPalette(*state, *next);
+      state->palette = next;
+    }
+  }
+
+  if (disconnected) {
+    closeFd(state->paletteFd);
+    state->paletteFd = -1;
+    state->paletteWatch = 0;
+    return G_SOURCE_REMOVE;
   }
   return G_SOURCE_CONTINUE;
 }
@@ -677,8 +737,11 @@ void onActivate(GtkApplication* app, gpointer userData)
   gtk_widget_add_controller(window, keyController);
 
   g_signal_connect(window, "close-request", G_CALLBACK(onCloseRequest), state);
-  refreshPalette(state);
-  state->paletteTimer = g_timeout_add(kPaletteRefreshMs, refreshPalette, state);
+  state->paletteFd = openPaletteSubscription();
+  if (state->paletteFd >= 0) {
+    state->paletteWatch = g_unix_fd_add(
+        state->paletteFd, static_cast<GIOCondition>(G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL), onPaletteEvent, state);
+  }
   gtk_window_present(GTK_WINDOW(window));
 }
 
@@ -696,8 +759,11 @@ int main(int argc, char** argv)
   if (!state.responding) {
     cancel(state);
   }
-  if (state.paletteTimer != 0) {
-    g_source_remove(state.paletteTimer);
+  if (state.paletteWatch != 0) {
+    g_source_remove(state.paletteWatch);
+  }
+  if (state.paletteFd >= 0) {
+    closeFd(state.paletteFd);
   }
   if (state.paletteProvider != nullptr) {
     gtk_style_context_remove_provider_for_display(state.display, GTK_STYLE_PROVIDER(state.paletteProvider));
