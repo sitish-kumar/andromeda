@@ -2,8 +2,16 @@
 
 #include "vendor/json.hpp"
 
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 #include <vector>
 
 using json = nlohmann::json;
@@ -28,6 +36,18 @@ enum class RowKind {
   Window = 2,
 };
 
+struct Palette {
+  std::string background;
+  std::string textPrimary;
+  std::string textMuted;
+  std::string accentPrimary;
+  std::string accentSecondary;
+  std::string warning;
+  std::string error;
+
+  bool operator==(const Palette&) const = default;
+};
+
 struct AppState {
   bool multiple = false;
   bool showMonitors = false;
@@ -41,7 +61,199 @@ struct AppState {
   GtkWidget* outputList = nullptr;
   GtkWidget* windowList = nullptr;
   GtkWidget* shareButton = nullptr;
+  GtkCssProvider* paletteProvider = nullptr;
+  GdkDisplay* display = nullptr;
+  guint paletteTimer = 0;
+  std::optional<Palette> palette;
 };
+
+constexpr guint kPaletteRefreshMs = 500;
+
+void closeFd(int fd)
+{
+  if (fd >= 0) {
+    while (close(fd) < 0 && errno == EINTR) {
+    }
+  }
+}
+
+std::optional<std::string> validatedColor(const json& colors, const char* key)
+{
+  const auto value = colors.find(key);
+  if (value == colors.end() || !value->is_string()) {
+    return std::nullopt;
+  }
+
+  GdkRGBA parsed{};
+  const std::string input = value->get<std::string>();
+  if (!gdk_rgba_parse(&parsed, input.c_str())) {
+    return std::nullopt;
+  }
+
+  char* canonical = gdk_rgba_to_string(&parsed);
+  std::string result(canonical);
+  g_free(canonical);
+  return result;
+}
+
+std::optional<Palette> parsePaletteResponse(std::string_view response)
+{
+  try {
+    const json envelope = json::parse(response);
+    const auto values = envelope.find("ok");
+    if (values == envelope.end() || !values->is_object()) {
+      return std::nullopt;
+    }
+
+    const auto background = validatedColor(*values, "background");
+    const auto textPrimary = validatedColor(*values, "text_primary");
+    const auto textMuted = validatedColor(*values, "text_muted");
+    const auto accentPrimary = validatedColor(*values, "accent_primary");
+    const auto accentSecondary = validatedColor(*values, "accent_secondary");
+    const auto warning = validatedColor(*values, "warning");
+    const auto error = validatedColor(*values, "error");
+    if (!background || !textPrimary || !textMuted || !accentPrimary || !accentSecondary || !warning || !error) {
+      return std::nullopt;
+    }
+
+    return Palette{
+        .background = *background,
+        .textPrimary = *textPrimary,
+        .textMuted = *textMuted,
+        .accentPrimary = *accentPrimary,
+        .accentSecondary = *accentSecondary,
+        .warning = *warning,
+        .error = *error,
+    };
+  } catch (const json::exception&) {
+    return std::nullopt;
+  }
+}
+
+std::optional<Palette> queryPalette()
+{
+  std::string socketPath;
+  if (const char* configured = std::getenv("UMBRIEL_SOCKET"); configured != nullptr && configured[0] != '\0') {
+    socketPath = configured;
+  } else {
+    const char* runtimeDir = std::getenv("XDG_RUNTIME_DIR");
+    const char* waylandDisplay = std::getenv("WAYLAND_DISPLAY");
+    if (runtimeDir != nullptr && runtimeDir[0] != '\0' && waylandDisplay != nullptr && waylandDisplay[0] != '\0') {
+      socketPath = std::string(runtimeDir) + "/umbriel-" + waylandDisplay + ".sock";
+    }
+  }
+  if (socketPath.empty()) {
+    return std::nullopt;
+  }
+
+  const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (fd < 0) {
+    return std::nullopt;
+  }
+
+  timeval timeout{.tv_sec = 0, .tv_usec = 100000};
+  setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+  sockaddr_un address{};
+  address.sun_family = AF_UNIX;
+  const size_t pathLength = socketPath.size();
+  if (pathLength >= sizeof(address.sun_path)) {
+    closeFd(fd);
+    return std::nullopt;
+  }
+  std::memcpy(address.sun_path, socketPath.data(), pathLength);
+
+  if (connect(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0) {
+    closeFd(fd);
+    return std::nullopt;
+  }
+
+  constexpr std::string_view request = R"({"cmd":"colors"}
+)";
+  size_t sent = 0;
+  while (sent < request.size()) {
+    const ssize_t size = send(fd, request.data() + sent, request.size() - sent, MSG_NOSIGNAL);
+    if (size < 0 && errno == EINTR) {
+      continue;
+    }
+    if (size <= 0) {
+      closeFd(fd);
+      return std::nullopt;
+    }
+    sent += static_cast<size_t>(size);
+  }
+
+  std::string response;
+  char chunk[4096];
+  while (response.size() <= 65536) {
+    const ssize_t size = recv(fd, chunk, sizeof(chunk), 0);
+    if (size > 0) {
+      response.append(chunk, static_cast<size_t>(size));
+      continue;
+    }
+    if (size < 0 && errno == EINTR) {
+      continue;
+    }
+    break;
+  }
+  closeFd(fd);
+
+  if (response.empty() || response.size() > 65536) {
+    return std::nullopt;
+  }
+  return parsePaletteResponse(response);
+}
+
+void applyPalette(AppState& state, const Palette& palette)
+{
+  const std::string css =
+      ".umbriel-picker { background-color: " + palette.background + "; color: " + palette.textPrimary +
+      "; }\n"
+      ".umbriel-picker headerbar, .umbriel-picker stack, .umbriel-picker scrolledwindow, "
+      ".umbriel-picker list { background-color: " +
+      palette.background + "; color: " + palette.textPrimary +
+      "; }\n"
+      ".umbriel-picker row { color: " +
+      palette.textPrimary +
+      "; }\n"
+      ".umbriel-picker row:hover { background-color: " +
+      palette.accentPrimary + "; color: " + palette.background +
+      "; }\n"
+      ".umbriel-picker row:selected { background-color: " +
+      palette.accentSecondary + "; color: " + palette.background +
+      "; }\n"
+      ".umbriel-picker .dim-label { color: " +
+      palette.textMuted +
+      "; }\n"
+      ".umbriel-picker row:hover label, .umbriel-picker row:selected label { color: " +
+      palette.background +
+      "; }\n"
+      ".umbriel-picker row:hover .dim-label, .umbriel-picker row:selected .dim-label { opacity: 0.72; }\n"
+      ".umbriel-picker button.suggested-action { background-color: " +
+      palette.accentPrimary + "; color: " + palette.background +
+      "; }\n"
+      ".umbriel-picker button.suggested-action:focus-visible { outline-color: " +
+      palette.accentSecondary + "; }\n";
+
+  if (state.paletteProvider == nullptr) {
+    state.paletteProvider = gtk_css_provider_new();
+    gtk_style_context_add_provider_for_display(state.display, GTK_STYLE_PROVIDER(state.paletteProvider),
+                                               GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  }
+  gtk_css_provider_load_from_data(state.paletteProvider, css.c_str(), static_cast<gssize>(css.size()));
+}
+
+gboolean refreshPalette(gpointer userData)
+{
+  auto* state = static_cast<AppState*>(userData);
+  const auto next = queryPalette();
+  if (next && next != state->palette) {
+    applyPalette(*state, *next);
+    state->palette = next;
+  }
+  return G_SOURCE_CONTINUE;
+}
 
 std::string readStdin()
 {
@@ -449,6 +661,8 @@ void onActivate(GtkApplication* app, gpointer userData)
 
   GtkWidget* window = gtk_application_window_new(app);
   state->window = window;
+  state->display = gtk_widget_get_display(window);
+  gtk_widget_add_css_class(window, "umbriel-picker");
   gtk_window_set_title(GTK_WINDOW(window), "Share");
   gtk_window_set_default_size(GTK_WINDOW(window), 480, 420);
 
@@ -463,6 +677,8 @@ void onActivate(GtkApplication* app, gpointer userData)
   gtk_widget_add_controller(window, keyController);
 
   g_signal_connect(window, "close-request", G_CALLBACK(onCloseRequest), state);
+  refreshPalette(state);
+  state->paletteTimer = g_timeout_add(kPaletteRefreshMs, refreshPalette, state);
   gtk_window_present(GTK_WINDOW(window));
 }
 
@@ -479,6 +695,13 @@ int main(int argc, char** argv)
   const int status = g_application_run(G_APPLICATION(app), argc, argv);
   if (!state.responding) {
     cancel(state);
+  }
+  if (state.paletteTimer != 0) {
+    g_source_remove(state.paletteTimer);
+  }
+  if (state.paletteProvider != nullptr) {
+    gtk_style_context_remove_provider_for_display(state.display, GTK_STYLE_PROVIDER(state.paletteProvider));
+    g_object_unref(state.paletteProvider);
   }
   g_object_unref(app);
 
