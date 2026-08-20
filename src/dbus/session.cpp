@@ -39,6 +39,10 @@ namespace xdpu {
       uint32_t maxFps = 0;
       int fpsTimer = 0;
       bool frameInFlight = false;
+      bool constraintsDirty = false;
+      bool waitingForConstraints = false;
+      bool reconfiguring = false;
+      CaptureConstraints reconfigureTarget;
       std::unique_ptr<WaylandContext::CaptureFrame> pendingFrame;
       uint64_t sequence = 0;
       std::chrono::steady_clock::time_point lastFrame{};
@@ -89,7 +93,7 @@ namespace xdpu {
       }
 
       void processRequest() {
-        if (!stream || !stream->connected() || frameInFlight) {
+        if (!stream || !stream->connected() || frameInFlight || waitingForConstraints || reconfiguring) {
           return;
         }
 
@@ -105,6 +109,50 @@ namespace xdpu {
         }
 
         requestFrame();
+      }
+
+      void constraintsChanged(const CaptureConstraints& newConstraints) {
+        constraints = newConstraints;
+        constraintsDirty = true;
+        waitingForConstraints = false;
+        if (!frameInFlight && !reconfiguring) {
+          reconfigureStream();
+        }
+      }
+
+      void reconfigureStream() {
+        if (!stream || frameInFlight || reconfiguring || !constraintsDirty) {
+          return;
+        }
+
+        constraintsDirty = false;
+        reconfiguring = true;
+        reconfigureTarget = constraints;
+        if (!stream->reconfigure(reconfigureTarget)) {
+          std::fprintf(stderr, "session: unable to reconfigure capture stream %u\n", stream->nodeId());
+          stop();
+          if (backendClosedHandler) {
+            backendClosedHandler();
+          }
+        }
+      }
+
+      void bufferAdded(pw_buffer* buffer) {
+        if (!reconfiguring || !stream) {
+          return;
+        }
+        const CaptureBuffer* added = stream->captureBuffer(buffer);
+        if (added == nullptr
+            || added->width != reconfigureTarget.bufferWidth
+            || added->height != reconfigureTarget.bufferHeight) {
+          return;
+        }
+        reconfiguring = false;
+        if (constraintsDirty) {
+          reconfigureStream();
+        } else {
+          processRequest();
+        }
       }
 
       void requestFrame() {
@@ -179,15 +227,12 @@ namespace xdpu {
           stream->queueBuffer(pwBuffer);
         }
         if (constraintsChanged) {
-          std::fprintf(
-              stderr, "session: capture constraints changed; closing stream %u\n", stream ? stream->nodeId() : 0
-          );
-          stop();
-          if (backendClosedHandler) {
-            backendClosedHandler();
+          if (constraintsDirty) {
+            reconfigureStream();
+          } else {
+            waitingForConstraints = true;
           }
-        }
-        if (!constraintsChanged) {
+        } else {
           processRequest();
         }
       }
@@ -304,7 +349,7 @@ namespace xdpu {
     std::weak_ptr<Impl::StreamState> weak = state;
     state->capture->constraintsCb = [weak](const CaptureConstraints& newConstraints) {
       if (auto streamState = weak.lock()) {
-        streamState->constraints = newConstraints;
+        streamState->constraintsChanged(newConstraints);
       }
     };
     state->stream->onProcessRequest = [weak]() {
@@ -312,7 +357,11 @@ namespace xdpu {
         streamState->processRequest();
       }
     };
-    state->stream->onAddBuffer = [](pw_buffer*) {};
+    state->stream->onAddBuffer = [weak](pw_buffer* buffer) {
+      if (auto streamState = weak.lock()) {
+        streamState->bufferAdded(buffer);
+      }
+    };
     state->stream->onRemoveBuffer = [](pw_buffer*) {};
     // createStream() may reach STREAMING before these callbacks are installed.
     // Start capture directly so the first buffer exists before graph scheduling.

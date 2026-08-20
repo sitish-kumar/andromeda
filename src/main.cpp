@@ -5,9 +5,9 @@
 #include "wayland/wayland.h"
 
 #include <cerrno>
+#include <csignal>
 #include <cstdio>
 #include <cstring>
-#include <csignal>
 #include <exception>
 #include <sys/epoll.h>
 #include <sys/signalfd.h>
@@ -19,6 +19,9 @@ int main() {
     auto config = xdpu::loadConfig();
 
     xdpu::WaylandContext wayland(loop);
+    if (!wayland.connected()) {
+      return 1;
+    }
     xdpu::PipeWireContext pipewire(loop);
     xdpu::DbusPortal portal(loop, config, wayland, pipewire);
 
@@ -70,7 +73,7 @@ int main() {
     loop.run();
     loop.removeFd(sigWatch);
     close(sigFd);
-    return 0;
+    return wayland.connected() ? 0 : 1;
   } catch (const std::exception& error) {
     std::fprintf(stderr, "main: fatal error: %s\n", error.what());
     return 1;

@@ -78,6 +78,7 @@ namespace xdpu {
     WaylandContext& operator=(const WaylandContext&) = delete;
 
     wl_display* display() const;
+    bool connected() const;
     const std::vector<OutputInfo>& outputs() const;
     const std::vector<ToplevelInfo>& toplevels() const;
 

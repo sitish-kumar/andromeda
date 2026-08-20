@@ -11,58 +11,59 @@ struct pw_loop;
 
 namespace xdpu {
 
-class Loop;
-class PipeWireStream;
+  class Loop;
+  class PipeWireStream;
 
-class PipeWireContext {
-public:
-  explicit PipeWireContext(Loop& loop);
-  ~PipeWireContext();
+  class PipeWireContext {
+  public:
+    explicit PipeWireContext(Loop& loop);
+    ~PipeWireContext();
 
-  PipeWireContext(const PipeWireContext&) = delete;
-  PipeWireContext& operator=(const PipeWireContext&) = delete;
+    PipeWireContext(const PipeWireContext&) = delete;
+    PipeWireContext& operator=(const PipeWireContext&) = delete;
 
-  struct pw_loop* pwLoop() const;
+    struct pw_loop* pwLoop() const;
 
-  std::unique_ptr<PipeWireStream> createStream(uint32_t width, uint32_t height, const CaptureConstraints& constraints,
-                                               uint32_t maxFps);
-  // Process any pending PipeWire events (e.g. to resolve node IDs after stream connect).
-  void processPending();
+    std::unique_ptr<PipeWireStream>
+    createStream(uint32_t width, uint32_t height, const CaptureConstraints& constraints, uint32_t maxFps);
+    // Process any pending PipeWire events (e.g. to resolve node IDs after stream connect).
+    void processPending();
 
-private:
-  struct Impl;
-  std::unique_ptr<Impl> m_impl;
-};
+  private:
+    struct Impl;
+    std::unique_ptr<Impl> m_impl;
+  };
 
-class PipeWireStream {
-public:
-  struct Impl;
+  class PipeWireStream {
+  public:
+    struct Impl;
 
-  ~PipeWireStream();
+    ~PipeWireStream();
 
-  PipeWireStream(const PipeWireStream&) = delete;
-  PipeWireStream& operator=(const PipeWireStream&) = delete;
+    PipeWireStream(const PipeWireStream&) = delete;
+    PipeWireStream& operator=(const PipeWireStream&) = delete;
 
-  uint32_t nodeId() const;
+    uint32_t nodeId() const;
 
-  struct pw_buffer* dequeueBuffer();
-  void queueBuffer(struct pw_buffer* buf);
-  void disconnect();
-  bool connected() const;
-  void triggerProcess();
+    struct pw_buffer* dequeueBuffer();
+    void queueBuffer(struct pw_buffer* buf);
+    bool reconfigure(const CaptureConstraints& constraints);
+    void disconnect();
+    bool connected() const;
+    void triggerProcess();
 
-  CaptureBuffer* captureBuffer(struct pw_buffer* buffer) const;
-  Impl* implForCallbacks() const;
+    CaptureBuffer* captureBuffer(struct pw_buffer* buffer) const;
+    Impl* implForCallbacks() const;
 
-  std::function<void()> onProcessRequest;
-  std::function<void(struct pw_buffer*)> onAddBuffer;
-  std::function<void(struct pw_buffer*)> onRemoveBuffer;
+    std::function<void()> onProcessRequest;
+    std::function<void(struct pw_buffer*)> onAddBuffer;
+    std::function<void(struct pw_buffer*)> onRemoveBuffer;
 
-private:
-  friend class PipeWireContext;
-  explicit PipeWireStream(std::unique_ptr<Impl> impl);
+  private:
+    friend class PipeWireContext;
+    explicit PipeWireStream(std::unique_ptr<Impl> impl);
 
-  std::unique_ptr<Impl> m_impl;
-};
+    std::unique_ptr<Impl> m_impl;
+  };
 
 } // namespace xdpu

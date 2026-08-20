@@ -112,6 +112,7 @@ namespace xdpu {
       disconnected = true;
       cancelPreparedRead();
       fprintf(stderr, "wayland: compositor connection closed\n");
+      loop.quit();
     }
 
     void updateDisplayFdEvents() {
@@ -670,6 +671,8 @@ namespace xdpu {
   }
 
   wl_display* WaylandContext::display() const { return m_impl->display; }
+
+  bool WaylandContext::connected() const { return m_impl->display != nullptr && !m_impl->disconnected; }
 
   const std::vector<OutputInfo>& WaylandContext::outputs() const { return m_impl->outputs; }
 

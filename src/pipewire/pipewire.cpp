@@ -739,6 +739,42 @@ namespace xdpu {
     pw_stream_queue_buffer(m_impl->stream, buf);
   }
 
+  bool PipeWireStream::reconfigure(const CaptureConstraints& constraints) {
+    if (m_impl->stream == nullptr || constraints.bufferWidth == 0 || constraints.bufferHeight == 0) {
+      return false;
+    }
+
+    const uint32_t previousWidth = m_impl->width;
+    const uint32_t previousHeight = m_impl->height;
+    CaptureConstraints previousConstraints = m_impl->constraints;
+    const FormatChoice previousNegotiated = m_impl->negotiated;
+
+    m_impl->width = constraints.bufferWidth;
+    m_impl->height = constraints.bufferHeight;
+    m_impl->constraints = constraints;
+    m_impl->negotiated = {};
+
+    PodList params = buildFormatParams(*m_impl);
+    if (params.pods.empty()) {
+      m_impl->width = previousWidth;
+      m_impl->height = previousHeight;
+      m_impl->constraints = std::move(previousConstraints);
+      m_impl->negotiated = previousNegotiated;
+      return false;
+    }
+
+    const int rc = pw_stream_update_params(m_impl->stream, params.pods.data(), params.pods.size());
+    if (rc < 0) {
+      std::fprintf(stderr, "pipewire: unable to reconfigure stream: %s\n", spa_strerror(rc));
+      m_impl->width = previousWidth;
+      m_impl->height = previousHeight;
+      m_impl->constraints = std::move(previousConstraints);
+      m_impl->negotiated = previousNegotiated;
+      return false;
+    }
+    return true;
+  }
+
   void PipeWireStream::disconnect() {
     if (m_impl->stream != nullptr) {
       pw_stream_disconnect(m_impl->stream);
