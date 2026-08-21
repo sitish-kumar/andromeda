@@ -406,13 +406,30 @@ namespace xdpu {
         fprintf(stderr, "pipewire: invalid plane count for negotiated DMA-BUF format\n");
         return;
       }
+
+      spa_pod_frame buffersFrame;
+      spa_pod_builder_push_object(
+          &buffersBuilder, &buffersFrame, SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers
+      );
+      spa_pod_builder_add(
+          &buffersBuilder, SPA_PARAM_BUFFERS_buffers, SPA_POD_CHOICE_RANGE_Int(4, 2, 8),
+          SPA_PARAM_BUFFERS_blocks, SPA_POD_Int(blocks), 0
+      );
+      if (size > 0) {
+        spa_pod_builder_add(&buffersBuilder, SPA_PARAM_BUFFERS_size, SPA_POD_Int(static_cast<int32_t>(size)), 0);
+      }
+      if (stride > 0) {
+        spa_pod_builder_add(
+            &buffersBuilder, SPA_PARAM_BUFFERS_stride, SPA_POD_Int(static_cast<int32_t>(stride)), 0
+        );
+      }
+      spa_pod_builder_add(
+          &buffersBuilder, SPA_PARAM_BUFFERS_align, SPA_POD_Int(16), SPA_PARAM_BUFFERS_dataType,
+          SPA_POD_CHOICE_FLAGS_Int(dataTypes), 0
+      );
+
       const spa_pod* params[2];
-      params[0] = static_cast<const spa_pod*>(spa_pod_builder_add_object(
-          &buffersBuilder, SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers, SPA_PARAM_BUFFERS_buffers,
-          SPA_POD_CHOICE_RANGE_Int(4, 2, 8), SPA_PARAM_BUFFERS_blocks, SPA_POD_Int(blocks), SPA_PARAM_BUFFERS_size,
-          SPA_POD_Int(static_cast<int32_t>(size)), SPA_PARAM_BUFFERS_stride, SPA_POD_Int(static_cast<int32_t>(stride)),
-          SPA_PARAM_BUFFERS_align, SPA_POD_Int(16), SPA_PARAM_BUFFERS_dataType, SPA_POD_CHOICE_FLAGS_Int(dataTypes)
-      ));
+      params[0] = static_cast<const spa_pod*>(spa_pod_builder_pop(&buffersBuilder, &buffersFrame));
       params[1] = static_cast<const spa_pod*>(spa_pod_builder_add_object(
           &metaBuilder, SPA_TYPE_OBJECT_ParamMeta, SPA_PARAM_Meta, SPA_PARAM_META_type, SPA_POD_Id(SPA_META_Header),
           SPA_PARAM_META_size, SPA_POD_Int(static_cast<int32_t>(sizeof(spa_meta_header)))
