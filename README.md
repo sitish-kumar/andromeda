@@ -1,6 +1,6 @@
 # xdg-desktop-portal-umbriel
 
-An [xdg-desktop-portal](https://github.com/flatpak/xdg-desktop-portal) backend for the Umbriel compositor.
+An [xdg-desktop-portal](https://github.com/flatpak/xdg-desktop-portal) backend for the [Umbriel](https://github.com/noctalia-dev/umbriel) compositor.
 
 ## Supported interfaces
 
