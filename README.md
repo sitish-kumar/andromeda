@@ -66,3 +66,7 @@ max_fps = 0
 cmd = ""
 color_pick_cmd = ""
 ```
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
