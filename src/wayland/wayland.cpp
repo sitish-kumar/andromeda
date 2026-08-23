@@ -395,6 +395,10 @@ namespace xdpu {
       (void)session;
       auto* capture = static_cast<WaylandContext::CaptureSession*>(data);
       capture->stopped = true;
+      auto callback = std::move(capture->stoppedCb);
+      if (callback) {
+        callback();
+      }
     }
 
     constexpr ext_image_copy_capture_session_v1_listener kSessionListener = {
@@ -441,11 +445,16 @@ namespace xdpu {
       auto* state = static_cast<WaylandContext::CaptureFrame*>(data);
       auto* proxy = state->frame;
       auto cb = std::move(state->onFailed);
-      const bool constraintsChanged = (reason == EXT_IMAGE_COPY_CAPTURE_FRAME_V1_FAILURE_REASON_BUFFER_CONSTRAINTS);
+      CaptureFailureReason failureReason = CaptureFailureReason::Retry;
+      if (reason == EXT_IMAGE_COPY_CAPTURE_FRAME_V1_FAILURE_REASON_BUFFER_CONSTRAINTS) {
+        failureReason = CaptureFailureReason::ConstraintsChanged;
+      } else if (reason == EXT_IMAGE_COPY_CAPTURE_FRAME_V1_FAILURE_REASON_STOPPED) {
+        failureReason = CaptureFailureReason::Stopped;
+      }
       state->frame = nullptr;
       ext_image_copy_capture_frame_v1_destroy(proxy);
       if (cb) {
-        cb(constraintsChanged);
+        cb(failureReason);
       }
     }
 
@@ -751,9 +760,15 @@ namespace xdpu {
   std::unique_ptr<WaylandContext::CaptureFrame> WaylandContext::captureFrame(
       CaptureSession& session, wl_buffer* buffer, FrameReadyCallback onReady, FrameFailedCallback onFailed
   ) {
-    if (session.session == nullptr || buffer == nullptr || session.stopped) {
+    if (session.session == nullptr || session.stopped) {
       if (onFailed) {
-        onFailed(false);
+        onFailed(CaptureFailureReason::Stopped);
+      }
+      return nullptr;
+    }
+    if (buffer == nullptr) {
+      if (onFailed) {
+        onFailed(CaptureFailureReason::Retry);
       }
       return nullptr;
     }
@@ -761,7 +776,7 @@ namespace xdpu {
     auto* frame = ext_image_copy_capture_session_v1_create_frame(session.session);
     if (frame == nullptr) {
       if (onFailed) {
-        onFailed(false);
+        onFailed(CaptureFailureReason::Retry);
       }
       return nullptr;
     }

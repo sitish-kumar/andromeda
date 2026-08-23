@@ -79,6 +79,14 @@ namespace xdpu {
         frameInFlight = false;
       }
 
+      void captureStopped() {
+        stop();
+        if (backendClosedHandler) {
+          auto handler = std::move(backendClosedHandler);
+          handler();
+        }
+      }
+
       void scheduleProcess(int delayMs) {
         if (fpsTimer != 0 || loop == nullptr) {
           return;
@@ -151,7 +159,7 @@ namespace xdpu {
         if (constraintsDirty) {
           reconfigureStream();
         } else {
-          processRequest();
+          scheduleProcess(1);
         }
       }
 
@@ -182,9 +190,9 @@ namespace xdpu {
                 self->frameReady(pwBuffer, sec, nsec);
               }
             },
-            [weak, pwBuffer](bool constraintsChanged) {
+            [weak, pwBuffer](CaptureFailureReason reason) {
               if (auto self = weak.lock()) {
-                self->frameFailed(pwBuffer, constraintsChanged);
+                self->frameFailed(pwBuffer, reason);
               }
             }
         );
@@ -220,13 +228,15 @@ namespace xdpu {
         processRequest();
       }
 
-      void frameFailed(pw_buffer* pwBuffer, bool constraintsChanged) {
+      void frameFailed(pw_buffer* pwBuffer, CaptureFailureReason reason) {
         pendingFrame.reset(); // frame proxy already destroyed by the callback
         frameInFlight = false;
         if (stream && pwBuffer != nullptr) {
           stream->queueBuffer(pwBuffer);
         }
-        if (constraintsChanged) {
+        if (reason == CaptureFailureReason::Stopped) {
+          captureStopped();
+        } else if (reason == CaptureFailureReason::ConstraintsChanged) {
           if (constraintsDirty) {
             reconfigureStream();
           } else {
@@ -332,7 +342,7 @@ namespace xdpu {
       std::unique_ptr<PipeWireStream> stream, const CaptureConstraints& constraints, const Selection& selection,
       uint32_t maxFps, ClosedHandler backendClosedHandler
   ) {
-    if (!capture || !stream) {
+    if (!capture || !stream || capture->stopped) {
       return false;
     }
 
@@ -350,6 +360,11 @@ namespace xdpu {
     state->capture->constraintsCb = [weak](const CaptureConstraints& newConstraints) {
       if (auto streamState = weak.lock()) {
         streamState->constraintsChanged(newConstraints);
+      }
+    };
+    state->capture->stoppedCb = [weak]() {
+      if (auto streamState = weak.lock()) {
+        streamState->captureStopped();
       }
     };
     state->stream->onProcessRequest = [weak]() {

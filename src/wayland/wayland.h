@@ -66,8 +66,14 @@ namespace xdpu {
   using ConstraintsCallback = std::function<void(const CaptureConstraints&)>;
   using FrameReadyCallback =
       std::function<void(CaptureBuffer& buf, uint64_t presentationTimeSec, uint32_t presentationTimeNsec)>;
-  using FrameFailedCallback = std::function<void(bool constraintsChanged)>;
-  using SourceDestroyedCallback = std::function<void()>;
+  enum class CaptureFailureReason {
+    Retry,
+    ConstraintsChanged,
+    Stopped,
+  };
+
+  using FrameFailedCallback = std::function<void(CaptureFailureReason reason)>;
+  using CaptureStoppedCallback = std::function<void()>;
 
   class WaylandContext {
   public:
@@ -98,6 +104,7 @@ namespace xdpu {
       CaptureConstraints constraints;
       CaptureConstraints pendingConstraints;
       ConstraintsCallback constraintsCb;
+      CaptureStoppedCallback stoppedCb;
       bool stopped = false;
     };
     std::unique_ptr<CaptureSession>
