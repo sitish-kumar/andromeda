@@ -1,7 +1,6 @@
 #include "wayland/wayland.h"
 
 #include "loop/loop.h"
-#include "vendor/json.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -14,6 +13,7 @@
 #include <fcntl.h>
 #include <linux-dmabuf-v1-client-protocol.h>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string_view>
 #include <sys/epoll.h>
 #include <sys/mman.h>

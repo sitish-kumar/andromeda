@@ -50,8 +50,8 @@ install: (build "release")
     sudo meson install -C build-release
 
 format:
-    find src \( -name '*.cpp' -o -name '*.h' \) -not -path 'src/vendor/*' -print0 | xargs -0 clang-format -i
-    find src \( -name '*.cpp' -o -name '*.h' \) -not -path 'src/vendor/*' -print0 | xargs -0 grep -ZlP '\s+$' | xargs -0 -r sed -i 's/[[:space:]]*$//'
+    find src \( -name '*.cpp' -o -name '*.h' \) -print0 | xargs -0 clang-format -i
+    find src \( -name '*.cpp' -o -name '*.h' \) -print0 | xargs -0 grep -ZlP '\s+$' | xargs -0 -r sed -i 's/[[:space:]]*$//'
 
 _clang_tidy m=mode *args:
     #!/usr/bin/env bash

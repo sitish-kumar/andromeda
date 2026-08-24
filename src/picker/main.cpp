@@ -1,5 +1,3 @@
-#include "vendor/json.hpp"
-
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -7,6 +5,7 @@
 #include <glib-unix.h>
 #include <gtk/gtk.h>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <string_view>

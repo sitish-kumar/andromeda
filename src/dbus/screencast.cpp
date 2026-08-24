@@ -5,7 +5,6 @@
 #include "dbus/session.h"
 #include "loop/loop.h"
 #include "pipewire/pipewire.h"
-#include "vendor/json.hpp"
 #include "wayland/wayland.h"
 
 #include <algorithm>
@@ -15,6 +14,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <random>
 #include <sdbus-c++/sdbus-c++.h>

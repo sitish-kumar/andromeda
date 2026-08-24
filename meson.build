@@ -23,6 +23,7 @@ libdrm_dep = dependency('libdrm')
 gbm_dep = dependency('gbm')
 cairo_dep = dependency('cairo')
 tomlplusplus_dep = dependency('tomlplusplus')
+nlohmann_json_dep = dependency('nlohmann_json')
 
 gtk4_dep = dependency('gtk4', version: '>=4.12', required: get_option('picker'))
 
@@ -92,6 +93,7 @@ executable(
     gbm_dep,
     cairo_dep,
     tomlplusplus_dep,
+    nlohmann_json_dep,
   ],
   install: true,
   install_dir: get_option('libexecdir'),
@@ -109,7 +111,7 @@ if gtk4_dep.found()
     'umbriel-share-picker',
     files('src/picker/main.cpp') + picker_resources,
     include_directories: include_directories('src'),
-    dependencies: [gtk4_dep],
+    dependencies: [gtk4_dep, nlohmann_json_dep],
     install: true,
     install_dir: get_option('libexecdir'),
   )

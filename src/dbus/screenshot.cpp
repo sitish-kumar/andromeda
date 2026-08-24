@@ -3,7 +3,6 @@
 #include "config/config.h"
 #include "dbus/request.h"
 #include "loop/loop.h"
-#include "vendor/json.hpp"
 #include "wayland/wayland.h"
 
 #include <algorithm>
@@ -15,6 +14,7 @@
 #include <cstring>
 #include <drm_fourcc.h>
 #include <filesystem>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <sdbus-c++/sdbus-c++.h>
 #include <set>
