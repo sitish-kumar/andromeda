@@ -30,6 +30,18 @@
   border-radius: @RADIUS@ @RADIUS@ 0 0;
 }
 
+.umbriel-picker headerbar stackswitcher button {
+  border-radius: 0;
+}
+
+.umbriel-picker headerbar stackswitcher button:first-child {
+  border-radius: @RADIUS@ 0 0 @RADIUS@;
+}
+
+.umbriel-picker headerbar stackswitcher button:last-child {
+  border-radius: 0 @RADIUS@ @RADIUS@ 0;
+}
+
 .umbriel-picker headerbar,
 .umbriel-picker stack,
 .umbriel-picker scrolledwindow,
