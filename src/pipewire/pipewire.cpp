@@ -685,9 +685,10 @@ namespace xdpu {
 
     pw_properties* props = pw_properties_new(
         PW_KEY_MEDIA_TYPE, "Video", PW_KEY_MEDIA_CATEGORY, "Capture", PW_KEY_MEDIA_ROLE, "Screen", PW_KEY_MEDIA_CLASS,
-        "Video/Source", PW_KEY_MEDIA_NAME, "umbriel-screencast", PW_KEY_NODE_NAME, "umbriel-screencast", nullptr
+        "Video/Source", PW_KEY_MEDIA_NAME, "umbriel-screen-capture", PW_KEY_NODE_NAME, "umbriel-screen-capture",
+        PW_KEY_NODE_DESCRIPTION, "Umbriel Screen Capture", nullptr
     );
-    stream->m_impl->stream = pw_stream_new(m_impl->core, "umbriel-screencast", props);
+    stream->m_impl->stream = pw_stream_new(m_impl->core, "umbriel-screen-capture", props);
     if (stream->m_impl->stream == nullptr) {
       fprintf(stderr, "pipewire: unable to create stream\n");
       return nullptr;
