@@ -1,5 +1,3 @@
-#include <gtk/gtk.h>
-
 #include "vendor/json.hpp"
 
 #include <cerrno>
@@ -7,6 +5,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <glib-unix.h>
+#include <gtk/gtk.h>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -20,735 +19,700 @@ using json = nlohmann::json;
 
 namespace {
 
-struct OutputItem {
-  std::string name;
-  std::string description;
-  int width = 0;
-  int height = 0;
-};
+  struct OutputItem {
+    std::string name;
+    std::string description;
+    int width = 0;
+    int height = 0;
+  };
 
-struct WindowItem {
-  std::string identifier;
-  std::string appId;
-  std::string title;
-};
+  struct WindowItem {
+    std::string identifier;
+    std::string appId;
+    std::string title;
+  };
 
-enum class RowKind {
-  Monitor = 1,
-  Window = 2,
-};
+  enum class RowKind {
+    Monitor = 1,
+    Window = 2,
+  };
 
-struct Palette {
-  std::string background;
-  std::string textPrimary;
-  std::string textMuted;
-  std::string accentPrimary;
-  std::string accentSecondary;
-  std::string warning;
-  std::string error;
-  int cornerRadius = 0;
+  struct Palette {
+    std::string background;
+    std::string textPrimary;
+    std::string textMuted;
+    std::string accentPrimary;
+    std::string accentSecondary;
+    std::string warning;
+    std::string error;
+    int cornerRadius = 0;
 
-  bool operator==(const Palette&) const = default;
-};
+    bool operator==(const Palette&) const = default;
+  };
 
-struct AppState {
-  bool multiple = false;
-  bool showMonitors = false;
-  bool showWindows = false;
-  bool responding = false;
-  bool updatingSelection = false;
-  std::vector<OutputItem> outputs;
-  std::vector<WindowItem> windows;
-  GtkApplication* app = nullptr;
-  GtkWidget* window = nullptr;
-  GtkWidget* outputList = nullptr;
-  GtkWidget* windowList = nullptr;
-  GtkWidget* shareButton = nullptr;
-  GtkCssProvider* paletteProvider = nullptr;
-  GdkDisplay* display = nullptr;
-  int paletteFd = -1;
-  guint paletteWatch = 0;
-  std::string paletteBuffer;
-  std::optional<Palette> palette;
-};
+  struct AppState {
+    bool multiple = false;
+    bool showMonitors = false;
+    bool showWindows = false;
+    bool responding = false;
+    bool updatingSelection = false;
+    std::vector<OutputItem> outputs;
+    std::vector<WindowItem> windows;
+    GtkApplication* app = nullptr;
+    GtkWidget* window = nullptr;
+    GtkWidget* outputList = nullptr;
+    GtkWidget* windowList = nullptr;
+    GtkWidget* shareButton = nullptr;
+    GtkCssProvider* paletteProvider = nullptr;
+    GdkDisplay* display = nullptr;
+    int paletteFd = -1;
+    guint paletteWatch = 0;
+    std::string paletteBuffer;
+    std::optional<Palette> palette;
+  };
 
-constexpr size_t kMaxPaletteMessageSize = 65536;
+  constexpr size_t kMaxPaletteMessageSize = 65536;
 
-void closeFd(int fd)
-{
-  if (fd >= 0) {
-    while (close(fd) < 0 && errno == EINTR) {
+  void closeFd(int fd) {
+    if (fd >= 0) {
+      while (close(fd) < 0 && errno == EINTR) {
+      }
     }
   }
-}
 
-std::optional<std::string> validatedColor(const json& colors, const char* key)
-{
-  const auto value = colors.find(key);
-  if (value == colors.end() || !value->is_string()) {
-    return std::nullopt;
-  }
-
-  GdkRGBA parsed{};
-  const std::string input = value->get<std::string>();
-  if (!gdk_rgba_parse(&parsed, input.c_str())) {
-    return std::nullopt;
-  }
-
-  char* canonical = gdk_rgba_to_string(&parsed);
-  std::string result(canonical);
-  g_free(canonical);
-  return result;
-}
-
-std::optional<Palette> parseThemeEvent(std::string_view response)
-{
-  try {
-    const json envelope = json::parse(response);
-    if (envelope.value("event", "") != "theme") {
-      return std::nullopt;
-    }
-    const auto values = envelope.find("data");
-    if (values == envelope.end() || !values->is_object()) {
+  std::optional<std::string> validatedColor(const json& colors, const char* key) {
+    const auto value = colors.find(key);
+    if (value == colors.end() || !value->is_string()) {
       return std::nullopt;
     }
 
-    const auto background = validatedColor(*values, "background");
-    const auto textPrimary = validatedColor(*values, "text_primary");
-    const auto textMuted = validatedColor(*values, "text_muted");
-    const auto accentPrimary = validatedColor(*values, "accent_primary");
-    const auto accentSecondary = validatedColor(*values, "accent_secondary");
-    const auto warning = validatedColor(*values, "warning");
-    const auto error = validatedColor(*values, "error");
-    const auto cornerRadius = values->find("corner_radius");
-    if (!background || !textPrimary || !textMuted || !accentPrimary || !accentSecondary || !warning || !error ||
-        cornerRadius == values->end() || !cornerRadius->is_number_integer()) {
-      return std::nullopt;
-    }
-    const int radius = cornerRadius->get<int>();
-    if (radius < 0 || radius > 500) {
+    GdkRGBA parsed{};
+    const std::string input = value->get<std::string>();
+    if (!gdk_rgba_parse(&parsed, input.c_str())) {
       return std::nullopt;
     }
 
-    return Palette{
-        .background = *background,
-        .textPrimary = *textPrimary,
-        .textMuted = *textMuted,
-        .accentPrimary = *accentPrimary,
-        .accentSecondary = *accentSecondary,
-        .warning = *warning,
-        .error = *error,
-        .cornerRadius = radius,
-    };
-  } catch (const json::exception&) {
-    return std::nullopt;
-  }
-}
-
-std::string paletteSocketPath()
-{
-  if (const char* configured = std::getenv("UMBRIEL_SOCKET"); configured != nullptr && configured[0] != '\0') {
-    return configured;
-  }
-  const char* runtimeDir = std::getenv("XDG_RUNTIME_DIR");
-  const char* waylandDisplay = std::getenv("WAYLAND_DISPLAY");
-  if (runtimeDir != nullptr && runtimeDir[0] != '\0' && waylandDisplay != nullptr && waylandDisplay[0] != '\0') {
-    return std::string(runtimeDir) + "/umbriel-" + waylandDisplay + ".sock";
-  }
-  return {};
-}
-
-int openPaletteSubscription()
-{
-  const std::string socketPath = paletteSocketPath();
-  if (socketPath.empty()) {
-    return -1;
+    char* canonical = gdk_rgba_to_string(&parsed);
+    std::string result(canonical);
+    g_free(canonical);
+    return result;
   }
 
-  const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (fd < 0) {
-    return -1;
-  }
+  std::optional<Palette> parseThemeEvent(std::string_view response) {
+    try {
+      const json envelope = json::parse(response);
+      if (envelope.value("event", "") != "theme") {
+        return std::nullopt;
+      }
+      const auto values = envelope.find("data");
+      if (values == envelope.end() || !values->is_object()) {
+        return std::nullopt;
+      }
 
-  timeval timeout{.tv_sec = 0, .tv_usec = 250000};
-  setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+      const auto background = validatedColor(*values, "background");
+      const auto textPrimary = validatedColor(*values, "text_primary");
+      const auto textMuted = validatedColor(*values, "text_muted");
+      const auto accentPrimary = validatedColor(*values, "accent_primary");
+      const auto accentSecondary = validatedColor(*values, "accent_secondary");
+      const auto warning = validatedColor(*values, "warning");
+      const auto error = validatedColor(*values, "error");
+      const auto cornerRadius = values->find("corner_radius");
+      if (!background
+          || !textPrimary
+          || !textMuted
+          || !accentPrimary
+          || !accentSecondary
+          || !warning
+          || !error
+          || cornerRadius == values->end()
+          || !cornerRadius->is_number_integer()) {
+        return std::nullopt;
+      }
+      const int radius = cornerRadius->get<int>();
+      if (radius < 0 || radius > 500) {
+        return std::nullopt;
+      }
 
-  sockaddr_un address{};
-  address.sun_family = AF_UNIX;
-  const size_t pathLength = socketPath.size();
-  if (pathLength >= sizeof(address.sun_path)) {
-    closeFd(fd);
-    return -1;
-  }
-  std::memcpy(address.sun_path, socketPath.data(), pathLength);
-
-  if (connect(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0) {
-    closeFd(fd);
-    return -1;
-  }
-
-  constexpr std::string_view request = "{\"cmd\":\"subscribe\",\"events\":[\"theme\"]}\n";
-  size_t sent = 0;
-  while (sent < request.size()) {
-    const ssize_t size = send(fd, request.data() + sent, request.size() - sent, MSG_NOSIGNAL);
-    if (size < 0 && errno == EINTR) {
-      continue;
+      return Palette{
+          .background = *background,
+          .textPrimary = *textPrimary,
+          .textMuted = *textMuted,
+          .accentPrimary = *accentPrimary,
+          .accentSecondary = *accentSecondary,
+          .warning = *warning,
+          .error = *error,
+          .cornerRadius = radius,
+      };
+    } catch (const json::exception&) {
+      return std::nullopt;
     }
-    if (size <= 0) {
+  }
+
+  std::string paletteSocketPath() {
+    if (const char* configured = std::getenv("UMBRIEL_SOCKET"); configured != nullptr && configured[0] != '\0') {
+      return configured;
+    }
+    const char* runtimeDir = std::getenv("XDG_RUNTIME_DIR");
+    const char* waylandDisplay = std::getenv("WAYLAND_DISPLAY");
+    if (runtimeDir != nullptr && runtimeDir[0] != '\0' && waylandDisplay != nullptr && waylandDisplay[0] != '\0') {
+      return std::string(runtimeDir) + "/umbriel-" + waylandDisplay + ".sock";
+    }
+    return {};
+  }
+
+  int openPaletteSubscription() {
+    const std::string socketPath = paletteSocketPath();
+    if (socketPath.empty()) {
+      return -1;
+    }
+
+    const int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    if (fd < 0) {
+      return -1;
+    }
+
+    timeval timeout{.tv_sec = 0, .tv_usec = 250000};
+    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+
+    sockaddr_un address{};
+    address.sun_family = AF_UNIX;
+    const size_t pathLength = socketPath.size();
+    if (pathLength >= sizeof(address.sun_path)) {
       closeFd(fd);
       return -1;
     }
-    sent += static_cast<size_t>(size);
-  }
+    std::memcpy(address.sun_path, socketPath.data(), pathLength);
 
-  const int flags = fcntl(fd, F_GETFL, 0);
-  if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-    closeFd(fd);
-    return -1;
-  }
-  return fd;
-}
-
-const std::string& pickerStyleTemplate()
-{
-  static const std::string style = [] {
-    GError* error = nullptr;
-    GBytes* bytes =
-        g_resources_lookup_data("/dev/noctalia/umbriel/picker/style.css", G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
-    if (bytes == nullptr) {
-      std::cerr << "umbriel-share-picker: unable to load style resource: "
-                << (error != nullptr ? error->message : "unknown error") << '\n';
-      g_clear_error(&error);
-      return std::string{};
+    if (connect(fd, reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0) {
+      closeFd(fd);
+      return -1;
     }
 
-    gsize size = 0;
-    const auto* data = static_cast<const char*>(g_bytes_get_data(bytes, &size));
-    std::string result(data, size);
-    g_bytes_unref(bytes);
-    return result;
-  }();
-  return style;
-}
+    constexpr std::string_view request = "{\"cmd\":\"subscribe\",\"events\":[\"theme\"]}\n";
+    size_t sent = 0;
+    while (sent < request.size()) {
+      const ssize_t size = send(fd, request.data() + sent, request.size() - sent, MSG_NOSIGNAL);
+      if (size < 0 && errno == EINTR) {
+        continue;
+      }
+      if (size <= 0) {
+        closeFd(fd);
+        return -1;
+      }
+      sent += static_cast<size_t>(size);
+    }
 
-void replaceAll(std::string& text, std::string_view token, std::string_view value)
-{
-  size_t position = 0;
-  while ((position = text.find(token, position)) != std::string::npos) {
-    text.replace(position, token.size(), value.data(), value.size());
-    position += value.size();
-  }
-}
-
-std::string renderPickerStyle(const Palette& palette)
-{
-  std::string css = pickerStyleTemplate();
-  replaceAll(css, "@BACKGROUND@", palette.background);
-  replaceAll(css, "@TEXT_PRIMARY@", palette.textPrimary);
-  replaceAll(css, "@TEXT_MUTED@", palette.textMuted);
-  replaceAll(css, "@ACCENT_PRIMARY@", palette.accentPrimary);
-  replaceAll(css, "@ACCENT_SECONDARY@", palette.accentSecondary);
-  replaceAll(css, "@RADIUS@", std::to_string(palette.cornerRadius) + "px");
-  return css;
-}
-
-void applyPalette(AppState& state, const Palette& palette)
-{
-  const std::string css = renderPickerStyle(palette);
-  if (css.empty()) {
-    return;
+    const int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+      closeFd(fd);
+      return -1;
+    }
+    return fd;
   }
 
-  if (state.paletteProvider == nullptr) {
-    state.paletteProvider = gtk_css_provider_new();
-    gtk_style_context_add_provider_for_display(state.display, GTK_STYLE_PROVIDER(state.paletteProvider),
-                                               GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  const std::string& pickerStyleTemplate() {
+    static const std::string style = [] {
+      GError* error = nullptr;
+      GBytes* bytes =
+          g_resources_lookup_data("/dev/noctalia/umbriel/picker/style.css", G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
+      if (bytes == nullptr) {
+        std::cerr
+            << "umbriel-share-picker: unable to load style resource: "
+            << (error != nullptr ? error->message : "unknown error")
+            << '\n';
+        g_clear_error(&error);
+        return std::string{};
+      }
+
+      gsize size = 0;
+      const auto* data = static_cast<const char*>(g_bytes_get_data(bytes, &size));
+      std::string result(data, size);
+      g_bytes_unref(bytes);
+      return result;
+    }();
+    return style;
   }
-  gtk_css_provider_load_from_string(state.paletteProvider, css.c_str());
-}
 
-gboolean onPaletteEvent(gint fd, GIOCondition condition, gpointer userData)
-{
-  auto* state = static_cast<AppState*>(userData);
-  bool disconnected = (condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) != 0;
+  void replaceAll(std::string& text, std::string_view token, std::string_view value) {
+    size_t position = 0;
+    while ((position = text.find(token, position)) != std::string::npos) {
+      text.replace(position, token.size(), value.data(), value.size());
+      position += value.size();
+    }
+  }
 
-  char chunk[4096];
-  while (true) {
-    const ssize_t size = recv(fd, chunk, sizeof(chunk), 0);
-    if (size > 0) {
-      state->paletteBuffer.append(chunk, static_cast<size_t>(size));
-      if (state->paletteBuffer.size() > kMaxPaletteMessageSize) {
+  std::string renderPickerStyle(const Palette& palette) {
+    std::string css = pickerStyleTemplate();
+    replaceAll(css, "@BACKGROUND@", palette.background);
+    replaceAll(css, "@TEXT_PRIMARY@", palette.textPrimary);
+    replaceAll(css, "@TEXT_MUTED@", palette.textMuted);
+    replaceAll(css, "@ACCENT_PRIMARY@", palette.accentPrimary);
+    replaceAll(css, "@ACCENT_SECONDARY@", palette.accentSecondary);
+    replaceAll(css, "@RADIUS@", std::to_string(palette.cornerRadius) + "px");
+    return css;
+  }
+
+  void applyPalette(AppState& state, const Palette& palette) {
+    const std::string css = renderPickerStyle(palette);
+    if (css.empty()) {
+      return;
+    }
+
+    if (state.paletteProvider == nullptr) {
+      state.paletteProvider = gtk_css_provider_new();
+      gtk_style_context_add_provider_for_display(
+          state.display, GTK_STYLE_PROVIDER(state.paletteProvider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
+      );
+    }
+    gtk_css_provider_load_from_string(state.paletteProvider, css.c_str());
+  }
+
+  gboolean onPaletteEvent(gint fd, GIOCondition condition, gpointer userData) {
+    auto* state = static_cast<AppState*>(userData);
+    bool disconnected = (condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) != 0;
+
+    char chunk[4096];
+    while (true) {
+      const ssize_t size = recv(fd, chunk, sizeof(chunk), 0);
+      if (size > 0) {
+        state->paletteBuffer.append(chunk, static_cast<size_t>(size));
+        if (state->paletteBuffer.size() > kMaxPaletteMessageSize) {
+          disconnected = true;
+          break;
+        }
+        continue;
+      }
+      if (size == 0) {
         disconnected = true;
         break;
       }
-      continue;
-    }
-    if (size == 0) {
-      disconnected = true;
+      if (errno == EINTR) {
+        continue;
+      }
+      if (errno != EAGAIN && errno != EWOULDBLOCK) {
+        disconnected = true;
+      }
       break;
     }
-    if (errno == EINTR) {
-      continue;
-    }
-    if (errno != EAGAIN && errno != EWOULDBLOCK) {
-      disconnected = true;
-    }
-    break;
-  }
 
-  size_t newline = 0;
-  while ((newline = state->paletteBuffer.find('\n')) != std::string::npos) {
-    const auto next = parseThemeEvent(std::string_view(state->paletteBuffer).substr(0, newline));
-    state->paletteBuffer.erase(0, newline + 1);
-    if (next && next != state->palette) {
-      applyPalette(*state, *next);
-      state->palette = next;
-    }
-  }
-
-  if (disconnected) {
-    closeFd(state->paletteFd);
-    state->paletteFd = -1;
-    state->paletteWatch = 0;
-    return G_SOURCE_REMOVE;
-  }
-  return G_SOURCE_CONTINUE;
-}
-
-std::string readStdin()
-{
-  std::string input;
-  char buffer[4096];
-  while (std::cin.good()) {
-    std::cin.read(buffer, sizeof(buffer));
-    input.append(buffer, static_cast<size_t>(std::cin.gcount()));
-  }
-  return input;
-}
-
-std::string jsonString(const json& object, const char* key)
-{
-  const auto it = object.find(key);
-  if (it == object.end() || !it->is_string()) {
-    return {};
-  }
-  return it->get<std::string>();
-}
-
-int jsonInt(const json& object, const char* key)
-{
-  const auto it = object.find(key);
-  if (it == object.end() || !it->is_number_integer()) {
-    return 0;
-  }
-  return it->get<int>();
-}
-
-AppState parseRequest(const std::string& input)
-{
-  AppState state;
-
-  try {
-    const json request = json::parse(input);
-    if (!request.is_object()) {
-      return state;
-    }
-
-    const auto multiple = request.find("multiple");
-    state.multiple = multiple != request.end() && multiple->is_boolean() && multiple->get<bool>();
-
-    const auto types = request.find("types");
-    if (types != request.end() && types->is_array()) {
-      for (const json& type : *types) {
-        if (!type.is_string()) {
-          continue;
-        }
-        const std::string value = type.get<std::string>();
-        state.showMonitors = state.showMonitors || value == "monitor";
-        state.showWindows = state.showWindows || value == "window";
+    size_t newline = 0;
+    while ((newline = state->paletteBuffer.find('\n')) != std::string::npos) {
+      const auto next = parseThemeEvent(std::string_view(state->paletteBuffer).substr(0, newline));
+      state->paletteBuffer.erase(0, newline + 1);
+      if (next && next != state->palette) {
+        applyPalette(*state, *next);
+        state->palette = next;
       }
     }
 
-    const auto outputs = request.find("outputs");
-    if (outputs != request.end() && outputs->is_array()) {
-      for (const json& output : *outputs) {
-        if (!output.is_object()) {
-          continue;
-        }
-        state.outputs.push_back({
-            .name = jsonString(output, "name"),
-            .description = jsonString(output, "description"),
-            .width = jsonInt(output, "width"),
-            .height = jsonInt(output, "height"),
-        });
+    if (disconnected) {
+      closeFd(state->paletteFd);
+      state->paletteFd = -1;
+      state->paletteWatch = 0;
+      return G_SOURCE_REMOVE;
+    }
+    return G_SOURCE_CONTINUE;
+  }
+
+  std::string readStdin() {
+    std::string input;
+    char buffer[4096];
+    while (std::cin.good()) {
+      std::cin.read(buffer, sizeof(buffer));
+      input.append(buffer, static_cast<size_t>(std::cin.gcount()));
+    }
+    return input;
+  }
+
+  std::string jsonString(const json& object, const char* key) {
+    const auto it = object.find(key);
+    if (it == object.end() || !it->is_string()) {
+      return {};
+    }
+    return it->get<std::string>();
+  }
+
+  int jsonInt(const json& object, const char* key) {
+    const auto it = object.find(key);
+    if (it == object.end() || !it->is_number_integer()) {
+      return 0;
+    }
+    return it->get<int>();
+  }
+
+  AppState parseRequest(const std::string& input) {
+    AppState state;
+
+    try {
+      const json request = json::parse(input);
+      if (!request.is_object()) {
+        return state;
       }
+
+      const auto multiple = request.find("multiple");
+      state.multiple = multiple != request.end() && multiple->is_boolean() && multiple->get<bool>();
+
+      const auto types = request.find("types");
+      if (types != request.end() && types->is_array()) {
+        for (const json& type : *types) {
+          if (!type.is_string()) {
+            continue;
+          }
+          const std::string value = type.get<std::string>();
+          state.showMonitors = state.showMonitors || value == "monitor";
+          state.showWindows = state.showWindows || value == "window";
+        }
+      }
+
+      const auto outputs = request.find("outputs");
+      if (outputs != request.end() && outputs->is_array()) {
+        for (const json& output : *outputs) {
+          if (!output.is_object()) {
+            continue;
+          }
+          state.outputs.push_back({
+              .name = jsonString(output, "name"),
+              .description = jsonString(output, "description"),
+              .width = jsonInt(output, "width"),
+              .height = jsonInt(output, "height"),
+          });
+        }
+      }
+
+      const auto windows = request.find("windows");
+      if (windows != request.end() && windows->is_array()) {
+        for (const json& window : *windows) {
+          if (!window.is_object()) {
+            continue;
+          }
+          state.windows.push_back({
+              .identifier = jsonString(window, "identifier"),
+              .appId = jsonString(window, "app_id"),
+              .title = jsonString(window, "title"),
+          });
+        }
+      }
+    } catch (const json::exception& error) {
+      std::cerr << "umbriel-share-picker: invalid request JSON: " << error.what() << '\n';
     }
 
-    const auto windows = request.find("windows");
-    if (windows != request.end() && windows->is_array()) {
-      for (const json& window : *windows) {
-        if (!window.is_object()) {
-          continue;
-        }
-        state.windows.push_back({
-            .identifier = jsonString(window, "identifier"),
-            .appId = jsonString(window, "app_id"),
-            .title = jsonString(window, "title"),
-        });
-      }
+    return state;
+  }
+
+  void printResponse(const json& response) { std::cout << response.dump() << '\n' << std::flush; }
+
+  void quitAfterResponse(AppState& state, const json& response) {
+    if (state.responding) {
+      return;
     }
-  } catch (const json::exception& error) {
-    std::cerr << "umbriel-share-picker: invalid request JSON: " << error.what() << '\n';
+    state.responding = true;
+    printResponse(response);
+    if (state.app != nullptr) {
+      g_application_quit(G_APPLICATION(state.app));
+    }
   }
 
-  return state;
-}
+  void cancel(AppState& state) { quitAfterResponse(state, json{{"selections", json::array()}}); }
 
-void printResponse(const json& response)
-{
-  std::cout << response.dump() << '\n' << std::flush;
-}
-
-void quitAfterResponse(AppState& state, const json& response)
-{
-  if (state.responding) {
-    return;
+  GList* selectedRows(GtkWidget* list) {
+    if (list == nullptr) {
+      return nullptr;
+    }
+    return gtk_list_box_get_selected_rows(GTK_LIST_BOX(list));
   }
-  state.responding = true;
-  printResponse(response);
-  if (state.app != nullptr) {
-    g_application_quit(G_APPLICATION(state.app));
+
+  bool hasSelection(GtkWidget* list) {
+    GList* rows = selectedRows(list);
+    const bool selected = rows != nullptr;
+    g_list_free(rows);
+    return selected;
   }
-}
 
-void cancel(AppState& state)
-{
-  quitAfterResponse(state, json{{"selections", json::array()}});
-}
-
-GList* selectedRows(GtkWidget* list)
-{
-  if (list == nullptr) {
-    return nullptr;
+  void updateShareButton(AppState& state) {
+    if (state.shareButton == nullptr) {
+      return;
+    }
+    gtk_widget_set_sensitive(state.shareButton, hasSelection(state.outputList) || hasSelection(state.windowList));
   }
-  return gtk_list_box_get_selected_rows(GTK_LIST_BOX(list));
-}
 
-bool hasSelection(GtkWidget* list)
-{
-  GList* rows = selectedRows(list);
-  const bool selected = rows != nullptr;
-  g_list_free(rows);
-  return selected;
-}
-
-void updateShareButton(AppState& state)
-{
-  if (state.shareButton == nullptr) {
-    return;
+  void unselectList(GtkWidget* list) {
+    if (list != nullptr) {
+      gtk_list_box_unselect_all(GTK_LIST_BOX(list));
+    }
   }
-  gtk_widget_set_sensitive(state.shareButton, hasSelection(state.outputList) || hasSelection(state.windowList));
-}
 
-void unselectList(GtkWidget* list)
-{
-  if (list != nullptr) {
-    gtk_list_box_unselect_all(GTK_LIST_BOX(list));
-  }
-}
+  void onSelectedRowsChanged(GtkListBox* list, gpointer userData) {
+    auto* state = static_cast<AppState*>(userData);
+    if (state->updatingSelection) {
+      updateShareButton(*state);
+      return;
+    }
 
-void onSelectedRowsChanged(GtkListBox* list, gpointer userData)
-{
-  auto* state = static_cast<AppState*>(userData);
-  if (state->updatingSelection) {
+    if (!state->multiple && hasSelection(GTK_WIDGET(list))) {
+      state->updatingSelection = true;
+      if (GTK_WIDGET(list) != state->outputList) {
+        unselectList(state->outputList);
+      }
+      if (GTK_WIDGET(list) != state->windowList) {
+        unselectList(state->windowList);
+      }
+      state->updatingSelection = false;
+    }
+
     updateShareButton(*state);
-    return;
   }
 
-  if (!state->multiple && hasSelection(GTK_WIDGET(list))) {
-    state->updatingSelection = true;
-    if (GTK_WIDGET(list) != state->outputList) {
-      unselectList(state->outputList);
+  std::string displayOrFallback(const std::string& value, const char* fallback) {
+    return value.empty() ? std::string(fallback) : value;
+  }
+
+  GtkWidget* makeLabel(const std::string& text, bool bold, bool dim) {
+    GtkWidget* label = gtk_label_new(nullptr);
+    gtk_label_set_xalign(GTK_LABEL(label), 0.0F);
+    gtk_label_set_ellipsize(GTK_LABEL(label), PANGO_ELLIPSIZE_END);
+
+    if (bold) {
+      char* escaped = g_markup_escape_text(text.c_str(), -1);
+      const std::string markup = std::string("<b>") + escaped + "</b>";
+      g_free(escaped);
+      gtk_label_set_markup(GTK_LABEL(label), markup.c_str());
+    } else {
+      gtk_label_set_text(GTK_LABEL(label), text.c_str());
     }
-    if (GTK_WIDGET(list) != state->windowList) {
-      unselectList(state->windowList);
+
+    if (dim) {
+      gtk_widget_add_css_class(label, "dim-label");
     }
-    state->updatingSelection = false;
+
+    return label;
   }
 
-  updateShareButton(*state);
-}
+  GtkWidget* makeOutputRow(const OutputItem& output, guint index) {
+    GtkWidget* row = gtk_list_box_row_new();
+    g_object_set_data(G_OBJECT(row), "xdpu-kind", GINT_TO_POINTER(static_cast<int>(RowKind::Monitor)));
+    g_object_set_data(G_OBJECT(row), "xdpu-index", GUINT_TO_POINTER(index));
 
-std::string displayOrFallback(const std::string& value, const char* fallback)
-{
-  return value.empty() ? std::string(fallback) : value;
-}
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+    gtk_widget_set_margin_top(box, 10);
+    gtk_widget_set_margin_bottom(box, 10);
+    gtk_widget_set_margin_start(box, 12);
+    gtk_widget_set_margin_end(box, 12);
 
-GtkWidget* makeLabel(const std::string& text, bool bold, bool dim)
-{
-  GtkWidget* label = gtk_label_new(nullptr);
-  gtk_label_set_xalign(GTK_LABEL(label), 0.0F);
-  gtk_label_set_ellipsize(GTK_LABEL(label), PANGO_ELLIPSIZE_END);
+    GtkWidget* textBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+    gtk_widget_set_hexpand(textBox, TRUE);
+    gtk_box_append(GTK_BOX(textBox), makeLabel(displayOrFallback(output.name, "Unnamed screen"), true, false));
+    gtk_box_append(GTK_BOX(textBox), makeLabel(output.description, false, true));
 
-  if (bold) {
-    char* escaped = g_markup_escape_text(text.c_str(), -1);
-    const std::string markup = std::string("<b>") + escaped + "</b>";
-    g_free(escaped);
-    gtk_label_set_markup(GTK_LABEL(label), markup.c_str());
-  } else {
-    gtk_label_set_text(GTK_LABEL(label), text.c_str());
+    const std::string detail = std::to_string(output.width) + "×" + std::to_string(output.height);
+    GtkWidget* detailLabel = makeLabel(detail, false, true);
+    gtk_label_set_xalign(GTK_LABEL(detailLabel), 1.0F);
+
+    gtk_box_append(GTK_BOX(box), textBox);
+    gtk_box_append(GTK_BOX(box), detailLabel);
+    gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), box);
+    return row;
   }
 
-  if (dim) {
+  GtkWidget* makeWindowRow(const WindowItem& window, guint index) {
+    GtkWidget* row = gtk_list_box_row_new();
+    g_object_set_data(G_OBJECT(row), "xdpu-kind", GINT_TO_POINTER(static_cast<int>(RowKind::Window)));
+    g_object_set_data(G_OBJECT(row), "xdpu-index", GUINT_TO_POINTER(index));
+
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+    gtk_widget_set_margin_top(box, 10);
+    gtk_widget_set_margin_bottom(box, 10);
+    gtk_widget_set_margin_start(box, 12);
+    gtk_widget_set_margin_end(box, 12);
+
+    gtk_box_append(GTK_BOX(box), makeLabel(displayOrFallback(window.title, "Untitled window"), false, false));
+    gtk_box_append(GTK_BOX(box), makeLabel(window.appId, false, true));
+
+    gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), box);
+    return row;
+  }
+
+  GtkWidget* makePlaceholder(const char* text) {
+    GtkWidget* label = gtk_label_new(text);
+    gtk_widget_set_margin_top(label, 24);
+    gtk_widget_set_margin_bottom(label, 24);
     gtk_widget_add_css_class(label, "dim-label");
+    return label;
   }
 
-  return label;
-}
+  GtkWidget* makeListBox(AppState& state, RowKind kind) {
+    GtkWidget* list = gtk_list_box_new();
+    gtk_list_box_set_selection_mode(GTK_LIST_BOX(list), state.multiple ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_SINGLE);
+    gtk_list_box_set_activate_on_single_click(GTK_LIST_BOX(list), TRUE);
+    g_signal_connect(list, "selected-rows-changed", G_CALLBACK(onSelectedRowsChanged), &state);
 
-GtkWidget* makeOutputRow(const OutputItem& output, guint index)
-{
-  GtkWidget* row = gtk_list_box_row_new();
-  g_object_set_data(G_OBJECT(row), "xdpu-kind", GINT_TO_POINTER(static_cast<int>(RowKind::Monitor)));
-  g_object_set_data(G_OBJECT(row), "xdpu-index", GUINT_TO_POINTER(index));
-
-  GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-  gtk_widget_set_margin_top(box, 10);
-  gtk_widget_set_margin_bottom(box, 10);
-  gtk_widget_set_margin_start(box, 12);
-  gtk_widget_set_margin_end(box, 12);
-
-  GtkWidget* textBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_widget_set_hexpand(textBox, TRUE);
-  gtk_box_append(GTK_BOX(textBox), makeLabel(displayOrFallback(output.name, "Unnamed screen"), true, false));
-  gtk_box_append(GTK_BOX(textBox), makeLabel(output.description, false, true));
-
-  const std::string detail = std::to_string(output.width) + "×" + std::to_string(output.height);
-  GtkWidget* detailLabel = makeLabel(detail, false, true);
-  gtk_label_set_xalign(GTK_LABEL(detailLabel), 1.0F);
-
-  gtk_box_append(GTK_BOX(box), textBox);
-  gtk_box_append(GTK_BOX(box), detailLabel);
-  gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), box);
-  return row;
-}
-
-GtkWidget* makeWindowRow(const WindowItem& window, guint index)
-{
-  GtkWidget* row = gtk_list_box_row_new();
-  g_object_set_data(G_OBJECT(row), "xdpu-kind", GINT_TO_POINTER(static_cast<int>(RowKind::Window)));
-  g_object_set_data(G_OBJECT(row), "xdpu-index", GUINT_TO_POINTER(index));
-
-  GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_widget_set_margin_top(box, 10);
-  gtk_widget_set_margin_bottom(box, 10);
-  gtk_widget_set_margin_start(box, 12);
-  gtk_widget_set_margin_end(box, 12);
-
-  gtk_box_append(GTK_BOX(box), makeLabel(displayOrFallback(window.title, "Untitled window"), false, false));
-  gtk_box_append(GTK_BOX(box), makeLabel(window.appId, false, true));
-
-  gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(row), box);
-  return row;
-}
-
-GtkWidget* makePlaceholder(const char* text)
-{
-  GtkWidget* label = gtk_label_new(text);
-  gtk_widget_set_margin_top(label, 24);
-  gtk_widget_set_margin_bottom(label, 24);
-  gtk_widget_add_css_class(label, "dim-label");
-  return label;
-}
-
-GtkWidget* makeListBox(AppState& state, RowKind kind)
-{
-  GtkWidget* list = gtk_list_box_new();
-  gtk_list_box_set_selection_mode(GTK_LIST_BOX(list), state.multiple ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_SINGLE);
-  gtk_list_box_set_activate_on_single_click(GTK_LIST_BOX(list), TRUE);
-  g_signal_connect(list, "selected-rows-changed", G_CALLBACK(onSelectedRowsChanged), &state);
-
-  if (kind == RowKind::Monitor) {
-    gtk_list_box_set_placeholder(GTK_LIST_BOX(list), makePlaceholder("No screens available"));
-    for (size_t i = 0; i < state.outputs.size(); ++i) {
-      gtk_list_box_append(GTK_LIST_BOX(list), makeOutputRow(state.outputs[i], static_cast<guint>(i)));
+    if (kind == RowKind::Monitor) {
+      gtk_list_box_set_placeholder(GTK_LIST_BOX(list), makePlaceholder("No screens available"));
+      for (size_t i = 0; i < state.outputs.size(); ++i) {
+        gtk_list_box_append(GTK_LIST_BOX(list), makeOutputRow(state.outputs[i], static_cast<guint>(i)));
+      }
+    } else {
+      gtk_list_box_set_placeholder(GTK_LIST_BOX(list), makePlaceholder("No windows available"));
+      for (size_t i = 0; i < state.windows.size(); ++i) {
+        gtk_list_box_append(GTK_LIST_BOX(list), makeWindowRow(state.windows[i], static_cast<guint>(i)));
+      }
     }
-  } else {
-    gtk_list_box_set_placeholder(GTK_LIST_BOX(list), makePlaceholder("No windows available"));
-    for (size_t i = 0; i < state.windows.size(); ++i) {
-      gtk_list_box_append(GTK_LIST_BOX(list), makeWindowRow(state.windows[i], static_cast<guint>(i)));
-    }
+
+    return list;
   }
 
-  return list;
-}
-
-GtkWidget* makeScrolledList(GtkWidget* list)
-{
-  GtkWidget* scrolled = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-  gtk_widget_set_vexpand(scrolled, TRUE);
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled), list);
-  return scrolled;
-}
-
-void appendSelectedRows(AppState& state, GtkWidget* list, json& selections)
-{
-  GList* rows = selectedRows(list);
-  for (GList* node = rows; node != nullptr; node = node->next) {
-    auto* row = GTK_WIDGET(node->data);
-    const auto kind = static_cast<RowKind>(GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "xdpu-kind")));
-    const guint index = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(row), "xdpu-index"));
-
-    if (kind == RowKind::Monitor && index < state.outputs.size()) {
-      selections.push_back({{"kind", "monitor"}, {"output", state.outputs[index].name}});
-    } else if (kind == RowKind::Window && index < state.windows.size()) {
-      selections.push_back({{"kind", "window"}, {"identifier", state.windows[index].identifier}});
-    }
-
-    if (!state.multiple && !selections.empty()) {
-      break;
-    }
+  GtkWidget* makeScrolledList(GtkWidget* list) {
+    GtkWidget* scrolled = gtk_scrolled_window_new();
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+    gtk_widget_set_vexpand(scrolled, TRUE);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled), list);
+    return scrolled;
   }
-  g_list_free(rows);
-}
 
-void share(AppState& state)
-{
-  json selections = json::array();
-  appendSelectedRows(state, state.outputList, selections);
-  if (state.multiple || selections.empty()) {
-    appendSelectedRows(state, state.windowList, selections);
+  void appendSelectedRows(AppState& state, GtkWidget* list, json& selections) {
+    GList* rows = selectedRows(list);
+    for (GList* node = rows; node != nullptr; node = node->next) {
+      auto* row = GTK_WIDGET(node->data);
+      const auto kind = static_cast<RowKind>(GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "xdpu-kind")));
+      const guint index = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(row), "xdpu-index"));
+
+      if (kind == RowKind::Monitor && index < state.outputs.size()) {
+        selections.push_back({{"kind", "monitor"}, {"output", state.outputs[index].name}});
+      } else if (kind == RowKind::Window && index < state.windows.size()) {
+        selections.push_back({{"kind", "window"}, {"identifier", state.windows[index].identifier}});
+      }
+
+      if (!state.multiple && !selections.empty()) {
+        break;
+      }
+    }
+    g_list_free(rows);
   }
-  quitAfterResponse(state, json{{"selections", std::move(selections)}});
-}
 
-void onShareClicked(GtkButton*, gpointer userData)
-{
-  share(*static_cast<AppState*>(userData));
-}
+  void share(AppState& state) {
+    json selections = json::array();
+    appendSelectedRows(state, state.outputList, selections);
+    if (state.multiple || selections.empty()) {
+      appendSelectedRows(state, state.windowList, selections);
+    }
+    quitAfterResponse(state, json{{"selections", std::move(selections)}});
+  }
 
-void onCancelClicked(GtkButton*, gpointer userData)
-{
-  cancel(*static_cast<AppState*>(userData));
-}
+  void onShareClicked(GtkButton*, gpointer userData) { share(*static_cast<AppState*>(userData)); }
 
-gboolean onCloseRequest(GtkWindow*, gpointer userData)
-{
-  cancel(*static_cast<AppState*>(userData));
-  return TRUE;
-}
+  void onCancelClicked(GtkButton*, gpointer userData) { cancel(*static_cast<AppState*>(userData)); }
 
-gboolean onKeyPressed(GtkEventControllerKey*, guint keyval, guint, GdkModifierType, gpointer userData)
-{
-  auto* state = static_cast<AppState*>(userData);
-
-  if (keyval == GDK_KEY_Escape) {
-    cancel(*state);
+  gboolean onCloseRequest(GtkWindow*, gpointer userData) {
+    cancel(*static_cast<AppState*>(userData));
     return TRUE;
   }
 
-  if (keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter) {
-    if (state->shareButton != nullptr && gtk_widget_get_sensitive(state->shareButton)) {
-      share(*state);
+  gboolean onKeyPressed(GtkEventControllerKey*, guint keyval, guint, GdkModifierType, gpointer userData) {
+    auto* state = static_cast<AppState*>(userData);
+
+    if (keyval == GDK_KEY_Escape) {
+      cancel(*state);
+      return TRUE;
     }
-    return TRUE;
+
+    if (keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter) {
+      if (state->shareButton != nullptr && gtk_widget_get_sensitive(state->shareButton)) {
+        share(*state);
+      }
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
-  return FALSE;
-}
+  GtkWidget* makeContent(AppState& state, GtkWidget* header) {
+    GtkWidget* content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget* body = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_vexpand(body, TRUE);
 
-GtkWidget* makeContent(AppState& state, GtkWidget* header)
-{
-  GtkWidget* content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  GtkWidget* body = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  gtk_widget_set_vexpand(body, TRUE);
+    if (state.showMonitors) {
+      state.outputList = makeListBox(state, RowKind::Monitor);
+    }
+    if (state.showWindows) {
+      state.windowList = makeListBox(state, RowKind::Window);
+    }
 
-  if (state.showMonitors) {
-    state.outputList = makeListBox(state, RowKind::Monitor);
+    if (state.showMonitors && state.showWindows) {
+      GtkWidget* stack = gtk_stack_new();
+      GtkWidget* switcher = gtk_stack_switcher_new();
+      gtk_widget_set_vexpand(stack, TRUE);
+      gtk_stack_set_transition_type(GTK_STACK(stack), GTK_STACK_TRANSITION_TYPE_CROSSFADE);
+      gtk_stack_switcher_set_stack(GTK_STACK_SWITCHER(switcher), GTK_STACK(stack));
+      gtk_header_bar_set_title_widget(GTK_HEADER_BAR(header), switcher);
+      gtk_stack_add_titled(GTK_STACK(stack), makeScrolledList(state.outputList), "screens", "Screens");
+      gtk_stack_add_titled(GTK_STACK(stack), makeScrolledList(state.windowList), "windows", "Windows");
+      gtk_box_append(GTK_BOX(body), stack);
+    } else if (state.showMonitors) {
+      gtk_box_append(GTK_BOX(body), makeScrolledList(state.outputList));
+    } else if (state.showWindows) {
+      gtk_box_append(GTK_BOX(body), makeScrolledList(state.windowList));
+    } else {
+      GtkWidget* placeholder = makePlaceholder("No share source types requested");
+      gtk_widget_set_vexpand(placeholder, TRUE);
+      gtk_widget_set_valign(placeholder, GTK_ALIGN_CENTER);
+      gtk_box_append(GTK_BOX(body), placeholder);
+    }
+
+    GtkWidget* buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_halign(buttons, GTK_ALIGN_END);
+    gtk_widget_set_margin_top(buttons, 12);
+    gtk_widget_set_margin_bottom(buttons, 12);
+    gtk_widget_set_margin_start(buttons, 12);
+    gtk_widget_set_margin_end(buttons, 12);
+
+    GtkWidget* cancelButton = gtk_button_new_with_label("Cancel");
+    state.shareButton = gtk_button_new_with_label("Share");
+    gtk_widget_add_css_class(state.shareButton, "suggested-action");
+    gtk_widget_set_sensitive(state.shareButton, FALSE);
+
+    g_signal_connect(cancelButton, "clicked", G_CALLBACK(onCancelClicked), &state);
+    g_signal_connect(state.shareButton, "clicked", G_CALLBACK(onShareClicked), &state);
+
+    gtk_box_append(GTK_BOX(buttons), cancelButton);
+    gtk_box_append(GTK_BOX(buttons), state.shareButton);
+    gtk_box_append(GTK_BOX(content), body);
+    gtk_box_append(GTK_BOX(content), buttons);
+    return content;
   }
-  if (state.showWindows) {
-    state.windowList = makeListBox(state, RowKind::Window);
+
+  void onActivate(GtkApplication* app, gpointer userData) {
+    auto* state = static_cast<AppState*>(userData);
+    state->app = app;
+
+    GtkWidget* window = gtk_application_window_new(app);
+    state->window = window;
+    state->display = gtk_widget_get_display(window);
+    gtk_widget_add_css_class(window, "umbriel-picker");
+    gtk_window_set_title(GTK_WINDOW(window), "Share");
+    gtk_window_set_default_size(GTK_WINDOW(window), 480, 420);
+
+    GtkWidget* header = gtk_header_bar_new();
+    gtk_window_set_titlebar(GTK_WINDOW(window), header);
+    gtk_window_set_child(GTK_WINDOW(window), makeContent(*state, header));
+    gtk_window_set_default_widget(GTK_WINDOW(window), state->shareButton);
+
+    GtkEventController* keyController = gtk_event_controller_key_new();
+    gtk_event_controller_set_propagation_phase(keyController, GTK_PHASE_CAPTURE);
+    g_signal_connect(keyController, "key-pressed", G_CALLBACK(onKeyPressed), state);
+    gtk_widget_add_controller(window, keyController);
+
+    g_signal_connect(window, "close-request", G_CALLBACK(onCloseRequest), state);
+    state->paletteFd = openPaletteSubscription();
+    if (state->paletteFd >= 0) {
+      state->paletteWatch = g_unix_fd_add(
+          state->paletteFd, static_cast<GIOCondition>(G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL), onPaletteEvent, state
+      );
+    }
+    gtk_window_present(GTK_WINDOW(window));
   }
-
-  if (state.showMonitors && state.showWindows) {
-    GtkWidget* stack = gtk_stack_new();
-    GtkWidget* switcher = gtk_stack_switcher_new();
-    gtk_widget_set_vexpand(stack, TRUE);
-    gtk_stack_set_transition_type(GTK_STACK(stack), GTK_STACK_TRANSITION_TYPE_CROSSFADE);
-    gtk_stack_switcher_set_stack(GTK_STACK_SWITCHER(switcher), GTK_STACK(stack));
-    gtk_header_bar_set_title_widget(GTK_HEADER_BAR(header), switcher);
-    gtk_stack_add_titled(GTK_STACK(stack), makeScrolledList(state.outputList), "screens", "Screens");
-    gtk_stack_add_titled(GTK_STACK(stack), makeScrolledList(state.windowList), "windows", "Windows");
-    gtk_box_append(GTK_BOX(body), stack);
-  } else if (state.showMonitors) {
-    gtk_box_append(GTK_BOX(body), makeScrolledList(state.outputList));
-  } else if (state.showWindows) {
-    gtk_box_append(GTK_BOX(body), makeScrolledList(state.windowList));
-  } else {
-    GtkWidget* placeholder = makePlaceholder("No share source types requested");
-    gtk_widget_set_vexpand(placeholder, TRUE);
-    gtk_widget_set_valign(placeholder, GTK_ALIGN_CENTER);
-    gtk_box_append(GTK_BOX(body), placeholder);
-  }
-
-  GtkWidget* buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-  gtk_widget_set_halign(buttons, GTK_ALIGN_END);
-  gtk_widget_set_margin_top(buttons, 12);
-  gtk_widget_set_margin_bottom(buttons, 12);
-  gtk_widget_set_margin_start(buttons, 12);
-  gtk_widget_set_margin_end(buttons, 12);
-
-  GtkWidget* cancelButton = gtk_button_new_with_label("Cancel");
-  state.shareButton = gtk_button_new_with_label("Share");
-  gtk_widget_add_css_class(state.shareButton, "suggested-action");
-  gtk_widget_set_sensitive(state.shareButton, FALSE);
-
-  g_signal_connect(cancelButton, "clicked", G_CALLBACK(onCancelClicked), &state);
-  g_signal_connect(state.shareButton, "clicked", G_CALLBACK(onShareClicked), &state);
-
-  gtk_box_append(GTK_BOX(buttons), cancelButton);
-  gtk_box_append(GTK_BOX(buttons), state.shareButton);
-  gtk_box_append(GTK_BOX(content), body);
-  gtk_box_append(GTK_BOX(content), buttons);
-  return content;
-}
-
-void onActivate(GtkApplication* app, gpointer userData)
-{
-  auto* state = static_cast<AppState*>(userData);
-  state->app = app;
-
-  GtkWidget* window = gtk_application_window_new(app);
-  state->window = window;
-  state->display = gtk_widget_get_display(window);
-  gtk_widget_add_css_class(window, "umbriel-picker");
-  gtk_window_set_title(GTK_WINDOW(window), "Share");
-  gtk_window_set_default_size(GTK_WINDOW(window), 480, 420);
-
-  GtkWidget* header = gtk_header_bar_new();
-  gtk_window_set_titlebar(GTK_WINDOW(window), header);
-  gtk_window_set_child(GTK_WINDOW(window), makeContent(*state, header));
-  gtk_window_set_default_widget(GTK_WINDOW(window), state->shareButton);
-
-  GtkEventController* keyController = gtk_event_controller_key_new();
-  gtk_event_controller_set_propagation_phase(keyController, GTK_PHASE_CAPTURE);
-  g_signal_connect(keyController, "key-pressed", G_CALLBACK(onKeyPressed), state);
-  gtk_widget_add_controller(window, keyController);
-
-  g_signal_connect(window, "close-request", G_CALLBACK(onCloseRequest), state);
-  state->paletteFd = openPaletteSubscription();
-  if (state->paletteFd >= 0) {
-    state->paletteWatch = g_unix_fd_add(
-        state->paletteFd, static_cast<GIOCondition>(G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL), onPaletteEvent, state);
-  }
-  gtk_window_present(GTK_WINDOW(window));
-}
 
 } // namespace
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   AppState state = parseRequest(readStdin());
 
   gtk_init();

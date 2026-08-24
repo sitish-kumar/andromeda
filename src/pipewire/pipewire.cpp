@@ -408,20 +408,16 @@ namespace xdpu {
       }
 
       spa_pod_frame buffersFrame;
-      spa_pod_builder_push_object(
-          &buffersBuilder, &buffersFrame, SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers
-      );
+      spa_pod_builder_push_object(&buffersBuilder, &buffersFrame, SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers);
       spa_pod_builder_add(
-          &buffersBuilder, SPA_PARAM_BUFFERS_buffers, SPA_POD_CHOICE_RANGE_Int(4, 2, 8),
-          SPA_PARAM_BUFFERS_blocks, SPA_POD_Int(blocks), 0
+          &buffersBuilder, SPA_PARAM_BUFFERS_buffers, SPA_POD_CHOICE_RANGE_Int(4, 2, 8), SPA_PARAM_BUFFERS_blocks,
+          SPA_POD_Int(blocks), 0
       );
       if (size > 0) {
         spa_pod_builder_add(&buffersBuilder, SPA_PARAM_BUFFERS_size, SPA_POD_Int(static_cast<int32_t>(size)), 0);
       }
       if (stride > 0) {
-        spa_pod_builder_add(
-            &buffersBuilder, SPA_PARAM_BUFFERS_stride, SPA_POD_Int(static_cast<int32_t>(stride)), 0
-        );
+        spa_pod_builder_add(&buffersBuilder, SPA_PARAM_BUFFERS_stride, SPA_POD_Int(static_cast<int32_t>(stride)), 0);
       }
       spa_pod_builder_add(
           &buffersBuilder, SPA_PARAM_BUFFERS_align, SPA_POD_Int(16), SPA_PARAM_BUFFERS_dataType,
