@@ -35,6 +35,7 @@ Modes: `debug` (default), `release`, `asan`.
 ```sh
 just build release
 just install        # release build + sudo meson install
+just uninstall      # remove files installed by just install
 ```
 
 ### Manual
