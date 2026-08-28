@@ -38,6 +38,7 @@ namespace xdpu {
       ClosedHandler backendClosedHandler;
       uint32_t maxFps = 0;
       int fpsTimer = 0;
+      bool stopped = false;
       bool frameInFlight = false;
       bool constraintsDirty = false;
       bool waitingForConstraints = false;
@@ -62,6 +63,10 @@ namespace xdpu {
       }
 
       void stop() {
+        if (stopped) {
+          return;
+        }
+        stopped = true;
         if (fpsTimer != 0 && loop != nullptr) {
           const int timer = fpsTimer;
           fpsTimer = 0;
@@ -80,6 +85,9 @@ namespace xdpu {
       }
 
       void captureStopped() {
+        if (stopped) {
+          return;
+        }
         stop();
         if (backendClosedHandler) {
           auto handler = std::move(backendClosedHandler);
@@ -101,7 +109,7 @@ namespace xdpu {
       }
 
       void processRequest() {
-        if (!stream || !stream->connected() || frameInFlight || waitingForConstraints || reconfiguring) {
+        if (stopped || !stream || !stream->connected() || frameInFlight || waitingForConstraints || reconfiguring) {
           return;
         }
 
@@ -120,6 +128,9 @@ namespace xdpu {
       }
 
       void constraintsChanged(const CaptureConstraints& newConstraints) {
+        if (stopped) {
+          return;
+        }
         constraints = newConstraints;
         constraintsDirty = true;
         waitingForConstraints = false;
@@ -129,7 +140,7 @@ namespace xdpu {
       }
 
       void reconfigureStream() {
-        if (!stream || frameInFlight || reconfiguring || !constraintsDirty) {
+        if (stopped || !stream || frameInFlight || reconfiguring || !constraintsDirty) {
           return;
         }
 
@@ -146,7 +157,7 @@ namespace xdpu {
       }
 
       void bufferAdded(pw_buffer* buffer) {
-        if (!reconfiguring || !stream) {
+        if (stopped || !reconfiguring || !stream) {
           return;
         }
         const CaptureBuffer* added = stream->captureBuffer(buffer);
@@ -164,7 +175,7 @@ namespace xdpu {
       }
 
       void requestFrame() {
-        if (!stream || !stream->connected() || !capture || wayland == nullptr || frameInFlight) {
+        if (stopped || !stream || !stream->connected() || !capture || wayland == nullptr || frameInFlight) {
           return;
         }
 
@@ -204,8 +215,10 @@ namespace xdpu {
 
       void frameReady(pw_buffer* pwBuffer, uint64_t sec, uint32_t nsec) {
         pendingFrame.reset(); // frame proxy already destroyed by the callback
-        if (!stream) {
-          frameInFlight = false;
+        frameInFlight = false;
+        // A stop can race with the Wayland ready event.  Never return a
+        // buffer to a PipeWire stream after it has been disconnected.
+        if (stopped || !stream || !stream->connected() || !stream->ownsBuffer(pwBuffer)) {
           return;
         }
 
@@ -223,7 +236,6 @@ namespace xdpu {
         }
 
         lastFrame = std::chrono::steady_clock::now();
-        frameInFlight = false;
         stream->queueBuffer(pwBuffer);
         processRequest();
       }
@@ -231,7 +243,7 @@ namespace xdpu {
       void frameFailed(pw_buffer* pwBuffer, CaptureFailureReason reason) {
         pendingFrame.reset(); // frame proxy already destroyed by the callback
         frameInFlight = false;
-        if (stream && pwBuffer != nullptr) {
+        if (!stopped && stream && stream->connected() && stream->ownsBuffer(pwBuffer)) {
           stream->queueBuffer(pwBuffer);
         }
         if (reason == CaptureFailureReason::Stopped) {

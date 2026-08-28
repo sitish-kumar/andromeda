@@ -53,6 +53,7 @@ namespace xdpu {
     void triggerProcess();
 
     CaptureBuffer* captureBuffer(struct pw_buffer* buffer) const;
+    bool ownsBuffer(struct pw_buffer* buffer) const;
     Impl* implForCallbacks() const;
 
     std::function<void()> onProcessRequest;

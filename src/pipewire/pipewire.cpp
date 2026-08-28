@@ -592,12 +592,14 @@ namespace xdpu {
       if (buffer == nullptr) {
         return;
       }
+      // Stop accepting this buffer before releasing its allocation.  A
+      // pending Wayland completion must not touch it after removal.
+      impl.buffers.erase(buffer);
       if (stream->onRemoveBuffer) {
         stream->onRemoveBuffer(buffer);
       }
       delete static_cast<PipeWireStream::Impl::StreamBuffer*>(buffer->user_data);
       buffer->user_data = nullptr;
-      impl.buffers.erase(buffer);
     }
 
     void onStreamProcess(void* data) {
@@ -729,7 +731,9 @@ namespace xdpu {
   }
 
   void PipeWireStream::queueBuffer(pw_buffer* buf) {
-    if (m_impl->stream == nullptr || buf == nullptr) {
+    // A Wayland frame completion may arrive after teardown disconnected the
+    // stream.  PipeWire rejects queueing buffers on a disconnected stream.
+    if (m_impl->stream == nullptr || buf == nullptr || !connected() || !ownsBuffer(buf)) {
       return;
     }
     if (buf->buffer != nullptr && buf->buffer->datas != nullptr) {
@@ -817,6 +821,10 @@ namespace xdpu {
     }
     auto* streamBuffer = static_cast<Impl::StreamBuffer*>(buffer->user_data);
     return &streamBuffer->capture;
+  }
+
+  bool PipeWireStream::ownsBuffer(pw_buffer* buffer) const {
+    return buffer != nullptr && m_impl->buffers.contains(buffer);
   }
 
 } // namespace xdpu
