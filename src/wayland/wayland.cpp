@@ -193,6 +193,11 @@ namespace xdpu {
       prepareRead();
     }
 
+    OutputState* findOutput(wl_output* output) const {
+      const auto iter = outputStates.find(output);
+      return iter == outputStates.end() ? nullptr : iter->second.get();
+    }
+
     OutputState* findOutput(const std::string& name) const {
       for (const auto& [object, state] : outputStates) {
         (void)object;
@@ -284,33 +289,43 @@ namespace xdpu {
         void* data, wl_output* output, int32_t x, int32_t y, int32_t physicalWidth, int32_t physicalHeight,
         int32_t subpixel, const char* make, const char* model, int32_t transform
     ) {
-      (void)output;
       (void)physicalWidth;
       (void)physicalHeight;
       (void)subpixel;
       (void)make;
       (void)model;
       (void)transform;
-      auto* state = static_cast<WaylandContext::Impl::OutputState*>(data);
+      auto* impl = static_cast<WaylandContext::Impl*>(data);
+      auto* state = impl->findOutput(output);
+      if (state == nullptr) {
+        return;
+      }
       state->info.x = x;
       state->info.y = y;
     }
 
     void onOutputMode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
-      (void)output;
       (void)refresh;
       if ((flags & WL_OUTPUT_MODE_CURRENT) == 0) {
         return;
       }
-      auto* state = static_cast<WaylandContext::Impl::OutputState*>(data);
+      auto* impl = static_cast<WaylandContext::Impl*>(data);
+      auto* state = impl->findOutput(output);
+      if (state == nullptr) {
+        return;
+      }
       state->info.width = width;
       state->info.height = height;
     }
 
     void onOutputDone(void* data, wl_output* output) {
-      (void)output;
-      auto* state = static_cast<WaylandContext::Impl::OutputState*>(data);
+      auto* impl = static_cast<WaylandContext::Impl*>(data);
+      auto* state = impl->findOutput(output);
+      if (state == nullptr) {
+        return;
+      }
       state->info.name = state->info.name.empty() ? "output-" + std::to_string(state->registryName) : state->info.name;
+      impl->rebuildOutputs();
     }
 
     void onOutputScale(void* data, wl_output* output, int32_t factor) {
@@ -320,15 +335,21 @@ namespace xdpu {
     }
 
     void onOutputName(void* data, wl_output* output, const char* name) {
-      (void)output;
-      auto* state = static_cast<WaylandContext::Impl::OutputState*>(data);
+      auto* impl = static_cast<WaylandContext::Impl*>(data);
+      auto* state = impl->findOutput(output);
+      if (state == nullptr) {
+        return;
+      }
       state->info.name = name == nullptr ? std::string{} : name;
       state->hasName = true;
     }
 
     void onOutputDescription(void* data, wl_output* output, const char* description) {
-      (void)output;
-      auto* state = static_cast<WaylandContext::Impl::OutputState*>(data);
+      auto* impl = static_cast<WaylandContext::Impl*>(data);
+      auto* state = impl->findOutput(output);
+      if (state == nullptr) {
+        return;
+      }
       state->info.description = description == nullptr ? std::string{} : description;
     }
 
@@ -565,8 +586,8 @@ namespace xdpu {
         auto state = std::make_unique<WaylandContext::Impl::OutputState>();
         state->output = output;
         state->registryName = name;
-        wl_output_add_listener(output, &kOutputListener, state.get());
         impl->outputStates.emplace(output, std::move(state));
+        wl_output_add_listener(output, &kOutputListener, impl);
         return;
       }
       if (iface == ext_output_image_capture_source_manager_v1_interface.name) {
