@@ -86,8 +86,8 @@ namespace umbriel {
     void onOutputRemoved(Output* output);
 
     // Input entry points; called from Cursor/Keyboard while active.
-    bool handleButton(uint32_t button, bool pressed, double lx, double ly);
-    void handleMotion(double lx, double ly);
+    bool handleButton(uint32_t button, bool pressed, double lx, double ly, uint32_t timeMsec);
+    void handleMotion(double lx, double ly, uint32_t timeMsec);
     bool handleAxisNotch(bool vertical, double direction, double lx, double ly);
     bool handleFallbackKey(uint32_t keysym);
     // Focus a neighboring column while keeping the overview card strip in
@@ -256,6 +256,8 @@ namespace umbriel {
     double m_middleAccumY = 0;
     bool m_middlePressed = false;
     bool m_middleDragging = false;
+    bool m_middleHorizontal = false;
+    bool m_middleScrolling = false;
 
     Card* m_dragCard = nullptr;
     double m_dragOffsetX = 0;
