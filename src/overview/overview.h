@@ -98,6 +98,11 @@ namespace umbriel {
     // up the real trees are hidden, so there is nothing to slide and switching is a discrete step rather than the
     // animated transition it is outside.
     bool selectRelativeWorkspace(int delta, Output* output);
+    // Resolve the visible workspace row under a pointer drag. Horizontal
+    // scrolling rows extend across the output because their cards may overhang
+    // the centered workspace preview.
+    [[nodiscard]] Workspace* pointerScrollWorkspace(double lx, double ly);
+    [[nodiscard]] double contentScale() const { return zoom(); }
     [[nodiscard]] bool dragging() const { return m_dragCard != nullptr || m_middlePressed; }
 
   private:

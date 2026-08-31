@@ -1906,6 +1906,13 @@ namespace umbriel {
     return true;
   }
 
+  Workspace* Overview::pointerScrollWorkspace(double lx, double ly) {
+    if (!interactive()) {
+      return nullptr;
+    }
+    return rowAt(lx, ly, nullptr, nullptr, true);
+  }
+
   bool Overview::focusAdjacent(int direction) {
     if (!interactive()) {
       return false;

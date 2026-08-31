@@ -751,7 +751,8 @@ namespace umbriel {
         }
       }
       if (bound.has_value()) {
-        if (bound->action == KeybindAction::LayoutScrollDrag && m_server->gestures()->beginPointerScroll()) {
+        if (bound->action == KeybindAction::LayoutScrollDrag
+            && m_server->gestures()->beginPointerScroll(m_cursor->x, m_cursor->y)) {
           setActiveConstraint(nullptr);
           m_grab = ScrollDragGrab{
               .button = button,
