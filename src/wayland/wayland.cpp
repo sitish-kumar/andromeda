@@ -362,6 +362,35 @@ namespace xdpu {
         .description = onOutputDescription,
     };
 
+    // ext_image_copy_capture_session_v1.shm_format carries a wl_shm.format value,
+    // not a DRM fourcc. The two agree for every format except the two wl_shm
+    // defines itself: ARGB8888 is 0 and XRGB8888 is 1, where the fourcc would be
+    // 'AR24' and 'XR24'. Everything past the listener speaks DRM fourcc (the
+    // SPA table, bytes-per-pixel, the dmabuf constraints), so the enum is
+    // converted away here and converted back only where wl_shm itself is
+    // spoken to, in createShmBuffer().
+    uint32_t drmFormatFromWlShm(uint32_t wlShmFormat) {
+      switch (wlShmFormat) {
+      case WL_SHM_FORMAT_ARGB8888:
+        return DRM_FORMAT_ARGB8888;
+      case WL_SHM_FORMAT_XRGB8888:
+        return DRM_FORMAT_XRGB8888;
+      default:
+        return wlShmFormat;
+      }
+    }
+
+    uint32_t wlShmFormatFromDrm(uint32_t drmFormat) {
+      switch (drmFormat) {
+      case DRM_FORMAT_ARGB8888:
+        return WL_SHM_FORMAT_ARGB8888;
+      case DRM_FORMAT_XRGB8888:
+        return WL_SHM_FORMAT_XRGB8888;
+      default:
+        return drmFormat;
+      }
+    }
+
     void onSessionBufferSize(void* data, ext_image_copy_capture_session_v1* session, uint32_t width, uint32_t height) {
       (void)session;
       auto* capture = static_cast<WaylandContext::CaptureSession*>(data);
@@ -372,7 +401,7 @@ namespace xdpu {
     void onSessionShmFormat(void* data, ext_image_copy_capture_session_v1* session, uint32_t format) {
       (void)session;
       auto* capture = static_cast<WaylandContext::CaptureSession*>(data);
-      capture->pendingConstraints.shmFormats.push_back(format);
+      capture->pendingConstraints.shmFormats.push_back(drmFormatFromWlShm(format));
     }
 
     void onSessionDmabufDevice(void* data, ext_image_copy_capture_session_v1* session, wl_array* device) {
@@ -863,7 +892,8 @@ namespace xdpu {
       return nullptr;
     }
     wl_buffer* buffer = wl_shm_pool_create_buffer(
-        pool, 0, static_cast<int32_t>(width), static_cast<int32_t>(height), static_cast<int32_t>(stride), format
+        pool, 0, static_cast<int32_t>(width), static_cast<int32_t>(height), static_cast<int32_t>(stride),
+        wlShmFormatFromDrm(format)
     );
     wl_shm_pool_destroy(pool);
     m_impl->flushDisplay();
@@ -887,7 +917,8 @@ namespace xdpu {
   WaylandContext* WaylandContext::defaultContext() { return g_defaultContext; }
 
   uint32_t WaylandContext::preferredShmFormat(const std::vector<uint32_t>& formats) {
-    // Capture protocol shm_format events use DRM fourcc values, not wl_shm enum.
+    // Constraints hold DRM fourcc values; the session listener has already
+    // converted the wl_shm.format the protocol event carries.
     const auto has = [&](uint32_t fmt) { return std::ranges::find(formats, fmt) != formats.end(); };
     if (has(DRM_FORMAT_XRGB8888)) {
       return DRM_FORMAT_XRGB8888;
