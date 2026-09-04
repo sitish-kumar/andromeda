@@ -512,6 +512,10 @@ namespace xdpu {
       for (uint32_t shmFormat : impl.constraints.shmFormats) {
         if (auto spa = drmToSpa(shmFormat)) {
           list.addVideoFormat(impl.width, impl.height, *spa, std::nullopt, impl.maxFps);
+        } else {
+          // Say so: a consumer that cannot import dmabuf sees only "no more
+          // input formats" on its side, with nothing here naming the cause.
+          fprintf(stderr, "pipewire: shm format 0x%08x has no SPA mapping; not advertised\n", shmFormat);
         }
       }
       return list;

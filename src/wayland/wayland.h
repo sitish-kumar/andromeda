@@ -52,7 +52,7 @@ namespace xdpu {
   struct CaptureConstraints {
     uint32_t bufferWidth = 0;
     uint32_t bufferHeight = 0;
-    std::vector<uint32_t> shmFormats;
+    std::vector<uint32_t> shmFormats; // DRM fourcc, converted from wl_shm.format on receipt
     dev_t dmabufDevice = 0;
 
     struct DmabufFormat {
@@ -142,6 +142,7 @@ namespace xdpu {
     struct wl_buffer* createDmabufBuffer(
         uint32_t width, uint32_t height, uint32_t format, uint64_t modifier, const std::vector<DmabufPlane>& planes
     );
+    // `format` is a DRM fourcc; the wl_shm.format value is derived internally.
     struct wl_buffer*
     createShmBuffer(uint32_t width, uint32_t height, uint32_t format, uint32_t stride, int fd, size_t size);
 
