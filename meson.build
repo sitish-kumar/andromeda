@@ -1165,6 +1165,7 @@ if build_tests
     'fcitx_status',
     'freedesktop_key_file',
     'google_client_calendar_list',
+    'greeter_appearance_sync',
     'grid_item_cursor',
     'hook_manager',
     'hyprland_workspace_backend',
