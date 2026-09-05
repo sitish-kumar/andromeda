@@ -5,6 +5,7 @@
 #include "input/surface_layouts.h"
 #include "scene/animation_shader.h"
 #include "scene/border_rect.h"
+#include "scene/surface_shadow.h"
 #include "server/focus.h"
 #include "view/registry.h"
 
@@ -350,7 +351,7 @@ namespace umbriel {
     };
     void animateCloseSnapshot(
         Output* output, wlr_scene_tree* tree, std::vector<BorderSnapshot> borders,
-        std::optional<CloseSnapshotOverrides> overrides = std::nullopt
+        std::optional<CloseSnapshotOverrides> overrides = std::nullopt, ShadowSnapshot shadow = {}
     );
 
   private:
@@ -566,7 +567,7 @@ namespace umbriel {
     public:
       CloseSnapshot(
           Server& server, Output* output, wlr_scene_tree* tree, std::vector<BorderSnapshot> borders, int durationMs,
-          const AnimationCurve& curve, std::string_view style, AnimationEvent event
+          const AnimationCurve& curve, std::string_view style, AnimationEvent event, ShadowSnapshot shadow
       );
       ~CloseSnapshot() override;
 
@@ -586,6 +587,7 @@ namespace umbriel {
       int m_origY = 0;
       std::vector<std::pair<wlr_scene_buffer*, float>> m_buffers;
       std::vector<BorderSnapshot> m_borders;
+      ShadowSnapshot m_shadow;
     };
     // unique_ptr because the registry holds raw pointers to these: a vector of
     // values would move them out from under it on reallocation.

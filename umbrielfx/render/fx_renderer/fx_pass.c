@@ -466,17 +466,11 @@ bool fx_render_pass_begin_animation(struct fx_gles_render_pass *pass) {
 	return true;
 }
 
-void fx_render_pass_end_animation(struct fx_gles_render_pass *pass,
+static void draw_animation_texture(struct fx_gles_render_pass *pass,
+		struct wlr_texture *wlr_texture,
 		struct fx_animation_shader *shader, const struct fx_animation_parameters *parameters,
-		const struct wlr_box *box, const struct wlr_box *logical_box,
+		const struct wlr_box *box, const struct wlr_box *source_box, const struct wlr_box *logical_box,
 		enum wl_output_transform transform, const pixman_region32_t *clip) {
-	assert(pass->animation_depth > 0);
-	struct fx_framebuffer *captured = pass->buffer;
-	pass->animation_depth--;
-	pass->buffer = pass->animation_parents[pass->animation_depth];
-	pass->suppress_updated = pass->animation_suppress[pass->animation_depth];
-	struct wlr_texture *wlr_texture = pass->animation_textures[pass->animation_depth];
-	fx_framebuffer_bind(pass->buffer);
 	struct fx_texture *texture = fx_get_texture(wlr_texture);
 	glUseProgram(shader->program);
 	glActiveTexture(GL_TEXTURE0);
@@ -495,10 +489,10 @@ void fx_render_pass_end_animation(struct fx_gles_render_pass *pass,
 	make_tex_matrix(uv_matrix, transform, &unit);
 	matrix_invert(inverse, uv_matrix);
 	wlr_matrix_identity(sample_matrix);
-	wlr_matrix_translate(sample_matrix, (float)box->x / captured->buffer->width,
-		(float)box->y / captured->buffer->height);
-	wlr_matrix_scale(sample_matrix, (float)box->width / captured->buffer->width,
-		(float)box->height / captured->buffer->height);
+	wlr_matrix_translate(sample_matrix, (float)source_box->x / wlr_texture->width,
+		(float)source_box->y / wlr_texture->height);
+	wlr_matrix_scale(sample_matrix, (float)source_box->width / wlr_texture->width,
+		(float)source_box->height / wlr_texture->height);
 	wlr_matrix_multiply(sample_matrix, sample_matrix, inverse);
 	glUniformMatrix3fv(shader->tex_proj, 1, GL_FALSE, uv_matrix);
 	glUniformMatrix3fv(shader->sample_matrix, 1, GL_FALSE, sample_matrix);
@@ -509,7 +503,24 @@ void fx_render_pass_end_animation(struct fx_gles_render_pass *pass,
 	render_pass_mark_updated(pass, box, clip);
 	render(box, clip, shader->position);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	wlr_texture_destroy(wlr_texture);
+}
+
+static struct wlr_texture *pop_animation_capture(struct fx_gles_render_pass *pass) {
+	assert(pass->animation_depth > 0);
+	pass->animation_depth--;
+	pass->buffer = pass->animation_parents[pass->animation_depth];
+	pass->suppress_updated = pass->animation_suppress[pass->animation_depth];
+	fx_framebuffer_bind(pass->buffer);
+	return pass->animation_textures[pass->animation_depth];
+}
+
+void fx_render_pass_end_animation(struct fx_gles_render_pass *pass,
+		struct fx_animation_shader *shader, const struct fx_animation_parameters *parameters,
+		const struct wlr_box *box, const struct wlr_box *logical_box,
+		enum wl_output_transform transform, const pixman_region32_t *clip) {
+	struct wlr_texture *texture = pop_animation_capture(pass);
+	draw_animation_texture(pass, texture, shader, parameters, box, box, logical_box, transform, clip);
+	wlr_texture_destroy(texture);
 }
 
 static void setup_blending(enum wlr_render_blend_mode mode) {
@@ -521,6 +532,107 @@ static void setup_blending(enum wlr_render_blend_mode mode) {
 		glDisable(GL_BLEND);
 		break;
 	}
+}
+
+bool fx_render_pass_end_animation_shadow(struct fx_gles_render_pass *pass,
+		float softness, float offset_x, float offset_y, const float color[4],
+		const pixman_region32_t *clip) {
+	struct fx_renderer *renderer = pass->buffer->renderer;
+	if (!renderer->animation_shadow_attempted) {
+		renderer->animation_shadow_attempted = true;
+		// Two bounded separable passes, independent of shadow softness. The
+		// analytic shadow also uses sigma = softness / 2 and a finite extent.
+		renderer->animation_shadow_horizontal = fx_animation_shader_create(&renderer->wlr_renderer,
+			"uniform vec2 shadow_step;\n"
+			"vec4 animation(vec2 uv) {\n"
+			" float a = 0.0; float total = 0.0;\n"
+			" for (int i = -8; i <= 8; i++) {\n"
+			"  float distance = float(i) / 4.0;\n"
+			"  float weight = exp(-0.5 * distance * distance);\n"
+			"  a += umbriel_sample(clamp(uv + float(i) * shadow_step,\n"
+			"       vec2(0.5) / umbriel_size, vec2(1.0) - vec2(0.5) / umbriel_size)).a * weight;\n"
+			"  total += weight;\n"
+			" } return vec4(a / total);\n"
+			"}\n", "internal shadow horizontal");
+		renderer->animation_shadow_vertical = fx_animation_shader_create(&renderer->wlr_renderer,
+			"uniform vec2 shadow_step; uniform vec2 shadow_offset;\n"
+			"uniform sampler2D shadow_mask; uniform vec4 shadow_color;\n"
+			"uniform bool shadow_nearest;\n"
+			"float shadow_sample(vec2 uv) {\n"
+			" if (!shadow_nearest) return umbriel_sample(uv).a;\n"
+			" vec2 p = uv * umbriel_size - 0.5; vec2 f = fract(p);\n"
+			" vec2 lo = vec2(0.5) / umbriel_size; vec2 hi = vec2(1.0) - lo;\n"
+			" vec2 base = (floor(p) + 0.5) / umbriel_size;\n"
+			" vec2 step = vec2(1.0) / umbriel_size;\n"
+			" float a = umbriel_sample(clamp(base, lo, hi)).a;\n"
+			" float b = umbriel_sample(clamp(base + vec2(step.x, 0.0), lo, hi)).a;\n"
+			" float c = umbriel_sample(clamp(base + vec2(0.0, step.y), lo, hi)).a;\n"
+			" float d = umbriel_sample(clamp(base + step, lo, hi)).a;\n"
+			" return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);\n"
+			"}\n"
+			"vec4 animation(vec2 uv) {\n"
+			" float hole = 1.0 - smoothstep(0.0, 0.003921569, texture2D(shadow_mask, uv).a);\n"
+			" if (hole <= 0.0) return vec4(0.0);\n"
+			" float a = 0.0; float total = 0.0;\n"
+			" for (int i = -8; i <= 8; i++) {\n"
+			"  float distance = float(i) / 4.0;\n"
+			"  float weight = exp(-0.5 * distance * distance);\n"
+			"  a += shadow_sample(clamp(uv - shadow_offset + float(i) * shadow_step,\n"
+			"       vec2(0.5) / umbriel_size, vec2(1.0) - vec2(0.5) / umbriel_size)) * weight;\n"
+			"  total += weight;\n"
+			" } return shadow_color * (a / total) * hole;\n"
+			"}\n", "internal shadow vertical");
+	}
+	struct fx_animation_shader *horizontal = renderer->animation_shadow_horizontal;
+	struct fx_animation_shader *vertical = renderer->animation_shadow_vertical;
+	// Keep the caster's framebuffer reserved while allocating the horizontal
+	// pass, otherwise the depth-indexed pool would clear the texture we sample.
+	struct wlr_texture *caster = pass->animation_textures[pass->animation_depth - 1];
+	if (horizontal == NULL || vertical == NULL || !fx_render_pass_begin_animation(pass)) {
+		wlr_texture_destroy(pop_animation_capture(pass));
+		return false;
+	}
+	const struct wlr_box full = { .width = caster->width, .height = caster->height };
+	// Render the horizontal result on a grid matching the kernel spacing.
+	// Linear reconstruction then interpolates between taps instead of leaving
+	// visible bands at large softness. The existing full-sized pooled target
+	// holds this smaller rectangle, so no additional buffer allocation is needed.
+	const float reduction = fmaxf(1.0f, softness / 8.0f);
+	const struct wlr_box reduced = {
+		.width = (int)ceilf(full.width / reduction),
+		.height = (int)ceilf(full.height / reduction),
+	};
+	const struct fx_animation_parameters params = {0};
+	glUseProgram(horizontal->program);
+	glUniform2f(glGetUniformLocation(horizontal->program, "shadow_step"),
+		softness / (8.0f * full.width), 0);
+	draw_animation_texture(pass, caster, horizontal, &params, &reduced, &full, &full,
+		WL_OUTPUT_TRANSFORM_NORMAL, NULL);
+	struct wlr_texture *blurred = pop_animation_capture(pass);
+	pop_animation_capture(pass);
+	glUseProgram(vertical->program);
+	glUniform1i(glGetUniformLocation(vertical->program, "shadow_nearest"),
+		pass->has_color_transform && !renderer->exts.OES_texture_half_float_linear);
+	glUniform2f(glGetUniformLocation(vertical->program, "shadow_step"),
+		0, softness / (8.0f * full.height));
+	glUniform2f(glGetUniformLocation(vertical->program, "shadow_offset"),
+		offset_x / full.width, offset_y / full.height);
+	float premult[4] = { color[0], color[1], color[2], color[3] };
+	for (unsigned i = 0; i < 3; i++) {
+		premult[i] = (pass->has_color_transform ? powf(premult[i], 2.2f) : premult[i]) * premult[3];
+	}
+	glUniform4fv(glGetUniformLocation(vertical->program, "shadow_color"), 1, premult);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, fx_get_texture(caster)->tex);
+	glUniform1i(glGetUniformLocation(vertical->program, "shadow_mask"), 1);
+	draw_animation_texture(pass, blurred, vertical, &params, &full, &reduced, &reduced,
+		WL_OUTPUT_TRANSFORM_NORMAL, clip);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glActiveTexture(GL_TEXTURE0);
+	wlr_texture_destroy(blurred);
+	wlr_texture_destroy(caster);
+	return true;
 }
 
 static void render_pass_mark_updated(struct fx_gles_render_pass *pass,

@@ -44,6 +44,28 @@ then runs each enclosing shader once. Subsurfaces therefore share the window's
 effect rather than restarting it. Overview cards reuse the source view's
 animation state. Window shadows remain in their native separate stacking tree.
 
+Shadow nodes hold an addon association with their source window, without
+changing the scene ABI. While that window or a descendant has an active shader,
+the renderer captures its post-effect alpha separately from the backdrop and
+other windows. Two separable Gaussian passes produce a colored, offset shadow
+at the shadow node's original stacking position. The unblurred silhouette
+excludes visible content, so translucent windows are not tinted by their own
+shadow. Source alpha supplies opacity once; the configured shadow color is
+not preattenuated by the native fade. Ancestor shaders are excluded from the
+caster capture and subsequently process the window and shadow together.
+
+The normal analytic rounded-rectangle shadow remains the fast path without
+window-subtree shaders, and the fallback on capture or internal-program failure.
+The two internal programs are cached per renderer, including failures. Shadow
+captures use the existing output/depth buffer pool and working color format.
+The horizontal pass uses a reduced grid matched to the kernel spacing; linear
+reconstruction prevents visible tap bands at large softness without increasing
+the tap count. FP16 targets without hardware linear filtering use shader-side
+bilinear reconstruction.
+They do not emit duplicate surface sampling notifications or include backdrop
+blur. Blur sampling clamps at output edges to avoid artificial shadow seams
+along the output clip. Shadow offsets rotate and scale only at rasterization.
+
 The compositor remains authoritative for geometry, input, clipping, focus,
 surface configuration, and lifetime. Lifecycle shaders replace native window
 fade/scale/slide visuals; other events postprocess their native presentation.
@@ -67,9 +89,15 @@ arbitrary target sampling and changes in alpha without stale pixels.
 Nodes and the compilation cache hold independent program references. In-flight
 transitions retain their program across source edits until completion or
 retargeting. Removing/disabling an effect clears its active slot. Close
-snapshots copy current effect parameters, retaining an interrupted opening
-effect inside the new closing effect. Layer unmap capture runs before the
+snapshots copy current window and border effect parameters, retaining an
+interrupted opening effect inside the new closing effect. Layer unmap capture runs before the
 scene helper disables its subtree.
+
+Window close snapshots own a separate shadow tree below the output's windows.
+It follows the snapshot position, retains the source shadow settings, and is
+destroyed with the snapshot. Its source association is detached safely when
+either node is destroyed. Analytic fallback shadows follow the native lifecycle
+fade even when a custom shader replaces the window's own fade.
 
 Scene destruction releases addon references. Renderer destruction invalidates
 remaining programs without accessing a dead context; renderer replacement
@@ -92,9 +120,17 @@ event, both layer lifecycle directions, rotated fractional-scale UVs, nested
 sampling, output containment, and invalid-GLSL fallback. The
 `183_animation_shader_lifetime` and `184_animation_squash` checks also cover
 program retention across reloads, close-during-open snapshots, shader removal,
-and the bundled squash effect's intermediate pixels. Negative controls
+and the bundled squash effect's intermediate pixels. Bright-green shadow
+assertions in `184_animation_squash`, `185_animation_shadows`,
+`186_animation_shadow_lifetime`, `187_animation_shadow_composition`, and
+`188_animation_shadow_border` cover
+shader-created edges, normal-shadow restoration, closing teardown, rotated
+fractional-scale offsets, reload and close-during-open retention, stacking,
+translucent interior exclusion, enclosing workspace effects, descendant-only
+border effects, retained closing borders, and smooth blur gradients. Negative controls
 temporarily bypass shader rendering and configuration assignment to ensure
-the checks fail for the behavior they cover.
+the checks fail for the behavior they cover. Shadow negative controls bypass
+silhouette rendering in a separate temporary build, never in the working source.
 
 Headless checks do not establish physical HDR output correctness or hardware
 GPU-reset recovery. Those require suitable hardware and a running-session check.

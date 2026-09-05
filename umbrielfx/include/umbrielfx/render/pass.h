@@ -54,6 +54,12 @@ void fx_render_pass_end_animation(struct fx_gles_render_pass *pass,
 	const struct wlr_box *box, const struct wlr_box *logical_box,
 	enum wl_output_transform transform, const pixman_region32_t *clip);
 
+// Consume the current capture as a shadow caster. Always restores the parent
+// target, including on allocation failure. False requests the analytic fallback.
+bool fx_render_pass_end_animation_shadow(struct fx_gles_render_pass *pass,
+	float softness, float offset_x, float offset_y, const float color[4],
+	const pixman_region32_t *clip);
+
 struct fx_gradient {
 	float degree;
 	/* The full area the gradient fit too, for borders use the window size */

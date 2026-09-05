@@ -530,7 +530,10 @@ namespace umbriel {
     float effective = effectiveOpacity();
     wlr_scene_node_for_each_buffer(&m_sceneTree->node, setCompositorOpacity, &effective);
     setBorderFocused(m_borderFocusedState);
-    m_decoration.setAlpha(effective, m_fadeAlpha);
+    // The analytic fallback still follows the lifecycle fade. Shader-shaped
+    // shadows get their opacity from captured pixels instead of this multiplier.
+    const float shadowOpacity = m_customFade && m_fade.animating() ? effective * m_fadeAlpha : effective;
+    m_decoration.setAlpha(shadowOpacity, m_fadeAlpha);
   }
 
   void View::applyEffectiveOpacity() {
@@ -1413,6 +1416,7 @@ namespace umbriel {
     m_decoration.updateShadow(
         contentWidth, contentHeight, borderTotal, decorated() ? config().appearance.cornerRadius : 0
     );
+    m_decoration.setShadowAnimationSource(&m_sceneTree->node);
   }
 
   void View::showDecorations(bool enabled) {
@@ -1517,7 +1521,8 @@ namespace umbriel {
     }
 
     wlr_scene_node_copy_animations(&snap->node, &m_sceneTree->node);
-    m_server->animateCloseSnapshot(output, snap, std::move(snapBorders));
+    const auto shadow = m_decoration.snapshotShadow(output->viewRoot(), &snap->node);
+    m_server->animateCloseSnapshot(output, snap, std::move(snapBorders), std::nullopt, shadow);
     wlr_output_schedule_frame(output->wlr());
   }
 

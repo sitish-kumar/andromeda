@@ -180,6 +180,8 @@ contrast = 0.9                                  # 0.0-2.0
 saturation = 1.1                                # 0.0-2.0
 
 [appearance.shadow]
+# Custom window shaders automatically shape the shadow from their output alpha.
+# Shadows stay beneath windows and follow closing snapshots as well.
 enabled = true                                  # Draw shadows behind non-fullscreen windows
 softness = 10                                   # Gaussian softness, 0-200; 0 is a hard edge
 offset_x = 2                                    # Horizontal offset, -200 to 200

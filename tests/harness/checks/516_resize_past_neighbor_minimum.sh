@@ -7,6 +7,10 @@ readonly OUTPUT_H=720
 readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/pointer-client}"
 
 cat >> "$UMBRIEL_CONFIG" <<'EOF'
+# This check exercises resize constraints, not presentation interpolation.
+# Pointer coordinates must refer to settled windows after the first resize.
+[animation]
+enabled = false
 [layout.scrolling]
 default_width_fraction = 0.25
 EOF

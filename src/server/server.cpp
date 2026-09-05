@@ -923,9 +923,9 @@ namespace umbriel {
 
   Server::CloseSnapshot::CloseSnapshot(
       Server& server, Output* output, wlr_scene_tree* tree, std::vector<BorderSnapshot> borders, int durationMs,
-      const AnimationCurve& curve, std::string_view style, AnimationEvent event
+      const AnimationCurve& curve, std::string_view style, AnimationEvent event, ShadowSnapshot shadow
   )
-      : m_server(&server), m_tree(tree), m_output(output), m_borders(std::move(borders)) {
+      : m_server(&server), m_tree(tree), m_output(output), m_borders(std::move(borders)), m_shadow(shadow) {
     m_event = event;
     if (m_tree != nullptr) {
       m_origX = m_tree->node.x;
@@ -951,6 +951,9 @@ namespace umbriel {
   Server::CloseSnapshot::~CloseSnapshot() {
     if (m_server != nullptr) {
       m_server->unregisterAnimatable(this);
+    }
+    if (m_shadow.tree != nullptr) {
+      wlr_scene_node_destroy(&m_shadow.tree->node);
     }
     if (m_tree != nullptr) {
       wlr_scene_node_destroy(&m_tree->node);
@@ -980,8 +983,17 @@ namespace umbriel {
       wlr_scene_border_set_colors(border.node, innerColor, outerColor);
     }
 
+    if (m_shadow.node != nullptr) {
+      auto color = m_shadow.color;
+      color[3] *= std::clamp(static_cast<float>(m_alpha.current()), 0.0F, 1.0F);
+      wlr_scene_shadow_set_color(m_shadow.node, color.data());
+    }
+
     if (m_tree != nullptr && movedY) {
       wlr_scene_node_set_position(&m_tree->node, m_origX, static_cast<int>(std::lround(m_posY.current())));
+      if (m_shadow.tree != nullptr) {
+        wlr_scene_node_set_position(&m_shadow.tree->node, m_tree->node.x, m_tree->node.y);
+      }
     }
     return m_alpha.animating() || m_posY.animating();
   }
@@ -1050,7 +1062,7 @@ namespace umbriel {
 
   void Server::animateCloseSnapshot(
       Output* output, wlr_scene_tree* tree, std::vector<BorderSnapshot> borders,
-      std::optional<CloseSnapshotOverrides> overrides
+      std::optional<CloseSnapshotOverrides> overrides, ShadowSnapshot shadow
   ) {
     int durationMs = 0;
     AnimationCurve curve{.easing = Easing::Snappy};
@@ -1063,6 +1075,9 @@ namespace umbriel {
       const auto& animation = config().animation;
       const auto& close = animation.windowsOut;
       if (!animation.enabled || !close.enabled) {
+        if (shadow.tree != nullptr) {
+          wlr_scene_node_destroy(&shadow.tree->node);
+        }
         wlr_scene_node_destroy(&tree->node);
         return;
       }
@@ -1071,13 +1086,16 @@ namespace umbriel {
       style = close.style;
     }
     if (durationMs <= 0) {
+      if (shadow.tree != nullptr) {
+        wlr_scene_node_destroy(&shadow.tree->node);
+      }
       wlr_scene_node_destroy(&tree->node);
       return;
     }
 
     auto snapshot = std::make_unique<CloseSnapshot>(
         *this, output, tree, std::move(borders), durationMs, curve, style,
-        overrides ? overrides->event : AnimationEvent::WindowsOut
+        overrides ? overrides->event : AnimationEvent::WindowsOut, shadow
     );
     registerAnimatable(snapshot.get());
     m_closeSnapshots.push_back(std::move(snapshot));

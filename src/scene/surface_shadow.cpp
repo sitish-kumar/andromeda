@@ -1,6 +1,11 @@
 #include "scene/surface_shadow.h"
 
 #include "config/config.h"
+
+#include <algorithm>
+extern "C" {
+#include <umbrielfx/render/animation.h>
+}
 // clang-format off
 #include <cstring> // IWYU pragma: keep
 #include "wlr.h"
@@ -92,4 +97,35 @@ namespace umbriel {
   }
 
   void SurfaceShadow::reset() { m_node = nullptr; }
+
+  void SurfaceShadow::setAnimationSource(wlr_scene_node* source) {
+    if (m_node != nullptr) {
+      wlr_scene_shadow_set_animation_source(m_node, source, config().colors.shadow.data());
+    }
+  }
+
+  ShadowSnapshot SurfaceShadow::snapshot(wlr_scene_tree* parent, wlr_scene_node* source) const {
+    if (m_node == nullptr || !m_node->node.enabled) {
+      return {};
+    }
+    auto* tree = wlr_scene_tree_create(parent);
+    if (tree == nullptr) {
+      return {};
+    }
+    auto* node = wlr_scene_shadow_create(
+        tree, m_node->width, m_node->height, m_node->corner_radius, m_node->blur_sigma, m_node->color
+    );
+    if (node == nullptr) {
+      wlr_scene_node_destroy(&tree->node);
+      return {};
+    }
+    wlr_scene_node_set_position(&tree->node, source->x, source->y);
+    wlr_scene_node_lower_to_bottom(&tree->node);
+    wlr_scene_node_set_position(&node->node, m_node->node.x, m_node->node.y);
+    wlr_scene_shadow_set_clipped_region(node, m_node->clipped_region);
+    wlr_scene_shadow_set_animation_source(node, source, config().colors.shadow.data());
+    ShadowSnapshot result{.tree = tree, .node = node};
+    std::copy_n(m_node->color, 4, result.color.begin());
+    return result;
+  }
 } // namespace umbriel

@@ -61,6 +61,10 @@ namespace umbriel {
     void raiseShadowToTop();
     void updateShadow(int contentWidth, int contentHeight, int borderInset, int cornerRadius);
     void hideShadow();
+    void setShadowAnimationSource(wlr_scene_node* source) { m_shadow.setAnimationSource(source); }
+    [[nodiscard]] ShadowSnapshot snapshotShadow(wlr_scene_tree* parent, wlr_scene_node* source) const {
+      return m_shadow.snapshot(parent, source);
+    }
 
     // Shadows follow the full view opacity. Blur follows only transition
     // opacity, otherwise a window rule attenuates the backdrop twice.

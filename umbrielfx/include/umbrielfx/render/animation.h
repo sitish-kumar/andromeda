@@ -6,6 +6,7 @@
 
 struct wlr_renderer;
 struct wlr_scene_node;
+struct wlr_scene_shadow;
 struct fx_animation_shader;
 
 #define FX_ANIMATION_SLOTS 9
@@ -32,5 +33,11 @@ void wlr_scene_node_clear_animations(struct wlr_scene_node *node);
 // Freeze current parameters into a snapshot. Outer lifecycle effects become
 // inner opening effects so the new close transition can use its normal slot.
 void wlr_scene_node_copy_animations(struct wlr_scene_node *destination, struct wlr_scene_node *source);
+
+// Keep the shadow in its stacking layer, but derive its animated silhouette
+// from source. Color is the unattenuated shadow color; source alpha supplies
+// opacity. The association is automatically cleared when either node dies.
+void wlr_scene_shadow_set_animation_source(struct wlr_scene_shadow *shadow,
+	struct wlr_scene_node *source, const float color[4]);
 
 #endif

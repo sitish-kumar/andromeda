@@ -4,6 +4,10 @@
 #include "scene/border_rect.h"
 #include "scene/color.h"
 
+extern "C" {
+#include <umbrielfx/render/animation.h>
+}
+
 // clang-format off
 #include "wlr.h"
 // clang-format on
@@ -97,6 +101,7 @@ namespace umbriel {
     wlr_scene_node_set_position(
         &copy->node, m_borderTree->node.x + m_border->node.x, m_borderTree->node.y + m_border->node.y
     );
+    wlr_scene_node_copy_animations(&copy->node, &m_borderTree->node);
     out.push_back(
         BorderSnapshot{
             .node = copy,

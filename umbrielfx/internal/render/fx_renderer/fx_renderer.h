@@ -236,6 +236,10 @@ struct fx_renderer {
 		struct blur_effects_shader blur_effects;
 	} shaders;
 
+	bool animation_shadow_attempted;
+	struct fx_animation_shader *animation_shadow_horizontal;
+	struct fx_animation_shader *animation_shadow_vertical;
+
 	struct wl_list buffers; // fx_framebuffer.link
 	struct wl_list textures; // fx_texture.link
 	struct wl_list offscreen_buffers; // fx_offscreen_buffers.link
