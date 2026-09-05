@@ -14,11 +14,9 @@
 #extension GL_OES_EGL_image_external : require
 #endif
 
-#ifdef GL_FRAGMENT_PRECISION_HIGH
+// Some drivers support highp without defining GL_FRAGMENT_PRECISION_HIGH.
+// PQ decoding cannot use the mediump fallback.
 precision highp float;
-#else
-precision mediump float;
-#endif
 
 varying vec2 v_texcoord;
 
