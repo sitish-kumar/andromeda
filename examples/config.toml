@@ -98,6 +98,7 @@ honor_restored_maximize = false                 # Honor restored maximized state
 # ────────────────────────────────────────────────────────────────────────────
 
 [workspaces]
+# Each output supports at most 64 workspaces, including empty ones.
 back_and_forth = false                          # Re-select active workspace to switch back
 empty_above = false                             # Keep one empty workspace above active range
 

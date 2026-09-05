@@ -1131,6 +1131,9 @@ namespace umbriel {
         return reject(error, "output has no workspace");
       }
       Workspace* destination = targetGroup->createWorkspace(source->name().c_str());
+      if (destination == nullptr) {
+        return reject(error, "output workspace limit reached");
+      }
       View* focused = source->focusedView();
 
       // Snapshot the source contents first: every setWorkspace below triggers reconcileDynamic on both groups, and
