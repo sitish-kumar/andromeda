@@ -225,7 +225,8 @@ namespace umbriel {
     [[nodiscard]] bool isXwaylandSurface(const wlr_surface* surface) const;
 
     // Runs a parsed action. Shared by the keybind path and the IPC `msg` command.
-    bool executeKeybindAction(const Keybind& bind, std::string* error = nullptr);
+    bool executeKeybindAction(const Keybind& bind, std::string* error = nullptr, bool* cooldownBlocked = nullptr);
+    bool cooldownAllows(const Keybind& bind);
     // Record that something server-wide became stale. The work happens once, in a fixed order, at the top of the next
     // frame (see Output::flushDirty). Schedules a frame on every output, so recording is always enough.
     void markDirty(Dirty what);
@@ -288,9 +289,9 @@ namespace umbriel {
     // commonly exposed by a separate device from the held modifier keys.
     [[nodiscard]] uint32_t keyboardModifiers() const;
     bool handleWheelBind(WheelDirection direction, uint32_t modifiers);
-    // Null when no bind matched or its action declined; otherwise the bind that
-    // ran, so the caller can tell which action consumed the press.
-    std::optional<Keybind> handleMouseBind(uint32_t button, uint32_t modifiers);
+    // Null when no bind matched or its action declined. A throttled bind still
+    // returns its chord so the caller can consume the press.
+    std::optional<Keybind> handleMouseBind(uint32_t button, uint32_t modifiers, bool* actionExecuted = nullptr);
     bool handleVtSwitch(uint32_t keysym, uint32_t modifiers);
     void armModifierTap(const void* source, uint32_t keycode, std::span<const uint32_t> keysyms, uint32_t modifiers);
     [[nodiscard]] std::optional<Keybind> releaseModifierTap(const void* source, uint32_t keycode);
@@ -543,6 +544,17 @@ namespace umbriel {
     // unlocking restores focus there instead of wherever the cursor rests.
     // Empty when no window was focused or that output is gone.
     std::string m_lockFocusOutput;
+    struct BindCooldown {
+      std::string submap;
+      uint32_t modifiers = 0;
+      bool useMod = false;
+      bool modifierOnly = false;
+      uint32_t keysym = 0;
+      WheelDirection wheel{};
+      uint32_t mouseButton = 0;
+      std::chrono::steady_clock::time_point lastTriggered;
+    };
+    std::vector<BindCooldown> m_bindCooldowns;
     std::vector<std::string> m_activeSubmaps;
     // Same-msec dedupe: several outputs can call tickAnimations per vblank.
     uint64_t m_lastAnimTickMsec = 0;

@@ -525,6 +525,22 @@ UMBRIEL_TEST(keybindTableLoadsAllowWhenLocked) {
   CHECK(!containsDiagnostic(store, "allow_when_locked"));
 }
 
+UMBRIEL_TEST(keybindTableLoadsCooldown) {
+  const TempConfig file;
+  ConfigStore& store = umbriel::configStore();
+  store.setRootPath(file.path(), true);
+
+  file.write("[keybinds]\n\"Mod+Return\" = { action = \"spawn:terminal\", cooldown_ms = 150 }\n");
+  CHECK(store.reload().success);
+  CHECK(std::ranges::any_of(store.config().keybinds, [](const auto& bind) { return bind.cooldownMs == 150; }));
+  CHECK(!containsDiagnostic(store, "cooldown_ms"));
+
+  file.write("[keybinds]\n\"Mod+Return\" = { action = \"spawn:terminal\", cooldown_ms = 3600001 }\n");
+  CHECK(store.reload().success);
+  CHECK(std::ranges::any_of(store.config().keybinds, [](const auto& bind) { return bind.cooldownMs == 3600000; }));
+  CHECK(containsDiagnostic(store, "cooldown_ms = 3600001 out of range, clamped to 3600000"));
+}
+
 UMBRIEL_TEST(keybindTableLoadsPostActionSubmaps) {
   const TempConfig file;
   ConfigStore& store = umbriel::configStore();

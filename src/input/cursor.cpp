@@ -772,12 +772,14 @@ namespace umbriel {
     // swallow their paired release so clients never see an unmatched release.
     if (state == WL_POINTER_BUTTON_STATE_PRESSED && isPassthrough()) {
       const uint32_t modifiers = m_server->keyboardModifiers();
-      const std::optional<Keybind> bound = m_server->handleMouseBind(button, modifiers);
+      bool mouseBindExecuted = false;
+      const std::optional<Keybind> bound = m_server->handleMouseBind(button, modifiers, &mouseBindExecuted);
       // Any press dismisses the cheatsheet, as any key press does, except one that just ran a cheatsheet action. Unlike
       // a key press, an unbound press is consumed: the overlay hides whatever sits under the cursor, so the click that
       // dismisses it must not also reach that surface.
-      if (Cheatsheet* sheet = m_server->cheatsheet();
-          sheet != nullptr && sheet->visible() && !(bound.has_value() && isCheatsheetAction(bound->action))) {
+      if (Cheatsheet* sheet = m_server->cheatsheet(); sheet != nullptr
+          && sheet->visible()
+          && !(bound.has_value() && mouseBindExecuted && isCheatsheetAction(bound->action))) {
         sheet->hide();
         if (!bound.has_value()) {
           m_swallowedButtons.push_back(button);
@@ -785,7 +787,9 @@ namespace umbriel {
         }
       }
       if (bound.has_value()) {
-        if (bound->action == KeybindAction::LayoutScrollDrag && m_server->gestures()->beginPointerScroll()) {
+        if (mouseBindExecuted
+            && bound->action == KeybindAction::LayoutScrollDrag
+            && m_server->gestures()->beginPointerScroll()) {
           setActiveConstraint(nullptr);
           m_grab = ScrollDragGrab{
               .button = button,

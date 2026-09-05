@@ -1,7 +1,6 @@
 #include "config/change.h"
 #include "config/config.h"
 #include "config/config_watcher.h"
-#include "config/resolve.h"
 #include "config/store.h"
 #include "core/log.h"
 #include "input/cursor.h"
@@ -469,6 +468,9 @@ namespace umbriel {
     cancelModifierTap();
     const ConfigReloadResult result = reloadConfig();
     if (result.success) {
+      if (result.change.keybinds) {
+        m_bindCooldowns.clear();
+      }
       if (result.effects.invalidatesOverview()) {
         m_overview->forceClose();
       }
