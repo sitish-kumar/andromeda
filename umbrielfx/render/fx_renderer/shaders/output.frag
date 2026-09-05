@@ -1,10 +1,5 @@
-#define FORCE_HIGH_PRECISION %d
-
-#if FORCE_HIGH_PRECISION || defined(GL_FRAGMENT_PRECISION_HIGH)
+// PQ exponentiation needs full fragment precision for smooth HDR output.
 precision highp float;
-#else
-precision mediump float;
-#endif
 
 varying vec2 v_texcoord;
 

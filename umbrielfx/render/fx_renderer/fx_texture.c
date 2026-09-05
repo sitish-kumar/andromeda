@@ -184,11 +184,11 @@ static bool fx_texture_read_pixels(struct wlr_texture *wlr_texture,
 		return false;
 	}
 
-	push_fx_debug(texture->fx_renderer);
 	struct wlr_egl_context prev_ctx;
 	if (!wlr_egl_make_current(texture->fx_renderer->egl, &prev_ctx)) {
 		return false;
 	}
+	push_fx_debug(texture->fx_renderer);
 
 	bool ok = false;
 	if (!fx_texture_bind(texture)) {

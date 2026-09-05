@@ -278,11 +278,11 @@ bool link_quad_grad_round_program(struct quad_grad_round_shader *shader, int max
 }
 
 bool link_tex_program(struct tex_shader *shader, enum fx_tex_shader_source source,
-		bool effects, bool sample_clamp, bool force_high_precision) {
+		bool effects, bool sample_clamp) {
 	GLchar frag_src_part[8192];
 	GLchar frag_src[12288];
 	snprintf(frag_src_part, sizeof(frag_src_part),
-		tex_frag_src, source, effects, sample_clamp, force_high_precision);
+		tex_frag_src, source, effects, sample_clamp);
 	snprintf(frag_src, sizeof(frag_src),
 		"%s\n%s\n", frag_src_part, effects ? corner_alpha_frag_src : "");
 
@@ -327,11 +327,9 @@ bool link_tex_program(struct tex_shader *shader, enum fx_tex_shader_source sourc
 	return true;
 }
 
-bool link_output_program(struct output_shader *shader, bool force_high_precision) {
-	GLchar frag_src[sizeof(output_frag_src)];
-	snprintf(frag_src, sizeof(frag_src), output_frag_src, force_high_precision);
+bool link_output_program(struct output_shader *shader) {
 	GLuint prog;
-	shader->program = prog = link_program(frag_src);
+	shader->program = prog = link_program(output_frag_src);
 	if (!shader->program) {
 		return false;
 	}

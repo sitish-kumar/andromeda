@@ -40,19 +40,19 @@ and capture with `grim`.
 
 ## HDR shader precision
 
-The renderer detects GLES3 from `GL_VERSION` and passes that capability as
-`FORCE_HIGH_PRECISION` to both the client texture and output shaders. GLES3
-contexts use `highp float` even when `GL_FRAGMENT_PRECISION_HIGH` is absent.
-GLES2 contexts retain the macro check and `mediump` fallback in both shaders.
+Client texture conversion and the output transform both require unconditional
+`highp float`. This preserves the output shader as the renderer-wide precision
+gate: implementations without fragment highp cannot initialize the renderer,
+and HDR is never exposed with arithmetic known to be insufficient.
 
 On NVIDIA 610.57.04, relying only on the shader macro selected mediump and
 corrupted PQ decoding: `color-pq-roundtrip` returned red 90 instead of 96.
 Forcing highp fixed the test, while explicit highp samplers alone did not.
-The GLES2 mediump fallback is not a guarantee of accurate HDR conversion.
 
-GLES3 also provides the packed 2_10_10_10 texture type as core functionality,
-so its capability is enabled by either the context version or the extension
-string. Framebuffer readback retains its separate implementation-format check.
+GLES3 detection remains limited to the packed 2_10_10_10 texture type, which
+is core functionality in GLES3. The capability is enabled by either the
+context version or the extension string. Framebuffer readback retains its
+separate implementation-format check.
 
 ## HDR capture view
 
