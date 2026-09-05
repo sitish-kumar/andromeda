@@ -2085,7 +2085,7 @@ namespace umbriel {
         continue;
       }
       WorkspaceGroup* group = state->output->workspaceGroup();
-      if (group == nullptr || !group->dynamic()) {
+      if (group == nullptr || !group->dynamic() || group->workspaceCount() >= kMaxWorkspaces) {
         continue;
       }
       const size_t rowCount = std::min(group->workspaceCount(), state->workspaceBackgrounds.size());

@@ -234,6 +234,8 @@ namespace umbriel {
     void activate(Workspace* workspace, bool animate = true);
     void select(Workspace* workspace);
     void deactivate(Workspace* workspace);
+    // Dynamic groups reuse their highest empty workspace before appending. Returns null when no workspace can be
+    // allocated within the per-output limit.
     Workspace* createWorkspace(const char* name);
     // Insert an empty numbered workspace into a dynamic group and renumber the following workspaces. Static configured
     // groups cannot be extended this way and return null.
