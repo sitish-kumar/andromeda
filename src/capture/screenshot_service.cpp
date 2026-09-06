@@ -1182,6 +1182,20 @@ capture::AnnotationToolState ScreenshotService::loadAnnotationToolState() const 
   if (const auto fill = m_configService.stateString(kAnnotateStateOwner, "fill"); fill.has_value()) {
     state.fill = *fill == "1";
   }
+  if (const auto advanced = m_configService.stateString(kAnnotateStateOwner, "advanced_size"); advanced.has_value()) {
+    state.advancedSize = *advanced == "1";
+  }
+  {
+    const auto x = m_configService.stateString(kAnnotateStateOwner, "toolbar_x");
+    const auto y = m_configService.stateString(kAnnotateStateOwner, "toolbar_y");
+    if (x.has_value() && y.has_value()) {
+      const auto parsedX = parseDouble(*x);
+      const auto parsedY = parseDouble(*y);
+      if (parsedX.has_value() && parsedY.has_value()) {
+        state.toolbarPosition = capture::AnnotationPoint{.x = *parsedX, .y = *parsedY};
+      }
+    }
+  }
   for (std::size_t i = 0; i < capture::kAnnotationToolCount; ++i) {
     const std::string name(capture::annotationToolName(static_cast<capture::AnnotationTool>(i)));
     if (const auto width = m_configService.stateString(kAnnotateStateOwner, std::format("width_{}", name));
