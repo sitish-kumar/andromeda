@@ -1877,6 +1877,11 @@ namespace settings {
         ToggleSetting{cfg.shell.screenshot.freezeScreen}, "screenshot capture freeze region region"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Shell, "screenshot", tr("settings.schema.shell.screenshot-annotate.label"),
+        tr("settings.schema.shell.screenshot-annotate.description"), {"shell", "screenshot", "annotate"},
+        ToggleSetting{cfg.shell.screenshot.annotate}, "screenshot annotate draw edit markup"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Shell, "screenshot", tr("settings.schema.shell.screenshot-confirm-region.label"),
         tr("settings.schema.shell.screenshot-confirm-region.description"), {"shell", "screenshot", "confirm_region"},
         ToggleSetting{cfg.shell.screenshot.confirmRegion}, "screenshot capture confirm region selection"

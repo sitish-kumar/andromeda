@@ -149,6 +149,9 @@ public:
   [[nodiscard]] std::vector<std::string> layoutNames() const;
   [[nodiscard]] LockKeysState lockKeysState() const;
   [[nodiscard]] InputSource lastInputSource() const noexcept { return m_lastInputSource; }
+  // Live modifier mask from the xkb state. Unlike KeyboardEvent::modifiers this is readable
+  // when no key event is in flight, which drag-time modifiers (Shift to constrain) need.
+  [[nodiscard]] std::uint32_t keyboardModifiers() const noexcept;
 
   [[nodiscard]] double userIdleSeconds() const noexcept;
 

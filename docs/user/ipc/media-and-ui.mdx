@@ -119,5 +119,9 @@ Requires compositor support for `wlr-screencopy-unstable-v1`. Uses the global `[
 | Fullscreen (pick monitor) | <IpcCommand command="screenshot-fullscreen pick" /> | Open the display picker on multi-monitor setups. On a single monitor, captures immediately. |
 | Fullscreen (specific output) | <IpcCommand command="screenshot-fullscreen DP-2" /> | Capture one output without the picker. Pass the Wayland connector name (e.g. `DP-1`, `HDMI-A-1`) or a word-boundary match in the output description. |
 | Fullscreen (all monitors) | <IpcCommand command="screenshot-fullscreen all" /> | One combined desktop PNG spanning every monitor. |
+| Annotate a frozen screen | <IpcCommand command="screenshot-annotate" /> | Freeze every monitor and open the annotation editor over the frozen image. **Copy** and **Save** deliver the annotated PNG; **`[keybinds].cancel`** closes without delivering. |
+| Annotate the live screen | <IpcCommand command="annotate" /> | Transparent drawing overlay for presentations. Apps keep updating behind the ink; **`F`** freezes the screen under it and reveals Blur, Crop, Copy, and Save. |
 
 In picker mode, choose a connector from the top bar on any screen, or click the desktop to capture the monitor under the cursor. Errors list available connector names when the selector is unknown.
+
+Annotation tool keys (no modifier): **`m`** move, **`b`** brush, **`h`** highlighter, **`l`** line, **`a`** arrow, **`s`** rectangle, **`o`** circle, **`t`** text, **`n`** numbering, **`u`** blur, **`e`** eraser, **`c`** crop, **`f`** freeze (live overlay), **`p`** toggle the frozen pointer, **`[`** and **`]`** change the current tool's size. **`Ctrl+Z`** undoes, **`Ctrl+Shift+Z`** and **`Ctrl+Y`** redo, **`[keybinds].copy`** copies, **`[keybinds].save`** saves.

@@ -834,6 +834,9 @@ _noctalia_sources = files(
   'src/capture/screencopy_util.cpp',
   'src/capture/screenshot_service.cpp',
   'src/capture/screenshot_region_overlay.cpp',
+  'src/capture/annotation_document.cpp',
+  'src/capture/annotation_raster.cpp',
+  'src/capture/annotation_overlay.cpp',
   'src/shell/bar/widgets/screenshot_widget.cpp',
   'src/system/rfkill_helper.cpp',
   'src/system/screen_time_service.cpp',
@@ -1126,6 +1129,8 @@ install_data(
 
 if build_tests
   _cpp_test_names = [
+    'annotation_document',
+    'annotation_raster',
     'animation_manager',
     'app_identity',
     'audio_glyphs',
