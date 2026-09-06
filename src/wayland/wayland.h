@@ -15,6 +15,7 @@ struct ext_image_capture_source_v1;
 struct ext_image_copy_capture_session_v1;
 struct ext_image_copy_capture_frame_v1;
 
+struct ext_image_copy_capture_cursor_session_v1;
 namespace xdpu {
 
   class Loop;
@@ -63,6 +64,25 @@ namespace xdpu {
     std::vector<DmabufFormat> dmabufFormats;
   };
 
+  enum class CaptureCursorMode {
+    Hidden,
+    Embedded,
+    Metadata,
+  };
+
+  struct CursorMetadata {
+    bool visible = false;
+    int32_t x = 0;
+    int32_t y = 0;
+    int32_t hotspotX = 0;
+    int32_t hotspotY = 0;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t stride = 0;
+    uint32_t format = 0;
+    std::vector<uint8_t> pixels;
+  };
+
   using ConstraintsCallback = std::function<void(const CaptureConstraints&)>;
   using FrameReadyCallback =
       std::function<void(CaptureBuffer& buf, uint64_t presentationTimeSec, uint32_t presentationTimeNsec)>;
@@ -91,6 +111,7 @@ namespace xdpu {
     std::string buildChooserJson(uint32_t sourceTypes, bool multiple) const;
 
     struct Impl;
+    struct CursorCapture;
     struct CaptureSession {
       CaptureSession(
           Impl& impl, ext_image_capture_source_v1* source, ext_image_copy_capture_session_v1* session,
@@ -98,9 +119,13 @@ namespace xdpu {
       );
       ~CaptureSession();
 
+      [[nodiscard]] bool hasCursorMetadata() const;
+      [[nodiscard]] const CursorMetadata* cursorMetadata() const;
+
       Impl& impl;
       ext_image_capture_source_v1* source = nullptr;
       ext_image_copy_capture_session_v1* session = nullptr;
+      std::unique_ptr<CursorCapture> cursor;
       CaptureConstraints constraints;
       CaptureConstraints pendingConstraints;
       ConstraintsCallback constraintsCb;
@@ -108,9 +133,10 @@ namespace xdpu {
       bool stopped = false;
     };
     std::unique_ptr<CaptureSession>
-    createOutputCapture(const std::string& outputName, bool paintCursors, ConstraintsCallback constraintsCb);
-    std::unique_ptr<CaptureSession>
-    createToplevelCapture(const std::string& identifier, bool paintCursors, ConstraintsCallback constraintsCb);
+    createOutputCapture(const std::string& outputName, CaptureCursorMode cursorMode, ConstraintsCallback constraintsCb);
+    std::unique_ptr<CaptureSession> createToplevelCapture(
+        const std::string& identifier, CaptureCursorMode cursorMode, ConstraintsCallback constraintsCb
+    );
     struct CaptureFrame {
       ext_image_copy_capture_frame_v1* frame = nullptr;
       CaptureBuffer buffer;
@@ -130,6 +156,7 @@ namespace xdpu {
     std::unique_ptr<CaptureFrame> captureFrame(
         CaptureSession& session, struct wl_buffer* buffer, FrameReadyCallback onReady, FrameFailedCallback onFailed
     );
+    void requestCursorFrame(CaptureSession& session);
 
     struct ScreenshotResult {
       std::vector<uint8_t> pixels;

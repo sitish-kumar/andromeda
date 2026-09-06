@@ -192,6 +192,8 @@ namespace xdpu {
           return;
         }
 
+        wayland->requestCursorFrame(*capture);
+
         frameInFlight = true;
         std::weak_ptr<StreamState> weak = shared_from_this();
         pendingFrame = wayland->captureFrame(
@@ -233,6 +235,7 @@ namespace xdpu {
             header->dts_offset = 0;
             header->seq = ++sequence;
           }
+          stream->setCursorMetadata(pwBuffer, capture->cursorMetadata());
         }
 
         lastFrame = std::chrono::steady_clock::now();
@@ -330,7 +333,7 @@ namespace xdpu {
   ) {
     m_impl->selectedSourceTypes = (sourceTypes & 0x3u) == 0 ? 1u : (sourceTypes & 0x3u);
     m_impl->allowMultiple = multiple;
-    m_impl->selectedCursorMode = (cursorMode & 0x3u) == 0 ? 1u : (cursorMode & 0x3u);
+    m_impl->selectedCursorMode = cursorMode;
     m_impl->selectedPersistMode = std::min<uint32_t>(persistMode, 2);
     m_impl->restore = std::move(restoreSelections);
   }

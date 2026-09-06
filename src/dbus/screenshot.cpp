@@ -403,7 +403,7 @@ namespace xdpu {
         std::weak_ptr<Operation> weakSelf = shared_from_this();
 
         capture->session = portal.wayland.createOutputCapture(
-            outputName, /*paintCursors=*/true,
+            outputName, CaptureCursorMode::Embedded,
             [weakSelf, failureResponse,
              onComplete = std::move(onComplete)](const CaptureConstraints& constraints) mutable {
               auto self = weakSelf.lock();

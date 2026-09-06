@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstdio>
 #include <cstring>
 #include <drm_fourcc.h>
@@ -53,6 +54,9 @@ namespace xdpu {
     WaylandContext& owner;
     Loop& loop;
     wl_display* display = nullptr;
+    wl_seat* seat = nullptr;
+    wl_pointer* pointer = nullptr;
+    uint32_t seatRegistryName = 0;
     wl_registry* registry = nullptr;
     wl_shm* shm = nullptr;
     zwp_linux_dmabuf_v1* dmabuf = nullptr;
@@ -230,6 +234,23 @@ namespace xdpu {
         ext_foreign_toplevel_list_v1_destroy(toplevelList);
         toplevelList = nullptr;
       }
+      if (pointer != nullptr) {
+        if (wl_proxy_get_version(reinterpret_cast<wl_proxy*>(pointer)) >= WL_POINTER_RELEASE_SINCE_VERSION) {
+          wl_pointer_release(pointer);
+        } else {
+          wl_pointer_destroy(pointer);
+        }
+        pointer = nullptr;
+      }
+      if (seat != nullptr) {
+        if (wl_proxy_get_version(reinterpret_cast<wl_proxy*>(seat)) >= WL_SEAT_RELEASE_SINCE_VERSION) {
+          wl_seat_release(seat);
+        } else {
+          wl_seat_destroy(seat);
+        }
+        seat = nullptr;
+      }
+      seatRegistryName = 0;
       if (captureManager != nullptr) {
         ext_image_copy_capture_manager_v1_destroy(captureManager);
         captureManager = nullptr;
@@ -262,6 +283,39 @@ namespace xdpu {
     }
   };
 
+  struct WaylandContext::CursorCapture {
+    explicit CursorCapture(CaptureSession& owner) : owner(owner) {}
+    ~CursorCapture() {
+      pendingFrame.reset();
+      imageCapture.reset();
+      if (session != nullptr) {
+        ext_image_copy_capture_cursor_session_v1_destroy(session);
+      }
+      if (buffer != nullptr) {
+        wl_buffer_destroy(buffer);
+      }
+      if (mapping != nullptr && mapping != MAP_FAILED) {
+        munmap(mapping, mapSize);
+      }
+      if (fd >= 0) {
+        close(fd);
+      }
+    }
+
+    CaptureSession& owner;
+    ext_image_copy_capture_cursor_session_v1* session = nullptr;
+    std::unique_ptr<CaptureSession> imageCapture;
+    std::unique_ptr<CaptureFrame> pendingFrame;
+    wl_buffer* buffer = nullptr;
+    int fd = -1;
+    void* mapping = nullptr;
+    size_t mapSize = 0;
+    uint32_t format = 0;
+    uint32_t stride = 0;
+    bool requestPending = false;
+    CursorMetadata metadata;
+  };
+
   WaylandContext::CaptureSession::CaptureSession(
       WaylandContext::Impl& impl, ext_image_capture_source_v1* source, ext_image_copy_capture_session_v1* session,
       ConstraintsCallback constraintsCb
@@ -269,12 +323,19 @@ namespace xdpu {
       : impl(impl), source(source), session(session), constraintsCb(std::move(constraintsCb)) {}
 
   WaylandContext::CaptureSession::~CaptureSession() {
+    cursor.reset();
     if (session != nullptr) {
       ext_image_copy_capture_session_v1_destroy(session);
     }
     if (source != nullptr) {
       ext_image_capture_source_v1_destroy(source);
     }
+  }
+
+  bool WaylandContext::CaptureSession::hasCursorMetadata() const { return cursor != nullptr; }
+
+  const CursorMetadata* WaylandContext::CaptureSession::cursorMetadata() const {
+    return cursor != nullptr ? &cursor->metadata : nullptr;
   }
 
   WaylandContext::CaptureFrame::~CaptureFrame() {
@@ -516,6 +577,211 @@ namespace xdpu {
         .failed = onFrameFailed,
     };
 
+    uint32_t preferredCursorFormat(const std::vector<uint32_t>& formats) {
+      const auto has = [&](uint32_t format) { return std::ranges::find(formats, format) != formats.end(); };
+      if (has(DRM_FORMAT_ARGB8888)) {
+        return DRM_FORMAT_ARGB8888;
+      }
+      if (has(DRM_FORMAT_ABGR8888)) {
+        return DRM_FORMAT_ABGR8888;
+      }
+      if (has(DRM_FORMAT_XRGB8888)) {
+        return DRM_FORMAT_XRGB8888;
+      }
+      if (has(DRM_FORMAT_XBGR8888)) {
+        return DRM_FORMAT_XBGR8888;
+      }
+      return 0;
+    }
+
+    void resetCursorBuffer(WaylandContext::CursorCapture& cursor) {
+      cursor.pendingFrame.reset();
+      if (cursor.buffer != nullptr) {
+        wl_buffer_destroy(cursor.buffer);
+        cursor.buffer = nullptr;
+      }
+      if (cursor.mapping != nullptr && cursor.mapping != MAP_FAILED) {
+        munmap(cursor.mapping, cursor.mapSize);
+        cursor.mapping = nullptr;
+      }
+      if (cursor.fd >= 0) {
+        close(cursor.fd);
+        cursor.fd = -1;
+      }
+      cursor.mapSize = 0;
+      cursor.format = 0;
+      cursor.stride = 0;
+    }
+
+    void requestCursorFrame(WaylandContext::CursorCapture& cursor);
+
+    bool configureCursorBuffer(WaylandContext::CursorCapture& cursor, const CaptureConstraints& constraints) {
+      resetCursorBuffer(cursor);
+      const uint32_t format = preferredCursorFormat(constraints.shmFormats);
+      if (format == 0 || constraints.bufferWidth == 0 || constraints.bufferHeight == 0) {
+        std::fprintf(stderr, "wayland: cursor capture has no supported SHM format\n");
+        return false;
+      }
+
+      const uint64_t stride = static_cast<uint64_t>(constraints.bufferWidth) * 4U;
+      const uint64_t size = stride * constraints.bufferHeight;
+      if (stride > INT32_MAX || size > INT32_MAX) {
+        std::fprintf(stderr, "wayland: cursor capture buffer is too large\n");
+        return false;
+      }
+
+      const int fd = memfd_create("umbriel-cursor", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+      if (fd < 0 || ftruncate(fd, static_cast<off_t>(size)) < 0) {
+        if (fd >= 0) {
+          close(fd);
+        }
+        std::fprintf(stderr, "wayland: unable to allocate cursor capture buffer: %s\n", std::strerror(errno));
+        return false;
+      }
+
+      void* mapping = mmap(nullptr, static_cast<size_t>(size), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+      if (mapping == MAP_FAILED) {
+        close(fd);
+        std::fprintf(stderr, "wayland: unable to map cursor capture buffer: %s\n", std::strerror(errno));
+        return false;
+      }
+
+      wl_buffer* buffer = cursor.owner.impl.owner.createShmBuffer(
+          constraints.bufferWidth, constraints.bufferHeight, format, static_cast<uint32_t>(stride), fd,
+          static_cast<size_t>(size)
+      );
+      if (buffer == nullptr) {
+        munmap(mapping, static_cast<size_t>(size));
+        close(fd);
+        return false;
+      }
+
+      cursor.fd = fd;
+      cursor.mapping = mapping;
+      cursor.mapSize = static_cast<size_t>(size);
+      cursor.buffer = buffer;
+      cursor.format = format;
+      cursor.stride = static_cast<uint32_t>(stride);
+      requestCursorFrame(cursor);
+      return true;
+    }
+
+    void cursorFrameReady(WaylandContext::CursorCapture& cursor) {
+      cursor.pendingFrame.reset();
+      CursorMetadata& metadata = cursor.metadata;
+      const CaptureConstraints& constraints = cursor.imageCapture->constraints;
+      metadata.width = constraints.bufferWidth;
+      metadata.height = constraints.bufferHeight;
+      metadata.stride = cursor.stride;
+      metadata.format = cursor.format;
+      metadata.pixels.resize(cursor.mapSize);
+      std::memcpy(metadata.pixels.data(), cursor.mapping, cursor.mapSize);
+
+      const bool requestAgain = cursor.requestPending;
+      cursor.requestPending = false;
+      if (requestAgain) {
+        requestCursorFrame(cursor);
+      }
+    }
+
+    void cursorFrameFailed(WaylandContext::CursorCapture& cursor, CaptureFailureReason reason) {
+      cursor.pendingFrame.reset();
+      if (reason == CaptureFailureReason::Stopped) {
+        cursor.metadata.visible = false;
+        return;
+      }
+      if (reason == CaptureFailureReason::ConstraintsChanged) {
+        configureCursorBuffer(cursor, cursor.imageCapture->constraints);
+        return;
+      }
+      if (cursor.requestPending) {
+        cursor.requestPending = false;
+        requestCursorFrame(cursor);
+      }
+    }
+
+    void requestCursorFrame(WaylandContext::CursorCapture& cursor) {
+      if (cursor.imageCapture == nullptr || cursor.imageCapture->stopped || cursor.buffer == nullptr) {
+        cursor.requestPending = true;
+        return;
+      }
+      if (cursor.pendingFrame != nullptr) {
+        cursor.requestPending = true;
+        return;
+      }
+
+      cursor.requestPending = false;
+      cursor.pendingFrame = cursor.owner.impl.owner.captureFrame(
+          *cursor.imageCapture, cursor.buffer,
+          [&cursor](CaptureBuffer&, uint64_t, uint32_t) { cursorFrameReady(cursor); },
+          [&cursor](CaptureFailureReason reason) { cursorFrameFailed(cursor, reason); }
+      );
+    }
+
+    void onCursorEnter(void* data, ext_image_copy_capture_cursor_session_v1*) {
+      auto* cursor = static_cast<WaylandContext::CursorCapture*>(data);
+      cursor->metadata.visible = true;
+      requestCursorFrame(*cursor);
+    }
+
+    void onCursorLeave(void* data, ext_image_copy_capture_cursor_session_v1*) {
+      auto* cursor = static_cast<WaylandContext::CursorCapture*>(data);
+      cursor->metadata.visible = false;
+    }
+
+    void onCursorPosition(void* data, ext_image_copy_capture_cursor_session_v1*, int32_t x, int32_t y) {
+      auto* cursor = static_cast<WaylandContext::CursorCapture*>(data);
+      cursor->metadata.x = x;
+      cursor->metadata.y = y;
+      requestCursorFrame(*cursor);
+    }
+
+    void onCursorHotspot(void* data, ext_image_copy_capture_cursor_session_v1*, int32_t x, int32_t y) {
+      auto* cursor = static_cast<WaylandContext::CursorCapture*>(data);
+      cursor->metadata.hotspotX = x;
+      cursor->metadata.hotspotY = y;
+      requestCursorFrame(*cursor);
+    }
+
+    constexpr ext_image_copy_capture_cursor_session_v1_listener kCursorSessionListener = {
+        .enter = onCursorEnter,
+        .leave = onCursorLeave,
+        .position = onCursorPosition,
+        .hotspot = onCursorHotspot,
+    };
+
+    bool setupCursorCapture(WaylandContext::CaptureSession& capture) {
+      WaylandContext::Impl& impl = capture.impl;
+      if (impl.captureManager == nullptr || impl.pointer == nullptr) {
+        return false;
+      }
+
+      auto cursor = std::make_unique<WaylandContext::CursorCapture>(capture);
+      cursor->session = ext_image_copy_capture_manager_v1_create_pointer_cursor_session(
+          impl.captureManager, capture.source, impl.pointer
+      );
+      if (cursor->session == nullptr) {
+        return false;
+      }
+
+      auto* imageSession = ext_image_copy_capture_cursor_session_v1_get_capture_session(cursor->session);
+      if (imageSession == nullptr) {
+        return false;
+      }
+      cursor->imageCapture =
+          std::make_unique<WaylandContext::CaptureSession>(impl, nullptr, imageSession, ConstraintsCallback{});
+
+      auto* state = cursor.get();
+      state->imageCapture->constraintsCb = [state](const CaptureConstraints& constraints) {
+        configureCursorBuffer(*state, constraints);
+      };
+      state->imageCapture->stoppedCb = [state]() { state->metadata.visible = false; };
+      ext_image_copy_capture_cursor_session_v1_add_listener(state->session, &kCursorSessionListener, state);
+      ext_image_copy_capture_session_v1_add_listener(imageSession, &kSessionListener, state->imageCapture.get());
+      capture.cursor = std::move(cursor);
+      return true;
+    }
+
     void onToplevelClosed(void* data, ext_foreign_toplevel_handle_v1* handle) {
       auto* impl = static_cast<WaylandContext::Impl*>(data);
       const auto iter = impl->toplevelStates.find(handle);
@@ -594,10 +860,39 @@ namespace xdpu {
         .finished = onToplevelListFinished,
     };
 
+    void onSeatCapabilities(void* data, wl_seat* seat, uint32_t capabilities) {
+      auto* impl = static_cast<WaylandContext::Impl*>(data);
+      const bool hasPointer = (capabilities & WL_SEAT_CAPABILITY_POINTER) != 0;
+      if (hasPointer && impl->pointer == nullptr) {
+        impl->pointer = wl_seat_get_pointer(seat);
+      } else if (!hasPointer && impl->pointer != nullptr) {
+        if (wl_proxy_get_version(reinterpret_cast<wl_proxy*>(impl->pointer)) >= WL_POINTER_RELEASE_SINCE_VERSION) {
+          wl_pointer_release(impl->pointer);
+        } else {
+          wl_pointer_destroy(impl->pointer);
+        }
+        impl->pointer = nullptr;
+      }
+    }
+
+    void onSeatName(void*, wl_seat*, const char*) {}
+
+    constexpr wl_seat_listener kSeatListener = {
+        .capabilities = onSeatCapabilities,
+        .name = onSeatName,
+    };
+
     void onRegistryGlobal(void* data, wl_registry* registry, uint32_t name, const char* interface, uint32_t version) {
       auto* impl = static_cast<WaylandContext::Impl*>(data);
       const std::string_view iface = interface == nullptr ? std::string_view{} : std::string_view(interface);
       std::fprintf(stderr, "wayland: global %u: %s v%u\n", name, interface, version);
+
+      if (iface == wl_seat_interface.name && impl->seat == nullptr) {
+        impl->seat = static_cast<wl_seat*>(wl_registry_bind(registry, name, &wl_seat_interface, std::min(version, 9U)));
+        impl->seatRegistryName = name;
+        wl_seat_add_listener(impl->seat, &kSeatListener, impl);
+        return;
+      }
 
       if (iface == wl_shm_interface.name) {
         impl->shm = static_cast<wl_shm*>(wl_registry_bind(registry, name, &wl_shm_interface, std::min(version, 1U)));
@@ -649,6 +944,26 @@ namespace xdpu {
     void onRegistryRemove(void* data, wl_registry* registry, uint32_t name) {
       (void)registry;
       auto* impl = static_cast<WaylandContext::Impl*>(data);
+      if (name == impl->seatRegistryName) {
+        if (impl->pointer != nullptr) {
+          if (wl_proxy_get_version(reinterpret_cast<wl_proxy*>(impl->pointer)) >= WL_POINTER_RELEASE_SINCE_VERSION) {
+            wl_pointer_release(impl->pointer);
+          } else {
+            wl_pointer_destroy(impl->pointer);
+          }
+          impl->pointer = nullptr;
+        }
+        if (impl->seat != nullptr) {
+          if (wl_proxy_get_version(reinterpret_cast<wl_proxy*>(impl->seat)) >= WL_SEAT_RELEASE_SINCE_VERSION) {
+            wl_seat_release(impl->seat);
+          } else {
+            wl_seat_destroy(impl->seat);
+          }
+          impl->seat = nullptr;
+        }
+        impl->seatRegistryName = 0;
+        return;
+      }
       for (auto iter = impl->outputStates.begin(); iter != impl->outputStates.end(); ++iter) {
         if (iter->second->registryName == name) {
           wl_output_destroy(iter->first);
@@ -665,7 +980,7 @@ namespace xdpu {
     };
 
     std::unique_ptr<WaylandContext::CaptureSession> makeCaptureSession(
-        WaylandContext::Impl& impl, ext_image_capture_source_v1* source, bool paintCursors,
+        WaylandContext::Impl& impl, ext_image_capture_source_v1* source, CaptureCursorMode cursorMode,
         ConstraintsCallback constraintsCb
     ) {
       if (impl.captureManager == nullptr || source == nullptr) {
@@ -675,6 +990,9 @@ namespace xdpu {
         return nullptr;
       }
 
+      const bool metadata = cursorMode == CaptureCursorMode::Metadata && impl.pointer != nullptr;
+      const bool paintCursors =
+          cursorMode == CaptureCursorMode::Embedded || (cursorMode == CaptureCursorMode::Metadata && !metadata);
       const uint32_t options = paintCursors ? EXT_IMAGE_COPY_CAPTURE_MANAGER_V1_OPTIONS_PAINT_CURSORS : 0;
       auto* session = ext_image_copy_capture_manager_v1_create_session(impl.captureManager, source, options);
       if (session == nullptr) {
@@ -684,6 +1002,20 @@ namespace xdpu {
 
       auto capture = std::make_unique<WaylandContext::CaptureSession>(impl, source, session, std::move(constraintsCb));
       ext_image_copy_capture_session_v1_add_listener(session, &kSessionListener, capture.get());
+      if (metadata && !setupCursorCapture(*capture)) {
+        ConstraintsCallback callback = std::move(capture->constraintsCb);
+        capture->source = nullptr;
+        capture.reset();
+        session = ext_image_copy_capture_manager_v1_create_session(
+            impl.captureManager, source, EXT_IMAGE_COPY_CAPTURE_MANAGER_V1_OPTIONS_PAINT_CURSORS
+        );
+        if (session == nullptr) {
+          ext_image_capture_source_v1_destroy(source);
+          return nullptr;
+        }
+        capture = std::make_unique<WaylandContext::CaptureSession>(impl, source, session, std::move(callback));
+        ext_image_copy_capture_session_v1_add_listener(session, &kSessionListener, capture.get());
+      }
       impl.flushDisplay();
       return capture;
     }
@@ -771,7 +1103,7 @@ namespace xdpu {
   }
 
   std::unique_ptr<WaylandContext::CaptureSession> WaylandContext::createOutputCapture(
-      const std::string& outputName, bool paintCursors, ConstraintsCallback constraintsCb
+      const std::string& outputName, CaptureCursorMode cursorMode, ConstraintsCallback constraintsCb
   ) {
     if (m_impl->outputSourceManager == nullptr) {
       fprintf(stderr, "wayland: output capture source manager is unavailable\n");
@@ -785,11 +1117,11 @@ namespace xdpu {
 
     auto* source =
         ext_output_image_capture_source_manager_v1_create_source(m_impl->outputSourceManager, output->output);
-    return makeCaptureSession(*m_impl, source, paintCursors, std::move(constraintsCb));
+    return makeCaptureSession(*m_impl, source, cursorMode, std::move(constraintsCb));
   }
 
   std::unique_ptr<WaylandContext::CaptureSession> WaylandContext::createToplevelCapture(
-      const std::string& identifier, bool paintCursors, ConstraintsCallback constraintsCb
+      const std::string& identifier, CaptureCursorMode cursorMode, ConstraintsCallback constraintsCb
   ) {
     if (m_impl->toplevelSourceManager == nullptr) {
       fprintf(stderr, "wayland: toplevel capture source manager is unavailable\n");
@@ -804,7 +1136,7 @@ namespace xdpu {
     auto* source = ext_foreign_toplevel_image_capture_source_manager_v1_create_source(
         m_impl->toplevelSourceManager, toplevel->handle
     );
-    return makeCaptureSession(*m_impl, source, paintCursors, std::move(constraintsCb));
+    return makeCaptureSession(*m_impl, source, cursorMode, std::move(constraintsCb));
   }
 
   std::unique_ptr<WaylandContext::CaptureFrame> WaylandContext::captureFrame(
@@ -848,6 +1180,12 @@ namespace xdpu {
     ext_image_copy_capture_frame_v1_capture(frame);
     m_impl->flushDisplay();
     return state;
+  }
+
+  void WaylandContext::requestCursorFrame(CaptureSession& session) {
+    if (session.cursor != nullptr) {
+      xdpu::requestCursorFrame(*session.cursor);
+    }
   }
 
   wl_buffer* WaylandContext::createDmabufBuffer(

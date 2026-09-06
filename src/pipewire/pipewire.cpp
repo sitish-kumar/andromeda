@@ -2,6 +2,7 @@
 
 #include "loop/loop.h"
 
+#include <algorithm>
 #include <array>
 #include <cerrno>
 #include <cstdio>
@@ -17,6 +18,7 @@
 #include <pipewire/loop.h>
 #include <pipewire/properties.h>
 #include <pipewire/stream.h>
+#include <pipewire/version.h>
 #include <spa/buffer/alloc.h>
 #include <spa/buffer/meta.h>
 #include <spa/param/buffers.h>
@@ -54,6 +56,14 @@ namespace xdpu {
         {DRM_FORMAT_XBGR8888, SPA_VIDEO_FORMAT_RGBx},
         {DRM_FORMAT_ABGR8888, SPA_VIDEO_FORMAT_RGBA},
     };
+
+    constexpr uint32_t kCursorMaxWidth = 512;
+    constexpr uint32_t kCursorMaxHeight = 512;
+    constexpr uint32_t kCursorBytesPerPixel = 4;
+    constexpr size_t kCursorBitmapSize = static_cast<size_t>(kCursorMaxWidth) * kCursorMaxHeight * kCursorBytesPerPixel;
+    constexpr size_t kCursorBitmapMetaOffset = sizeof(spa_meta_cursor);
+    constexpr size_t kCursorBitmapDataOffset = sizeof(spa_meta_bitmap);
+    constexpr size_t kCursorMetaSize = sizeof(spa_meta_cursor) + sizeof(spa_meta_bitmap) + kCursorBitmapSize;
 
     struct FormatChoice {
       uint32_t drm = DRM_FORMAT_XRGB8888;
@@ -186,12 +196,14 @@ namespace xdpu {
       }
     };
 
-    Impl(uint32_t width, uint32_t height, CaptureConstraints constraints, uint32_t maxFps)
-        : width(width), height(height), constraints(std::move(constraints)), maxFps(maxFps) {}
+    Impl(uint32_t width, uint32_t height, CaptureConstraints constraints, uint32_t maxFps, bool cursorMetadata)
+        : width(width), height(height), constraints(std::move(constraints)), maxFps(maxFps),
+          cursorMetadata(cursorMetadata) {}
     uint32_t width = 0;
     uint32_t height = 0;
     CaptureConstraints constraints;
     uint32_t maxFps = 0;
+    bool cursorMetadata = false;
     pw_stream* stream = nullptr;
     spa_hook streamListener = {};
     FormatChoice negotiated;
@@ -393,9 +405,11 @@ namespace xdpu {
 
     void updateBufferParams(const FormatChoice& choice) {
       std::array<uint8_t, 512> buffersStorage{};
-      std::array<uint8_t, 256> metaStorage{};
+      std::array<uint8_t, 256> headerMetaStorage{};
+      std::array<uint8_t, 256> cursorMetaStorage{};
       spa_pod_builder buffersBuilder = SPA_POD_BUILDER_INIT(buffersStorage.data(), buffersStorage.size());
-      spa_pod_builder metaBuilder = SPA_POD_BUILDER_INIT(metaStorage.data(), metaStorage.size());
+      spa_pod_builder headerMetaBuilder = SPA_POD_BUILDER_INIT(headerMetaStorage.data(), headerMetaStorage.size());
+      spa_pod_builder cursorMetaBuilder = SPA_POD_BUILDER_INIT(cursorMetaStorage.data(), cursorMetaStorage.size());
 
       const uint32_t stride = choice.dmabuf ? 0 : width * bytesPerPixel(choice.drm);
       const uint32_t size = stride * height;
@@ -424,13 +438,20 @@ namespace xdpu {
           SPA_POD_CHOICE_FLAGS_Int(dataTypes), 0
       );
 
-      const spa_pod* params[2];
-      params[0] = static_cast<const spa_pod*>(spa_pod_builder_pop(&buffersBuilder, &buffersFrame));
-      params[1] = static_cast<const spa_pod*>(spa_pod_builder_add_object(
-          &metaBuilder, SPA_TYPE_OBJECT_ParamMeta, SPA_PARAM_Meta, SPA_PARAM_META_type, SPA_POD_Id(SPA_META_Header),
-          SPA_PARAM_META_size, SPA_POD_Int(static_cast<int32_t>(sizeof(spa_meta_header)))
+      std::array<const spa_pod*, 3> params{};
+      size_t paramCount = 0;
+      params[paramCount++] = static_cast<const spa_pod*>(spa_pod_builder_pop(&buffersBuilder, &buffersFrame));
+      params[paramCount++] = static_cast<const spa_pod*>(spa_pod_builder_add_object(
+          &headerMetaBuilder, SPA_TYPE_OBJECT_ParamMeta, SPA_PARAM_Meta, SPA_PARAM_META_type,
+          SPA_POD_Id(SPA_META_Header), SPA_PARAM_META_size, SPA_POD_Int(static_cast<int32_t>(sizeof(spa_meta_header)))
       ));
-      pw_stream_update_params(stream, params, 2);
+      if (cursorMetadata) {
+        params[paramCount++] = static_cast<const spa_pod*>(spa_pod_builder_add_object(
+            &cursorMetaBuilder, SPA_TYPE_OBJECT_ParamMeta, SPA_PARAM_Meta, SPA_PARAM_META_type,
+            SPA_POD_Id(SPA_META_Cursor), SPA_PARAM_META_size, SPA_POD_Int(static_cast<int32_t>(kCursorMetaSize))
+        ));
+      }
+      pw_stream_update_params(stream, params.data(), paramCount);
     }
   };
 
@@ -676,13 +697,13 @@ namespace xdpu {
   }
 
   std::unique_ptr<PipeWireStream> PipeWireContext::createStream(
-      uint32_t width, uint32_t height, const CaptureConstraints& constraints, uint32_t maxFps
+      uint32_t width, uint32_t height, const CaptureConstraints& constraints, uint32_t maxFps, bool cursorMetadata
   ) {
     if (m_impl->core == nullptr || width == 0 || height == 0) {
       return nullptr;
     }
 
-    auto streamImpl = std::make_unique<PipeWireStream::Impl>(width, height, constraints, maxFps);
+    auto streamImpl = std::make_unique<PipeWireStream::Impl>(width, height, constraints, maxFps, cursorMetadata);
     auto stream = std::unique_ptr<PipeWireStream>(new PipeWireStream(std::move(streamImpl)));
 
     pw_properties* props = pw_properties_new(
@@ -715,6 +736,8 @@ namespace xdpu {
 
     return stream;
   }
+
+  bool PipeWireContext::supportsCursorMetadata() const { return pw_check_library_version(1, 4, 8); }
 
   PipeWireStream::PipeWireStream(std::unique_ptr<Impl> impl) : m_impl(std::move(impl)) {}
 
@@ -759,6 +782,62 @@ namespace xdpu {
       }
     }
     pw_stream_queue_buffer(m_impl->stream, buf);
+  }
+
+  void PipeWireStream::setCursorMetadata(pw_buffer* buffer, const CursorMetadata* metadata) {
+    if (!m_impl->cursorMetadata || buffer == nullptr || buffer->buffer == nullptr) {
+      return;
+    }
+    auto* cursor =
+        static_cast<spa_meta_cursor*>(spa_buffer_find_meta_data(buffer->buffer, SPA_META_Cursor, kCursorMetaSize));
+    if (cursor == nullptr) {
+      return;
+    }
+
+    cursor->id = 1;
+    cursor->flags = 0;
+    cursor->position.x = metadata != nullptr ? metadata->x : 0;
+    cursor->position.y = metadata != nullptr ? metadata->y : 0;
+    cursor->hotspot.x = metadata != nullptr ? metadata->hotspotX : 0;
+    cursor->hotspot.y = metadata != nullptr ? metadata->hotspotY : 0;
+    cursor->bitmap_offset = static_cast<uint32_t>(kCursorBitmapMetaOffset);
+
+    auto* bitmap = reinterpret_cast<spa_meta_bitmap*>(reinterpret_cast<uint8_t*>(cursor) + kCursorBitmapMetaOffset);
+    bitmap->format = SPA_VIDEO_FORMAT_BGRA;
+    bitmap->size.width = 1;
+    bitmap->size.height = 1;
+    bitmap->stride = static_cast<int32_t>(kCursorBytesPerPixel);
+    bitmap->offset = static_cast<uint32_t>(kCursorBitmapDataOffset);
+
+    auto* pixels = reinterpret_cast<uint8_t*>(bitmap) + kCursorBitmapDataOffset;
+    std::memset(pixels, 0, kCursorBytesPerPixel);
+    if (metadata == nullptr || !metadata->visible || metadata->pixels.empty()) {
+      return;
+    }
+
+    const std::optional<uint32_t> format = drmToSpa(metadata->format);
+    if (!format.has_value() || metadata->stride < metadata->width * kCursorBytesPerPixel) {
+      return;
+    }
+    const uint32_t width = std::min(metadata->width, kCursorMaxWidth);
+    const uint32_t height = std::min(metadata->height, kCursorMaxHeight);
+    const uint32_t stride = width * kCursorBytesPerPixel;
+    if (width == 0
+        || height == 0
+        || metadata->pixels.size() < static_cast<size_t>(metadata->stride) * metadata->height) {
+      return;
+    }
+
+    bitmap->format = *format;
+    bitmap->size.width = width;
+    bitmap->size.height = height;
+    bitmap->stride = static_cast<int32_t>(stride);
+    for (uint32_t row = 0; row < height; ++row) {
+      std::memcpy(
+          pixels + static_cast<size_t>(row) * stride,
+          metadata->pixels.data() + static_cast<size_t>(row) * metadata->stride, stride
+      );
+    }
   }
 
   bool PipeWireStream::reconfigure(const CaptureConstraints& constraints) {

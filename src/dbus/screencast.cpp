@@ -36,7 +36,8 @@ namespace xdpu {
     constexpr uint32_t kAvailableSourceTypes = kSourceMonitor | kSourceWindow;
     constexpr uint32_t kCursorHidden = 1;
     constexpr uint32_t kCursorEmbedded = 2;
-    constexpr uint32_t kAvailableCursorModes = kCursorHidden | kCursorEmbedded;
+    constexpr uint32_t kCursorMetadata = 4;
+    constexpr uint32_t kAvailableCursorModes = kCursorHidden | kCursorEmbedded | kCursorMetadata;
 
     using StreamTuple = sdbus::Struct<uint32_t, PortalResults>;
     using RestoreTuple = sdbus::Struct<std::string, uint32_t, sdbus::Variant>;
@@ -421,6 +422,13 @@ namespace xdpu {
       const uint32_t types = optionValue<uint32_t>(options, "types").value_or(kSourceMonitor);
       const bool multiple = optionValue<bool>(options, "multiple").value_or(false);
       const uint32_t cursorMode = optionValue<uint32_t>(options, "cursor_mode").value_or(kCursorHidden);
+      if (cursorMode != kCursorHidden && cursorMode != kCursorEmbedded && cursorMode != kCursorMetadata) {
+        std::fprintf(stderr, "screencast: unsupported cursor mode %u\n", cursorMode);
+        sessionIt->second->closeByBackend();
+        result.returnResults(uint32_t{2}, PortalResults{});
+        loop.addTimer(0, [request = std::move(request)]() mutable { request.reset(); });
+        return;
+      }
       const uint32_t persistMode = optionValue<uint32_t>(options, "persist_mode").value_or(0);
       sessionIt->second->setSelectionOptions(types, multiple, cursorMode, persistMode, parseRestoreData(options));
 
@@ -571,7 +579,17 @@ namespace xdpu {
         pending.reserve(selections.size());
         auto self = shared_from_this();
         std::weak_ptr<StartOperation> weakSelf = self;
-        const bool paintCursors = (session->cursorMode() & kCursorEmbedded) != 0;
+        CaptureCursorMode cursorMode = CaptureCursorMode::Hidden;
+        if (session->cursorMode() == kCursorEmbedded) {
+          cursorMode = CaptureCursorMode::Embedded;
+        } else if (session->cursorMode() == kCursorMetadata) {
+          if (portal.pipewire.supportsCursorMetadata()) {
+            cursorMode = CaptureCursorMode::Metadata;
+          } else {
+            std::fprintf(stderr, "screencast: PipeWire 1.4.8 is required for cursor metadata; embedding cursor\n");
+            cursorMode = CaptureCursorMode::Embedded;
+          }
+        }
 
         for (const Session::Selection& selection : selections) {
           const size_t index = pending.size();
@@ -586,10 +604,10 @@ namespace xdpu {
 
           if (selection.kind == Session::SourceKind::Monitor) {
             pending[index].capture =
-                portal.wayland.createOutputCapture(selection.output, paintCursors, std::move(callback));
+                portal.wayland.createOutputCapture(selection.output, cursorMode, std::move(callback));
           } else {
             pending[index].capture =
-                portal.wayland.createToplevelCapture(selection.identifier, paintCursors, std::move(callback));
+                portal.wayland.createToplevelCapture(selection.identifier, cursorMode, std::move(callback));
           }
 
           if (!pending[index].capture) {
@@ -655,7 +673,8 @@ namespace xdpu {
           }
 
           auto stream = portal.pipewire.createStream(
-              width, height, item.constraints, static_cast<uint32_t>(std::max(0, portal.config.screencast.maxFps))
+              width, height, item.constraints, static_cast<uint32_t>(std::max(0, portal.config.screencast.maxFps)),
+              item.capture->hasCursorMetadata()
           );
           if (!stream) {
             std::fprintf(stderr, "screencast: unable to create PipeWire stream\n");
