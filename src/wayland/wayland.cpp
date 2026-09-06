@@ -460,7 +460,9 @@ namespace xdpu {
         .stopped = onSessionStopped,
     };
 
-    void onFrameTransform(void* /*data*/, ext_image_copy_capture_frame_v1* /*frame*/, uint32_t /*transform*/) {}
+    void onFrameTransform(void* data, ext_image_copy_capture_frame_v1* /*frame*/, uint32_t transform) {
+      static_cast<WaylandContext::CaptureFrame*>(data)->buffer.transform = transform;
+    }
 
     void onFrameDamage(
         void* /*data*/, ext_image_copy_capture_frame_v1* /*frame*/, int32_t /*x*/, int32_t /*y*/, int32_t /*width*/,
@@ -898,6 +900,12 @@ namespace xdpu {
     wl_shm_pool_destroy(pool);
     m_impl->flushDisplay();
     return buffer;
+  }
+
+  void WaylandContext::flush() {
+    if (connected()) {
+      m_impl->flushDisplay();
+    }
   }
 
   void WaylandContext::roundtrip() {
