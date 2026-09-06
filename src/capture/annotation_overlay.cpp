@@ -313,6 +313,8 @@ namespace capture {
     std::optional<AnnotationRect> committedDirty;
     std::optional<AnnotationRect> activeDirty;
     AnnotationRect activePainted{};
+    std::optional<AnnotationRect> pendingActiveBounds;
+    bool pendingActiveFullRedraw = false;
     bool committedNeedsFullRedraw = true;
     std::uint64_t renderedGeneration = 0;
 
@@ -950,6 +952,11 @@ namespace capture {
     if (inst.committedNeedsFullRedraw || (!gestureHere && inst.renderedGeneration != doc.generation())) {
       redrawCommitted(inst);
     }
+    if (inst.pendingActiveFullRedraw) {
+      redrawActive(inst);
+    } else if (inst.pendingActiveBounds.has_value()) {
+      redrawActive(inst, inst.pendingActiveBounds);
+    }
     uploadDirty(inst, renderer);
     refreshToolbar(inst, &renderer);
   }
@@ -1347,20 +1354,36 @@ namespace capture {
     markCommittedDirty(inst, bounds);
   }
 
+  void AnnotationOverlay::queueActiveRedraw(Instance& inst, std::optional<AnnotationRect> changedBounds) {
+    if (!changedBounds.has_value()) {
+      inst.pendingActiveFullRedraw = true;
+      inst.pendingActiveBounds.reset();
+      return;
+    }
+    if (!inst.pendingActiveFullRedraw) {
+      inst.pendingActiveBounds =
+          inst.pendingActiveBounds.has_value() ? unionRect(*inst.pendingActiveBounds, *changedBounds) : changedBounds;
+    }
+  }
+
   void AnnotationOverlay::redrawActive(Instance& inst, std::optional<AnnotationRect> changedBounds) {
     if (inst.activeSurface == nullptr) {
       return;
     }
+    inst.pendingActiveFullRedraw = false;
+    inst.pendingActiveBounds.reset();
 
     cairo_t* cr = cairo_create(inst.activeSurface);
     std::optional<AnnotationRect> changedDevice;
     if (changedBounds.has_value()) {
       changedDevice = toDeviceRect(*changedBounds, inst.canvasScale, inst.deviceWidth, inst.deviceHeight);
-      if (changedDevice->width > 0.0 && changedDevice->height > 0.0) {
-        clearCairoRect(cr, changedDevice->x, changedDevice->y, changedDevice->width, changedDevice->height);
-        cairo_rectangle(cr, changedDevice->x, changedDevice->y, changedDevice->width, changedDevice->height);
-        cairo_clip(cr);
+      if (changedDevice->width <= 0.0 || changedDevice->height <= 0.0) {
+        cairo_destroy(cr);
+        return;
       }
+      clearCairoRect(cr, changedDevice->x, changedDevice->y, changedDevice->width, changedDevice->height);
+      cairo_rectangle(cr, changedDevice->x, changedDevice->y, changedDevice->width, changedDevice->height);
+      cairo_clip(cr);
     } else if (inst.activePainted.width > 0.0 && inst.activePainted.height > 0.0) {
       clearCairoRect(
           cr, inst.activePainted.x, inst.activePainted.y, inst.activePainted.width, inst.activePainted.height
@@ -1730,7 +1753,7 @@ namespace capture {
       m_gestureLast = point;
       m_moved = true;
       inst.committedNeedsFullRedraw = true;
-      redrawActive(inst);
+      queueActiveRedraw(inst, std::nullopt);
     } else if (m_tools.tool == AnnotationTool::Eraser) {
       if (doc.eraseAlong(m_gestureLast, point, m_tools.width[toolIndex(AnnotationTool::Eraser)] / 2.0) > 0) {
         inst.committedNeedsFullRedraw = true;
@@ -1781,7 +1804,7 @@ namespace capture {
       }
       doc.touch();
       m_gestureLast = point;
-      redrawActive(inst, changedBounds);
+      queueActiveRedraw(inst, changedBounds);
     }
 
     if (inst.surface != nullptr) {
