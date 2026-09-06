@@ -256,8 +256,9 @@ namespace capture {
         std::array<std::uint32_t, 4> sums{};
         for (const int dy : {nearTap, farTap}) {
           const int sampleY = std::clamp(baseY + dy, 0, srcHeight - 1);
-          const auto* srcRow =
-              reinterpret_cast<const std::uint32_t*>(srcData + (static_cast<std::size_t>(sampleY) * srcStride));
+          const auto* srcRow = reinterpret_cast<const std::uint32_t*>(
+              srcData + (static_cast<std::size_t>(sampleY) * static_cast<std::size_t>(srcStride))
+          );
           for (const int dx : {nearTap, farTap}) {
             addPixel(srcRow[static_cast<std::size_t>(std::clamp(baseX + dx, 0, srcWidth - 1))], sums);
           }
@@ -356,6 +357,33 @@ namespace capture {
       for (std::size_t i = 1; i < points.size(); ++i) {
         cairo_line_to(cr, points[i].x, points[i].y);
       }
+    }
+
+    void appendQuadraticCurve(cairo_t* cr, AnnotationPoint start, AnnotationPoint control, AnnotationPoint end) {
+      constexpr double kControlScale = 2.0 / 3.0;
+      cairo_curve_to(
+          cr, start.x + ((control.x - start.x) * kControlScale), start.y + ((control.y - start.y) * kControlScale),
+          end.x + ((control.x - end.x) * kControlScale), end.y + ((control.y - end.y) * kControlScale), end.x, end.y
+      );
+    }
+
+    void drawSmoothPolyline(cairo_t* cr, const std::vector<AnnotationPoint>& points) {
+      if (points.size() < 3) {
+        drawPolyline(cr, points);
+        return;
+      }
+
+      AnnotationPoint current = points.front();
+      cairo_move_to(cr, current.x, current.y);
+      for (std::size_t i = 1; i + 1 < points.size(); ++i) {
+        const AnnotationPoint end{
+            .x = (points[i].x + points[i + 1].x) * 0.5,
+            .y = (points[i].y + points[i + 1].y) * 0.5,
+        };
+        appendQuadraticCurve(cr, current, points[i], end);
+        current = end;
+      }
+      appendQuadraticCurve(cr, current, points.back(), points.back());
     }
 
     void renderText(cairo_t* cr, const Annotation& annotation) {
@@ -603,7 +631,7 @@ namespace capture {
       return;
     }
 
-    drawPolyline(cr, annotation.points);
+    drawSmoothPolyline(cr, annotation.points);
     cairo_stroke(cr);
   }
 

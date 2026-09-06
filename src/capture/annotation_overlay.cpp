@@ -151,6 +151,55 @@ namespace capture {
       cairo_restore(cr);
     }
 
+    [[nodiscard]] bool isFreehandTool(AnnotationTool tool) {
+      return tool == AnnotationTool::Brush || tool == AnnotationTool::Highlighter;
+    }
+
+    [[nodiscard]] AnnotationRect freehandTailBounds(const std::vector<AnnotationPoint>& points, double width) {
+      if (points.empty()) {
+        return AnnotationRect{};
+      }
+
+      const std::size_t first = points.size() > 3 ? points.size() - 3 : 0;
+      double left = points[first].x;
+      double top = points[first].y;
+      double right = left;
+      double bottom = top;
+      for (std::size_t i = first + 1; i < points.size(); ++i) {
+        left = std::min(left, points[i].x);
+        top = std::min(top, points[i].y);
+        right = std::max(right, points[i].x);
+        bottom = std::max(bottom, points[i].y);
+      }
+
+      const double halfWidth = width / 2.0;
+      return AnnotationRect{
+          .x = left - halfWidth,
+          .y = top - halfWidth,
+          .width = (right - left) + width,
+          .height = (bottom - top) + width,
+      };
+    }
+
+    bool simplifyFreehandPoints(std::vector<AnnotationPoint>& points) {
+      if (points.size() < 3) {
+        return false;
+      }
+
+      const std::size_t originalSize = points.size();
+      std::size_t candidate = 1;
+      for (std::size_t next = 2; next < points.size(); ++next) {
+        if (canSimplifyPoint(points[candidate - 1], points[candidate], points[next], kFreehandSimplifyTolerance)) {
+          points[candidate] = points[next];
+        } else {
+          ++candidate;
+          points[candidate] = points[next];
+        }
+      }
+      points.resize(candidate + 1);
+      return points.size() != originalSize;
+    }
+
     // Grows a logical rect by the dirty padding and converts it to whole device pixels
     // clamped to the surface.
     [[nodiscard]] AnnotationRect
@@ -633,11 +682,10 @@ namespace capture {
     const double areaTop = Style::spaceMd + toolbarHeight + Style::spaceLg;
     const double availableWidth = std::max(1.0, surfaceW - (2.0 * Style::spaceLg));
     const double availableHeight = std::max(1.0, surfaceH - areaTop - Style::spaceLg);
-    const double imageWidth = static_cast<double>(m_image.width);
-    const double imageHeight = static_cast<double>(m_image.height);
-    const double fitScale = std::max(
-        {std::max(0.1, static_cast<double>(inst.scale)), imageWidth / availableWidth, imageHeight / availableHeight}
-    );
+    const auto imageWidth = static_cast<double>(m_image.width);
+    const auto imageHeight = static_cast<double>(m_image.height);
+    const double fitScale =
+        std::max({0.1, static_cast<double>(inst.scale), imageWidth / availableWidth, imageHeight / availableHeight});
     const double displayWidth = imageWidth / fitScale;
     const double displayHeight = imageHeight / fitScale;
 
@@ -1299,13 +1347,21 @@ namespace capture {
     markCommittedDirty(inst, bounds);
   }
 
-  void AnnotationOverlay::redrawActive(Instance& inst) {
+  void AnnotationOverlay::redrawActive(Instance& inst, std::optional<AnnotationRect> changedBounds) {
     if (inst.activeSurface == nullptr) {
       return;
     }
 
     cairo_t* cr = cairo_create(inst.activeSurface);
-    if (inst.activePainted.width > 0.0 && inst.activePainted.height > 0.0) {
+    std::optional<AnnotationRect> changedDevice;
+    if (changedBounds.has_value()) {
+      changedDevice = toDeviceRect(*changedBounds, inst.canvasScale, inst.deviceWidth, inst.deviceHeight);
+      if (changedDevice->width > 0.0 && changedDevice->height > 0.0) {
+        clearCairoRect(cr, changedDevice->x, changedDevice->y, changedDevice->width, changedDevice->height);
+        cairo_rectangle(cr, changedDevice->x, changedDevice->y, changedDevice->width, changedDevice->height);
+        cairo_clip(cr);
+      }
+    } else if (inst.activePainted.width > 0.0 && inst.activePainted.height > 0.0) {
       clearCairoRect(
           cr, inst.activePainted.x, inst.activePainted.y, inst.activePainted.width, inst.activePainted.height
       );
@@ -1351,7 +1407,11 @@ namespace capture {
 
     const AnnotationRect device = toDeviceRect(bounds, inst.canvasScale, inst.deviceWidth, inst.deviceHeight);
     inst.activePainted = device;
-    if (device.width > 0.0) {
+    if (changedDevice.has_value()) {
+      if (changedDevice->width > 0.0 && changedDevice->height > 0.0) {
+        inst.activeDirty = inst.activeDirty.has_value() ? unionRect(*inst.activeDirty, *changedDevice) : *changedDevice;
+      }
+    } else if (device.width > 0.0) {
       inst.activeDirty = inst.activeDirty.has_value() ? unionRect(*inst.activeDirty, device) : device;
     }
   }
@@ -1693,6 +1753,7 @@ namespace capture {
       if (active == nullptr) {
         return;
       }
+      std::optional<AnnotationRect> changedBounds;
       if (annotationToolIsShape(active->tool)) {
         AnnotationPoint end = point;
         // A held Shift never produces a key event, so the constraint reads the seat's live state.
@@ -1708,26 +1769,19 @@ namespace capture {
         } else {
           active->points.back() = end;
         }
+      } else if (active->points.empty()) {
+        active->points.push_back(point);
       } else {
-        const auto& points = active->points;
-        if (points.empty()) {
-          active->points.push_back(point);
-        } else {
-          const AnnotationPoint last = points.back();
-          if (std::hypot(point.x - last.x, point.y - last.y) < kFreehandMinDistance) {
-            return;
-          }
-          if (points.size() >= 2
-              && canSimplifyPoint(points[points.size() - 2], last, point, kFreehandSimplifyTolerance)) {
-            active->points.back() = point;
-          } else {
-            active->points.push_back(point);
-          }
+        const AnnotationPoint last = active->points.back();
+        if (std::hypot(point.x - last.x, point.y - last.y) < kFreehandMinDistance) {
+          return;
         }
+        active->points.push_back(point);
+        changedBounds = freehandTailBounds(active->points, active->width);
       }
       doc.touch();
       m_gestureLast = point;
-      redrawActive(inst);
+      redrawActive(inst, changedBounds);
     }
 
     if (inst.surface != nullptr) {
@@ -1772,7 +1826,10 @@ namespace capture {
       m_gestureActive = false;
       m_gestureInstance = nullptr;
     } else {
-      if (const Annotation* active = doc.active(); active != nullptr) {
+      if (Annotation* active = doc.active(); active != nullptr) {
+        if (isFreehandTool(active->tool) && simplifyFreehandPoints(active->points)) {
+          doc.touch();
+        }
         foldIntoCommitted(inst, *active);
       }
       doc.endInteraction();

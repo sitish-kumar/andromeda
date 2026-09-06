@@ -114,7 +114,7 @@ namespace capture {
     void toggleAdvancedSize();
     void layoutCanvas(Instance& instance);
     void redrawCommitted(Instance& instance);
-    void redrawActive(Instance& instance);
+    void redrawActive(Instance& instance, std::optional<AnnotationRect> changedBounds = std::nullopt);
     void uploadDirty(Instance& instance, Renderer& renderer);
     void foldIntoCommitted(Instance& instance, const Annotation& annotation);
     void abortWithError(const std::string& message);
