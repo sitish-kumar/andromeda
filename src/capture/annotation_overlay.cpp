@@ -483,6 +483,12 @@ namespace capture {
   }
 
   void AnnotationOverlay::destroySurfaces() {
+    // A gesture cut short by the teardown (Freeze mid-drag, an output going away) has a
+    // snapshot pushed and a half-drawn annotation appended; roll it back rather than leave the
+    // document with an interaction nobody can close.
+    if (m_gestureActive && m_gestureInstance != nullptr) {
+      documentFor(*m_gestureInstance).discardInteraction();
+    }
     if (!m_instances.empty()) {
       // A tooltip is an xdg_popup on one of these layer surfaces and must not outlive it.
       TooltipManager::instance().forceDestroy();
@@ -821,6 +827,15 @@ namespace capture {
     inst.inputDispatcher.setFocus(inst.canvas);
 
     inst.committedNeedsFullRedraw = true;
+    // createEmpty leaves texture contents undefined, and drivers hand back recycled memory, so
+    // an unwritten layer shows whatever the last session drew. The committed layer is covered
+    // by its full redraw below; the active layer needs its cleared surface pushed once.
+    inst.activeDirty = AnnotationRect{
+        .x = 0.0,
+        .y = 0.0,
+        .width = static_cast<double>(inst.deviceWidth),
+        .height = static_cast<double>(inst.deviceHeight),
+    };
     updateCropVisuals(inst);
     if (m_gestureActive && m_gestureInstance == &inst) {
       redrawActive(inst);
@@ -1935,7 +1950,7 @@ namespace capture {
     const bool shift = (event.modifiers & KeyMod::Shift) != 0;
 
     if (KeySymbol::isEscape(event.sym) || KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
-      if (m_gestureActive) {
+      if (m_gestureActive && m_gestureInstance != nullptr) {
         Instance* inst = m_gestureInstance;
         AnnotationDocument& doc = documentFor(*inst);
         m_gestureActive = false;
