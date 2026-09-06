@@ -48,6 +48,7 @@ namespace capture {
     constexpr float kCropDimOpacity = 0.65F;
     constexpr float kCropFrameWidth = 2.0F;
     constexpr float kSwatchSize = 20.0F;
+    constexpr float kSwatchGlyphSize = 12.0F;
     constexpr float kToolbarFillAlpha = 0.9F;
     constexpr float kImageSurroundAlpha = 0.85F;
     constexpr double kMoveHitTolerance = 8.0;
@@ -115,12 +116,19 @@ namespace capture {
       return nullptr;
     }
 
+    // The check mark drawn on the selected swatch needs to read against the swatch itself,
+    // not against the surface, so it flips with the swatch's own luminance.
+    [[nodiscard]] Color swatchContrast(const AnnotationColor& color) {
+      const float luminance = (0.299F * color.r) + (0.587F * color.g) + (0.114F * color.b);
+      return luminance > 0.5F ? rgba(0.0F, 0.0F, 0.0F, 1.0F) : rgba(1.0F, 1.0F, 1.0F, 1.0F);
+    }
+
     [[nodiscard]] Button::ButtonPalette swatchPalette(const AnnotationColor& color) {
       const Color fill = rgba(color.r, color.g, color.b, 1.0F);
       Button::ButtonStateColors state{
           .bg = fixedColorSpec(fill),
           .border = colorSpecFromRole(ColorRole::Outline),
-          .label = fixedColorSpec(fill),
+          .label = fixedColorSpec(swatchContrast(color)),
       };
       Button::ButtonPalette palette;
       palette.borderWidth = 2.0F;
@@ -130,7 +138,7 @@ namespace capture {
       palette.pressed = state;
       palette.disabled = state;
       Button::ButtonStateColors selected = state;
-      selected.border = colorSpecFromRole(ColorRole::Primary);
+      selected.border = colorSpecFromRole(ColorRole::OnSurface);
       palette.selected = selected;
       return palette;
     }
@@ -266,6 +274,9 @@ namespace capture {
     float scale = 1.0F;
     bool backdropShowsCursor = false;
     bool pointerInside = false;
+    // Toolbar glyph state, so a mark only moves (and forces a relayout) when it really changed.
+    std::optional<std::size_t> markedSwatch;
+    bool fillGlyphOn = false;
   };
 
   AnnotationOverlay::AnnotationOverlay() = default;
@@ -346,7 +357,10 @@ namespace capture {
     requestFullRefresh();
   }
 
-  void AnnotationOverlay::hideForCapture() { destroySurfaces(); }
+  void AnnotationOverlay::hideForCapture() {
+    commitPendingText();
+    destroySurfaces();
+  }
 
   void AnnotationOverlay::resumeAfterCapture() {
     if (!m_active) {
@@ -946,13 +960,15 @@ namespace capture {
     addSeparator();
     inst.freezeButton = addGhostButton("snowflake", "bar.annotate.freeze", [this]() { requestFreeze(); });
     inst.cursorButton = addGhostButton("pointer", "bar.annotate.cursor", [this]() { toggleCursor(); });
-    inst.fillButton = addGhostButton("square-filled", "bar.annotate.fill", [this]() { toggleFill(); });
+    inst.fillButton = addGhostButton("paint-off", "bar.annotate.fill-off", [this]() { toggleFill(); });
     addSeparator();
 
     for (std::size_t i = 0; i < kSwatches.size(); ++i) {
       const AnnotationColor color = kSwatches[i].color;
       inst.swatchButtons[i] = static_cast<Button*>(toolbar->addChild(
           ui::button({
+              .glyph = std::string("check"),
+              .glyphSize = kSwatchGlyphSize,
               .customPalette = swatchPalette(color),
               .tooltip = i18n::tr(kSwatches[i].tooltipKey),
               .minWidth = kSwatchSize,
@@ -1025,12 +1041,12 @@ namespace capture {
 
     // A toolbar item that appears or disappears changes the row's extent, and an update-only
     // frame runs no layout pass of its own, so track the flip and re-lay the row below.
-    bool visibilityChanged = false;
-    const auto show = [&visibilityChanged](Node* node, bool visible) {
+    bool needsLayout = false;
+    const auto show = [&needsLayout](Node* node, bool visible) {
       if (node != nullptr && node->visible() != visible) {
         node->setVisible(visible);
         node->setParticipatesInLayout(visible);
-        visibilityChanged = true;
+        needsLayout = true;
       }
     };
 
@@ -1052,6 +1068,14 @@ namespace capture {
     show(inst.fillButton, shapeTool);
     if (inst.fillButton != nullptr) {
       inst.fillButton->setSelected(m_tools.fill);
+      // The glyph carries the state as well as the highlight: a struck-through paint can
+      // reads as off next to eight solid color chips, a filled square does not.
+      if (inst.fillGlyphOn != m_tools.fill) {
+        inst.fillButton->setGlyph(m_tools.fill ? "paint" : "paint-off");
+        inst.fillButton->setTooltip(i18n::tr(m_tools.fill ? "bar.annotate.fill-on" : "bar.annotate.fill-off"));
+        inst.fillGlyphOn = m_tools.fill;
+        needsLayout = true;
+      }
     }
 
     // Move and Crop carry no stroke weight, so the size controls have nothing to act on.
@@ -1080,10 +1104,31 @@ namespace capture {
     show(inst.saveButton, frozenOrImage);
     show(inst.doneButton, imageMode);
 
+    // The tick moves between swatches, and a button laid out while its glyph was empty keeps a
+    // zero-sized glyph box, which parks the mark in a corner. Relayout when the mark moves.
+    std::optional<std::size_t> markedSwatch;
     for (std::size_t i = 0; i < kSwatches.size(); ++i) {
-      if (inst.swatchButtons[i] != nullptr) {
-        inst.swatchButtons[i]->setSelected(m_tools.color[toolIndex(m_tools.tool)] == kSwatches[i].color);
+      if (m_tools.color[toolIndex(m_tools.tool)] == kSwatches[i].color) {
+        markedSwatch = i;
+        break;
       }
+    }
+    if (markedSwatch != inst.markedSwatch) {
+      for (std::size_t i = 0; i < kSwatches.size(); ++i) {
+        Button* swatch = inst.swatchButtons[i];
+        if (swatch == nullptr || swatch->glyph() == nullptr) {
+          continue;
+        }
+        const bool current = markedSwatch.has_value() && *markedSwatch == i;
+        swatch->setSelected(current);
+        if (current) {
+          swatch->setGlyph("check");
+        } else {
+          (void)swatch->glyph()->setCodepoint(0);
+        }
+      }
+      inst.markedSwatch = markedSwatch;
+      needsLayout = true;
     }
 
     const AnnotationDocument& doc = documentFor(inst);
@@ -1094,7 +1139,7 @@ namespace capture {
       inst.redoButton->setEnabled(doc.canRedo());
     }
 
-    if (visibilityChanged && renderer != nullptr) {
+    if (needsLayout && renderer != nullptr) {
       inst.toolbar->layout(*renderer);
     }
     positionToolbar(inst);
@@ -1125,6 +1170,7 @@ namespace capture {
         annotationToolDefaultWidth(tool) * kSizePresets[index], text ? kMinTextWidth : kMinToolWidth,
         text ? kMaxTextWidth : kMaxToolWidth
     );
+    restyleActiveText();
     requestRedrawAll();
   }
 
@@ -1954,7 +2000,39 @@ namespace capture {
     return handleToolKey(event.sym);
   }
 
+  // A toolbar click while the caret is live would otherwise be swallowed: the open text
+  // interaction counts as a gesture, and gestures block tool switching.
+  void AnnotationOverlay::commitPendingText() {
+    if (m_textIndex.has_value()) {
+      commitTextEdit();
+    }
+  }
+
+  // Restyling mid-edit retargets the text under the caret, so S/M/L and the swatches read as
+  // acting on what is on screen instead of only on the next annotation.
+  void AnnotationOverlay::restyleActiveText() {
+    if (!m_textIndex.has_value() || m_textInstance == nullptr) {
+      return;
+    }
+    Instance& inst = *m_textInstance;
+    AnnotationDocument& doc = documentFor(inst);
+    Annotation* target = doc.active();
+    if (target == nullptr || target->tool != AnnotationTool::Text) {
+      return;
+    }
+    const std::size_t index = toolIndex(AnnotationTool::Text);
+    target->width = m_tools.width[index];
+    target->stroke = m_tools.color[index];
+    doc.touch();
+    inst.renderedGeneration = doc.generation();
+    redrawActive(inst);
+    if (inst.surface != nullptr) {
+      inst.surface->requestUpdateOnly();
+    }
+  }
+
   void AnnotationOverlay::selectTool(AnnotationTool tool) {
+    commitPendingText();
     if (m_gestureActive) {
       return;
     }
@@ -1967,6 +2045,7 @@ namespace capture {
 
   void AnnotationOverlay::setToolColor(AnnotationColor color) {
     m_tools.color[toolIndex(m_tools.tool)] = color;
+    restyleActiveText();
     requestRedrawAll();
   }
 
@@ -1976,15 +2055,18 @@ namespace capture {
     m_tools.width[index] = std::clamp(
         m_tools.width[index] + delta, text ? kMinTextWidth : kMinToolWidth, text ? kMaxTextWidth : kMaxToolWidth
     );
+    restyleActiveText();
     requestRedrawAll();
   }
 
   void AnnotationOverlay::toggleFill() {
+    commitPendingText();
     m_tools.fill = !m_tools.fill;
     requestRedrawAll();
   }
 
   void AnnotationOverlay::undo() {
+    commitPendingText();
     if (m_gestureActive) {
       return;
     }
@@ -2000,6 +2082,7 @@ namespace capture {
   }
 
   void AnnotationOverlay::redo() {
+    commitPendingText();
     if (m_gestureActive) {
       return;
     }
@@ -2015,6 +2098,7 @@ namespace capture {
   }
 
   void AnnotationOverlay::requestFreeze() {
+    commitPendingText();
     if (!m_active || m_mode != AnnotationMode::Live) {
       return;
     }
@@ -2026,6 +2110,7 @@ namespace capture {
   }
 
   void AnnotationOverlay::toggleCursor() {
+    commitPendingText();
     if (!m_active || m_mode != AnnotationMode::Frozen) {
       return;
     }

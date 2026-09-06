@@ -132,6 +132,8 @@ namespace capture {
     void finishGesture();
     void commitTextEdit();
     void cancelTextEdit();
+    void commitPendingText();
+    void restyleActiveText();
     [[nodiscard]] bool handleTextKey(const KeyboardEvent& event);
     [[nodiscard]] bool handleToolKey(std::uint32_t sym);
 

@@ -16,6 +16,16 @@ namespace capture {
     constexpr const char* kTextFontFamily = "Sans Bold";
     constexpr double kHighlighterAlpha = 0.45;
     constexpr int kBlurCacheCapacity = 4;
+    constexpr int kMaxBlurStep = 16;
+    // Ceiling on the pixels the box passes touch, so a full-screen blur rect costs no more
+    // than a small one; anything above this is detail the blur discards.
+    constexpr std::int64_t kMaxBlurWorkPixels = 256 * 256;
+
+    // A blurred region kept at 1/step resolution; the caller scales it back when painting.
+    struct BlurResult {
+      cairo_surface_t* surface = nullptr;
+      int step = 1;
+    };
 
     struct TextMetrics {
       double left = 0.0; // relative to the anchor x
@@ -85,6 +95,7 @@ namespace capture {
       int y = 0;
       int width = 0;
       int height = 0;
+      int step = 1;
       double strength = 0.0;
       std::uint64_t stamp = 0;
     };
@@ -108,12 +119,21 @@ namespace capture {
       sums[3] -= (pixel >> 24) & 0xFFU;
     }
 
-    [[nodiscard]] std::uint32_t averagePixel(const std::array<std::uint32_t, 4>& sums, std::uint32_t count) {
-      return ((sums[3] / count) << 24) | ((sums[2] / count) << 16) | ((sums[1] / count) << 8) | (sums[0] / count);
+    // Each box pass divides four channels per pixel by its window size. An integer division is
+    // some twenty cycles, and six passes over a large region made those divisions the whole
+    // cost of the blur, so the window size becomes a fixed-point reciprocal instead. Exact for
+    // every window this code uses: sums stay under 255 * window.
+    [[nodiscard]] std::uint64_t averageReciprocal(std::uint32_t count) { return (0xFFFFFFFFULL / count) + 1ULL; }
+
+    [[nodiscard]] std::uint32_t averagePixel(const std::array<std::uint32_t, 4>& sums, std::uint64_t reciprocal) {
+      const auto mean = [reciprocal](std::uint32_t sum) {
+        return static_cast<std::uint32_t>((static_cast<std::uint64_t>(sum) * reciprocal) >> 32U);
+      };
+      return (mean(sums[3]) << 24) | (mean(sums[2]) << 16) | (mean(sums[1]) << 8) | mean(sums[0]);
     }
 
     void boxBlurHorizontal(const std::uint32_t* src, std::uint32_t* dst, int width, int height, int radius) {
-      const auto sampleCount = static_cast<std::uint32_t>((radius * 2) + 1);
+      const std::uint64_t reciprocal = averageReciprocal(static_cast<std::uint32_t>((radius * 2) + 1));
       const auto rowStride = static_cast<std::size_t>(width);
       for (int y = 0; y < height; ++y) {
         const std::uint32_t* srcRow = src + (static_cast<std::size_t>(y) * rowStride);
@@ -123,7 +143,7 @@ namespace capture {
           addPixel(srcRow[static_cast<std::size_t>(std::clamp(x, 0, width - 1))], sums);
         }
         for (int x = 0; x < width; ++x) {
-          dstRow[static_cast<std::size_t>(x)] = averagePixel(sums, sampleCount);
+          dstRow[static_cast<std::size_t>(x)] = averagePixel(sums, reciprocal);
           if (x + 1 < width) {
             subtractPixel(srcRow[static_cast<std::size_t>(std::clamp(x - radius, 0, width - 1))], sums);
             addPixel(srcRow[static_cast<std::size_t>(std::clamp(x + radius + 1, 0, width - 1))], sums);
@@ -133,7 +153,7 @@ namespace capture {
     }
 
     void boxBlurVertical(const std::uint32_t* src, std::uint32_t* dst, int width, int height, int radius) {
-      const auto sampleCount = static_cast<std::uint32_t>((radius * 2) + 1);
+      const std::uint64_t reciprocal = averageReciprocal(static_cast<std::uint32_t>((radius * 2) + 1));
       const auto rowStride = static_cast<std::size_t>(width);
       const auto sampleAt = [&](int row, int column) {
         return static_cast<std::size_t>(std::clamp(row, 0, height - 1)) * rowStride + static_cast<std::size_t>(column);
@@ -144,7 +164,7 @@ namespace capture {
           addPixel(src[sampleAt(y, x)], sums);
         }
         for (int y = 0; y < height; ++y) {
-          dst[sampleAt(y, x)] = averagePixel(sums, sampleCount);
+          dst[sampleAt(y, x)] = averagePixel(sums, reciprocal);
           if (y + 1 < height) {
             subtractPixel(src[sampleAt(y - radius, x)], sums);
             addPixel(src[sampleAt(y + radius + 1, x)], sums);
@@ -178,7 +198,24 @@ namespace capture {
       }
     }
 
-    [[nodiscard]] cairo_surface_t*
+    // A box blur costs the same per pixel whatever its radius, so a full-resolution pass over a
+    // large region is pure waste: the result is band-limited to roughly sigma anyway. Averaging
+    // step x step source blocks first and blurring that, then letting cairo scale the result
+    // back, keeps the pass count off the region's real area and bounds it for a huge rect.
+    [[nodiscard]] int blurDownscaleStep(double sigma, int regionWidth, int regionHeight) {
+      const int fromSigma = std::clamp(static_cast<int>(sigma / 2.0), 1, kMaxBlurStep);
+      // Padding is expressed in downscaled pixels, so a step near the region size would spend
+      // more time gathering the halo than the region.
+      const int fromRegion = std::max(1, std::min(regionWidth, regionHeight) / 8);
+      int step = std::min(fromSigma, fromRegion);
+      const auto area = static_cast<std::int64_t>(regionWidth) * regionHeight;
+      while (step < kMaxBlurStep && area / (static_cast<std::int64_t>(step) * step) > kMaxBlurWorkPixels) {
+        ++step;
+      }
+      return step;
+    }
+
+    [[nodiscard]] BlurResult
     blurRegion(cairo_surface_t* source, int regionX, int regionY, int regionWidth, int regionHeight, double strength) {
       cairo_surface_flush(source);
       const int srcWidth = cairo_image_surface_get_width(source);
@@ -186,27 +223,53 @@ namespace capture {
       const int srcStride = cairo_image_surface_get_stride(source);
       const unsigned char* srcData = cairo_image_surface_get_data(source);
       if (srcData == nullptr || srcWidth <= 0 || srcHeight <= 0) {
-        return nullptr;
+        return BlurResult{};
       }
 
-      std::array<int, 3> radii{};
-      gaussianBoxRadii(std::max(0.8, strength / 3.0), radii);
-      const int padding = radii[0] + radii[1] + radii[2];
-      const int workWidth = regionWidth + (padding * 2);
-      const int workHeight = regionHeight + (padding * 2);
+      const double sigma = std::max(0.8, strength / 3.0);
+      const int step = blurDownscaleStep(sigma, regionWidth, regionHeight);
+      const int smallWidth = std::max(1, (regionWidth + step - 1) / step);
+      const int smallHeight = std::max(1, (regionHeight + step - 1) / step);
 
+      std::array<int, 3> radii{};
+      gaussianBoxRadii(std::max(0.8, sigma / step), radii);
+      const int padding = radii[0] + radii[1] + radii[2];
+      const int workWidth = smallWidth + (padding * 2);
+      const int workHeight = smallHeight + (padding * 2);
+
+      // Reused across calls: a blur drag recomputes on every motion event and the churn of two
+      // fresh multi-megabyte buffers per frame was most of its cost.
+      static std::vector<std::uint32_t> pixels;
+      static std::vector<std::uint32_t> scratch;
       const auto workRowStride = static_cast<std::size_t>(workWidth);
-      std::vector<std::uint32_t> pixels(workRowStride * static_cast<std::size_t>(workHeight));
-      std::vector<std::uint32_t> scratch(pixels.size());
+      const std::size_t workPixels = workRowStride * static_cast<std::size_t>(workHeight);
+      pixels.resize(workPixels);
+      scratch.resize(workPixels);
+
+      // Four taps per block rather than a full step x step average: reading the whole region
+      // costs more than every blur pass combined, and the passes that follow prefilter away
+      // what the subsampling misses.
+      const int nearTap = step / 4;
+      const int farTap = (step * 3) / 4;
+      const std::uint64_t tapReciprocal = averageReciprocal(4);
+      const auto blockAverage = [&](int baseX, int baseY) {
+        std::array<std::uint32_t, 4> sums{};
+        for (const int dy : {nearTap, farTap}) {
+          const int sampleY = std::clamp(baseY + dy, 0, srcHeight - 1);
+          const auto* srcRow =
+              reinterpret_cast<const std::uint32_t*>(srcData + (static_cast<std::size_t>(sampleY) * srcStride));
+          for (const int dx : {nearTap, farTap}) {
+            addPixel(srcRow[static_cast<std::size_t>(std::clamp(baseX + dx, 0, srcWidth - 1))], sums);
+          }
+        }
+        return averagePixel(sums, tapReciprocal);
+      };
 
       for (int y = 0; y < workHeight; ++y) {
-        const int srcY = std::clamp(regionY - padding + y, 0, srcHeight - 1);
-        const auto* srcRow =
-            reinterpret_cast<const std::uint32_t*>(srcData + (static_cast<std::size_t>(srcY) * srcStride));
         std::uint32_t* workRow = pixels.data() + (static_cast<std::size_t>(y) * workRowStride);
+        const int baseY = regionY + ((y - padding) * step);
         for (int x = 0; x < workWidth; ++x) {
-          workRow[static_cast<std::size_t>(x)] =
-              srcRow[static_cast<std::size_t>(std::clamp(regionX - padding + x, 0, srcWidth - 1))];
+          workRow[static_cast<std::size_t>(x)] = blockAverage(regionX + ((x - padding) * step), baseY);
         }
       }
 
@@ -215,27 +278,26 @@ namespace capture {
         boxBlurVertical(scratch.data(), pixels.data(), workWidth, workHeight, radius);
       }
 
-      cairo_surface_t* result = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, regionWidth, regionHeight);
+      cairo_surface_t* result = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, smallWidth, smallHeight);
       if (cairo_surface_status(result) != CAIRO_STATUS_SUCCESS) {
         cairo_surface_destroy(result);
-        return nullptr;
+        return BlurResult{};
       }
       unsigned char* dstData = cairo_image_surface_get_data(result);
       const int dstStride = cairo_image_surface_get_stride(result);
-      for (int y = 0; y < regionHeight; ++y) {
+      for (int y = 0; y < smallHeight; ++y) {
         const std::uint32_t* srcRow =
             pixels.data() + (static_cast<std::size_t>(y + padding) * workRowStride) + static_cast<std::size_t>(padding);
         std::memcpy(
             dstData + (static_cast<std::size_t>(y) * static_cast<std::size_t>(dstStride)), srcRow,
-            static_cast<std::size_t>(regionWidth) * sizeof(std::uint32_t)
+            static_cast<std::size_t>(smallWidth) * sizeof(std::uint32_t)
         );
       }
       cairo_surface_mark_dirty(result);
-      return result;
+      return BlurResult{.surface = result, .step = step};
     }
 
-    [[nodiscard]] cairo_surface_t*
-    cachedBlur(cairo_surface_t* source, int x, int y, int width, int height, double strength) {
+    [[nodiscard]] BlurResult cachedBlur(cairo_surface_t* source, int x, int y, int width, int height, double strength) {
       static std::uint64_t clock = 0;
       ++clock;
 
@@ -249,13 +311,13 @@ namespace capture {
             && entry.height == height
             && entry.strength == strength) {
           entry.stamp = clock;
-          return entry.surface;
+          return BlurResult{.surface = entry.surface, .step = entry.step};
         }
       }
 
-      cairo_surface_t* blurred = blurRegion(source, x, y, width, height, strength);
-      if (blurred == nullptr) {
-        return nullptr;
+      const BlurResult blurred = blurRegion(source, x, y, width, height, strength);
+      if (blurred.surface == nullptr) {
+        return BlurResult{};
       }
 
       BlurCacheEntry* slot = cache.data();
@@ -272,12 +334,13 @@ namespace capture {
         cairo_surface_destroy(slot->surface);
       }
       *slot = BlurCacheEntry{
-          .surface = blurred,
+          .surface = blurred.surface,
           .source = source,
           .x = x,
           .y = y,
           .width = width,
           .height = height,
+          .step = blurred.step,
           .strength = strength,
           .stamp = clock,
       };
@@ -358,9 +421,9 @@ namespace capture {
         return;
       }
 
-      cairo_surface_t* blurred =
+      const BlurResult blurred =
           cachedBlur(background, blurX, blurY, blurWidth, blurHeight, annotation.width * std::max(scale, 0.01));
-      if (blurred == nullptr) {
+      if (blurred.surface == nullptr) {
         return;
       }
 
@@ -368,7 +431,10 @@ namespace capture {
       cairo_rectangle(cr, left, top, right - left, bottom - top);
       cairo_clip(cr);
       cairo_identity_matrix(cr);
-      cairo_set_source_surface(cr, blurred, blurX, blurY);
+      cairo_translate(cr, blurX, blurY);
+      cairo_scale(cr, blurred.step, blurred.step);
+      cairo_set_source_surface(cr, blurred.surface, 0.0, 0.0);
+      cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_BILINEAR);
       cairo_paint(cr);
       cairo_restore(cr);
     }
