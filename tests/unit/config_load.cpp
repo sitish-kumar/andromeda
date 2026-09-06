@@ -1291,6 +1291,73 @@ UMBRIEL_TEST(unknownIncludeKeysAreReported) {
   CHECK(!containsDiagnostic(store, "unknown key include.files"));
 }
 
+UMBRIEL_TEST(missingOptionalIncludesAreSilentWatchedAndLoadWhenCreated) {
+  const TempConfigTree tree;
+  const std::filesystem::path optional = tree.path("generated/colors.toml");
+  tree.write("config.toml", "[include.optional]\nfiles = [\"generated/colors.toml\"]\n");
+
+  ConfigStore& store = umbriel::configStore();
+  store.setRootPath(tree.path("config.toml"), true);
+  const umbriel::ConfigReloadResult missing = store.reload();
+
+  CHECK(missing.success);
+  CHECK(!store.missingIncludes());
+  CHECK(!containsDiagnostic(store, "include not found"));
+  CHECK(std::ranges::find(store.watchPaths(), optional) != store.watchPaths().end());
+
+  tree.write("generated/colors.toml", "[colors]\naccent_primary = \"#123456FF\"\n");
+  const umbriel::ConfigReloadResult loaded = store.reload();
+
+  CHECK(loaded.success);
+  CHECK(!store.missingIncludes());
+  CHECK(!containsDiagnostic(store, "include not found"));
+  CHECK_EQ(store.config().colors.accentPrimary[0], 18.0F / 255.0F);
+}
+
+UMBRIEL_TEST(optionalIncludesExpandPathsAndApplyAfterRequiredIncludes) {
+  const TempConfigTree tree;
+  const ScopedEnvironment home("HOME", tree.path("home").string());
+  const ScopedEnvironment generated("UMBRIEL_OPTIONAL_INCLUDE", tree.path("generated.toml").string());
+  tree.write("required.toml", "[layout]\ngap = 11\n");
+  tree.write("generated.toml", "[layout]\ngap = 22\n");
+  tree.write("home/override.toml", "[layout]\ngap = 33\n");
+  tree.write(
+      "config.toml",
+      "[include]\nfiles = [\"required.toml\"]\n"
+      "[include.optional]\nfiles = [\"$UMBRIEL_OPTIONAL_INCLUDE\", \"~/override.toml\"]\n"
+  );
+
+  ConfigStore& store = umbriel::configStore();
+  store.setRootPath(tree.path("config.toml"), true);
+  const umbriel::ConfigReloadResult loaded = store.reload();
+
+  CHECK(loaded.success);
+  CHECK_EQ(store.config().layout.gap, 33);
+  CHECK(!containsDiagnostic(store, "unknown key include.optional"));
+}
+
+UMBRIEL_TEST(malformedOptionalIncludeRejectsReload) {
+  const TempConfigTree tree;
+  tree.write(
+      "config.toml",
+      "[layout]\ngap = 7\n"
+      "[include.optional]\nfiles = [\"generated.toml\"]\n"
+  );
+
+  ConfigStore& store = umbriel::configStore();
+  store.setRootPath(tree.path("config.toml"), true);
+  CHECK(store.reload().success);
+  const uint64_t generation = store.generation();
+
+  tree.write("generated.toml", "[layout\n");
+  const umbriel::ConfigReloadResult malformed = store.reload();
+
+  CHECK(!malformed.success);
+  CHECK_EQ(store.generation(), generation);
+  CHECK_EQ(store.config().layout.gap, 7);
+  CHECK(!store.diagnostics().empty());
+}
+
 UMBRIEL_TEST(mainFileOverridesIncludedFiles) {
   // Noctalia's rendered theme lands in an include file; the user's root config must win on conflicts while still
   // picking up keys the include alone provides. This is what lets users override generated theme colors.

@@ -13,14 +13,18 @@
 # Complete documentation: https://docs.noctalia.dev/umbriel/
 
 # ─────────────────────────────── Includes ───────────────────────────────────
-# Split large configurations into smaller files. Included files are applied in
-# list order, then values in this main file take precedence over every include.
-# Relative paths start from the directory containing this file.
+# Split large configurations into smaller files. Required files are applied in
+# list order, followed by optional files, then values in this main file.
+# Missing optional files are silently ignored and remain watched. Relative
+# paths start from the directory containing this file.
 # Documentation: https://docs.noctalia.dev/umbriel/configuration/#include
 # ────────────────────────────────────────────────────────────────────────────
 
 [include]
-files = []                                      # Example: ["noctalia.toml", "outputs.toml"]
+files = []                                      # Example: ["appearance.toml", "outputs.toml"]
+
+[include.optional]
+files = []                                      # Example: ["~/.config/umbriel/noctalia.toml"]
 
 # ─────────────────────────────── General ────────────────────────────────────
 # Configure startup commands, session behavior, environment variables, and

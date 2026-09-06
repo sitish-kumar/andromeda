@@ -189,8 +189,40 @@ namespace umbriel::configmerge {
         std::string path;
         toml::source_region source;
       };
-      std::vector<Entry> entries;
+      std::vector<Entry> files;
+      std::vector<Entry> optionalFiles;
     };
+
+    void readIncludeFiles(
+        const toml::node* node, std::string_view name, std::vector<IncludeDirective::Entry>& entries,
+        MergeResult& result
+    ) {
+      if (node == nullptr) {
+        return;
+      }
+      const auto* files = node->as_array();
+      if (files == nullptr) {
+        emit(
+            result, ConfigDiagnostic::Severity::Warning, &node->source(),
+            std::format("ignoring {} (expected array of strings)", name)
+        );
+        return;
+      }
+      for (const auto& entry : *files) {
+        if (!entry.is_string()) {
+          emit(
+              result, ConfigDiagnostic::Severity::Warning, &entry.source(),
+              std::format("ignoring {} (expected array of strings)", name)
+          );
+          entries.clear();
+          return;
+        }
+        entries.push_back({
+            .path = *entry.value<std::string>(),
+            .source = entry.source(),
+        });
+      }
+    }
 
     IncludeDirective readInclude(const toml::table& table, MergeResult& result) {
       IncludeDirective directive;
@@ -206,32 +238,10 @@ namespace umbriel::configmerge {
       // `include` is erased from the table before the config readers run, so the root section never sees it and never
       // reports its unknown keys. This reader owns that report for the section's fixed vocabulary.
       Section keys(*include, "include", result.diagnostics);
-      const toml::node* filesNode = keys.take("files");
-      if (filesNode == nullptr) {
-        return directive;
-      }
-      const auto* files = filesNode->as_array();
-      if (files == nullptr) {
-        emit(
-            result, ConfigDiagnostic::Severity::Warning, &filesNode->source(),
-            "ignoring include.files (expected array of strings)"
-        );
-        return directive;
-      }
-      for (const auto& entry : *files) {
-        if (!entry.is_string()) {
-          emit(
-              result, ConfigDiagnostic::Severity::Warning, &entry.source(),
-              "ignoring include.files (expected array of strings)"
-          );
-          directive.entries.clear();
-          return directive;
-        }
-        directive.entries.push_back({
-            .path = *entry.value<std::string>(),
-            .source = entry.source(),
-        });
-      }
+      readIncludeFiles(keys.take("files"), "include.files", directive.files, result);
+      keys.sub("optional", [&](Section& optional) {
+        readIncludeFiles(optional.take("files"), "include.optional.files", directive.optionalFiles, result);
+      });
       return directive;
     }
 
@@ -256,27 +266,34 @@ namespace umbriel::configmerge {
       IncludeDirective directive = readInclude(parsed, result);
       parsed.erase("include");
 
-      if (directive.entries.empty()) {
+      if (directive.files.empty() && directive.optionalFiles.empty()) {
         // No includes: return parsed directly, preserving toml++ source regions
         // (copies lose them; only moves keep line/column/path).
         return parsed;
       }
 
       toml::table base;
-      for (const auto& entry : directive.entries) {
-        const auto target = expandPath(entry.path, path.parent_path());
-        std::error_code error;
-        if (std::filesystem::is_regular_file(target, error) && !error) {
-          deepMerge(base, loadAndExpand(target, visited, result));
-          continue;
+      const auto mergeEntries = [&](const std::vector<IncludeDirective::Entry>& entries, bool optional) {
+        for (const auto& entry : entries) {
+          const auto target = expandPath(entry.path, path.parent_path());
+          std::error_code error;
+          if (std::filesystem::is_regular_file(target, error) && !error) {
+            deepMerge(base, loadAndExpand(target, visited, result));
+            continue;
+          }
+          result.loadedFiles.push_back(canonicalKey(target));
+          if (optional) {
+            continue;
+          }
+          result.missingIncludes = true;
+          emit(
+              result, ConfigDiagnostic::Severity::Warning, &entry.source,
+              std::format("include not found: {} (from {})", target.string(), path.string())
+          );
         }
-        result.missingIncludes = true;
-        emit(
-            result, ConfigDiagnostic::Severity::Warning, &entry.source,
-            std::format("include not found: {} (from {})", target.string(), path.string())
-        );
-        result.loadedFiles.push_back(canonicalKey(target));
-      }
+      };
+      mergeEntries(directive.files, false);
+      mergeEntries(directive.optionalFiles, true);
       deepMerge(base, std::move(parsed));
       return base;
     }
