@@ -168,8 +168,9 @@ namespace xdpu {
             [&](CaptureFailureReason) { finish(); }
         );
       };
-      capture.session = source.monitor ? wayland.createOutputCapture(source.identifier, false, constraints)
-                                       : wayland.createToplevelCapture(source.identifier, false, constraints);
+      capture.session = source.monitor
+          ? wayland.createOutputCapture(source.identifier, CaptureCursorMode::Hidden, constraints)
+          : wayland.createToplevelCapture(source.identifier, CaptureCursorMode::Hidden, constraints);
       if (!capture.session) {
         return nullptr;
       }
