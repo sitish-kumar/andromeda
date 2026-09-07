@@ -887,8 +887,6 @@ namespace xdpu {
     void onRegistryGlobal(void* data, wl_registry* registry, uint32_t name, const char* interface, uint32_t version) {
       auto* impl = static_cast<WaylandContext::Impl*>(data);
       const std::string_view iface = interface == nullptr ? std::string_view{} : std::string_view(interface);
-      std::fprintf(stderr, "wayland: global %u: %s v%u\n", name, interface, version);
-
       if (iface == wl_seat_interface.name && impl->seat == nullptr) {
         impl->seat = static_cast<wl_seat*>(wl_registry_bind(registry, name, &wl_seat_interface, std::min(version, 9U)));
         impl->seatRegistryName = name;
