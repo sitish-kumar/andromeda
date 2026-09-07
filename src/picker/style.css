@@ -146,13 +146,23 @@
   outline-offset: 2px;
 }
 
-.umbriel-picker scrollbar {
+/* Only the slider is drawn: the track stays invisible, and the fill keeps the
+   theme's padding-box clip so it cannot bleed across the slider's transparent
+   border and render wider than the track. */
+.umbriel-picker scrollbar,
+.umbriel-picker scrollbar trough {
   background: transparent;
+  border: none;
 }
 
 .umbriel-picker scrollbar slider {
-  background: alpha(@TEXT_MUTED@, 0.4);
+  background-color: alpha(@TEXT_MUTED@, 0.5);
+  background-clip: padding-box;
   border-radius: @RADIUS@;
   min-width: 5px;
   min-height: 5px;
+}
+
+.umbriel-picker scrollbar slider:hover {
+  background-color: alpha(@TEXT_MUTED@, 0.8);
 }
