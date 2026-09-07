@@ -938,8 +938,8 @@ namespace {
 int main(int argc, char** argv) {
   AppState state = parseRequest(readStdin());
 
-  // GTK documents GTK_CSD=0 as delegating decorations to the window manager.
-  g_setenv("GTK_CSD", "0", TRUE);
+  // GTK_CSD=0 asks the window manager for decorations; an explicit setting still wins.
+  g_setenv("GTK_CSD", "0", FALSE);
   // Cairo keeps this small snapshot UI inexpensive; respect renderer overrides.
   g_setenv("GSK_RENDERER", "cairo", FALSE);
   gtk_init();
