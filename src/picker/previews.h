@@ -1,6 +1,7 @@
 #pragma once
 
-#include <gdk-pixbuf/gdk-pixbuf.h>
+#include <functional>
+#include <gdk/gdk.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -15,14 +16,17 @@ namespace xdpu {
   struct PreviewResult {
     size_t index;
     // Owned by the caller after takeResults(); null means capture was unavailable.
-    GdkPixbuf* image;
+    GdkTexture* texture;
   };
 
   // One snapshot per requested source, captured sequentially on a private Wayland connection.
   // Full-size buffers are released before the next capture; only thumbnails survive.
   class Previews {
   public:
-    explicit Previews(std::vector<PreviewSource> sources);
+    // Invoked on the worker thread once a result is queued: post takeResults() to the UI thread.
+    using ResultsReadyCallback = std::function<void()>;
+
+    Previews(std::vector<PreviewSource> sources, ResultsReadyCallback onResultsReady);
     ~Previews();
     // Replace pending work with the currently visible indices. Already captured or
     // in-flight sources are ignored; hidden sources never open capture sessions.

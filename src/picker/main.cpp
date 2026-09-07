@@ -1,6 +1,5 @@
 #include "picker/previews.h"
 
-#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -52,6 +51,15 @@ namespace {
     bool operator==(const Palette&) const = default;
   };
 
+  // Card preview slot, in logical pixels; thumbnails are scaled to fit it.
+  constexpr int kPreviewWidth = 210;
+  constexpr int kPreviewHeight = 132;
+
+  struct PreviewCard {
+    xdpu::PreviewSource source;
+    GtkWidget* stack = nullptr;
+  };
+
   struct AppState {
     bool multiple = false;
     bool showMonitors = false;
@@ -66,11 +74,8 @@ namespace {
     GtkWidget* windowList = nullptr;
     GtkWidget* shareButton = nullptr;
     GtkWidget* selectionLabel = nullptr;
-    std::vector<xdpu::PreviewSource> previewSources;
-    std::vector<GtkWidget*> previewStacks;
+    std::vector<PreviewCard> previewCards;
     std::unique_ptr<xdpu::Previews> previews;
-    guint previewWatch = 0;
-    size_t previewsLoaded = 0;
     GtkCssProvider* paletteProvider = nullptr;
     GdkDisplay* display = nullptr;
     int paletteFd = -1;
@@ -508,10 +513,16 @@ namespace {
     return label;
   }
 
+  // A thumbnail is wider than the card, so the preview rides in a non-measured
+  // overlay: the empty slot below it, not the captured texture, fixes the card size.
   GtkWidget* makePreview(AppState& state, RowKind kind, const std::string& identifier) {
+    GtkWidget* frame = gtk_overlay_new();
+    GtkWidget* slot = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_size_request(slot, kPreviewWidth, kPreviewHeight);
+    gtk_overlay_set_child(GTK_OVERLAY(frame), slot);
+
     GtkWidget* stack = gtk_stack_new();
     gtk_widget_add_css_class(stack, "preview");
-    gtk_widget_set_size_request(stack, 210, 132);
     gtk_widget_set_overflow(stack, GTK_OVERFLOW_HIDDEN);
     GtkWidget* fallback = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
     gtk_widget_set_valign(fallback, GTK_ALIGN_CENTER);
@@ -525,9 +536,10 @@ namespace {
     gtk_box_append(GTK_BOX(fallback), label);
     g_object_set_data(G_OBJECT(stack), "preview-label", label);
     gtk_stack_add_named(GTK_STACK(stack), fallback, "fallback");
-    state.previewSources.push_back({kind == RowKind::Monitor, identifier});
-    state.previewStacks.push_back(stack);
-    return stack;
+    gtk_overlay_add_overlay(GTK_OVERLAY(frame), stack);
+
+    state.previewCards.push_back({{kind == RowKind::Monitor, identifier}, stack});
+    return frame;
   }
 
   void toggleSource(GtkFlowBoxChild* child) {
@@ -644,26 +656,10 @@ namespace {
     return list;
   }
 
-  GtkWidget* makeScrolledGrid(GtkWidget* list, const char* emptyText) {
-    GtkWidget* scrolled = gtk_scrolled_window_new();
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-    gtk_widget_set_vexpand(scrolled, TRUE);
-    if (gtk_flow_box_get_child_at_index(GTK_FLOW_BOX(list), 0) == nullptr) {
-      // Parent the empty grid normally so selection queries remain valid.
-      GtkWidget* empty = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-      gtk_widget_set_visible(list, FALSE);
-      gtk_box_append(GTK_BOX(empty), list);
-      gtk_box_append(GTK_BOX(empty), makePlaceholder(emptyText));
-      list = empty;
-    }
-    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled), list);
-    return scrolled;
-  }
-
   std::vector<size_t> visiblePreviews(const AppState& state) {
     std::vector<size_t> indices;
-    for (size_t i = 0; i < state.previewStacks.size(); ++i) {
-      GtkWidget* preview = state.previewStacks[i];
+    for (size_t i = 0; i < state.previewCards.size(); ++i) {
+      GtkWidget* preview = state.previewCards[i].stack;
       if (!gtk_widget_get_mapped(preview)) {
         continue;
       }
@@ -679,59 +675,56 @@ namespace {
     return indices;
   }
 
+  void requestVisiblePreviews(AppState& state) {
+    if (state.previews) {
+      state.previews->request(visiblePreviews(state));
+    }
+  }
+
+  // Posted from the capture worker; drains every result queued since the last run.
   gboolean onPreviewResults(gpointer userData) {
     auto& state = *static_cast<AppState*>(userData);
-    state.previews->request(visiblePreviews(state));
+    if (!state.previews) {
+      return G_SOURCE_REMOVE;
+    }
     for (auto& result : state.previews->takeResults()) {
-      ++state.previewsLoaded;
-      GtkWidget* stack = state.previewStacks[result.index];
-      if (result.image != nullptr) {
-        const int width = gdk_pixbuf_get_width(result.image);
-        const int height = gdk_pixbuf_get_height(result.image);
-        cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
-        auto* pixels = gdk_pixbuf_get_pixels(result.image);
-        auto* target = cairo_image_surface_get_data(surface);
-        for (int y = 0; y < height; ++y) {
-          const auto* source = pixels + y * gdk_pixbuf_get_rowstride(result.image);
-          auto* row = reinterpret_cast<uint32_t*>(target + y * cairo_image_surface_get_stride(surface));
-          for (int x = 0; x < width; ++x) {
-            row[x] = (static_cast<uint32_t>(source[x * 3]) << 16)
-                | (static_cast<uint32_t>(source[x * 3 + 1]) << 8)
-                | source[x * 3 + 2];
-          }
-        }
-        cairo_surface_mark_dirty(surface);
-        GtkWidget* picture = gtk_drawing_area_new();
-        // Keep the grid's natural size independent of the captured image dimensions.
-        gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(picture), 210);
-        gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(picture), 132);
-        gtk_drawing_area_set_draw_func(
-            GTK_DRAWING_AREA(picture),
-            +[](GtkDrawingArea*, cairo_t* cr, int width, int height, gpointer data) {
-              auto* image = static_cast<cairo_surface_t*>(data);
-              const int w = cairo_image_surface_get_width(image);
-              const int h = cairo_image_surface_get_height(image);
-              const double scale = std::min(static_cast<double>(width) / w, static_cast<double>(height) / h);
-              cairo_translate(cr, (width - w * scale) / 2, (height - h * scale) / 2);
-              cairo_scale(cr, scale, scale);
-              cairo_set_source_surface(cr, image, 0, 0);
-              cairo_paint(cr);
-            },
-            surface, +[](gpointer data) { cairo_surface_destroy(static_cast<cairo_surface_t*>(data)); }
-        );
+      GtkWidget* stack = state.previewCards[result.index].stack;
+      if (result.texture != nullptr) {
+        GtkWidget* picture = gtk_picture_new_for_paintable(GDK_PAINTABLE(result.texture));
+        g_object_unref(result.texture);
+        gtk_picture_set_content_fit(GTK_PICTURE(picture), GTK_CONTENT_FIT_CONTAIN);
         gtk_stack_add_named(GTK_STACK(stack), picture, "image");
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "image");
-        g_object_unref(result.image);
       } else {
         auto* label = GTK_LABEL(g_object_get_data(G_OBJECT(stack), "preview-label"));
         gtk_label_set_text(label, "Preview unavailable");
       }
     }
-    if (state.previewsLoaded == state.previewStacks.size()) {
-      state.previewWatch = 0;
-      return G_SOURCE_REMOVE;
+    // The worker is idle again: hand it whatever scrolled into view meanwhile.
+    requestVisiblePreviews(state);
+    return G_SOURCE_REMOVE;
+  }
+
+  GtkWidget* makeScrolledGrid(AppState& state, GtkWidget* list, const char* emptyText) {
+    GtkWidget* scrolled = gtk_scrolled_window_new();
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+    gtk_widget_set_vexpand(scrolled, TRUE);
+    if (gtk_flow_box_get_child_at_index(GTK_FLOW_BOX(list), 0) == nullptr) {
+      // Parent the empty grid normally so selection queries remain valid.
+      GtkWidget* empty = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+      gtk_widget_set_visible(list, FALSE);
+      gtk_box_append(GTK_BOX(empty), list);
+      gtk_box_append(GTK_BOX(empty), makePlaceholder(emptyText));
+      list = empty;
     }
-    return G_SOURCE_CONTINUE;
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled), list);
+    // "changed" covers the first allocation and every resize, "value-changed" scrolling.
+    GtkAdjustment* adjustment = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scrolled));
+    const auto onViewportChanged =
+        G_CALLBACK(+[](GtkAdjustment*, gpointer data) { requestVisiblePreviews(*static_cast<AppState*>(data)); });
+    g_signal_connect(adjustment, "changed", onViewportChanged, &state);
+    g_signal_connect(adjustment, "value-changed", onViewportChanged, &state);
+    return scrolled;
   }
 
   void appendSelectedRows(AppState& state, GtkWidget* list, json& selections) {
@@ -832,18 +825,15 @@ namespace {
       gtk_widget_set_halign(switcher, GTK_ALIGN_START);
       gtk_box_append(GTK_BOX(body), switcher);
       gtk_stack_add_titled(
-          GTK_STACK(stack), makeScrolledGrid(state.outputList, "No screens available"), "screens", "Screens"
+          GTK_STACK(stack), makeScrolledGrid(state, state.outputList, "No screens available"), "screens", "Screens"
       );
       gtk_stack_add_titled(
-          GTK_STACK(stack), makeScrolledGrid(state.windowList, "No windows available"), "windows", "Windows"
+          GTK_STACK(stack), makeScrolledGrid(state, state.windowList, "No windows available"), "windows", "Windows"
       );
+      // Cards on the newly shown page become eligible for capture.
       g_signal_connect(
-          stack, "notify::visible-child", G_CALLBACK(+[](GObject* object, GParamSpec*, gpointer data) {
-            auto& state = *static_cast<AppState*>(data);
-            if (!state.multiple) {
-              const bool screens = std::strcmp(gtk_stack_get_visible_child_name(GTK_STACK(object)), "screens") == 0;
-              unselectList(screens ? state.windowList : state.outputList);
-            }
+          stack, "notify::visible-child", G_CALLBACK(+[](GObject*, GParamSpec*, gpointer data) {
+            requestVisiblePreviews(*static_cast<AppState*>(data));
           }),
           &state
       );
@@ -852,9 +842,9 @@ namespace {
       }
       gtk_box_append(GTK_BOX(body), stack);
     } else if (state.showMonitors) {
-      gtk_box_append(GTK_BOX(body), makeScrolledGrid(state.outputList, "No screens available"));
+      gtk_box_append(GTK_BOX(body), makeScrolledGrid(state, state.outputList, "No screens available"));
     } else if (state.showWindows) {
-      gtk_box_append(GTK_BOX(body), makeScrolledGrid(state.windowList, "No windows available"));
+      gtk_box_append(GTK_BOX(body), makeScrolledGrid(state, state.windowList, "No windows available"));
     } else {
       GtkWidget* placeholder = makePlaceholder("No share source types requested");
       gtk_widget_set_vexpand(placeholder, TRUE);
@@ -927,9 +917,15 @@ namespace {
       );
     }
     gtk_window_present(GTK_WINDOW(window));
-    if (!state->previewSources.empty()) {
-      state->previews = std::make_unique<xdpu::Previews>(state->previewSources);
-      state->previewWatch = g_timeout_add(100, onPreviewResults, state);
+    if (!state->previewCards.empty()) {
+      std::vector<xdpu::PreviewSource> sources;
+      sources.reserve(state->previewCards.size());
+      for (const PreviewCard& card : state->previewCards) {
+        sources.push_back(card.source);
+      }
+      state->previews =
+          std::make_unique<xdpu::Previews>(std::move(sources), [state] { g_idle_add(onPreviewResults, state); });
+      requestVisiblePreviews(*state);
     }
   }
 
@@ -949,9 +945,6 @@ int main(int argc, char** argv) {
   const int status = g_application_run(G_APPLICATION(app), argc, argv);
   if (!state.responding) {
     cancel(state);
-  }
-  if (state.previewWatch != 0) {
-    g_source_remove(state.previewWatch);
   }
   state.previews.reset();
   if (state.paletteWatch != 0) {

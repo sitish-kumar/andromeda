@@ -39,47 +39,57 @@ namespace xdpu {
       }
     };
 
-    GdkPixbuf* thumbnail(const Capture& capture, uint32_t width, uint32_t height, uint32_t format, uint32_t transform) {
+    GdkTexture*
+    thumbnail(const Capture& capture, uint32_t width, uint32_t height, uint32_t format, uint32_t transform) {
       // Downsample directly from SHM so a second full-resolution copy is never needed.
       const double scale = std::min(1.0, 512.0 / std::max(width, height));
-      const int w = std::max(1, static_cast<int>(width * scale));
-      const int h = std::max(1, static_cast<int>(height * scale));
-      GdkPixbuf* image = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, w, h);
-      if (image == nullptr) {
-        return nullptr;
-      }
+      const int sw = std::max(1, static_cast<int>(width * scale));
+      const int sh = std::max(1, static_cast<int>(height * scale));
+      // Rotated buffers swap the thumbnail's axes; sampling undoes the transform in
+      // the same pass, so no rotated or flipped intermediate copy is ever allocated.
+      const bool swapAxes = (transform & 1U) != 0;
+      const int w = swapAxes ? sh : sw;
+      const int h = swapAxes ? sw : sh;
+      const size_t stride = static_cast<size_t>(w) * 3;
+      auto* target = static_cast<uint8_t*>(g_malloc(stride * h));
       const bool bgr = format == DRM_FORMAT_XBGR8888 || format == DRM_FORMAT_ABGR8888;
       auto* pixels = static_cast<const uint32_t*>(capture.mapping);
-      auto* target = gdk_pixbuf_get_pixels(image);
-      const int stride = gdk_pixbuf_get_rowstride(image);
       for (int y = 0; y < h; ++y) {
+        auto* row = target + static_cast<size_t>(y) * stride;
         for (int x = 0; x < w; ++x) {
+          // Invert the horizontal flip first, then the rotation, mirroring how
+          // wl_output.transform composes them.
+          const int fx = (transform & 4U) != 0 ? w - 1 - x : x;
+          int u = fx;
+          int v = y;
+          switch (transform & 3U) {
+          case 1:
+            u = y;
+            v = sh - 1 - fx;
+            break;
+          case 2:
+            u = sw - 1 - fx;
+            v = sh - 1 - y;
+            break;
+          case 3:
+            u = sw - 1 - y;
+            v = fx;
+            break;
+          default:
+            break;
+          }
           const uint32_t pixel =
-              pixels[(static_cast<size_t>(y) * height / h) * width + static_cast<size_t>(x) * width / w];
-          auto* rgb = target + y * stride + x * 3;
+              pixels[(static_cast<size_t>(v) * height / sh) * width + static_cast<size_t>(u) * width / sw];
+          auto* rgb = row + static_cast<size_t>(x) * 3;
           rgb[0] = (pixel >> (bgr ? 0 : 16)) & 0xff;
           rgb[1] = (pixel >> 8) & 0xff;
           rgb[2] = (pixel >> (bgr ? 16 : 0)) & 0xff;
         }
       }
-      // Undo the buffer transform: inverse rotation, then the optional horizontal flip.
-      const GdkPixbufRotation rotations[] = {
-          GDK_PIXBUF_ROTATE_NONE,
-          GDK_PIXBUF_ROTATE_CLOCKWISE,
-          GDK_PIXBUF_ROTATE_UPSIDEDOWN,
-          GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE,
-      };
-      if ((transform & 3U) != 0) {
-        GdkPixbuf* rotated = gdk_pixbuf_rotate_simple(image, rotations[transform & 3U]);
-        g_object_unref(image);
-        image = rotated;
-      }
-      if (image != nullptr && (transform & 4U) != 0) {
-        GdkPixbuf* flipped = gdk_pixbuf_flip(image, TRUE);
-        g_object_unref(image);
-        image = flipped;
-      }
-      return image;
+      GBytes* bytes = g_bytes_new_take(target, stride * h);
+      GdkTexture* texture = gdk_memory_texture_new(w, h, GDK_MEMORY_R8G8B8, bytes, stride);
+      g_bytes_unref(bytes);
+      return texture;
     }
 
     bool finishCaptureCleanup(Loop& loop, WaylandContext& wayland) {
@@ -114,9 +124,9 @@ namespace xdpu {
       return sync.done;
     }
 
-    GdkPixbuf* captureSource(Loop& loop, WaylandContext& wayland, const PreviewSource& source, std::stop_token stop) {
+    GdkTexture* captureSource(Loop& loop, WaylandContext& wayland, const PreviewSource& source, std::stop_token stop) {
       Capture capture;
-      GdkPixbuf* result = nullptr;
+      GdkTexture* result = nullptr;
       bool done = false;
       auto finish = [&] {
         done = true;
@@ -199,6 +209,7 @@ namespace xdpu {
 
   struct Previews::Impl {
     const std::vector<PreviewSource> sources;
+    const ResultsReadyCallback onResultsReady;
     std::vector<bool> started;
     std::deque<size_t> pending;
     std::mutex mutex;
@@ -206,8 +217,8 @@ namespace xdpu {
     std::vector<PreviewResult> results;
     std::jthread worker;
 
-    explicit Impl(std::vector<PreviewSource> sources)
-        : sources(std::move(sources)), started(this->sources.size(), false),
+    Impl(std::vector<PreviewSource> sources, ResultsReadyCallback onResultsReady)
+        : sources(std::move(sources)), onResultsReady(std::move(onResultsReady)), started(this->sources.size(), false),
           worker([this](std::stop_token stop) { run(stop); }) {}
 
     void run(std::stop_token stop) {
@@ -224,7 +235,7 @@ namespace xdpu {
           pending.pop_front();
           started[index] = true;
         }
-        GdkPixbuf* image = nullptr;
+        GdkTexture* texture = nullptr;
         try {
           // Even the Wayland connection is deferred until a card is visible.
           if (!wayland) {
@@ -232,7 +243,7 @@ namespace xdpu {
             wayland = std::make_unique<WaylandContext>(*loop);
           }
           if (!stop.stop_requested() && wayland->connected()) {
-            image = captureSource(*loop, *wayland, sources[index], stop);
+            texture = captureSource(*loop, *wayland, sources[index], stop);
             // All Capture members have now been destroyed. Flush and drain
             // their destruction before publishing the thumbnail or idling.
             if (!wayland->connected() || !finishCaptureCleanup(*loop, *wayland)) {
@@ -242,8 +253,13 @@ namespace xdpu {
         } catch (const std::exception& error) {
           g_warning("umbriel-share-picker: preview unavailable: %s", error.what());
         }
-        std::scoped_lock lock(mutex);
-        results.push_back({index, image});
+        {
+          std::scoped_lock lock(mutex);
+          results.push_back({index, texture});
+        }
+        if (onResultsReady) {
+          onResultsReady();
+        }
       }
     }
 
@@ -251,12 +267,13 @@ namespace xdpu {
       worker.request_stop();
       worker.join();
       for (auto& result : results) {
-        g_clear_object(&result.image);
+        g_clear_object(&result.texture);
       }
     }
   };
 
-  Previews::Previews(std::vector<PreviewSource> sources) : m_impl(std::make_unique<Impl>(std::move(sources))) {}
+  Previews::Previews(std::vector<PreviewSource> sources, ResultsReadyCallback onResultsReady)
+      : m_impl(std::make_unique<Impl>(std::move(sources), std::move(onResultsReady))) {}
   Previews::~Previews() = default;
 
   void Previews::request(std::vector<size_t> indices) {

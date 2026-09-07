@@ -69,9 +69,11 @@ and shutdown overhead; explicit `GTK_CSD` or `GSK_RENDERER` settings still take
 precedence.
 
 Screen and window previews are snapshots taken as cards become visible using the same Wayland image
-capture protocols as screencasting. Hidden tabs and offscreen cards are deferred.
-Each capture session is destroyed and its cleanup acknowledged before the worker
-goes idle. Snapshots load asynchronously, remain in memory,
+capture protocols as screencasting. Hidden tabs and offscreen cards are deferred:
+captures start when a card is scrolled or switched into view, and each finished
+thumbnail is handed to the UI on the main loop. Each capture session is destroyed
+and its cleanup acknowledged before the worker goes idle. Snapshots load
+asynchronously, remain in memory,
 and are discarded when the picker closes. Sources without a supported preview
 remain selectable with a placeholder. The chooser's JSON input/output format is
 unchanged. Window capture requires Umbriel's fix for output membership and frame
