@@ -114,6 +114,9 @@ namespace {
   constexpr Logger kLog("app");
   constexpr std::string_view kPolkitAuthorityBusName = "org.freedesktop.PolicyKit1";
   constexpr std::string_view kSecretServiceBusName = "org.freedesktop.secrets";
+  constexpr auto kSecretServiceObjectPath = "/org/freedesktop/secrets";
+  constexpr auto kSecretServiceInterface = "org.freedesktop.Secret.Service";
+  constexpr auto kSecretCollectionInterface = "org.freedesktop.Secret.Collection";
 
   void signal_handler(int signum) {
     if (signum == SIGTERM || signum == SIGINT) {
@@ -286,6 +289,69 @@ void Application::installSecretServiceNameWatch() {
     m_secretServiceOwned = hasOwner;
   } catch (const sdbus::Error& e) {
     kLog.debug("secret service NameHasOwner failed: {}", e.what());
+  }
+}
+
+void Application::installSecretServiceCollectionWatch() {
+  if (m_secretServiceCollectionWatchInstalled || m_bus == nullptr) {
+    return;
+  }
+  try {
+    m_secretServiceCollectionWatchProxy = sdbus::createProxy(
+        m_bus->connection(), sdbus::ServiceName{std::string{kSecretServiceBusName}},
+        sdbus::ObjectPath{kSecretServiceObjectPath}
+    );
+    // A collection appearing or changing is our cue that the default one may have just unlocked.
+    // Read the state out of the signal callback to avoid a nested synchronous D-Bus call.
+    const auto onCollectionEvent = [this](const sdbus::ObjectPath& /*collection*/) {
+      DeferredCall::callLater([this]() { onSecretServiceCollectionChanged(); });
+    };
+    m_secretServiceCollectionWatchProxy->uponSignal("CollectionChanged")
+        .onInterface(kSecretServiceInterface)
+        .call(onCollectionEvent);
+    m_secretServiceCollectionWatchProxy->uponSignal("CollectionCreated")
+        .onInterface(kSecretServiceInterface)
+        .call(onCollectionEvent);
+    m_secretServiceCollectionWatchInstalled = true;
+  } catch (const sdbus::Error& e) {
+    kLog.debug("secret service collection watch setup failed: {}", e.what());
+    m_secretServiceCollectionWatchProxy.reset();
+  }
+}
+
+void Application::onSecretServiceCollectionChanged() {
+  if (!defaultSecretCollectionUnlocked()) {
+    return;
+  }
+  // Reachable and unlocked now: give every consumer that gave up at startup a fresh attempt. The
+  // follow-up lookup reads the unlocked collection without raising a prompt.
+  m_secretServiceOwned = true;
+  m_storageKeyAutoRetried = false;
+  m_calendarCredentialAutoRetried = false;
+  kLog.info("secret service default collection unlocked; reopening consumers");
+  retrySecretServiceConsumers();
+}
+
+bool Application::defaultSecretCollectionUnlocked() {
+  if (m_bus == nullptr || m_secretServiceCollectionWatchProxy == nullptr) {
+    return false;
+  }
+  try {
+    sdbus::ObjectPath collection;
+    m_secretServiceCollectionWatchProxy->callMethod("ReadAlias")
+        .onInterface(kSecretServiceInterface)
+        .withArguments(std::string{"default"})
+        .storeResultsTo(collection);
+    const std::string collectionPath{collection};
+    if (collectionPath.empty() || collectionPath == "/") {
+      return false;
+    }
+    auto collectionProxy =
+        sdbus::createProxy(m_bus->connection(), sdbus::ServiceName{std::string{kSecretServiceBusName}}, collection);
+    return !collectionProxy->getProperty("Locked").onInterface(kSecretCollectionInterface).get<bool>();
+  } catch (const sdbus::Error& e) {
+    kLog.debug("secret default collection state check failed: {}", e.what());
+    return false;
   }
 }
 
@@ -1524,6 +1590,7 @@ void Application::initSessionBusServices() {
     syncNotificationDaemon();
     m_configService.addReloadCallback([this]() { syncNotificationDaemon(); });
     installSecretServiceNameWatch();
+    installSecretServiceCollectionWatch();
 
     m_compositorPlatform.startKdeActiveWindow(*m_bus);
 
