@@ -329,8 +329,9 @@ namespace security {
       lookup(const SecretStoreAttributes& attributes, SecretStoreCancellation& cancellation) override {
         return withCancellable(cancellation, [&attributes](GCancellable* cancellable) {
           auto table = makeAttributes(attributes);
-          const auto loadUnlocked = [cancellable](const SecretItemListPtr& items,
-                                                  bool& lockedItemFound) -> std::optional<SecretStoreBackendResult> {
+          const auto loadUnlocked = [cancellable](
+                                        const SecretItemListPtr& items, bool& lockedItemFound
+                                    ) -> std::optional<SecretStoreBackendResult> {
             for (GList* node = items.get(); node != nullptr; node = node->next) {
               auto* item = SECRET_ITEM(node->data);
               if (secret_item_get_locked(item) != 0) {
