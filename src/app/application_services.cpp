@@ -313,6 +313,10 @@ void Application::installSecretServiceCollectionWatch() {
         .onInterface(kSecretServiceInterface)
         .call(onCollectionEvent);
     m_secretServiceCollectionWatchInstalled = true;
+    // The collection can unlock during startup before this watch exists (the first lookup then
+    // loses that race), and that transition emits no further signal. Check the current state once
+    // so a consumer that already gave up is re-driven immediately.
+    DeferredCall::callLater([this]() { onSecretServiceCollectionChanged(); });
   } catch (const sdbus::Error& e) {
     kLog.debug("secret service collection watch setup failed: {}", e.what());
     m_secretServiceCollectionWatchProxy.reset();
@@ -359,7 +363,14 @@ void Application::retrySecretServiceConsumers() {
   if (!m_secretServiceOwned) {
     return;
   }
-  if (!m_storageKeyAutoRetried && m_storageKeyProvider.state() == security::StorageKeyState::Unavailable) {
+  // A locked storage key is only worth reopening once the collection is actually unlocked: a lookup
+  // then reads silently, whereas retrying while still locked would raise a second keyring prompt.
+  // The one-shot latch is tested first so the collection probe (two blocking D-Bus calls) is skipped
+  // once a retry is already in flight.
+  const security::StorageKeyState storageKeyState = m_storageKeyProvider.state();
+  if (!m_storageKeyAutoRetried
+      && (storageKeyState == security::StorageKeyState::Unavailable
+          || (storageKeyState == security::StorageKeyState::DeniedOrLocked && defaultSecretCollectionUnlocked()))) {
     m_storageKeyAutoRetried = true;
     kLog.info("secret service is running; reopening encrypted storage");
     DeferredCall::callLater([this]() { m_storageKeyProvider.retry(); });
