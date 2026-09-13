@@ -1494,6 +1494,9 @@ namespace umbriel {
     wlr_output* pointerOutput = wlr_output_layout_output_at(m_server->outputLayout(), m_cursor->x, m_cursor->y);
     if (pointerOutput != m_pointerOutput) {
       m_pointerOutput = pointerOutput;
+      // `focused` in the workspaces payload is the active workspace of the cursor's output, so crossing heads changes
+      // it even when no workspace activates: a switch to a workspace already active elsewhere only warps the cursor.
+      m_server->scheduleIpcWorkspacesEvent();
       if (allowFocusChange
           && config().input.focus.followsMouse
           && !m_server->sessionLocked()
