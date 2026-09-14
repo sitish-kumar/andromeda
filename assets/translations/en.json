@@ -1359,7 +1359,6 @@
         "launcher": "Launcher",
         "location": "Location",
         "niri": "Niri",
-        "umbriel": "Umbriel",
         "notifications": "Notifications",
         "osd": "OSD",
         "panels": "Panels",
@@ -1372,6 +1371,7 @@
         "shell": "Shell",
         "system": "System",
         "templates": "Templates",
+        "umbriel": "Umbriel",
         "wallpaper": "Wallpaper"
       }
     },
@@ -2978,10 +2978,6 @@
           "description": "Open the launcher when typing in niri overview; uses a tiny keyboard-focus surface while overview is open",
           "label": "Type to Launch"
         },
-        "umbriel-overview-type-to-launch": {
-          "description": "Open the launcher when typing in umbriel overview; uses a tiny keyboard-focus surface while overview is open",
-          "label": "Type to Launch"
-        },
         "offline-mode": {
           "description": "Block all outgoing network requests",
           "label": "Offline Mode"
@@ -3188,6 +3184,10 @@
         "time-format": {
           "description": "Default time format for shell UI without its own setting",
           "label": "Time Format"
+        },
+        "umbriel-overview-type-to-launch": {
+          "description": "Open the launcher when typing in umbriel overview; uses a tiny keyboard-focus surface while overview is open",
+          "label": "Type to Launch"
         },
         "window-switcher-mru": {
           "description": "Order windows in the switcher by most recently used rather than workspace and screen layout",
