@@ -3165,6 +3165,10 @@
           "description": "Include the mouse pointer in screenshots",
           "label": "Show Cursor"
         },
+        "screenshot-skip-annotate-on-copy-save": {
+          "description": "Copy and Save in the region overlay deliver immediately; Enter and Space still open the editor",
+          "label": "Skip Editor on Copy or Save"
+        },
         "settings-window-translucent": {
           "description": "Make the Settings background translucent for compositor effects",
           "label": "Settings Translucent Background"

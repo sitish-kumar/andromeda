@@ -1864,6 +1864,14 @@ namespace settings {
     ));
     entries.push_back(makeEntry(
         SettingsSection::Screenshot, "screenshot-annotation",
+        tr("settings.schema.shell.screenshot-skip-annotate-on-copy-save.label"),
+        tr("settings.schema.shell.screenshot-skip-annotate-on-copy-save.description"),
+        {"shell", "screenshot", "skip_annotate_on_copy_save"},
+        ToggleSetting{cfg.shell.screenshot.skipAnnotateOnCopySave},
+        "screenshot annotate annotation skip copy save region quick"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Screenshot, "screenshot-annotation",
         tr("settings.schema.shell.screenshot-close-on-copy.label"),
         tr("settings.schema.shell.screenshot-close-on-copy.description"), {"shell", "screenshot", "close_on_copy"},
         ToggleSetting{cfg.shell.screenshot.closeOnCopy}, "screenshot annotation close copy clipboard exit"
