@@ -1081,6 +1081,14 @@ void SettingsWindow::rebuildSettingsContent() {
         settings::SettingsPluginsContext{
             .scale = scale,
             .selectedSection = m_selectedSection,
+            .searchQuery = m_pluginSearchQuery,
+            .setSearchQuery =
+                [this](std::string query) {
+                  m_pluginSearchQuery = std::move(query);
+                  m_contentScrollState.offset = 0.0F;
+                  m_pendingDeletePluginId.clear();
+                  m_pluginSearchDebounceTimer.start(kSearchDebounceInterval, [this]() { requestContentRebuild(); });
+                },
             .plugins = m_pluginList,
             .sources = cfg.plugins.sources,
             .searchActive = !m_searchQuery.empty(),
@@ -1410,7 +1418,11 @@ std::unique_ptr<Flex> SettingsWindow::buildBody(
     openMonitorOverrideCreateDialog(std::move(barName));
   };
   const auto clearTransientSettingsState = [this]() { this->clearTransientSettingsState(); };
-  const auto clearSearchQuery = [this]() { m_searchQuery.clear(); };
+  const auto clearSearchQuery = [this]() {
+    m_searchQuery.clear();
+    m_pluginSearchQuery.clear();
+    m_pluginSearchDebounceTimer.stop();
+  };
 
   auto body = ui::row({
       .align = FlexAlign::Stretch,
