@@ -246,6 +246,8 @@ namespace umbriel {
     void togglePinned();
     // Restore the global pinned scene layer after temporary drag reparenting.
     void restorePinnedSceneParent();
+    // Apply the pinned state: reparent to the global pinned layer, resync presentation, and notify the overview.
+    void applyPinnedState();
     // Enable/disable the view's scene tree and its shadow container together.
     void setNodeEnabled(bool enabled);
     void raiseToTop();
@@ -536,6 +538,7 @@ namespace umbriel {
     bool m_hasFullscreenRestoreBox = false;
     bool m_pinned = false;
     bool m_restoreTiledAfterUnpin = false;
+    bool m_restorePinnedAfterFullscreen = false;
     // Set when a float toggle drops fullscreen: re-tiling restores fullscreen BEFORE the layout attach, so the client
     // never receives a transient column-sized configure (game engines latch it for input mapping and go dead outside
     // it). Cleared whenever fullscreen is left by any other path, so a client that chose windowed mode while floating
