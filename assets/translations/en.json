@@ -1066,13 +1066,16 @@
       },
       "monitor-override": {
         "create": "Create",
+        "custom": "Custom",
         "delete": "Delete",
         "delete-confirm-desc": "This GUI-created monitor override will be removed from settings.toml.",
         "delete-confirm-title": "Delete \"{name}\"?",
+        "exists": "An override for this monitor already exists.",
         "label": "Monitor: {name}",
         "management": "Monitor Override",
         "match-placeholder": "Monitor match",
         "new": "Monitor Override",
+        "new-title": "New Monitor Override",
         "rename": "Rename",
         "rename-save": "Save"
       },
