@@ -2040,6 +2040,66 @@ namespace umbriel {
     requestFloatingSize(width, height);
   }
 
+  void View::resizeFloatingEdge(uint32_t edges, double delta) {
+    // Mirror the guard set of resizeFloatingFractions: a fullscreen view owns its
+    // size, a tiled one has no floating box, and a view with no usable area has
+    // nothing to size against.
+    if (!m_mapped || m_tiled || m_toplevel->current.fullscreen || m_toplevel->scheduled.fullscreen) {
+      return;
+    }
+    const wlr_box usable = floatingUsableArea();
+    if (usable.width <= 0 || usable.height <= 0) {
+      return;
+    }
+    const bool widthAxis = (edges & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) != 0;
+    const auto current = floatingFraction(widthAxis);
+    if (!current) {
+      return;
+    }
+    // The same 0.1 fraction floor the fraction path enforces, so a hint-less
+    // client cannot collapse to a single pixel.
+    const double target = std::clamp(*current + delta, 0.1, 1.0);
+    const XdgSizeHints hints = xdgSizeHints(m_toplevel);
+    const auto [basisWidth, basisHeight] = floatingSize();
+    // A pending size and the position animation target form one logical box.
+    // Anchor that box rather than the in-flight scene node, so repeated actions
+    // keep the same far edge while the previous resize is still animating.
+    const wlr_box& geo = m_toplevel->base->geometry;
+    const wlr_box anchor{
+        .x = layoutTargetX() + geo.x,
+        .y = layoutTargetY() + geo.y,
+        .width = basisWidth,
+        .height = basisHeight,
+    };
+    const int width = widthAxis ? clampXdgWidth(floatingFractionSize(target, usable.width), hints) : basisWidth;
+    const int height = widthAxis ? basisHeight : clampXdgHeight(floatingFractionSize(target, usable.height), hints);
+    if (width <= 0 || height <= 0) {
+      return;
+    }
+    // Pin the edge opposite the named one, then take the same steps the fraction
+    // path does: drop a maximize, animate the change, and keep the window on
+    // screen. The origin animates to where the requested size puts it, over the
+    // same duration and curve as the size, so the opposite edge stays put for the
+    // whole resize instead of drifting while the client catches up with the
+    // configure.
+    //
+    // The anchor session stays open until the client answers the configure, so a
+    // client that commits a size other than the requested one (because of size
+    // hints, or because it refused the resize) still has the origin recomputed from
+    // the geometry that actually arrived. finishFloatingResize ends the session but
+    // leaves the anchor until the request settles, so that commit both re-pins the
+    // edge and retires the anchor.
+    const FloatingPoint anchoredOrigin =
+        anchoredContentOrigin(anchor, edges, {.x = 0, .y = 0, .width = width, .height = height});
+    m_floating.beginResize(anchor, edges);
+    dropMaximizedForResize();
+    requestFloatingSize(width, height);
+    beginResizeAnimation(width, height);
+    animateTo(anchoredOrigin.x - geo.x, anchoredOrigin.y - geo.y);
+    clampFloatingPositionForSize(width, height);
+    finishFloatingResize();
+  }
+
   void View::finishFloatingResize() { m_floating.endResize(); }
 
   void View::syncFloatingResizePosition() {
@@ -2048,7 +2108,21 @@ namespace umbriel {
     }
     const wlr_box& geo = m_toplevel->base->geometry;
     const FloatingPoint content = anchoredContentOrigin(*m_floating.anchor(), m_floating.edges(), geo);
-    setPosition(content.x - geo.x, content.y - geo.y);
+    const int x = content.x - geo.x;
+    const int y = content.y - geo.y;
+    // A keybind resize animates the origin along with the size, so a commit whose
+    // geometry implies a different origin retargets that animation instead of
+    // snapping it, which is what re-pins the edge when the client commits a size
+    // other than the requested one. A target that already matches is left alone, so
+    // the animation is not restarted. A pointer drag places the origin directly
+    // instead, because it has to follow the cursor.
+    if ((m_posX.animating() || m_posY.animating()) && !sizeGrabActive()) {
+      if (layoutTargetX() != x || layoutTargetY() != y) {
+        animateTo(x, y);
+      }
+      return;
+    }
+    setPosition(x, y);
   }
 
   void View::adoptFloatingClientSize() {
