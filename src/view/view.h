@@ -530,6 +530,9 @@ namespace umbriel {
     // Saved client state commonly requests maximization while the surface is
     // opening. Layout policy owns that transition; later requests are valid.
     bool m_acceptClientMaximizeRequests = false;
+    // With honor_restored_maximize off, suppress a restored maximize re-assert
+    // only through the first root commit after the opening gate.
+    bool m_consumeRestoredMaximizeRequest = false;
     wl_event_source* m_acceptClientMaximizeIdle = nullptr;
     bool m_xwayland = false;
     // False until the first setPosition/animateTo places the node; the initial
