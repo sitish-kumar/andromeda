@@ -1282,6 +1282,7 @@ namespace umbriel {
     if (layoutBox.width <= 0 || layoutBox.height <= 0) {
       return;
     }
+    wlr_scene_set_background_color(m_scene, config().colors.backdrop.data());
     wlr_scene_rect_set_color(m_backdrop, config().colors.backdrop.data());
     wlr_scene_rect_set_size(m_backdrop, layoutBox.width, layoutBox.height);
     wlr_scene_node_set_position(&m_backdrop->node, layoutBox.x, layoutBox.y);

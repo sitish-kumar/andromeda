@@ -409,6 +409,7 @@ namespace umbriel {
         static_cast<float>(blur.contrast), static_cast<float>(blur.saturation)
     );
     m_sceneLayout = wlr_scene_attach_output_layout(m_scene, m_outputLayout);
+    wlr_scene_set_background_color(m_scene, config().colors.backdrop.data());
 
     // Global stacking keeps scratchpads above normal windows and below drag, panels, fullscreen, overlays, and lock.
     // Per-output layer trees keep normal windows below panels.
