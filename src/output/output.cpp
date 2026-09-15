@@ -3,6 +3,7 @@
 #include "config/config.h"
 #include "config/resolve.h"
 #include "core/log.h"
+#include "core/tracy.h"
 #include "input/seat.h"
 #include "layer/layer_surface.h"
 #include "output/frame_schedule.h"
@@ -889,6 +890,7 @@ namespace umbriel {
   }
 
   void Output::flushDirty() {
+    UMBRIEL_ZONE("Output::flushDirty");
     // Server-wide chrome is recorded on the Server and flushed by whichever
     // output frames first; each of these is idempotent and cheap.
     Dirty pending = m_dirty | m_server->takeDirty();
@@ -921,6 +923,7 @@ namespace umbriel {
   }
 
   void Output::handleFrame() {
+    UMBRIEL_ZONE("Output::handleFrame");
     // A failed DRM commit can immediately queue another frame after logind revokes device access. Stop before that
     // retry loop can keep the final event-loop dispatch alive. A null session belongs to a nested or headless backend
     // and remains renderable.
@@ -1018,6 +1021,7 @@ namespace umbriel {
     bool commitFailed = false;
     if (wlr_scene_output_needs_frame(m_sceneOutput) || m_gammaDirty) {
       m_inFrame = true;
+      UMBRIEL_ZONE("Output::render");
 
       wlr_output_state state{};
       wlr_output_state_init(&state);

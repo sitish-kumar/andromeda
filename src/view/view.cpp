@@ -4,6 +4,7 @@
 #include "config/resolve.h"
 #include "config/store.h"
 #include "core/log.h"
+#include "core/tracy.h"
 #include "input/cursor.h"
 #include "input/seat.h"
 #include "layout/scrolling.h"
@@ -1670,6 +1671,7 @@ namespace umbriel {
   }
 
   void View::updateBlur(int contentWidth, int contentHeight) {
+    UMBRIEL_ZONE("View::updateBlur");
     const wlr_box nodeBox{0, 0, contentWidth, contentHeight};
     m_decoration.updateBlur(
         m_sceneTree, m_toplevel->base->surface, nodeBox, m_toplevel->base->geometry, surfaceRadius(), nullptr,
@@ -1694,6 +1696,7 @@ namespace umbriel {
   }
 
   void View::updateShadow(int contentWidth, int contentHeight) {
+    UMBRIEL_ZONE("View::updateShadow");
     const int borderTotal = borderInset();
     m_decoration.updateShadow(
         contentWidth, contentHeight, borderTotal, decorated() ? config().appearance.cornerRadius : 0
@@ -2648,6 +2651,7 @@ namespace umbriel {
   }
 
   void View::handleCommit(bool reconfigureOpeningState) {
+    UMBRIEL_ZONE("View::handleCommit");
     if (m_captureScene != nullptr) {
       // Restrict the capture to the xdg window geometry. Client subsurfaces
       // remain visible, while buffer content outside the declared window is

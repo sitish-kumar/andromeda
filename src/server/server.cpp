@@ -7,6 +7,7 @@
 #include "core/fdlimit.h"
 #include "core/log.h"
 #include "core/process.h"
+#include "core/tracy.h"
 #include "input/cursor.h"
 #include "input/gestures.h"
 #include "input/keyboard.h"
@@ -1046,6 +1047,7 @@ namespace umbriel {
   void Server::unregisterAnimatable(Animatable* animatable) { std::erase(m_animatables, animatable); }
 
   bool Server::tickAnimations(uint64_t nowMsec) {
+    UMBRIEL_ZONE("Server::tickAnimations");
     if (nowMsec == m_lastAnimTickMsec) {
       return animationsActive();
     }
