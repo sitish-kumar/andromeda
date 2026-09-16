@@ -255,6 +255,23 @@ namespace umbriel {
       layer->focus();
       return;
     }
+
+    // If a scratchpad is open and it already has focus, don't steal it.
+    auto surface = m_server.seat()->wlr()->keyboard_state.focused_surface;
+    auto focused = View::fromSurface(surface);
+    auto pad = m_server.scratchpadManager();
+    if (preferred != nullptr
+        && surface != nullptr
+        && surface->mapped
+        && focused != nullptr
+        && focused->mapped()
+        && focused->onActiveWorkspace()
+        && pad != nullptr
+        && pad->contains(focused)
+        && pad->outputFor(focused) == preferred) {
+      return;
+    }
+
     refocusFallback(preferred);
   }
 
