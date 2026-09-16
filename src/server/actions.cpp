@@ -1056,6 +1056,8 @@ namespace umbriel {
       server.focusView(view, FocusReason::ForeignActivation);
       if constexpr (Warp) {
         warpCursorToWindow(server, *view);
+      } else {
+        maybeWarpCursorToWindow(server, view);
       }
       return true;
     }
