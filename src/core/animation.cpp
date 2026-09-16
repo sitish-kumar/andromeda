@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <limits>
 #include <mutex>
 #include <numbers>
 #include <shared_mutex>
@@ -421,6 +422,15 @@ namespace umbriel {
       *outVelocity = vel;
     }
     return to + posOffset;
+  }
+
+  double springDisplacementBound(double current, double target, double velocity, const SpringConfig& config) {
+    if (!std::isfinite(current) || !std::isfinite(target) || !std::isfinite(velocity)) {
+      return std::numeric_limits<double>::infinity();
+    }
+    const double mass = std::max(1e-4, std::isfinite(config.mass) ? config.mass : 1.0);
+    const double stiffness = std::max(1e-4, std::isfinite(config.stiffness) ? config.stiffness : 100.0);
+    return std::hypot(current - target, velocity * std::sqrt(mass / stiffness));
   }
 
   double applyEasing(const AnimationCurve& curve, double progress) {

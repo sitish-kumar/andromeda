@@ -44,6 +44,9 @@ namespace umbriel {
 
     // Gap between workspace thumbnails, as a fraction of the scaled row height.
     constexpr double kRowGapFraction = 0.1;
+    // Once all remaining spring energy fits inside this many layout pixels, showing the tail only creates isolated
+    // rounded pixel steps. Snap it while preserving larger release motion and configured bounce.
+    constexpr double kRowSpringSettlePixels = 3.0;
     // Pointer travel that promotes a press on a card into a relocate drag.
     constexpr double kDragThreshold = 10.0;
     // How much of the focused border color mixes into the unfocused one for a landing target that is not the live one.
@@ -1568,7 +1571,22 @@ namespace umbriel {
     }
     bool rowTicked = false;
     for (const auto& state : m_outputs) {
-      rowTicked = state->rowScroll.tick(nowMsec) || rowTicked;
+      const bool ticked = state->rowScroll.tick(nowMsec);
+      if (ticked && state->rowScroll.animating() && state->rowScroll.curve().easing == Easing::Spring) {
+        PreviewMetrics metrics;
+        if (previewMetrics(*state, *m_server, zoom(), metrics)) {
+          const double step =
+              (metrics.axis == WorkspaceAxis::Horizontal ? metrics.previewW : metrics.previewH) + metrics.gap;
+          const double remaining = springDisplacementBound(
+              state->rowScroll.current(), state->rowScroll.target(), state->rowScroll.velocity(),
+              state->rowScroll.curve().spring
+          );
+          if (remaining * step <= kRowSpringSettlePixels) {
+            state->rowScroll.snap(state->rowScroll.target());
+          }
+        }
+      }
+      rowTicked = ticked || rowTicked;
       active = active || state->rowScroll.animating();
     }
     if (zoomTicked || rowTicked || m_cardPresentationDirty) {

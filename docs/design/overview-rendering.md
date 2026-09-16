@@ -35,7 +35,10 @@ source moves it the same way through `Overview::animateRow`, which uses
 position through `AnimatedValue::settleSpring`, carrying the release velocity
 scaled by the rubber-band derivative at the release point; any other curve runs
 over `duration_ms` from rest. A gesture in flight snaps the value each frame,
-which also stops a settle still running on that output.
+which also stops a settle still running on that output. A settling spring snaps
+to its target once the position and velocity energy bound fits within three
+layout pixels of the preview step. This removes isolated rounded-pixel movement
+at the tail without cutting off larger release motion or bounce.
 
 ## Animation ownership
 

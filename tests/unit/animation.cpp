@@ -145,6 +145,14 @@ UMBRIEL_TEST(springSettleStartsFromTheReleaseVelocityAndStops) {
   CHECK_EQ(value.current(), 0.0);
 }
 
+UMBRIEL_TEST(springDisplacementBoundIncludesPositionAndVelocityEnergy) {
+  const umbriel::SpringConfig spring{.damping = 1.0, .stiffness = 100.0, .mass = 1.0};
+
+  CHECK(std::abs(umbriel::springDisplacementBound(1.25, 1.0, 0.0, spring) - 0.25) < 1e-12);
+  CHECK(std::abs(umbriel::springDisplacementBound(1.0, 1.0, 2.0, spring) - 0.2) < 1e-12);
+  CHECK(std::abs(umbriel::springDisplacementBound(1.15, 1.0, 2.0, spring) - std::hypot(0.15, 0.2)) < 1e-12);
+}
+
 UMBRIEL_TEST(physicsSpringKeepsShaderIdentityWhenProgressReverses) {
   umbriel::AnimatedValue value;
   value.settleSpring(1.0, umbriel::SpringConfig{.damping = 0.1, .stiffness = 100.0, .mass = 1.0}, 0.0);

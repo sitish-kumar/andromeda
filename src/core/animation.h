@@ -77,6 +77,10 @@ namespace umbriel {
       double from, double to, double velocity, double elapsedSec, const SpringConfig& config,
       double* outVelocity = nullptr
   );
+  // Upper bound on the displacement a damped spring can reach from its current position and velocity. The bound is
+  // expressed in the same units as current and target and follows from the spring's remaining mechanical energy.
+  [[nodiscard]] double
+  springDisplacementBound(double current, double target, double velocity, const SpringConfig& config);
   [[nodiscard]] double applyEasing(const AnimationCurve& curve, double progress);
   [[nodiscard]] inline double evaluateCurve(const AnimationCurve& curve, double progress) {
     return applyEasing(curve, progress);

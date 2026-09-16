@@ -171,9 +171,12 @@ wait_for_workspace source-anchor "$one_id"
 wait_for_column_geometry "$normal_width"
 sleep 1
 
-# The focused bottom member is not under the target output's center. A
-# focus-only detour to the top member followed by an unmoved click therefore
-# proves the cross-output transfer warped to the moved focused window.
+# The focused bottom member is not under the target output's center. Turn off
+# follow-warp without moving the cursor, then use a focus-only detour to the top
+# member. An unmoved click proves the cross-output transfer warped to the moved
+# focused window.
+sed -i 's/follows_focus = true/follows_focus = false/' "$UMBRIEL_CONFIG"
+"$UMBRIEL" msg config-reload > /dev/null
 top_id=$(field_of column-top id)
 accepts "window-focus:$top_id"
 "$POINTER" 2560 720 click "$BTN_LEFT"

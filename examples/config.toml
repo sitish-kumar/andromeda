@@ -745,7 +745,6 @@ duration_ms = 250
 curve = "easeout"
 # Filmstrip movement between workspace previews: wheel, keyboard, and touchpad
 # release alike. A spring curve settles from wherever the previews are and keeps
-# the speed a swipe let go with; any other curve runs over duration_ms instead.
 workspace_curve = "spring:1,1000"
 
 # Scratchpad show, hide, and backdrop
