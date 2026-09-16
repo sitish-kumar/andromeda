@@ -357,8 +357,8 @@ follows_mouse = false                           # Focus on motion after scene ch
 "Mod+Shift+Right" = "column-move-right"
 "Mod+F" = "window-toggle-fullscreen"             # Exit restores the previous layout size immediately
 "Mod+Ctrl+F" = "window-toggle-maximize"
-"Mod+R" = "window-cycle-width"
-"Mod+Shift+R" = "window-cycle-width-back"
+"Mod+R" = "window-cycle-primary-extent"
+"Mod+Shift+R" = "window-cycle-primary-extent-back"
 "Mod+Comma" = "window-consume-left"
 "Mod+Period" = "window-consume-right"
 "Mod+WheelUp" = "window-focus-left"
@@ -427,16 +427,16 @@ follows_mouse = false                           # Focus on motion after scene ch
 # "Mod+Bracketleft" = "window-focus-previous"
 # "Mod+Shift+Bracketright" = "window-swap-next"
 # "Mod+Shift+Bracketleft" = "window-swap-previous"
-# "Mod+Minus" = "window-modify-width:-0.1"
-# "Mod+Equal" = "window-modify-width:0.1"
-# "Mod+Alt+Minus" = "window-modify-height:-0.1"
-# "Mod+Alt+Equal" = "window-modify-height:0.1"
+# "Mod+Minus" = "window-modify-primary-extent:-0.1"
+# "Mod+Equal" = "window-modify-primary-extent:0.1"
+# "Mod+Alt+Minus" = "window-modify-secondary-extent:-0.1"
+# "Mod+Alt+Equal" = "window-modify-secondary-extent:0.1"
 # "Mod+Ctrl+H" = "window-modify-width-left:0.1"
 # "Mod+Ctrl+L" = "window-modify-width-right:0.1"
 # "Mod+Ctrl+K" = "window-modify-height-up:0.1"
 # "Mod+Ctrl+J" = "window-modify-height-down:0.1"
-# "Mod+Alt+R" = "window-cycle-height"
-# "Mod+Alt+Shift+R" = "window-cycle-height-back"
+# "Mod+Alt+R" = "window-cycle-secondary-extent"
+# "Mod+Alt+Shift+R" = "window-cycle-secondary-extent-back"
 # "Mod+Grave" = "window-focus-last"
 # "Mod+BackSpace" = "window-consume-or-expel-left"
 # "Mod+C" = "column-center"
@@ -462,11 +462,11 @@ follows_mouse = false                           # Focus on motion after scene ch
 # level, while a global reset provides an emergency exit from any layer.
 # Submaps: https://docs.noctalia.dev/umbriel/keybinds/#submaps
 # "Mod+S" = { action = "submap:resize", repeat = false }
-# "submap[resize],1" = { action = "window-set-width:0.5", submap = "reset" }
+# "submap[resize],1" = { action = "window-set-primary-extent:0.5", submap = "reset" }
 # "submap[resize],N" = { action = "submap:nudge", repeat = false }
 # "submap[resize],Escape" = "submap:reset"
-# "submap[nudge],Left" = "window-modify-width:-0.1"
-# "submap[nudge],Right" = "window-modify-width:0.1"
+# "submap[nudge],Left" = "window-modify-primary-extent:-0.1"
+# "submap[nudge],Right" = "window-modify-primary-extent:0.1"
 # "submap[nudge],Escape" = "submap:reset"
 # "Escape" = "submap:reset"
 
@@ -491,7 +491,7 @@ follows_mouse = false                           # Focus on motion after scene ch
 [layout]
 mode = "scrolling"                              # scrolling, dwindle, or master
 gap = 8                                         # Logical pixels between tiles, 0-500
-width_presets = [0.333, 0.5, 0.667]             # Width and height cycling fractions
+extent_presets = [0.333, 0.5, 0.667]             # Primary and secondary extent fractions
 
 [layout.struts]
 # Signed logical pixels reserved after panel exclusive zones. Negative values

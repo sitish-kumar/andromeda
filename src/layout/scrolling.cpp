@@ -397,10 +397,10 @@ namespace umbriel {
   }
 
   // Weight for a row about to be added at `row`, and the gap it takes over. A column keeps free space at its ends as
-  // gap weight (pointer drags and the height actions both put it there), and that free space is exactly where the next
-  // row belongs, so the incoming row claims it instead of squeezing in beside it. Without a gap to claim the row keeps
-  // `fallbackWeight`. The scaling keeps the other rows at their current pixel extents across the stack shrinking by
-  // one inter-row gap.
+  // gap weight (pointer drags and secondary extent actions both put it there), and that free space is exactly where the
+  // next row belongs, so the incoming row claims it instead of squeezing in beside it. Without a gap to claim the row
+  // keeps `fallbackWeight`. The scaling keeps the other rows at their current pixel extents across the stack shrinking
+  // by one inter-row gap.
   double ScrollingLayout::claimInsertWeight(Column& column, int row, double fallbackWeight) {
     ensureWeightCount(column);
     const int existingRows = static_cast<int>(column.views.size());
@@ -829,7 +829,7 @@ namespace umbriel {
       return false;
     }
     Column& column = m_columns[static_cast<size_t>(columnIndex)];
-    column.widthFrac = nextFractionPreset(m_config->widthPresets, column.widthFrac, direction);
+    column.widthFrac = nextFractionPreset(m_config->extentPresets, column.widthFrac, direction);
     column.savedWidthFrac = 0.0;
     return true;
   }

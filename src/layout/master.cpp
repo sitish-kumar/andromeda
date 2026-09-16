@@ -657,7 +657,7 @@ namespace umbriel {
     if (!widthAdjustable() || visualArea(columnIndex) == nullptr) {
       return false;
     }
-    const double next = nextFractionPreset(m_config->widthPresets, widthFraction(columnIndex), direction);
+    const double next = nextFractionPreset(m_config->extentPresets, widthFraction(columnIndex), direction);
     return setWidthFraction(columnIndex, next);
   }
 

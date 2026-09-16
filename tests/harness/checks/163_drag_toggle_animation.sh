@@ -66,8 +66,8 @@ wait_for_box 1264x704
 # distance to animate, then tile it again for the drag to start from.
 "$UMBRIEL" msg window-toggle-floating > /dev/null
 sleep 0.4
-"$UMBRIEL" msg window-set-width:0.25 > /dev/null
-"$UMBRIEL" msg window-set-height:0.3 > /dev/null
+"$UMBRIEL" msg window-set-primary-extent:0.25 > /dev/null
+"$UMBRIEL" msg window-set-secondary-extent:0.3 > /dev/null
 wait_for_box 320x216
 "$UMBRIEL" msg window-toggle-floating > /dev/null
 wait_for_box 1264x704

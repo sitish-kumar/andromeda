@@ -158,7 +158,7 @@ if [[ $(cursor_output) != "$pointer_output" ]]; then
 fi
 
 baseline_background=$(background_signature)
-"$UMBRIEL" msg window-set-width:0.25 > /dev/null
+"$UMBRIEL" msg window-set-primary-extent:0.25 > /dev/null
 
 resized=false
 for _ in $(seq 80); do

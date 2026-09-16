@@ -103,7 +103,7 @@ wait_for_column_geometry
 spawn_client source-anchor
 wait_for_windows 3
 accepts "window-focus:$bottom_id"
-accepts window-set-width:0.667
+accepts window-set-primary-extent:0.667
 for _ in $(seq 50); do
   normal_width=$(field_of column-bottom w)
   [[ $normal_width -ge 800 && $normal_width -le 870 ]] && break

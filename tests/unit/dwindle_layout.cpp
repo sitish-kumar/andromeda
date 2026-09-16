@@ -702,7 +702,7 @@ UMBRIEL_TEST(resizeBoundaryRejectsAScreenFacingEdge) {
 
 UMBRIEL_TEST(cycleWidthBackWalksThePresetsInReverse) {
   Fixture fixture;
-  fixture.config.widthPresets = {1.0 / 3.0, 0.5, 2.0 / 3.0};
+  fixture.config.extentPresets = {1.0 / 3.0, 0.5, 2.0 / 3.0};
   fixture.addLeaves(2);
   fixture.layout.arrange(kUsable);
 

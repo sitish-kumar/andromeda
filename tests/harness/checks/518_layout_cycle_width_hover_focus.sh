@@ -34,7 +34,7 @@ cat >> "$UMBRIEL_CONFIG" <<'EOF'
 
 [layout]
 mode = "scrolling"
-width_presets = [0.4, 0.6]
+extent_presets = [0.4, 0.6]
 
 [layout.scrolling]
 default_extent_fraction = 0.6
@@ -61,11 +61,11 @@ pointer_x=$((right_x - 50))
 "$POINTER" "$OUTPUT_W" "$OUTPUT_H" move "$pointer_x" 360
 wait_for_active scene-cycle-left
 
-"$UMBRIEL" msg window-cycle-width-back > /dev/null
+"$UMBRIEL" msg window-cycle-primary-extent-back > /dev/null
 sleep 0.1
 wait_for_active scene-cycle-left
 
 "$POINTER" "$OUTPUT_W" "$OUTPUT_H" move "$((pointer_x + 1))" 360
 wait_for_active scene-cycle-right
 
-echo "motion refreshed hover focus after a width preset exposed another column beneath the pointer"
+echo "motion refreshed hover focus after a primary extent preset exposed another column beneath the pointer"

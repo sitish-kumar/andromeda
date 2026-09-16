@@ -1129,8 +1129,8 @@ namespace umbriel {
       if (!axis) {
         return false;
       }
-      const double current = presetSnappedFraction(m_layoutConfig.widthPresets, (*axis)[0], (*axis)[1]);
-      return resizeFocusedFloating(nextFractionPreset(m_layoutConfig.widthPresets, current, direction), std::nullopt);
+      const double current = presetSnappedFraction(m_layoutConfig.extentPresets, (*axis)[0], (*axis)[1]);
+      return resizeFocusedFloating(nextFractionPreset(m_layoutConfig.extentPresets, current, direction), std::nullopt);
     }
     if (m_focusedView != nullptr && m_focusedView->maximizedToEdges()) {
       m_focusedView->setMaximizedToEdges(false);
@@ -1151,15 +1151,15 @@ namespace umbriel {
       if (!axis) {
         return false;
       }
-      const double current = presetSnappedFraction(m_layoutConfig.widthPresets, (*axis)[0], (*axis)[1]);
-      return resizeFocusedFloating(std::nullopt, nextFractionPreset(m_layoutConfig.widthPresets, current, direction));
+      const double current = presetSnappedFraction(m_layoutConfig.extentPresets, (*axis)[0], (*axis)[1]);
+      return resizeFocusedFloating(std::nullopt, nextFractionPreset(m_layoutConfig.extentPresets, current, direction));
     }
     if (m_focusedView != nullptr && m_focusedView->maximizedToEdges()) {
       m_focusedView->setMaximizedToEdges(false);
     }
     const double current = m_layout->heightFraction(m_focusedView);
     if (!m_layout->setHeightFraction(
-            m_focusedView, nextFractionPreset(m_layoutConfig.widthPresets, current, direction)
+            m_focusedView, nextFractionPreset(m_layoutConfig.extentPresets, current, direction)
         )) {
       return false;
     }

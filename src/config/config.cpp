@@ -571,14 +571,14 @@ namespace umbriel {
       return matrix;
     }
 
-    std::optional<std::vector<double>> readWidthPresets(Section& section, std::string_view context) {
-      const toml::node* node = section.take("width_presets");
+    std::optional<std::vector<double>> readExtentPresets(Section& section, std::string_view context) {
+      const toml::node* node = section.take("extent_presets");
       if (node == nullptr) {
         return std::nullopt;
       }
       const auto* array = node->as_array();
       if (array == nullptr || array->empty()) {
-        warnAt(node->source(), "ignoring {}.width_presets (expected non-empty array of numbers)", context);
+        warnAt(node->source(), "ignoring {}.extent_presets (expected non-empty array of numbers)", context);
         return std::nullopt;
       }
 
@@ -587,12 +587,12 @@ namespace umbriel {
       for (const auto& entry : *array) {
         const auto value = entry.value<double>();
         if (!value || std::isnan(*value)) {
-          warnAt(node->source(), "ignoring {}.width_presets (expected non-empty array of numbers)", context);
+          warnAt(node->source(), "ignoring {}.extent_presets (expected non-empty array of numbers)", context);
           return std::nullopt;
         }
         const double used = std::clamp(*value, 0.1, 1.0);
         if (used != *value) {
-          warnAt(entry.source(), "{}.width_presets = {} out of range, clamped to {}", context, *value, used);
+          warnAt(entry.source(), "{}.extent_presets = {} out of range, clamped to {}", context, *value, used);
         }
         parsed.push_back(used);
       }
@@ -619,8 +619,8 @@ namespace umbriel {
             }
             s.integer("gap", 0, 500, overrides.gap);
             s.sub("struts", [&](Section& struts) { readLayoutStruts(struts, overrides.struts); });
-            if (auto presets = readWidthPresets(s, layoutContext)) {
-              overrides.widthPresets = std::move(*presets);
+            if (auto presets = readExtentPresets(s, layoutContext)) {
+              overrides.extentPresets = std::move(*presets);
             }
             s.sub("scrolling", [&](Section& sc) {
               sc.real("default_extent_fraction", 0.1, 1.0, overrides.scrolling.defaultExtentFraction)
@@ -1317,8 +1317,8 @@ namespace umbriel {
         }
         s.integer("gap", 0, 500, loaded.layout.gap);
         s.sub("struts", [&](Section& struts) { readLayoutStruts(struts, loaded.layout.struts); });
-        if (auto presets = readWidthPresets(s, "layout")) {
-          loaded.layout.widthPresets = std::move(*presets);
+        if (auto presets = readExtentPresets(s, "layout")) {
+          loaded.layout.extentPresets = std::move(*presets);
         }
         s.sub("scrolling", [&](Section& sc) {
           sc.real("default_extent_fraction", 0.1, 1.0, loaded.layout.scrolling.defaultExtentFraction)

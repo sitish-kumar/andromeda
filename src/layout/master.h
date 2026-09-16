@@ -76,7 +76,7 @@ namespace umbriel {
     [[nodiscard]] Area* promotionStack();
     // Outside center mode the second stack cannot exist, so a reload that leaves center appends it to m_stack.
     void foldSecondStack();
-    // Whether the width actions have a boundary to move: the master margins in center mode, both areas otherwise.
+    // Whether primary extent actions have a boundary to move: the master margins in center mode, both areas otherwise.
     [[nodiscard]] bool widthAdjustable() const;
     [[nodiscard]] Area* areaOf(const View* view);
     [[nodiscard]] const Area* areaOf(const View* view) const;

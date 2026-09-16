@@ -132,8 +132,8 @@ namespace umbriel {
       if (overrides.master.position) {
         resolved.master.position = *overrides.master.position;
       }
-      if (overrides.widthPresets) {
-        resolved.widthPresets = *overrides.widthPresets;
+      if (overrides.extentPresets) {
+        resolved.extentPresets = *overrides.extentPresets;
       }
       const int borderWidth = config.appearance.totalBorderWidth();
       resolved.totalGap = resolved.gap + 2 * borderWidth;
@@ -379,7 +379,7 @@ namespace umbriel {
     resolved.mode = config.layout.mode;
     resolved.gap = config.layout.gap;
     resolved.struts = config.layout.struts;
-    resolved.widthPresets = config.layout.widthPresets;
+    resolved.extentPresets = config.layout.extentPresets;
     resolved.scrolling.defaultExtentFraction = config.layout.scrolling.defaultExtentFraction;
     resolved.scrolling.centerUnderfullStrip = config.layout.scrolling.centerUnderfullStrip;
     resolved.scrolling.centerFocused = config.layout.scrolling.centerFocused;

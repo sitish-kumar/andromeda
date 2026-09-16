@@ -35,7 +35,7 @@ namespace {
     config.edgePad = 10;
     config.scrolling.defaultExtentFraction = 0.5;
     config.scrolling.centerUnderfullStrip = true;
-    config.widthPresets = {1.0 / 3, 0.5, 2.0 / 3};
+    config.extentPresets = {1.0 / 3, 0.5, 2.0 / 3};
     return config;
   }
 

@@ -76,7 +76,7 @@ if (( before_x != 0 || before_y != 200 || before_w != 100 || before_h != 300 ));
   exit 1
 fi
 
-"$UMBRIEL" msg window-set-width:0.2 > /dev/null
+"$UMBRIEL" msg window-set-primary-extent:0.2 > /dev/null
 sleep 0.25
 read -r first_x first_y first_w first_h < <(capture_box shrink-250ms)
 sleep 1.00

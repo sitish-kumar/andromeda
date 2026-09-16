@@ -268,7 +268,7 @@ prefer_no_csd = true
 
 [layout]
 mode = "dwindle"
-width_presets = [0.05, 0.5, 2.0]
+extent_presets = [0.05, 0.5, 2.0]
 
 [layout.scrolling]
 center_underfull_strip = false
@@ -285,7 +285,7 @@ name = "dev"
 
 [workspace.layout]
 mode = "scrolling"
-width_presets = [0.25, 0.75]
+extent_presets = [0.25, 0.75]
 
 [workspace.layout.scrolling]
 center_underfull_strip = true
@@ -299,10 +299,10 @@ preserve_split = false
 
   CHECK(result.success);
   CHECK(store.config().layout.mode == LayoutMode::Dwindle);
-  CHECK_EQ(store.config().layout.widthPresets.size(), size_t{3});
-  CHECK_EQ(store.config().layout.widthPresets[0], 0.1);
-  CHECK_EQ(store.config().layout.widthPresets[1], 0.5);
-  CHECK_EQ(store.config().layout.widthPresets[2], 1.0);
+  CHECK_EQ(store.config().layout.extentPresets.size(), size_t{3});
+  CHECK_EQ(store.config().layout.extentPresets[0], 0.1);
+  CHECK_EQ(store.config().layout.extentPresets[1], 0.5);
+  CHECK_EQ(store.config().layout.extentPresets[2], 1.0);
   CHECK(!store.config().layout.scrolling.centerUnderfullStrip);
   CHECK(store.config().layout.dwindle.preserveSplit);
   CHECK(store.config().appearance.preferNoCsd);
@@ -311,14 +311,25 @@ preserve_split = false
   CHECK_EQ(*store.config().outputs[0].scale, 4.0);
   CHECK_EQ(store.config().workspaceRules.size(), size_t{1});
   CHECK(store.config().workspaceRules[0].layout.mode == LayoutMode::Scrolling);
-  CHECK(store.config().workspaceRules[0].layout.widthPresets.has_value());
-  CHECK_EQ(store.config().workspaceRules[0].layout.widthPresets->size(), size_t{2});
+  CHECK(store.config().workspaceRules[0].layout.extentPresets.has_value());
+  CHECK_EQ(store.config().workspaceRules[0].layout.extentPresets->size(), size_t{2});
   CHECK(store.config().workspaceRules[0].layout.scrolling.centerUnderfullStrip == true);
   CHECK(store.config().workspaceRules[0].layout.dwindle.preserveSplit == false);
   CHECK(containsDiagnostic(store, "unknown key unknown_root_key"));
   CHECK(containsDiagnostic(store, "output.DP-1.scale = 9"));
   CHECK(containsDiagnostic(store, "unknown key layout.scrolling.always_center_single_column"));
   CHECK(containsDiagnostic(store, "unknown key general.prefer_no_csd"));
+}
+
+UMBRIEL_TEST(rejectsRemovedWidthPresetKey) {
+  const TempConfig file;
+  file.write("[layout]\nwidth_presets = [0.75]\n");
+
+  ConfigStore& store = umbriel::configStore();
+  store.setRootPath(file.path(), true);
+  CHECK(store.reload().success);
+  CHECK_EQ(store.config().layout.extentPresets.size(), size_t{3});
+  CHECK(containsDiagnostic(store, "unknown key layout.width_presets"));
 }
 
 UMBRIEL_TEST(backgroundDefaultsOpaque) {

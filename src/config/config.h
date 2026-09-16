@@ -52,7 +52,7 @@ namespace umbriel {
     std::optional<LayoutMode> mode;
     std::optional<int> gap;
     LayoutStrutOverrides struts;
-    std::optional<std::vector<double>> widthPresets;
+    std::optional<std::vector<double>> extentPresets;
     struct Scrolling {
       std::optional<double> defaultExtentFraction;
       std::optional<bool> centerUnderfullStrip;
@@ -98,7 +98,7 @@ namespace umbriel {
     LayoutMode mode = LayoutMode::Scrolling;
     int gap = 8;
     LayoutStruts struts;
-    std::vector<double> widthPresets{1.0 / 3, 0.5, 2.0 / 3};
+    std::vector<double> extentPresets{1.0 / 3, 0.5, 2.0 / 3};
     struct Scrolling {
       std::optional<double> defaultExtentFraction;
       bool centerUnderfullStrip = true;
@@ -659,7 +659,7 @@ namespace umbriel {
       LayoutMode mode = LayoutMode::Scrolling;
       int gap = 8;
       LayoutStruts struts;
-      std::vector<double> widthPresets{1.0 / 3, 0.5, 2.0 / 3};
+      std::vector<double> extentPresets{1.0 / 3, 0.5, 2.0 / 3};
       struct Scrolling {
         std::optional<double> defaultExtentFraction;
         bool centerUnderfullStrip = true;

@@ -66,7 +66,7 @@ assert_box 640 360 320 180
 # next toggle has to maximize. If the state survived, this would restore 640.
 "$UMBRIEL" msg window-toggle-maximize > /dev/null
 wait_for_field float-maximize w 1280
-"$UMBRIEL" msg window-modify-width:-0.2 > /dev/null
+"$UMBRIEL" msg window-modify-primary-extent:-0.2 > /dev/null
 wait_for_field float-maximize w 1024
 "$UMBRIEL" msg window-toggle-maximize > /dev/null
 wait_for_field float-maximize w 1280

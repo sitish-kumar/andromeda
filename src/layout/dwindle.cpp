@@ -619,7 +619,7 @@ namespace umbriel {
     for (const Split& split : axisSplits) {
       current *= splitShare(split);
     }
-    return applyFraction(axisSplits, nextFractionPreset(m_config->widthPresets, current, direction));
+    return applyFraction(axisSplits, nextFractionPreset(m_config->extentPresets, current, direction));
   }
 
   bool DwindleLayout::toggleFullWidth(int columnIndex) {
