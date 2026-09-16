@@ -48,14 +48,14 @@ EOF
 name = "scroll-h"
 layout.mode = "scrolling"
 layout.gap = 8
-layout.scrolling.default_width_fraction = 0.5
+layout.scrolling.default_extent_fraction = 0.5
 layout.scrolling.center_underfull_strip = false
 
 [[workspace]]
 name = "scroll-v"
 layout.mode = "scrolling"
 layout.gap = 8
-layout.scrolling.default_width_fraction = 0.5
+layout.scrolling.default_extent_fraction = 0.5
 layout.scrolling.center_underfull_strip = false
 
 [[window_rule]]

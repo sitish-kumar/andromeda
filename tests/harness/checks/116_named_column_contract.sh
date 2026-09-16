@@ -42,7 +42,7 @@ cat >> "$UMBRIEL_CONFIG" <<'EOF'
 duration_ms = 1
 
 [layout.scrolling]
-default_width_fraction = 0.5
+default_extent_fraction = 0.5
 
 # The whole output starts with horizontally arranged workspaces, so its scrolling
 # strips run vertically for the named-lane phase below.

@@ -579,26 +579,31 @@ UMBRIEL_TEST(masterPositionAcceptsCenterAndRejectsOtherValues) {
   CHECK(containsDiagnostic(store, R"(unknown layout.master.position "middle")"));
 }
 
-UMBRIEL_TEST(scrollingDefaultWidthIsOptional) {
+UMBRIEL_TEST(scrollingDefaultExtentIsOptional) {
   const TempConfig file;
   ConfigStore& store = umbriel::configStore();
   store.setRootPath(file.path(), true);
 
   file.write("[layout.scrolling]\ncenter_underfull_strip = false\n");
   CHECK(store.reload().success);
-  CHECK(!store.config().layout.scrolling.defaultWidthFraction.has_value());
+  CHECK(!store.config().layout.scrolling.defaultExtentFraction.has_value());
 
-  file.write("[layout.scrolling]\ndefault_width_fraction = 0.75\n");
+  file.write("[layout.scrolling]\ndefault_extent_fraction = 0.75\n");
   CHECK(store.reload().success);
-  CHECK(store.config().layout.scrolling.defaultWidthFraction.has_value());
-  CHECK_EQ(*store.config().layout.scrolling.defaultWidthFraction, 0.75);
+  CHECK(store.config().layout.scrolling.defaultExtentFraction.has_value());
+  CHECK_EQ(*store.config().layout.scrolling.defaultExtentFraction, 0.75);
+
+  file.write("[layout.scrolling]\ndefault_width_fraction = 0.25\n");
+  CHECK(store.reload().success);
+  CHECK(!store.config().layout.scrolling.defaultExtentFraction.has_value());
+  CHECK(containsDiagnostic(store, "unknown key layout.scrolling.default_width_fraction"));
 
   file.write("[layout.scrolling]\ncenter_underfull_strip = true\n");
   CHECK(store.reload().success);
-  CHECK(!store.config().layout.scrolling.defaultWidthFraction.has_value());
+  CHECK(!store.config().layout.scrolling.defaultExtentFraction.has_value());
 }
 
-UMBRIEL_TEST(outputScrollingDefaultWidthUsesNarrowLayoutScope) {
+UMBRIEL_TEST(outputScrollingDefaultExtentUsesNarrowLayoutScope) {
   const TempConfig file;
   ConfigStore& store = umbriel::configStore();
   store.setRootPath(file.path(), true);
@@ -608,24 +613,24 @@ UMBRIEL_TEST(outputScrollingDefaultWidthUsesNarrowLayoutScope) {
 gap = 12
 
 [output.DP-1.layout.scrolling]
-default_width_fraction = 0.05
+default_extent_fraction = 0.05
 center_focused = true
 )");
   CHECK(store.reload().success);
   CHECK_EQ(store.config().outputs.size(), size_t{1});
-  CHECK(store.config().outputs[0].layout.scrolling.defaultWidthFraction.has_value());
-  if (store.config().outputs[0].layout.scrolling.defaultWidthFraction) {
-    CHECK_EQ(*store.config().outputs[0].layout.scrolling.defaultWidthFraction, 0.1);
+  CHECK(store.config().outputs[0].layout.scrolling.defaultExtentFraction.has_value());
+  if (store.config().outputs[0].layout.scrolling.defaultExtentFraction) {
+    CHECK_EQ(*store.config().outputs[0].layout.scrolling.defaultExtentFraction, 0.1);
   }
   CHECK(containsDiagnostic(
-      store, "output.DP-1.layout.scrolling.default_width_fraction = 0.05 out of range, clamped to 0.1"
+      store, "output.DP-1.layout.scrolling.default_extent_fraction = 0.05 out of range, clamped to 0.1"
   ));
   CHECK(containsDiagnostic(store, "unknown key output.DP-1.layout.gap"));
   CHECK(containsDiagnostic(store, "unknown key output.DP-1.layout.scrolling.center_focused"));
 
   file.write("[output.DP-1]\nenabled = true\n");
   CHECK(store.reload().success);
-  CHECK(!store.config().outputs[0].layout.scrolling.defaultWidthFraction.has_value());
+  CHECK(!store.config().outputs[0].layout.scrolling.defaultExtentFraction.has_value());
 }
 
 UMBRIEL_TEST(outputWorkspaceAxisAcceptsOnlyItsTwoNames) {

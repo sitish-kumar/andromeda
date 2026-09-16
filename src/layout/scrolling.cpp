@@ -390,7 +390,7 @@ namespace umbriel {
     }
     const int index = std::clamp(columnIndex, 0, static_cast<int>(m_columns.size()));
     Column column;
-    column.widthFrac = m_config->scrolling.defaultWidthFraction.value_or(0.5);
+    column.widthFrac = m_config->scrolling.defaultExtentFraction.value_or(0.5);
     column.views.push_back(view);
     column.heightWeights.push_back(1.0);
     m_columns.insert(m_columns.begin() + index, std::move(column));
@@ -498,7 +498,7 @@ namespace umbriel {
       source.heightWeights.erase(source.heightWeights.begin() + row);
     }
     Column column;
-    column.widthFrac = m_config->scrolling.defaultWidthFraction.value_or(0.5);
+    column.widthFrac = m_config->scrolling.defaultExtentFraction.value_or(0.5);
     column.views.push_back(view);
     column.heightWeights.push_back(weight);
     const int destinationColumn = sourceColumn + (direction > 0 ? 1 : 0);
@@ -807,8 +807,8 @@ namespace umbriel {
       extent = std::clamp(*ruleExtentPx, 1, viewportPrimary);
     } else if (ruleExtent) {
       extent = fractionalWidth(viewportPrimary, *ruleExtent);
-    } else if (m_config->scrolling.defaultWidthFraction) {
-      extent = fractionalWidth(viewportPrimary, *m_config->scrolling.defaultWidthFraction);
+    } else if (m_config->scrolling.defaultExtentFraction) {
+      extent = fractionalWidth(viewportPrimary, *m_config->scrolling.defaultExtentFraction);
     }
     if (vertical()) {
       return {.width = content.width, .height = extent};
@@ -868,7 +868,7 @@ namespace umbriel {
 
   double ScrollingLayout::widthFraction(int columnIndex) const {
     if (columnIndex < 0 || columnIndex >= static_cast<int>(m_columns.size())) {
-      return m_config->scrolling.defaultWidthFraction.value_or(0.5);
+      return m_config->scrolling.defaultExtentFraction.value_or(0.5);
     }
     return m_columns[static_cast<size_t>(columnIndex)].widthFrac;
   }

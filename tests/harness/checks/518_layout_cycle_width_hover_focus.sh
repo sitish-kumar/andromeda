@@ -37,7 +37,7 @@ mode = "scrolling"
 width_presets = [0.4, 0.6]
 
 [layout.scrolling]
-default_width_fraction = 0.6
+default_extent_fraction = 0.6
 
 [animation]
 duration_ms = 1

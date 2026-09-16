@@ -38,7 +38,7 @@ cat >> "$UMBRIEL_CONFIG" <<'EOF'
 [[workspace]]
 index = 1
 output = "HEADLESS-1"
-layout.scrolling.default_width_fraction = 0.5
+layout.scrolling.default_extent_fraction = 0.5
 
 [[window_rule]]
 match.app_id = "^target-client-width$"

@@ -623,7 +623,7 @@ namespace umbriel {
               overrides.widthPresets = std::move(*presets);
             }
             s.sub("scrolling", [&](Section& sc) {
-              sc.real("default_width_fraction", 0.1, 1.0, overrides.scrolling.defaultWidthFraction)
+              sc.real("default_extent_fraction", 0.1, 1.0, overrides.scrolling.defaultExtentFraction)
                   .boolean("center_underfull_strip", overrides.scrolling.centerUnderfullStrip);
               if (const auto centerFocused = readCenterFocused(sc, layoutContext + ".scrolling")) {
                 overrides.scrolling.centerFocused = centerFocused;
@@ -1321,7 +1321,7 @@ namespace umbriel {
           loaded.layout.widthPresets = std::move(*presets);
         }
         s.sub("scrolling", [&](Section& sc) {
-          sc.real("default_width_fraction", 0.1, 1.0, loaded.layout.scrolling.defaultWidthFraction)
+          sc.real("default_extent_fraction", 0.1, 1.0, loaded.layout.scrolling.defaultExtentFraction)
               .boolean("center_underfull_strip", loaded.layout.scrolling.centerUnderfullStrip);
           if (const auto centerFocused = readCenterFocused(sc, "layout.scrolling")) {
             loaded.layout.scrolling.centerFocused = *centerFocused;
@@ -1677,7 +1677,7 @@ namespace umbriel {
             .boolean("direct_scanout", rule.directScanout);
         keys.sub("layout", [&](Section& layout) {
           layout.sub("scrolling", [&](Section& scrolling) {
-            scrolling.real("default_width_fraction", 0.1, 1.0, rule.layout.scrolling.defaultWidthFraction);
+            scrolling.real("default_extent_fraction", 0.1, 1.0, rule.layout.scrolling.defaultExtentFraction);
           });
         });
         keys.integer("min_workspaces", 1, static_cast<int>(kMaxWorkspaces), rule.minWorkspaces);

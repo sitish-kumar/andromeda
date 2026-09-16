@@ -348,8 +348,8 @@ namespace umbriel {
         scrolling->setWidthFromPixels(column, scrollViewportExtent(), *initialExtentPx);
       } else if (initialExtent) {
         scrolling->setWidthFraction(column, *initialExtent);
-      } else if (m_layoutConfig.scrolling.defaultWidthFraction) {
-        scrolling->setWidthFraction(column, *m_layoutConfig.scrolling.defaultWidthFraction);
+      } else if (m_layoutConfig.scrolling.defaultExtentFraction) {
+        scrolling->setWidthFraction(column, *m_layoutConfig.scrolling.defaultExtentFraction);
       } else {
         const wlr_box& geometry = view->toplevel()->base->geometry;
         const int primary = scrollingVertical() ? geometry.height : geometry.width;

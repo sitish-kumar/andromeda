@@ -69,7 +69,7 @@ UMBRIEL_TEST(workspaceOverridesApplyGlobalThenOutputSpecificRules) {
   global.layout.gap = 12;
   global.layout.struts.left = 10;
   global.layout.struts.top = 30;
-  global.layout.scrolling.defaultWidthFraction = 0.6;
+  global.layout.scrolling.defaultExtentFraction = 0.6;
   global.layout.master.defaultWidthFraction = 0.6;
   global.layout.master.newOnTop = true;
   global.layout.dwindle.preserveSplit = false;
@@ -102,8 +102,8 @@ UMBRIEL_TEST(workspaceOverridesApplyGlobalThenOutputSpecificRules) {
   CHECK_EQ(onDpOne.struts.right, 20);
   CHECK_EQ(onDpOne.struts.top, 30);
   CHECK_EQ(onDpOne.struts.bottom, 4);
-  CHECK(onDpOne.scrolling.defaultWidthFraction.has_value());
-  CHECK_EQ(*onDpOne.scrolling.defaultWidthFraction, 0.6);
+  CHECK(onDpOne.scrolling.defaultExtentFraction.has_value());
+  CHECK_EQ(*onDpOne.scrolling.defaultExtentFraction, 0.6);
   CHECK(onDpOne.master.position == umbriel::MasterPosition::Left);
   CHECK_EQ(onDpOne.master.defaultWidthFraction, 0.7);
   CHECK(!onDpOne.master.newOnTop);
@@ -116,8 +116,8 @@ UMBRIEL_TEST(workspaceOverridesApplyGlobalThenOutputSpecificRules) {
   CHECK_EQ(onDpTwo.struts.right, 2);
   CHECK_EQ(onDpTwo.struts.top, 30);
   CHECK_EQ(onDpTwo.struts.bottom, 4);
-  CHECK(onDpTwo.scrolling.defaultWidthFraction.has_value());
-  CHECK_EQ(*onDpTwo.scrolling.defaultWidthFraction, 0.6);
+  CHECK(onDpTwo.scrolling.defaultExtentFraction.has_value());
+  CHECK_EQ(*onDpTwo.scrolling.defaultExtentFraction, 0.6);
   CHECK(onDpTwo.master.position == umbriel::MasterPosition::Right);
   CHECK_EQ(onDpTwo.master.defaultWidthFraction, 0.6);
   CHECK(onDpTwo.master.newOnTop);
@@ -129,8 +129,8 @@ UMBRIEL_TEST(workspaceOverridesApplyGlobalThenOutputSpecificRules) {
   CHECK_EQ(elsewhere.struts.right, 2);
   CHECK_EQ(elsewhere.struts.top, 30);
   CHECK_EQ(elsewhere.struts.bottom, 4);
-  CHECK(elsewhere.scrolling.defaultWidthFraction.has_value());
-  CHECK_EQ(*elsewhere.scrolling.defaultWidthFraction, 0.6);
+  CHECK(elsewhere.scrolling.defaultExtentFraction.has_value());
+  CHECK_EQ(*elsewhere.scrolling.defaultExtentFraction, 0.6);
   CHECK(elsewhere.master.position == umbriel::MasterPosition::Right);
   CHECK_EQ(elsewhere.master.defaultWidthFraction, 0.6);
   CHECK(elsewhere.master.newOnTop);
@@ -139,35 +139,35 @@ UMBRIEL_TEST(workspaceOverridesApplyGlobalThenOutputSpecificRules) {
 
 UMBRIEL_TEST(outputScrollingDefaultPrecedesWorkspaceRulesAndFollowsGlobalLayout) {
   Config config;
-  config.layout.scrolling.defaultWidthFraction = 0.2;
+  config.layout.scrolling.defaultExtentFraction = 0.2;
 
   OutputRule output;
   output.name = "DP-1";
-  output.layout.scrolling.defaultWidthFraction = 0.3;
+  output.layout.scrolling.defaultExtentFraction = 0.3;
   config.outputs.push_back(std::move(output));
 
   WorkspaceConfig globalWorkspace;
   globalWorkspace.name = "dev";
-  globalWorkspace.layout.scrolling.defaultWidthFraction = 0.4;
+  globalWorkspace.layout.scrolling.defaultExtentFraction = 0.4;
   config.workspaceRules.push_back(std::move(globalWorkspace));
 
   WorkspaceConfig outputWorkspace;
   outputWorkspace.name = "dev";
   outputWorkspace.output = "DP-1";
-  outputWorkspace.layout.scrolling.defaultWidthFraction = 0.5;
+  outputWorkspace.layout.scrolling.defaultExtentFraction = 0.5;
   config.workspaceRules.push_back(std::move(outputWorkspace));
 
   const auto outputSpecific = umbriel::resolveWorkspaceLayout(config, identity("DP-1"), "dev", 0);
-  CHECK_EQ(*outputSpecific.scrolling.defaultWidthFraction, 0.5);
+  CHECK_EQ(*outputSpecific.scrolling.defaultExtentFraction, 0.5);
 
   const auto outputDefault = umbriel::resolveWorkspaceLayout(config, identity("DP-1"), "chat", 1);
-  CHECK_EQ(*outputDefault.scrolling.defaultWidthFraction, 0.3);
+  CHECK_EQ(*outputDefault.scrolling.defaultExtentFraction, 0.3);
 
   const auto workspaceDefault = umbriel::resolveWorkspaceLayout(config, identity("DP-2"), "dev", 0);
-  CHECK_EQ(*workspaceDefault.scrolling.defaultWidthFraction, 0.4);
+  CHECK_EQ(*workspaceDefault.scrolling.defaultExtentFraction, 0.4);
 
   const auto globalDefault = umbriel::resolveWorkspaceLayout(config, identity("DP-2"), "chat", 1);
-  CHECK_EQ(*globalDefault.scrolling.defaultWidthFraction, 0.2);
+  CHECK_EQ(*globalDefault.scrolling.defaultExtentFraction, 0.2);
 }
 
 UMBRIEL_TEST(outputSpecificWorkspaceRulesBeatLaterGlobalRules) {
@@ -196,10 +196,10 @@ UMBRIEL_TEST(omittedScrollingDefaultWidthRemainsUnset) {
   Config config;
 
   const auto global = umbriel::resolveGlobalLayout(config);
-  CHECK(!global.scrolling.defaultWidthFraction.has_value());
+  CHECK(!global.scrolling.defaultExtentFraction.has_value());
 
   const auto workspace = umbriel::resolveWorkspaceLayout(config, identity("DP-1"), "dev", 0);
-  CHECK(!workspace.scrolling.defaultWidthFraction.has_value());
+  CHECK(!workspace.scrolling.defaultExtentFraction.has_value());
 }
 
 UMBRIEL_TEST(workspaceInventoryResolvesStaticAndDynamicOutputs) {
@@ -428,18 +428,18 @@ UMBRIEL_TEST(workspaceRulesMatchConnectorAndDescriptorWithoutOutputSection) {
 
 UMBRIEL_TEST(descriptorOutputRuleOverridesConnectorFallback) {
   Config config;
-  config.layout.scrolling.defaultWidthFraction = 0.5;
+  config.layout.scrolling.defaultExtentFraction = 0.5;
 
   OutputRule connector;
   connector.name = "HDMI-A-1";
   connector.workspaces = std::vector<std::string>{"fallback"};
-  connector.layout.scrolling.defaultWidthFraction = 0.25;
+  connector.layout.scrolling.defaultExtentFraction = 0.25;
   config.outputs.push_back(std::move(connector));
 
   OutputRule descriptor;
   descriptor.name = "Microstep MSI G2712F CD6T084401192";
   descriptor.workspaces = std::vector<std::string>{"specific"};
-  descriptor.layout.scrolling.defaultWidthFraction = 0.75;
+  descriptor.layout.scrolling.defaultExtentFraction = 0.75;
   config.outputs.push_back(std::move(descriptor));
 
   constexpr OutputIdentity monitor = identity("HDMI-A-1", "Microstep", "MSI G2712F", "CD6T084401192");
@@ -447,7 +447,7 @@ UMBRIEL_TEST(descriptorOutputRuleOverridesConnectorFallback) {
   CHECK(selected != nullptr);
   if (selected != nullptr) {
     CHECK_EQ(selected->name, std::string{"Microstep MSI G2712F CD6T084401192"});
-    CHECK_EQ(*selected->layout.scrolling.defaultWidthFraction, 0.75);
+    CHECK_EQ(*selected->layout.scrolling.defaultExtentFraction, 0.75);
   }
 
   const auto resolved = umbriel::resolveWorkspacesForOutput(config, monitor);
@@ -455,7 +455,7 @@ UMBRIEL_TEST(descriptorOutputRuleOverridesConnectorFallback) {
   CHECK_EQ(resolved.workspaces.size(), size_t{1});
   if (resolved.workspaces.size() == 1) {
     CHECK_EQ(resolved.workspaces[0].name, std::string{"specific"});
-    CHECK_EQ(*resolved.workspaces[0].layout.scrolling.defaultWidthFraction, 0.75);
+    CHECK_EQ(*resolved.workspaces[0].layout.scrolling.defaultExtentFraction, 0.75);
   }
 }
 

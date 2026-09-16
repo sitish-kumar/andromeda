@@ -102,8 +102,8 @@ namespace umbriel {
       if (overrides.struts.bottom) {
         resolved.struts.bottom = *overrides.struts.bottom;
       }
-      if (overrides.scrolling.defaultWidthFraction) {
-        resolved.scrolling.defaultWidthFraction = overrides.scrolling.defaultWidthFraction;
+      if (overrides.scrolling.defaultExtentFraction) {
+        resolved.scrolling.defaultExtentFraction = overrides.scrolling.defaultExtentFraction;
       }
       if (overrides.scrolling.centerUnderfullStrip) {
         resolved.scrolling.centerUnderfullStrip = *overrides.scrolling.centerUnderfullStrip;
@@ -380,7 +380,7 @@ namespace umbriel {
     resolved.gap = config.layout.gap;
     resolved.struts = config.layout.struts;
     resolved.widthPresets = config.layout.widthPresets;
-    resolved.scrolling.defaultWidthFraction = config.layout.scrolling.defaultWidthFraction;
+    resolved.scrolling.defaultExtentFraction = config.layout.scrolling.defaultExtentFraction;
     resolved.scrolling.centerUnderfullStrip = config.layout.scrolling.centerUnderfullStrip;
     resolved.scrolling.centerFocused = config.layout.scrolling.centerFocused;
     resolved.dwindle.preserveSplit = config.layout.dwindle.preserveSplit;
@@ -403,8 +403,8 @@ namespace umbriel {
       ResolvedLayoutConfig resolved = resolveGlobalLayout(config);
       const OutputRule* output = matchingOutputRule(config, identity);
       if (output != nullptr) {
-        if (output->layout.scrolling.defaultWidthFraction) {
-          resolved.scrolling.defaultWidthFraction = output->layout.scrolling.defaultWidthFraction;
+        if (output->layout.scrolling.defaultExtentFraction) {
+          resolved.scrolling.defaultExtentFraction = output->layout.scrolling.defaultExtentFraction;
         }
         resolved.scrolling.direction = output->workspaceAxis == WorkspaceAxis::Horizontal
             ? ScrollingDirection::Vertical

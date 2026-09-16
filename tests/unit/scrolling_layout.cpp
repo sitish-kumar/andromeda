@@ -33,7 +33,7 @@ namespace {
     config.gap = 8;
     config.totalGap = 12;
     config.edgePad = 10;
-    config.scrolling.defaultWidthFraction = 0.5;
+    config.scrolling.defaultExtentFraction = 0.5;
     config.scrolling.centerUnderfullStrip = true;
     config.widthPresets = {1.0 / 3, 0.5, 2.0 / 3};
     return config;
@@ -706,14 +706,14 @@ UMBRIEL_TEST(initialSizeUsesTheDefaultFractionWhenNoRuleApplies) {
 
 UMBRIEL_TEST(initialSizeLeavesTheScrollAxisUnconstrainedWhenNoDefaultIsSet) {
   Fixture horizontal;
-  horizontal.config.scrolling.defaultWidthFraction.reset();
+  horizontal.config.scrolling.defaultExtentFraction.reset();
   const Layout::InitialSize horizontalSize =
       horizontal.layout.initialSize(kUsable, false, std::nullopt, std::nullopt, nullptr);
   CHECK_EQ(horizontalSize.width, 0);
   CHECK_EQ(horizontalSize.height, 700);
 
   Fixture vertical(ScrollingDirection::Vertical);
-  vertical.config.scrolling.defaultWidthFraction.reset();
+  vertical.config.scrolling.defaultExtentFraction.reset();
   const Layout::InitialSize verticalSize =
       vertical.layout.initialSize(kUsable, false, std::nullopt, std::nullopt, nullptr);
   CHECK_EQ(verticalSize.width, 1260);
@@ -722,13 +722,13 @@ UMBRIEL_TEST(initialSizeLeavesTheScrollAxisUnconstrainedWhenNoDefaultIsSet) {
 
 UMBRIEL_TEST(initialSizeHonoursAPixelExtentWithoutAFractionDefault) {
   Fixture horizontal;
-  horizontal.config.scrolling.defaultWidthFraction.reset();
+  horizontal.config.scrolling.defaultExtentFraction.reset();
   const Layout::InitialSize horizontalSize = horizontal.layout.initialSize(kUsable, false, std::nullopt, 800, nullptr);
   CHECK_EQ(horizontalSize.width, 800);
   CHECK_EQ(horizontalSize.height, 700);
 
   Fixture vertical(ScrollingDirection::Vertical);
-  vertical.config.scrolling.defaultWidthFraction.reset();
+  vertical.config.scrolling.defaultExtentFraction.reset();
   const Layout::InitialSize verticalSize = vertical.layout.initialSize(kUsable, false, std::nullopt, 300, nullptr);
   CHECK_EQ(verticalSize.width, 1260);
   CHECK_EQ(verticalSize.height, 300);

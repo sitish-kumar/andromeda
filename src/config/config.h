@@ -54,7 +54,7 @@ namespace umbriel {
     LayoutStrutOverrides struts;
     std::optional<std::vector<double>> widthPresets;
     struct Scrolling {
-      std::optional<double> defaultWidthFraction;
+      std::optional<double> defaultExtentFraction;
       std::optional<bool> centerUnderfullStrip;
       std::optional<CenterFocusedColumn> centerFocused;
       bool operator==(const Scrolling&) const = default;
@@ -100,7 +100,7 @@ namespace umbriel {
     LayoutStruts struts;
     std::vector<double> widthPresets{1.0 / 3, 0.5, 2.0 / 3};
     struct Scrolling {
-      std::optional<double> defaultWidthFraction;
+      std::optional<double> defaultExtentFraction;
       bool centerUnderfullStrip = true;
       CenterFocusedColumn centerFocused = CenterFocusedColumn::Never;
       // Axis-agnostic layout state is preserved when config reload changes direction.
@@ -233,7 +233,7 @@ namespace umbriel {
     struct Layout {
       struct Scrolling {
         // Initial strip-axis extent inherited by workspaces on this output.
-        std::optional<double> defaultWidthFraction;
+        std::optional<double> defaultExtentFraction;
         bool operator==(const Scrolling&) const = default;
       } scrolling;
       bool operator==(const Layout&) const = default;
@@ -661,7 +661,7 @@ namespace umbriel {
       LayoutStruts struts;
       std::vector<double> widthPresets{1.0 / 3, 0.5, 2.0 / 3};
       struct Scrolling {
-        std::optional<double> defaultWidthFraction;
+        std::optional<double> defaultExtentFraction;
         bool centerUnderfullStrip = true;
         CenterFocusedColumn centerFocused = CenterFocusedColumn::Never;
         bool operator==(const Scrolling&) const = default;

@@ -36,7 +36,7 @@ cat >> "$UMBRIEL_CONFIG" <<'EOF'
 mode = "scrolling"
 
 [layout.scrolling]
-default_width_fraction = 0.6
+default_extent_fraction = 0.6
 
 [animation]
 duration_ms = 1
