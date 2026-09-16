@@ -966,7 +966,7 @@ namespace umbriel {
           return false;
         }
 
-        view->toggleFloating();
+        view->setFloating(view->tiled(), false);
         return true;
       } else {
 
