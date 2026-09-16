@@ -2466,6 +2466,18 @@ namespace umbriel {
     Cursor* cursor = m_server->cursor();
     wlr_seat* seat = m_server->seat()->wlr();
     const Overview* overview = m_server->overview();
+    View* pointerView = nullptr;
+    if (cursor != nullptr) {
+      wlr_surface* pointerSurface = nullptr;
+      double pointerSx = 0.0;
+      double pointerSy = 0.0;
+      LayerSurface* pointerLayer = nullptr;
+      pointerView =
+          m_server->viewAt(cursor->wlr()->x, cursor->wlr()->y, &pointerSurface, &pointerSx, &pointerSy, &pointerLayer);
+      if (pointerLayer != nullptr) {
+        pointerView = nullptr;
+      }
+    }
     const bool focusRevealedTile = closingWorkspace != nullptr
         && closingWorkspace->focusedView() == this
         && closingWorkspace->active()
@@ -2481,7 +2493,7 @@ namespace umbriel {
         && seat->drag == nullptr
         && seat->pointer_state.button_count == 0
         && View::fromSurface(seat->keyboard_state.focused_surface) == this
-        && View::fromSurface(seat->pointer_state.focused_surface) == this
+        && pointerView == this
         && wlr_box_contains_point(&m_presentedBox, cursor->wlr()->x, cursor->wlr()->y);
     const double closePointerX = cursor != nullptr ? cursor->wlr()->x : 0.0;
     const double closePointerY = cursor != nullptr ? cursor->wlr()->y : 0.0;

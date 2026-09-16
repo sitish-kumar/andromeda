@@ -88,13 +88,15 @@ In both cases, a small motion inside the window under the pointer is sufficient;
 the pointer does not need to leave and re-enter its border.
 
 Closing a focused Dwindle or master tile is a bounded exception. Umbriel records
-the pointer position only when the closing view owns both keyboard and pointer
-focus and the position lies inside its current presented box. It chooses the
+the pointer position only when the closing view owns keyboard focus, is visibly
+beneath the pointer, and the position lies inside its current presented box. It chooses the
 normal layout replacement before detaching the view, then flushes the new layout
 and checks its final tiled target boxes once. A survivor that inherits the
 recorded position receives pointer-hover focus; otherwise the normal replacement
-remains focused. Reading final layout geometry avoids treating every view that
-moves through the pointer during an animation as another hover transition.
+remains focused. Scene hit-testing instead of cached seat pointer focus keeps
+consecutive closes correct without pointer motion. Reading final layout geometry
+avoids treating every view that moves through the pointer during an animation as
+another hover transition.
 
 ## Data-device drag focus
 
