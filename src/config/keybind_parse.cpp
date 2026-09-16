@@ -326,7 +326,7 @@ namespace umbriel {
         {"window-swap-next", "", "Swap with the next window in layout order", KeybindAction::WindowSwapNext},
         {"window-swap-previous", "", "Swap with the previous window in layout order",
          KeybindAction::WindowSwapPrevious},
-        {"window-toggle-floating", "", "Float or tile the focused window", KeybindAction::ToggleFloating},
+        {"window-toggle-floating", "[<window-id>]", "Float or tile the focused window, or the given window", KeybindAction::ToggleFloating},
         {"window-toggle-fullscreen", "", "Toggle fullscreen or exit a window covering the focus",
          KeybindAction::ToggleFullscreen},
         {"window-toggle-maximize", "", "Toggle full width for the focused column", KeybindAction::ToggleMaximize},
