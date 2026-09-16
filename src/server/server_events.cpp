@@ -944,6 +944,31 @@ namespace umbriel {
     server->updateIdleInhibit();
     kLog.debug("idle inhibitor removed");
   }
+
+  void Server::onNewShortcutsInhibitor(wl_listener* listener, void* data) {
+    Server* self;
+    self = wl_container_of(listener, self, m_newShortcutsInhibitor);
+    auto* inhibitor = static_cast<wlr_keyboard_shortcuts_inhibitor_v1*>(data);
+    auto watch = std::make_unique<ShortcutsInhibitorWatch>();
+    watch->server = self;
+    watch->inhibitor = inhibitor;
+    watch->destroy.notify = onShortcutsInhibitorDestroy;
+    wl_signal_add(&inhibitor->events.destroy, &watch->destroy);
+    self->m_shortcutsInhibitors.push_back(std::move(watch));
+    wlr_keyboard_shortcuts_inhibitor_v1_activate(inhibitor);
+    kLog.debug("keyboard shortcuts inhibitor activated");
+  }
+
+  void Server::onShortcutsInhibitorDestroy(wl_listener* listener, void* /*data*/) {
+    ShortcutsInhibitorWatch* watch;
+    watch = wl_container_of(listener, watch, destroy);
+    Server* server = watch->server;
+    wl_list_remove(&watch->destroy.link);
+    std::erase_if(server->m_shortcutsInhibitors, [watch](const std::unique_ptr<ShortcutsInhibitorWatch>& candidate) {
+      return candidate.get() == watch;
+    });
+    kLog.debug("keyboard shortcuts inhibitor removed");
+  }
   void Server::onPointerDestroy(wl_listener* listener, void* /*data*/) {
     PointerDevice* watch;
     watch = wl_container_of(listener, watch, destroy);

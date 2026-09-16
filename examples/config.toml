@@ -343,6 +343,9 @@ follows_mouse = false                           # Focus on motion after scene ch
 
 # Common keybinds
 "Mod+Escape" = "session-quit"
+# Keep one escape binding available when a game or remote desktop client asks
+# Umbriel to pass ordinary compositor shortcuts through.
+"Mod+Shift+Escape" = { action = "shortcuts-inhibit-toggle", allow_when_inhibited = true, repeat = false }
 "Mod+F1" = "window-focus-next"
 "Mod+H" = "window-focus-left"
 "Mod+J" = "window-focus-down"

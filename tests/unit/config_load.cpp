@@ -746,6 +746,30 @@ UMBRIEL_TEST(keybindTableLoadsAllowWhenLocked) {
   CHECK(!containsDiagnostic(store, "allow_when_locked"));
 }
 
+UMBRIEL_TEST(keybindTableLoadsAllowWhenInhibited) {
+  const TempConfig file;
+  ConfigStore& store = umbriel::configStore();
+  store.setRootPath(file.path(), true);
+
+  file.write(
+      "[keybinds]\n"
+      "\"Mod+Escape\" = { action = \"shortcuts-inhibit-toggle\", allow_when_inhibited = true }\n"
+      "\"Mod+Return\" = \"spawn:terminal\"\n"
+  );
+  CHECK(store.reload().success);
+  CHECK_EQ(store.config().keybinds.size(), size_t{2});
+
+  bool allowedWhenInhibited = false;
+  bool defaultsToBlocked = false;
+  for (const auto& bind : store.config().keybinds) {
+    allowedWhenInhibited = allowedWhenInhibited || bind.allowWhenInhibited;
+    defaultsToBlocked = defaultsToBlocked || !bind.allowWhenInhibited;
+  }
+  CHECK(allowedWhenInhibited);
+  CHECK(defaultsToBlocked);
+  CHECK(!containsDiagnostic(store, "allow_when_inhibited"));
+}
+
 UMBRIEL_TEST(keybindTablePreservesWorkspaceReferenceKinds) {
   const TempConfig file;
   ConfigStore& store = umbriel::configStore();

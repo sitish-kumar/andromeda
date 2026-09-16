@@ -52,7 +52,7 @@ namespace umbriel {
     // Security-context clients only receive reviewed, ordinary application
     // protocols. New globals stay unavailable until they are classified here.
     // [[security_context_rule]] widens the set for matching clients.
-    constexpr std::array<std::string_view, 29> kAllowedSecurityContextGlobals{
+    constexpr std::array<std::string_view, 30> kAllowedSecurityContextGlobals{
         "wl_shm",
         "wl_drm",
         "zwp_linux_dmabuf_v1",
@@ -78,6 +78,7 @@ namespace umbriel {
         "zwp_pointer_gestures_v1",
         "zwp_tablet_manager_v2",
         "zwp_idle_inhibit_manager_v1",
+        "zwp_keyboard_shortcuts_inhibit_manager_v1",
         "xdg_activation_v1",
         "wl_seat",
         "wp_cursor_shape_manager_v1",
@@ -515,6 +516,12 @@ namespace umbriel {
     m_idleInhibitManager = wlr_idle_inhibit_v1_create(m_display);
     m_newIdleInhibitor.notify = onNewIdleInhibitor;
     wl_signal_add(&m_idleInhibitManager->events.new_inhibitor, &m_newIdleInhibitor);
+    m_shortcutsInhibitManager = wlr_keyboard_shortcuts_inhibit_v1_create(m_display);
+    if (m_shortcutsInhibitManager == nullptr) {
+      throw std::runtime_error("failed to create keyboard-shortcuts-inhibit manager");
+    }
+    m_newShortcutsInhibitor.notify = onNewShortcutsInhibitor;
+    wl_signal_add(&m_shortcutsInhibitManager->events.new_inhibitor, &m_newShortcutsInhibitor);
 
     wlr_screencopy_manager_v1_create(m_display);
     m_exportDmabufManager = wlr_export_dmabuf_manager_v1_create(m_display);
@@ -574,6 +581,7 @@ namespace umbriel {
     wl_list_remove(&m_newVirtualKeyboard.link);
     wl_list_remove(&m_newVirtualPointer.link);
     wl_list_remove(&m_newIdleInhibitor.link);
+    wl_list_remove(&m_newShortcutsInhibitor.link);
     wl_list_remove(&m_newActivationToken.link);
     wl_list_remove(&m_requestActivate.link);
     wl_list_remove(&m_workspaceCommit.link);

@@ -372,6 +372,18 @@ idle_inhibit_client_c = custom_target(
   output: 'idle-inhibit-unstable-v1-protocol.c',
   command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
 )
+keyboard_shortcuts_inhibit_client_h = custom_target(
+  'keyboard-shortcuts-inhibit-unstable-v1-client-protocol.h',
+  input: wayland_protocols_dep.get_variable(pkgconfig: 'pkgdatadir') / 'unstable/keyboard-shortcuts-inhibit/keyboard-shortcuts-inhibit-unstable-v1.xml',
+  output: 'keyboard-shortcuts-inhibit-unstable-v1-client-protocol.h',
+  command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+)
+keyboard_shortcuts_inhibit_client_c = custom_target(
+  'keyboard-shortcuts-inhibit-unstable-v1-protocol.c',
+  input: wayland_protocols_dep.get_variable(pkgconfig: 'pkgdatadir') / 'unstable/keyboard-shortcuts-inhibit/keyboard-shortcuts-inhibit-unstable-v1.xml',
+  output: 'keyboard-shortcuts-inhibit-unstable-v1-protocol.c',
+  command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
+)
 ext_idle_notify_client_h = custom_target(
   'ext-idle-notify-v1-client-protocol.h',
   input: wayland_protocols_dep.get_variable(pkgconfig: 'pkgdatadir') / 'staging/ext-idle-notify/ext-idle-notify-v1.xml',

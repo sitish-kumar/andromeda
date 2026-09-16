@@ -406,6 +406,7 @@ namespace {
     case A::CheatsheetOpen:
     case A::CheatsheetClose:
     case A::KeyboardLayoutNext:
+    case A::ShortcutsInhibitToggle:
       return Group::System;
     default:
       return Group::System;

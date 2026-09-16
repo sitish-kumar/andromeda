@@ -515,6 +515,13 @@ namespace umbriel {
       return server.cycleKeyboardLayout();
     }
 
+    bool actionShortcutsInhibitToggle(Server& server, const Keybind& /*bind*/, std::string* error) {
+      if (server.toggleKeyboardShortcutsInhibit()) {
+        return true;
+      }
+      return reject(error, "focused surface has no keyboard shortcuts inhibitor");
+    }
+
     bool actionSubmap(Server& server, const Keybind& bind, std::string* /*error*/) {
       const auto* arg = payloadIf<SubmapArg>(bind);
       if (arg == nullptr) {
@@ -1732,6 +1739,7 @@ namespace umbriel {
         &actionWindowMoveToWorkspaceAdjacent<-1>,
         &actionConfigReload,
         &actionKeyboardLayoutNext,
+        &actionShortcutsInhibitToggle,
         &actionLayoutScrollDrag,
         &actionLayoutScroll<-1>,
         &actionLayoutScroll<1>,

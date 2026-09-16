@@ -74,6 +74,7 @@ namespace umbriel {
     WindowMoveToWorkspacePrevious,
     ConfigReload,
     KeyboardLayoutNext,
+    ShortcutsInhibitToggle,
     LayoutScrollDrag,
     LayoutScrollLeft,
     LayoutScrollRight,
@@ -221,6 +222,7 @@ namespace umbriel {
     uint32_t mouseButton = 0; // evdev BTN_* code, 0 = not a mouse bind
     bool repeat = true;
     bool allowWhenLocked = false;
+    bool allowWhenInhibited = false;
     int cooldownMs = 0;
 
     // What it does.

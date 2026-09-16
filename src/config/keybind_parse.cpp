@@ -226,6 +226,8 @@ namespace umbriel {
          KeybindAction::ScratchpadToggle, ActionArgKind::OptionalScratchpad},
         {"session-quit", "[skip-confirmation]", "Quit the session, confirming first unless told to skip",
          KeybindAction::SessionQuit, ActionArgKind::SkipConfirmation},
+        {"shortcuts-inhibit-toggle", "", "Toggle shortcuts inhibition for the focused surface",
+         KeybindAction::ShortcutsInhibitToggle},
         {"spawn", "<cmd>", "Run a command with a launch activation token", KeybindAction::Spawn,
          ActionArgKind::Command},
         {"submap", "<name>", "Enter a submap layer, or leave one with 'reset'", KeybindAction::Submap,
