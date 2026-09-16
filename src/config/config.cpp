@@ -2098,6 +2098,34 @@ namespace umbriel {
             .boolean("blur_optimized", rule.blurOptimized)
             .real("opacity", 0.0, 1.0, rule.opacity)
             .real("blur_ignore_alpha", 0.0, 1.0, rule.blurIgnoreAlpha);
+        if (const toml::node* n = keys.take("default_floating_size")) {
+          const auto* table = n->as_table();
+          if (table == nullptr) {
+            warnAt(
+                n->source(),
+                "ignoring window_rule.default_floating_size "
+                "(expected {{ width = number, height = number }})"
+            );
+          } else {
+            Section size(*table, "window_rule.default_floating_size", configStore().mutableDiagnostics());
+            size.real("width", 0.1, 1.0, rule.defaultFloatingWidth)
+                .real("height", 0.1, 1.0, rule.defaultFloatingHeight);
+          }
+        }
+        if (const toml::node* n = keys.take("default_floating_size_px")) {
+          const auto* table = n->as_table();
+          if (table == nullptr) {
+            warnAt(
+                n->source(),
+                "ignoring window_rule.default_floating_size_px "
+                "(expected {{ width = integer, height = integer }})"
+            );
+          } else {
+            Section size(*table, "window_rule.default_floating_size_px", configStore().mutableDiagnostics());
+            size.integer("width", 1, 100000, rule.defaultFloatingWidthPx)
+                .integer("height", 1, 100000, rule.defaultFloatingHeightPx);
+          }
+        }
         if (const toml::node* vrrNode = keys.take("vrr")) {
           if (const auto value = readVrrMode(*vrrNode)) {
             rule.vrr = value;
@@ -2117,27 +2145,6 @@ namespace umbriel {
             rule.defaultOutput = *value;
           } else {
             warnAt(n->source(), "ignoring window_rule.default_output (expected string)");
-          }
-        }
-
-        if (const toml::node* n = keys.take("default_size")) {
-          const auto* arr = n->as_array();
-          bool valid = arr != nullptr && arr->size() == 2;
-          std::array<int, 2> parsed{};
-          if (valid) {
-            for (size_t index = 0; index < 2; ++index) {
-              const auto value = (*arr)[index].value<std::int64_t>();
-              if (!value || *value < 1 || *value > 100000) {
-                valid = false;
-                break;
-              }
-              parsed[index] = static_cast<int>(*value);
-            }
-          }
-          if (!valid) {
-            warnAt(n->source(), "ignoring window_rule.default_size (expected [width, height] positive integers)");
-          } else {
-            rule.defaultSize = parsed;
           }
         }
 
@@ -2197,31 +2204,8 @@ namespace umbriel {
           }
         }
 
-        if (const toml::node* n = keys.take("default_width")) {
-          const auto value = n->value<double>();
-          if (!value || std::isnan(*value)) {
-            warnAt(n->source(), "ignoring window_rule.default_width (expected number 0.1-1.0)");
-          } else {
-            const double used = std::clamp(*value, 0.1, 1.0);
-            if (used != *value) {
-              warnAt(n->source(), "window_rule.default_width = {} out of range, clamped to {}", *value, used);
-            }
-            rule.defaultWidth = used;
-          }
-        }
-
-        if (const toml::node* n = keys.take("default_height")) {
-          const auto value = n->value<double>();
-          if (!value || std::isnan(*value)) {
-            warnAt(n->source(), "ignoring window_rule.default_height (expected number 0.1-1.0)");
-          } else {
-            const double used = std::clamp(*value, 0.1, 1.0);
-            if (used != *value) {
-              warnAt(n->source(), "window_rule.default_height = {} out of range, clamped to {}", *value, used);
-            }
-            rule.defaultHeight = used;
-          }
-        }
+        keys.integer("default_scrolling_extent_px", 1, 100000, rule.defaultScrollingExtentPx)
+            .real("default_scrolling_extent", 0.1, 1.0, rule.defaultScrollingExtent);
 
         if (const toml::node* n = keys.take("default_workspace")) {
           if (const auto value = n->value<std::int64_t>()) {

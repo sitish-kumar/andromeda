@@ -1687,33 +1687,59 @@ UMBRIEL_TEST(windowTearingOverrideLoadsAsAnOptionalBoolean) {
   CHECK(containsDiagnostic(store, "ignoring window_rule.tearing (expected boolean)"));
 }
 
-UMBRIEL_TEST(windowRuleFractionSizingLoadsAndClamps) {
+UMBRIEL_TEST(windowRuleFloatingSizeTablesLoadIndependentAxesAndClamp) {
   const TempConfig file;
   ConfigStore& store = umbriel::configStore();
   store.setRootPath(file.path(), true);
 
   file.write(
-      "[[window_rule]]\nmatch.app_id = \"^utility$\"\ndefault_floating = true\ndefault_width = 0.5\ndefault_height = "
-      "0.6\n"
+      "[[window_rule]]\n"
+      "match.app_id = \"^utility$\"\n"
+      "default_floating = true\n"
+      "default_floating_size = { width = 0.5, height = 0.6 }\n"
+      "default_floating_size_px = { width = 640, height = 480 }\n"
   );
   CHECK(store.reload().success);
   CHECK_EQ(store.config().windowRules.size(), size_t{1});
-  CHECK(store.config().windowRules[0].defaultWidth && *store.config().windowRules[0].defaultWidth == 0.5);
-  CHECK(store.config().windowRules[0].defaultHeight && *store.config().windowRules[0].defaultHeight == 0.6);
+  const auto& rule = store.config().windowRules[0];
+  CHECK(rule.defaultFloatingWidth && *rule.defaultFloatingWidth == 0.5);
+  CHECK(rule.defaultFloatingHeight && *rule.defaultFloatingHeight == 0.6);
+  CHECK(rule.defaultFloatingWidthPx && *rule.defaultFloatingWidthPx == 640);
+  CHECK(rule.defaultFloatingHeightPx && *rule.defaultFloatingHeightPx == 480);
 
-  // Out-of-range fractions clamp into [0.1, 1.0] with a diagnostic, like default_width.
-  file.write("[[window_rule]]\ndefault_width = 3.0\ndefault_height = 0.01\n");
+  // Each axis is optional, and out-of-range fractions clamp independently.
+  file.write("[[window_rule]]\ndefault_floating_size = { width = 3.0, height = 0.01 }\n");
   CHECK(store.reload().success);
-  CHECK(store.config().windowRules[0].defaultWidth && *store.config().windowRules[0].defaultWidth == 1.0);
-  CHECK(store.config().windowRules[0].defaultHeight && *store.config().windowRules[0].defaultHeight == 0.1);
-  CHECK(containsDiagnostic(store, "window_rule.default_width = 3 out of range, clamped to 1"));
-  CHECK(containsDiagnostic(store, "window_rule.default_height = 0.01 out of range, clamped to 0.1"));
+  CHECK(
+      store.config().windowRules[0].defaultFloatingWidth && *store.config().windowRules[0].defaultFloatingWidth == 1.0
+  );
+  CHECK(
+      store.config().windowRules[0].defaultFloatingHeight && *store.config().windowRules[0].defaultFloatingHeight == 0.1
+  );
+  CHECK(containsDiagnostic(store, "window_rule.default_floating_size.width = 3 out of range, clamped to 1"));
+  CHECK(containsDiagnostic(store, "window_rule.default_floating_size.height = 0.01 out of range, clamped to 0.1"));
+
+  file.write("[[window_rule]]\ndefault_floating_size = { width = 0.5 }\n");
+  CHECK(store.reload().success);
+  CHECK(store.config().windowRules[0].defaultFloatingWidth);
+  CHECK(!store.config().windowRules[0].defaultFloatingHeight);
+
+  file.write("[[window_rule]]\ndefault_floating_size = [0.5, 0.6]\n");
+  CHECK(store.reload().success);
+  CHECK(!store.config().windowRules[0].defaultFloatingWidth);
+  CHECK(!store.config().windowRules[0].defaultFloatingHeight);
+  CHECK(containsDiagnostic(store, "ignoring window_rule.default_floating_size (expected"));
+
+  file.write("[[window_rule]]\ndefault_floating_width = 0.5\n");
+  CHECK(store.reload().success);
+  CHECK(!store.config().windowRules[0].defaultFloatingWidth);
+  CHECK(containsDiagnostic(store, "unknown key window_rule.default_floating_width"));
 
   // Non-numeric values are ignored with a diagnostic.
-  file.write("[[window_rule]]\ndefault_height = \"half\"\n");
+  file.write("[[window_rule]]\ndefault_scrolling_extent = \"half\"\n");
   CHECK(store.reload().success);
-  CHECK(!store.config().windowRules[0].defaultHeight);
-  CHECK(containsDiagnostic(store, "ignoring window_rule.default_height (expected number 0.1-1.0)"));
+  CHECK(!store.config().windowRules[0].defaultScrollingExtent);
+  CHECK(containsDiagnostic(store, "ignoring window_rule.default_scrolling_extent (expected number)"));
 }
 
 UMBRIEL_TEST(outputEnabledFlagParsesAndDefaultsTrue) {

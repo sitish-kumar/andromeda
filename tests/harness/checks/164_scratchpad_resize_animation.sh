@@ -32,7 +32,7 @@ enabled = false
 [[window_rule]]
 match.title = "^scratchpad-resize-animation$"
 default_floating = true
-default_size = [1000, 300]
+default_floating_size_px = { width = 1000, height = 300 }
 default_position = { x = 100, y = 200, anchor = "top_left" }
 EOF
 "$UMBRIEL" msg config-reload > /dev/null

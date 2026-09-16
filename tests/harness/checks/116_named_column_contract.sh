@@ -58,13 +58,13 @@ layout.mode = "master"
 match.title = "^named-vertical-later$"
 default_scrolling_column = "vertical-stack"
 default_scrolling_column_order = 20
-default_width = 0.25
+default_scrolling_extent_px = 166
 
 [[window_rule]]
 match.title = "^named-vertical-first$"
 default_scrolling_column = "vertical-stack"
 default_scrolling_column_order = 10
-default_width = 0.75
+default_scrolling_extent = 0.75
 
 [[window_rule]]
 match.title = "^named-vertical-max$"

@@ -134,10 +134,11 @@ namespace umbriel {
       bool workspaceNamed = false;
       std::shared_ptr<const LayoutSnapshot> layoutSnapshot;
       LayoutMemberId layoutMember = 0;
-      bool ownsNamedScrollingColumnWidth = false;
+      bool ownsNamedScrollingColumnExtent = false;
       // A late owner width can settle while this window is temporarily attached
       // to another output. Replay it after restoring the captured home layout.
-      std::optional<double> pendingNamedScrollingColumnWidth;
+      std::optional<int> pendingNamedScrollingColumnExtentPx;
+      std::optional<double> pendingNamedScrollingColumnExtent;
       std::optional<LayoutMode> layoutModeOverride;
       // Position relative to the full logical output. Unlike the ordinary
       // usable-area memory, this stays stable while a returning panel has not
@@ -420,6 +421,10 @@ namespace umbriel {
     // Where `origin` has to move so a float of `width` by `height` keeps its on-screen margin, or nullopt when the
     // clamp does not apply or the origin already satisfies it.
     [[nodiscard]] std::optional<FloatingPoint> floatingClampTarget(FloatingPoint origin, int width, int height);
+    std::optional<FloatingPoint> getFloatingPosition(
+        const wlr_box usable, const std::optional<WindowPosition>& position = std::nullopt,
+        const std::optional<std::array<int, 2>> size = std::nullopt
+    );
     void placeInUsableArea(const std::optional<WindowPosition>& position = std::nullopt);
     // The output box a fullscreen window covers: its workspace's output, else the one under it.
     [[nodiscard]] wlr_box fullscreenArea() const;
@@ -504,7 +509,7 @@ namespace umbriel {
     std::optional<int> m_namedScrollingColumnOrder;
     // True for the member that created its current named scrolling column.
     // Its own late width rule still applies after peers have joined.
-    bool m_ownsNamedScrollingColumnWidth = false;
+    bool m_ownsNamedScrollingColumnExtent = false;
 
     Server* m_server = nullptr;
     wlr_xdg_toplevel* m_toplevel = nullptr;
@@ -584,6 +589,15 @@ namespace umbriel {
     bool m_hasMaximizeRestoreBox = false;
     wlr_box m_maximizeRestoreBox{};
     FloatingGeometry m_floating;
+    // Unapplied floating defaults stay in their configured units until the first float transition.
+    std::optional<int> m_pendingFloatingWidthPx;
+    std::optional<int> m_pendingFloatingHeightPx;
+    std::optional<double> m_pendingFloatingWidth;
+    std::optional<double> m_pendingFloatingHeight;
+    std::optional<WindowPosition> m_pendingFloatingPosition;
+    // The scrolling extent to restore when returned to tiled. A pixel rule stays pixel-based until first use.
+    std::optional<int> m_savedScrollingExtentPx;
+    std::optional<double> m_savedScrollingExtent;
 
     wl_listener m_map{};
     wl_listener m_unmap{};

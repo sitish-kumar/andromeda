@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <ranges>
 
 // wlr_box and WLR_EDGE_* only. Layout geometry must not pull src/wlr.h, which
 // drags SceneFX and the renderer into a translation unit that does arithmetic.
@@ -796,19 +795,25 @@ namespace umbriel {
   }
 
   Layout::InitialSize ScrollingLayout::initialSize(
-      const wlr_box& usable, std::optional<double> ruleWidthFraction, const View* /*splitAnchor*/
+      const wlr_box& usable, bool wantMaximized, std::optional<double> ruleExtent, std::optional<int> ruleExtentPx,
+      const View* /*splitAnchor*/
   ) const {
     const wlr_box content = contentArea(usable);
-    const std::optional<double> fraction =
-        ruleWidthFraction ? ruleWidthFraction : m_config->scrolling.defaultWidthFraction;
-    if (!fraction) {
-      return vertical() ? InitialSize{.width = content.width, .height = 0}
-                        : InitialSize{.width = 0, .height = content.height};
+    const int viewportPrimary = vertical() ? content.height : content.width;
+    int extent = 0;
+    if (wantMaximized) {
+      extent = viewportPrimary;
+    } else if (ruleExtentPx) {
+      extent = std::clamp(*ruleExtentPx, 1, viewportPrimary);
+    } else if (ruleExtent) {
+      extent = fractionalWidth(viewportPrimary, *ruleExtent);
+    } else if (m_config->scrolling.defaultWidthFraction) {
+      extent = fractionalWidth(viewportPrimary, *m_config->scrolling.defaultWidthFraction);
     }
     if (vertical()) {
-      return {.width = content.width, .height = fractionalWidth(content.height, *fraction)};
+      return {.width = content.width, .height = extent};
     }
-    return {.width = fractionalWidth(content.width, *fraction), .height = content.height};
+    return {.width = extent, .height = content.height};
   }
 
   wlr_box ScrollingLayout::targetBox(const View* view) const {

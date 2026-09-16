@@ -61,7 +61,7 @@ layout.scrolling.center_underfull_strip = false
 [[window_rule]]
 match.title = "^strut-float$"
 default_floating = true
-default_size = [200, 100]
+default_floating_size_px = { width = 200, height = 100 }
 default_position = { x = 0, y = 0, anchor = "top_left" }
 EOF
   if [[ $1 == with-struts ]]; then

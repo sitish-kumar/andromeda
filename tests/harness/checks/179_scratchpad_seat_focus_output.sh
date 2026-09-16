@@ -24,13 +24,12 @@ name = "seat"
 [[window_rule]]
 match.title = "^scratchpad-seat-.*-background$"
 default_floating = true
-default_width = 0.5
-default_height = 0.5
+default_floating_size = { width = 0.5, height = 0.5 }
 
 [[window_rule]]
 match.title = "^scratchpad-seat-foreground$"
 default_floating = true
-default_size = [420, 260]
+default_floating_size_px = { width = 420, height = 260 }
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
 

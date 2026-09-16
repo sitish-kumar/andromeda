@@ -668,29 +668,44 @@ UMBRIEL_TEST(windowRulesMergeDefaultScratchpadLastWriterWins) {
   CHECK(merged.defaultScratchpad == "media");
 }
 
-UMBRIEL_TEST(windowRulesMergeFractionSizingLastWriterWins) {
+UMBRIEL_TEST(windowRulesMergeSizingFieldsLastWriterWins) {
   Config config;
 
   WindowRule first;
   first.appIdPattern = "^utility$";
   first.appIdRegex = std::regex(first.appIdPattern);
   first.defaultFloating = true;
-  first.defaultWidth = 0.5;
-  first.defaultHeight = 0.6;
+  first.defaultFloatingWidthPx = 800;
+  first.defaultFloatingWidth = 0.5;
+  first.defaultFloatingHeight = 0.5;
+  first.defaultScrollingExtent = 0.5;
+  first.defaultScrollingExtentPx = 800;
   config.windowRules.push_back(std::move(first));
+
+  const auto sameRule =
+      umbriel::resolveWindowRules(config, "utility", std::nullopt, std::nullopt, ContentType::None, {}, 0);
+  CHECK(sameRule.defaultFloatingWidthPx && *sameRule.defaultFloatingWidthPx == 800);
+  CHECK(sameRule.defaultFloatingWidth && *sameRule.defaultFloatingWidth == 0.5);
+  CHECK(sameRule.defaultScrollingExtentPx && *sameRule.defaultScrollingExtentPx == 800);
+  CHECK(sameRule.defaultScrollingExtent && *sameRule.defaultScrollingExtent == 0.5);
 
   WindowRule second;
   second.appIdPattern = "^utility$";
   second.appIdRegex = std::regex(second.appIdPattern);
-  second.defaultWidth = 0.75;
+  second.defaultScrollingExtent = 0.75;
+  second.defaultFloatingWidth = 0.6;
+  second.defaultFloatingHeight = 0.75;
   config.windowRules.push_back(std::move(second));
 
   const auto resolved =
       umbriel::resolveWindowRules(config, "utility", std::nullopt, std::nullopt, ContentType::None, {}, 0);
   CHECK(resolved.defaultFloating && *resolved.defaultFloating);
-  // Later rules overwrite only the fields they set.
-  CHECK(resolved.defaultWidth && *resolved.defaultWidth == 0.75);
-  CHECK(resolved.defaultHeight && *resolved.defaultHeight == 0.6);
+  CHECK(!resolved.defaultFloatingWidthPx);
+  CHECK(resolved.defaultFloatingWidth && *resolved.defaultFloatingWidth == 0.6);
+  CHECK(resolved.defaultFloatingHeight && *resolved.defaultFloatingHeight == 0.75);
+  // A later rule selecting another unit replaces the earlier unit for that axis or extent.
+  CHECK(resolved.defaultScrollingExtent && *resolved.defaultScrollingExtent == 0.75);
+  CHECK(!resolved.defaultScrollingExtentPx);
 }
 
 UMBRIEL_TEST(windowRulesMatchContentTypesAndComposeSelectors) {

@@ -248,17 +248,20 @@ namespace umbriel {
       if (rule.defaultFloating) {
         resolved.defaultFloating = rule.defaultFloating;
       }
-      if (rule.defaultSize) {
-        resolved.defaultSize = rule.defaultSize;
+      if (rule.defaultFloatingWidthPx || rule.defaultFloatingWidth) {
+        resolved.defaultFloatingWidthPx = rule.defaultFloatingWidthPx;
+        resolved.defaultFloatingWidth = rule.defaultFloatingWidth;
+      }
+      if (rule.defaultFloatingHeightPx || rule.defaultFloatingHeight) {
+        resolved.defaultFloatingHeightPx = rule.defaultFloatingHeightPx;
+        resolved.defaultFloatingHeight = rule.defaultFloatingHeight;
       }
       if (rule.defaultPosition) {
         resolved.defaultPosition = rule.defaultPosition;
       }
-      if (rule.defaultWidth) {
-        resolved.defaultWidth = rule.defaultWidth;
-      }
-      if (rule.defaultHeight) {
-        resolved.defaultHeight = rule.defaultHeight;
+      if (rule.defaultScrollingExtentPx || rule.defaultScrollingExtent) {
+        resolved.defaultScrollingExtentPx = rule.defaultScrollingExtentPx;
+        resolved.defaultScrollingExtent = rule.defaultScrollingExtent;
       }
       if (rule.defaultWorkspace) {
         resolved.defaultWorkspace = rule.defaultWorkspace;
