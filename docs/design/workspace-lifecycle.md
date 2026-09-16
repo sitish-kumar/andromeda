@@ -73,19 +73,22 @@ restriction.
 
 ## Pointer focus after scene changes
 
-Mapping a window or activating a workspace can replace the scene under a
-stationary pointer without crossing a window border. With `follows_mouse`
-enabled, Umbriel does not override the mapping or workspace focus immediately.
-The focus transition instead invalidates the previous hover decision once. The
-next eligible pointer motion can therefore select a newly revealed view even
-when both the old and new pointer coordinates fall inside it. After that one
-refresh, hover returns to geometric border-crossing detection so scrolling
-animations cannot cascade focus through windows moving beneath the pointer.
+Mapping a window, activating a workspace, or running a layout command can
+replace the scene under a stationary pointer without crossing a window border.
+With `follows_mouse` enabled, Umbriel does not override the established focus
+immediately. The focus transition or successful command instead invalidates the
+previous hover decision once. The next eligible pointer motion can therefore
+select a newly revealed view even when both the old and new pointer coordinates
+fall inside it. After that one refresh, hover returns to geometric
+border-crossing detection so scrolling animations cannot cascade focus through
+windows moving beneath the pointer.
 
 This distinction matters when a second window maps away from the cursor and
-when returning to a workspace whose remembered focused window is elsewhere.
-In both cases, a small motion inside the window under the pointer is sufficient;
-the pointer does not need to leave and re-enter its border.
+when returning to a workspace whose remembered focused window is elsewhere. It
+also covers explicit strip scrolling, column resizing or reordering, and leaving
+fullscreen when those commands reveal a different window. In each case, a small
+motion inside the window under the pointer is sufficient; the pointer does not
+need to leave and re-enter its border.
 
 Closing a focused Dwindle or master tile is a bounded exception. Umbriel records
 the pointer position only when the closing view owns keyboard focus, is visibly
@@ -195,6 +198,8 @@ and
 [`tests/harness/checks/512_workspace_return_hover_focus.sh`](../../tests/harness/checks/512_workspace_return_hover_focus.sh).
 Scrolling reveal animations are kept from cascading hover focus by
 [`tests/harness/checks/513_scrolling_hover_focus_stability.sh`](../../tests/harness/checks/513_scrolling_hover_focus_stability.sh).
+Command-driven strip scrolling, resizing, column movement, and fullscreen exit
+are covered by the `518_*_hover_focus.sh` checks.
 Modifier-wheel switching and the resulting keyboard-focus handoff through an
 input-method keyboard grab are covered by
 [`tests/harness/checks/520_input_method_wheel.sh`](../../tests/harness/checks/520_input_method_wheel.sh).

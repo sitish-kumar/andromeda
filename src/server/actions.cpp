@@ -597,6 +597,12 @@ namespace umbriel {
       return cursor != nullptr && cursor->isDraggingIntoLayout();
     }
 
+    void invalidateHoverFocusAfterSceneChange(Server& server, bool changed) {
+      if (changed && config().input.focus.followsMouse) {
+        server.cursor()->invalidateHoverFocus();
+      }
+    }
+
     template <int Sign> void scrollActiveLayout(Server& server, int multiplier = 1) {
       Workspace* workspace = activeWorkspace(server);
       ScrollingLayout* scrolling = workspace != nullptr ? workspace->scrollingLayout() : nullptr;
@@ -606,8 +612,14 @@ namespace umbriel {
       const auto step = static_cast<double>(config().input.mouse.scrollWheelStep * multiplier);
       const int viewportPrimary = workspace->scrollViewportExtent();
       const auto maxScroll = static_cast<double>(scrolling->maxScroll(viewportPrimary));
-      scrolling->setScroll(std::clamp(scrolling->scroll() + Sign * step, 0.0, maxScroll));
+      const double oldScroll = scrolling->scroll();
+      const double newScroll = std::clamp(oldScroll + Sign * step, 0.0, maxScroll);
+      if (newScroll == oldScroll) {
+        return;
+      }
+      scrolling->setScroll(newScroll);
       workspace->markArrange();
+      invalidateHoverFocusAfterSceneChange(server, true);
     }
 
     bool actionLayoutScrollDrag(Server& /*server*/, const Keybind& bind, std::string* error) {
@@ -695,7 +707,7 @@ namespace umbriel {
 
     template <int Direction> bool actionMoveColumn(Server& server, const Keybind& /*bind*/, std::string* /*error*/) {
       if (Workspace* workspace = windowActionWorkspace(server)) {
-        workspace->moveFocusedColumn(Direction);
+        invalidateHoverFocusAfterSceneChange(server, workspace->moveFocusedColumn(Direction));
       }
       return true;
     }
@@ -815,7 +827,7 @@ namespace umbriel {
         return true;
       }
       if (Workspace* workspace = activeWorkspace(server)) {
-        workspace->cycleFocusedWidth(Direction);
+        invalidateHoverFocusAfterSceneChange(server, workspace->cycleFocusedWidth(Direction));
       }
       return true;
     }
@@ -826,7 +838,7 @@ namespace umbriel {
         return true;
       }
       if (Workspace* workspace = activeWorkspace(server)) {
-        workspace->cycleFocusedHeight(Direction);
+        invalidateHoverFocusAfterSceneChange(server, workspace->cycleFocusedHeight(Direction));
       }
       return true;
     }
@@ -840,7 +852,7 @@ namespace umbriel {
       }
       if (Workspace* workspace = activeWorkspace(server)) {
         if (const auto* arg = payloadIf<WidthArg>(bind)) {
-          workspace->setFocusedWidth(arg->fraction);
+          invalidateHoverFocusAfterSceneChange(server, workspace->setFocusedWidth(arg->fraction));
         }
       }
       return true;
@@ -857,7 +869,7 @@ namespace umbriel {
       }
       if (Workspace* workspace = activeWorkspace(server)) {
         if (const auto* arg = payloadIf<WidthArg>(bind)) {
-          workspace->modifyFocusedWidth(arg->fraction);
+          invalidateHoverFocusAfterSceneChange(server, workspace->modifyFocusedWidth(arg->fraction));
         }
       }
       return true;
@@ -872,7 +884,7 @@ namespace umbriel {
       }
       if (Workspace* workspace = activeWorkspace(server)) {
         if (const auto* arg = payloadIf<WidthArg>(bind)) {
-          workspace->setFocusedHeight(arg->fraction);
+          invalidateHoverFocusAfterSceneChange(server, workspace->setFocusedHeight(arg->fraction));
         }
       }
       return true;
@@ -889,7 +901,7 @@ namespace umbriel {
       }
       if (Workspace* workspace = activeWorkspace(server)) {
         if (const auto* arg = payloadIf<WidthArg>(bind)) {
-          workspace->modifyFocusedHeight(arg->fraction);
+          invalidateHoverFocusAfterSceneChange(server, workspace->modifyFocusedHeight(arg->fraction));
         }
       }
       return true;
@@ -908,7 +920,7 @@ namespace umbriel {
         return true;
       }
       if (Workspace* workspace = activeWorkspace(server)) {
-        workspace->resizeFocusedEdge(Edges, arg->fraction);
+        invalidateHoverFocusAfterSceneChange(server, workspace->resizeFocusedEdge(Edges, arg->fraction));
       }
       return true;
     }
@@ -948,7 +960,7 @@ namespace umbriel {
         return true;
       }
       if (Workspace* workspace = activeWorkspace(server)) {
-        workspace->toggleFocusedFullscreen();
+        invalidateHoverFocusAfterSceneChange(server, workspace->toggleFocusedFullscreen());
       }
       return true;
     }
