@@ -86,9 +86,11 @@ windows moving beneath the pointer.
 This distinction matters when a second window maps away from the cursor and
 when returning to a workspace whose remembered focused window is elsewhere. It
 also covers explicit strip scrolling, column resizing or reordering, and leaving
-fullscreen when those commands reveal a different window. In each case, a small
-motion inside the window under the pointer is sufficient; the pointer does not
-need to leave and re-enter its border.
+fullscreen when it reveals a different window. Fullscreen exits behave the same
+whether Umbriel runs a configured action or a client such as a browser or media
+player leaves video fullscreen through XDG shell. In each case, a small motion
+inside the window under the pointer is sufficient; the pointer does not need to
+leave and re-enter its border.
 
 Closing a focused Dwindle or master tile is a bounded exception. Umbriel records
 the pointer position only when the closing view owns keyboard focus, is visibly
@@ -200,6 +202,8 @@ Scrolling reveal animations are kept from cascading hover focus by
 [`tests/harness/checks/513_scrolling_hover_focus_stability.sh`](../../tests/harness/checks/513_scrolling_hover_focus_stability.sh).
 Command-driven strip scrolling, resizing, column movement, and fullscreen exit
 are covered by the `518_*_hover_focus.sh` checks.
+Client-requested XDG fullscreen exit is covered by
+[`tests/harness/checks/519_client_fullscreen_exit_hover_focus.sh`](../../tests/harness/checks/519_client_fullscreen_exit_hover_focus.sh).
 Modifier-wheel switching and the resulting keyboard-focus handoff through an
 input-method keyboard grab are covered by
 [`tests/harness/checks/520_input_method_wheel.sh`](../../tests/harness/checks/520_input_method_wheel.sh).

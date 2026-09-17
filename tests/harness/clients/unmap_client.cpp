@@ -17,6 +17,7 @@
 // another client's exported toplevel, the way a portal dialog is parented.
 // TRANSIENT_FOREIGN_PARENT_ON_STDIN delays that parent request until `p` is read
 // from stdin, after the child has mapped.
+// FULLSCREEN_ON_STDIN makes `f` request fullscreen and `u` request windowed state.
 
 #include "color-management-v1-client-protocol.h"
 #include "content-type-v1-client-protocol.h"
@@ -686,8 +687,12 @@ int main(int argc, char** argv) {
   // A toplevel that never sets a title, which is distinct from one that sets an empty title.
   const bool skipTitle = std::getenv("NO_TITLE") != nullptr;
   const bool maximizeOnStdin = std::getenv("MAXIMIZE_ON_STDIN") != nullptr;
-  const bool updateOnStdin =
-      updatedContentType != nullptr || updatedXdgTag != nullptr || updatedTitle != nullptr || maximizeOnStdin;
+  const bool fullscreenOnStdin = std::getenv("FULLSCREEN_ON_STDIN") != nullptr;
+  const bool updateOnStdin = updatedContentType != nullptr
+      || updatedXdgTag != nullptr
+      || updatedTitle != nullptr
+      || maximizeOnStdin
+      || fullscreenOnStdin;
   if (parseContentType(initialContentType) < 0 || parseContentType(updatedContentType) < 0) {
     std::println(stderr, "unmap-client: CONTENT_TYPE values must be none, photo, video, or game");
     return EXIT_FAILURE;
@@ -983,6 +988,18 @@ int main(int argc, char** argv) {
             wl_surface_commit(state.surface);
             wl_display_flush(state.display);
             std::println("maximize-requested");
+            std::fflush(stdout);
+          } else if (state.mapped && fullscreenOnStdin && command == 'f') {
+            xdg_toplevel_set_fullscreen(state.toplevel, nullptr);
+            wl_surface_commit(state.surface);
+            wl_display_flush(state.display);
+            std::println("fullscreen-requested");
+            std::fflush(stdout);
+          } else if (state.mapped && fullscreenOnStdin && command == 'u') {
+            xdg_toplevel_unset_fullscreen(state.toplevel);
+            wl_surface_commit(state.surface);
+            wl_display_flush(state.display);
+            std::println("unfullscreen-requested");
             std::fflush(stdout);
           } else if (state.mapped && updateOnStdin && !state.metadataUpdated) {
             if (updatedContentType != nullptr) {

@@ -3676,6 +3676,11 @@ namespace umbriel {
 
   void View::setFullscreen(bool fullscreen, FullscreenExitLayout exitLayout) {
     m_deferredUnfullscreen.clear();
+    const bool refreshHoverFocus = !fullscreen
+        && m_mapped
+        && m_onActiveWorkspace
+        && (m_toplevel->scheduled.fullscreen || m_toplevel->current.fullscreen)
+        && config().input.focus.followsMouse;
     kLog.debug(
         "set_fullscreen '{}' [{}] -> {} (tiled={}, ws_active={})",
         m_toplevel->app_id != nullptr ? m_toplevel->app_id : "?", static_cast<const void*>(this), fullscreen, m_tiled,
@@ -3790,6 +3795,12 @@ namespace umbriel {
       if (Overview* overview = m_server->overview(); overview != nullptr && overview->active()) {
         overview->onViewPinnedChanged(this);
       }
+    }
+    if (refreshHoverFocus) {
+      // A client-side fullscreen exit, such as leaving a browser video, bypasses the compositor action that normally
+      // invalidates hover focus. The restored scene may put another tile beneath a stationary pointer, so its next
+      // eligible motion must re-run focus selection even without crossing a border.
+      m_server->cursor()->invalidateHoverFocus();
     }
     refreshStateRuleEffects();
   }
