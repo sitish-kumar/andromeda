@@ -746,8 +746,8 @@ enabled = true
 duration_ms = 250
 curve = "easeout"
 # Filmstrip movement between workspace previews: wheel, keyboard, and touchpad
-# release alike. A spring curve keeps the release velocity; its final few pixels
-# stay monotonic on the logical layout grid.
+# release alike. A spring curve keeps the release velocity and follows its
+# physics until every possible remaining movement is subpixel.
 workspace_curve = "spring:1,1000"
 
 # Scratchpad show, hide, and backdrop
