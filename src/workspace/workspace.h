@@ -125,16 +125,16 @@ namespace umbriel {
         View* view, std::optional<double> initialExtent, std::optional<int> initialExtentPx,
         NamedScrollingColumnChange change
     );
-    void layoutDetach(View* view, bool animate = false);
+    void layoutDetach(View* view, bool animate = false, bool stageTopology = false);
     void trackCloseSnapshot(uint64_t snapshot, const wlr_box& presentedBox, const wlr_box& layoutBox);
-    void arrange(bool animate = true);
+    void arrange(bool animate = true, bool stageTopology = false);
     // Record that the layout is stale instead of rebuilding it now. The work runs once, before the next frame, however
     // many times this is called in between: a touchpad swipe marks on every motion event, and unrelated paths reached
     // in the same frame (a focus change, a config reload, a client's fullscreen commit) each used to arrange on their
     // own. Prefer this to arrange(). Call arrange() directly only when the code immediately afterwards reads the
     // arranged geometry back out of the layout, or when protocol state and size must land in one configure before the
     // next frame. targetBox() is the only thing arrange() produces that is not simply applied to the scene.
-    void markArrange(bool animate = true);
+    void markArrange(bool animate = true, bool stageTopology = false);
     void flushArrange();
     void refreshAloneRuleStates();
     void syncViewPresentation(View* view);
@@ -254,6 +254,7 @@ namespace umbriel {
     bool m_inSwitchTransition = false;
     bool m_arrangePending = false;
     bool m_arrangeAnimate = true;
+    bool m_arrangeStageTopology = false;
     // Remembers the last layout state, so alone-ness is only recomputed when it changed.
     bool m_refreshingAloneRules = false;
     size_t m_lastAloneViewCount = 0;

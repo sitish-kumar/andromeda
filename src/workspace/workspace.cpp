@@ -389,7 +389,7 @@ namespace umbriel {
       });
       m_pendingOpeningMotions.push_back(std::move(openingMotion));
     }
-    markArrange(true);
+    markArrange(true, origin == LayoutAttachOrigin::OpeningView);
   }
 
   std::unique_ptr<Layout> Workspace::previewLayout() const {
@@ -526,14 +526,14 @@ namespace umbriel {
     markArrange(true);
   }
 
-  void Workspace::layoutDetach(View* view, bool animate) {
+  void Workspace::layoutDetach(View* view, bool animate, bool stageTopology) {
     detachFromLayout(view);
     // The column just left the strip, so the old offset can now point past the end: a survivor stays cut off at the
     // left edge while empty space opens on the right. Clamping re-anchors the remaining columns after removal while
     // leaving the offset alone if the strip is still longer than the viewport. Deliberately not inside arrange(): a
     // touchpad swipe overscrolls on purpose, and it arranges on every frame of the gesture.
     clampScrollToRange();
-    markArrange(animate);
+    markArrange(animate, stageTopology);
   }
 
   void Workspace::trackCloseSnapshot(uint64_t snapshot, const wlr_box& presentedBox, const wlr_box& layoutBox) {
@@ -594,12 +594,13 @@ namespace umbriel {
     scrolling->setScroll(std::clamp(scrolling->scroll(), 0.0, maxScroll));
   }
 
-  void Workspace::markArrange(bool animate) {
+  void Workspace::markArrange(bool animate, bool stageTopology) {
     // Last mark wins. The pairing that settles this is a touchpad scroll: every motion marks unanimated, and the
     // release that snaps to the nearest column marks animated, often in the same frame as the last motion. Letting the
     // unanimated mark win would teleport the strip at the end of every swipe. The opposite mistake, an animated mark
     // landing mid-drag, costs one tween on a frame where something unrelated also changed the layout.
     m_arrangeAnimate = animate;
+    m_arrangeStageTopology = m_arrangeStageTopology || stageTopology;
     m_arrangePending = true;
     if (m_group != nullptr && m_group->output() != nullptr) {
       m_group->output()->markDirty(Dirty::Layout);
@@ -650,10 +651,11 @@ namespace umbriel {
     }
   }
 
-  void Workspace::arrange(bool animate) {
+  void Workspace::arrange(bool animate, bool stageTopology) {
     // Clearing here, rather than only in flushArrange, is what makes mixing the two safe: a direct arrange() satisfies
     // whatever was marked earlier in the frame, so the flush does not repeat it.
     m_arrangePending = false;
+    stageTopology = stageTopology || std::exchange(m_arrangeStageTopology, false);
     refreshAloneRuleStates();
     // Layout math and client configures must run even for hidden workspaces: clients (games especially) change
     // fullscreen state while another workspace is active, and skipping the configure here leaves them with a stale size
@@ -690,7 +692,7 @@ namespace umbriel {
     }
 
     m_layout->arrange(applyLayoutStruts(usable, m_layoutConfig.struts));
-    planStagedLayoutMotion(animateLayout, usable, previousPresentations);
+    planStagedLayoutMotion(animateLayout && stageTopology, usable, previousPresentations);
     // The map-time IPC event can fire before this arrange runs, leaving the previous window positions in the listing.
     // Re-emit now that the layout boxes are settled; the event coalescer caps this at one per frame.
     m_group->server()->scheduleIpcWindowsEvent();
@@ -1632,7 +1634,7 @@ namespace umbriel {
     const bool fullWidth = m_layout->toggleFullWidth(column);
     wlr_xdg_toplevel_set_maximized(m_focusedView->toplevel(), fullWidth);
     ensureFocusedVisible();
-    markArrange();
+    markArrange(true, true);
     return true;
   }
 

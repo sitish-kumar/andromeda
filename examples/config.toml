@@ -722,8 +722,8 @@ curve = "easeout"
 style = "fade"                                  # fade or slide
 # shader = "shaders/reveal.glsl"
 
-# Animation used for moving and resizing windows, layout changes, maximize,
-# restore, and visible scratchpad resizing.
+# Animation used for moving and resizing windows, layout changes such as
+# consume and expel, maximize, restore, and visible scratchpad resizing.
 [animation.windows_move]
 enabled = true
 duration_ms = 250

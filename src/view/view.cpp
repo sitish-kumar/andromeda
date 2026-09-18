@@ -2709,7 +2709,7 @@ namespace umbriel {
       if (m_tiled && closeSnapshot != Server::InvalidCloseSnapshot) {
         m_workspace->trackCloseSnapshot(closeSnapshot, closingBox, closingLayoutBox);
       }
-      m_workspace->layoutDetach(this, m_tiled);
+      m_workspace->layoutDetach(this, m_tiled, m_tiled);
       if (closeSnapshot != Server::InvalidCloseSnapshot && m_tiled) {
         m_workspace->flushArrange();
       }
@@ -3286,9 +3286,9 @@ namespace umbriel {
       if (leavingFullscreen) {
         // setFullscreen deferred its layout so this final maximize state and edge size replace the pending fullscreen
         // configure together.
-        m_workspace->arrange(animate);
+        m_workspace->arrange(animate, true);
       } else {
-        m_workspace->markArrange(animate);
+        m_workspace->markArrange(animate, true);
       }
     }
     updateForeignState();
