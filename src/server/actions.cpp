@@ -954,9 +954,6 @@ namespace umbriel {
     }
 
     bool actionToggleFloating(Server& server, const Keybind& bind, std::string* error) {
-      if (scratchpadHoldsFocus(server)) {
-        return true;
-      }
       if (const auto* arg = payloadIf<WindowIdArg>(bind); arg != nullptr && !arg->id.empty()) {
         View* view = viewByForeignIdentifier(server, arg->id);
         if (view == nullptr) {
@@ -970,6 +967,9 @@ namespace umbriel {
         return true;
       } else {
 
+        if (scratchpadHoldsFocus(server)) {
+          return true;
+        }
         if (Workspace* workspace = activeWorkspace(server)) {
           workspace->toggleFocusedFloating();
         }
