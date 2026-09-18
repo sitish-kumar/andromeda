@@ -364,9 +364,9 @@ wait_for_windows 2
 read -r id <<< "$(jq -r '.[0].id' <<< "$("$UMBRIEL" windows --json)")"
 accepts "window-focus:$id"
 
-read -r unfocused_id started_focused started_floating <<< "$(jq -r '.[1] | "\(.id) \(.focused) \(.floating)"' <<< "$("$UMBRIEL" windows --json )")"
+read -r unfocused_id started_focused started_floating <<< "$(jq -r '.[1] | "\(.id) \(.focused) \(.floating)"' <<< "$("$UMBRIEL" windows --json)")"
 accepts "window-toggle-floating:$unfocused_id"
-read -r ended_focused ended_floating <<< "$(jq -r '.[1] | "\(.id) \(.focused) \(.floating)"' <<< "$("$UMBRIEL" windows --json )")"
+read -r ended_focused ended_floating <<< "$(jq -r '.[1] | "\(.focused) \(.floating)"' <<< "$("$UMBRIEL" windows --json )")"
 
 if [[ $started_focused == false && $ended_focused == true ]]; then
   echo "Window stole focus when toggled"
@@ -379,6 +379,32 @@ if [[ $started_floating == false && $ended_floating == false ]]; then
 fi
 
 accepts "window-toggle-floating:$unfocused_id"
+
+accepts "window-move-to-scratchpad"
+accepts "scratchpad-toggle"
+
+read -r active focused <<< "$(jq '.[0] | "\(.active) \(.focused)"' <<< "$("$UMBRIEL" windows --json)")"
+if [[ $active == false || $focused == true ]]; then
+  echo "Scrachpad window is not behaving properly"
+  exit 1
+fi
+
+accepts "window-toggle-floating:$unfocused_id"
+read -r ended_active ended_floating <<< "$(jq -r '.[1] | "\(.active) \(.floating)"' <<< "$("$UMBRIEL" windows --json )")"
+
+if [[ $ended_active == true ]]; then
+  echo "Scratchpad should be active, not floating window"
+  exit 1
+fi
+
+if [[ $ended_floating == false ]]; then
+  echo "Window did not start floating with scratchpad visible"
+  exit 1
+fi
+
+accepts "window-toggle-floating:$unfocused_id"
+accepts "window-restore-from-scratchpad"
+
 accepts "window-close"
 
 # workspace-set-layout
