@@ -40,8 +40,12 @@ namespace umbriel {
     // True when the drawn ring no longer matches the given content size, i.e. a
     // client commit changed geometry behind the layout's back.
     [[nodiscard]] bool borderGeometryStale(int contentWidth, int contentHeight) const;
-    // Copy the border into a close-animation snapshot tree.
-    void snapshotBorders(wlr_scene_tree* snapshot, bool focused, std::vector<BorderSnapshot>& out) const;
+    // Copy the border into a close-animation snapshot tree. `innerColor` is the straight colour the ring currently
+    // shows and `opacity` the effective opacity it is drawn at.
+    void snapshotBorders(
+        wlr_scene_tree* snapshot, const std::array<float, 4>& innerColor, float opacity,
+        std::vector<BorderSnapshot>& out
+    ) const;
 
     // Blur
     [[nodiscard]] SurfaceBlurOptions blurOptions() const { return m_blurOptions; }

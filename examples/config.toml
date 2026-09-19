@@ -709,7 +709,8 @@ enabled = true                                  # Master animation switch
 duration_ms = 250                               # Shared duration, 1-10000 ms
 curve = "easeout"                               # Built-in or registered bezier/spring curve name
 
-# Window opening
+# Window opening. A tiled window grows into the slot the layout opens for it;
+# popin and zoom scale inside that slot, and slide only fades for tiled windows.
 [animation.windows_in]
 enabled = true
 duration_ms = 150
@@ -718,7 +719,7 @@ style = "popin"                                 # popin, zoom, slide, fade, or n
 scale = 0.85                                    # Popin start scale, 0.1-1.0
 # shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
 
-# Window closing
+# Window closing, using a snapshot that shrinks along with the layout.
 [animation.windows_out]
 enabled = true
 duration_ms = 150
@@ -726,8 +727,9 @@ curve = "easeout"
 style = "fade"                                  # fade or slide
 # shader = "shaders/reveal.glsl"
 
-# Window movement, resizing, and floating maximize. Visible scratchpad keybind
-# resizing uses this event too.
+# Window movement, resizing, layout reflow, maximize and restore, and floating
+# maximize. Visible scratchpad keybind resizing uses this event too. Every tiled
+# window on a workspace shares one transition here, so gaps survive the motion.
 [animation.windows_move]
 enabled = true
 duration_ms = 250

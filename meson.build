@@ -502,6 +502,7 @@ pure_sources = files(
   'src/input/surface_layouts.cpp',
   'src/input/shortcut_keysym.cpp',
   'src/layout/layout.cpp',
+  'src/layout/layout_motion.cpp',
   'src/layout/scrolling.cpp',
   'src/layout/dwindle.cpp',
   'src/layout/master.cpp',

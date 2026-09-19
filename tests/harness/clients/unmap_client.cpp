@@ -18,6 +18,7 @@
 // TRANSIENT_FOREIGN_PARENT_ON_STDIN delays that parent request until `p` is read
 // from stdin, after the child has mapped.
 // FULLSCREEN_ON_STDIN makes `f` request fullscreen and `u` request windowed state.
+// FILL_COLOR=<ARGB> paints the buffer that colour (default 0xFF5577AA), so screenshots can tell windows apart.
 
 #include "color-management-v1-client-protocol.h"
 #include "content-type-v1-client-protocol.h"
@@ -128,6 +129,7 @@ namespace {
     bool imageDescriptionFailed = false;
     bool metadataUpdated = false;
     int tearingHint = -1;
+    uint32_t fillColor = 0xFF5577AA;
     const char* title = "unmap-client";
     const char* appId = nullptr;
     const char* remapAppId = nullptr;
@@ -267,7 +269,7 @@ namespace {
       close(fd);
       return buffer;
     }
-    std::fill_n(static_cast<uint32_t*>(buffer.pixels), buffer.size / sizeof(uint32_t), 0xFF5577AA);
+    std::fill_n(static_cast<uint32_t*>(buffer.pixels), buffer.size / sizeof(uint32_t), state.fillColor);
 
     wl_shm_pool* pool = wl_shm_create_pool(state.shm, fd, static_cast<int>(buffer.size));
     buffer.resource = wl_shm_pool_create_buffer(pool, 0, width, height, stride, WL_SHM_FORMAT_ARGB8888);
@@ -721,6 +723,16 @@ int main(int argc, char** argv) {
       std::println(stderr, "unmap-client: TEARING_HINT must be async or vsync");
       return EXIT_FAILURE;
     }
+  }
+  if (const char* fill = std::getenv("FILL_COLOR")) {
+    char* end = nullptr;
+    errno = 0;
+    const unsigned long value = std::strtoul(fill, &end, 0);
+    if (*fill == '\0' || end == nullptr || *end != '\0' || errno != 0 || value > 0xFFFFFFFFUL) {
+      std::println(stderr, "unmap-client: FILL_COLOR must be a 32-bit ARGB value");
+      return EXIT_FAILURE;
+    }
+    state.fillColor = static_cast<uint32_t>(value);
   }
   if (argc > 2) {
     state.width = std::max(1, std::atoi(argv[2]));

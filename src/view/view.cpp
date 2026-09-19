@@ -428,6 +428,7 @@ namespace umbriel {
   void View::detachWorkspace() {
     reparentShadow(nullptr);
     m_workspace = nullptr;
+    m_openingScale = 1.0;
     setOnActiveWorkspace(true);
   }
 
@@ -751,7 +752,25 @@ namespace umbriel {
 
   void View::cancelFadeAnimation() {
     m_fade.snap(1.0);
+    dropOpeningInset();
     setFadeAlpha(1.0F);
+  }
+
+  void View::dropOpeningInset() {
+    if (m_openingScale >= 1.0) {
+      return;
+    }
+    m_openingScale = 1.0;
+    // The inset moved the node off its slot origin; the caller settles the size.
+    if (m_mapped
+        && m_tiled
+        && m_workspace != nullptr
+        && !layoutFullscreen()
+        && m_workspace->layout().columnOf(this) >= 0) {
+      const wlr_box slot = m_workspace->presentedTiledBox(this);
+      wlr_scene_node_set_position(&m_sceneTree->node, slot.x, slot.y);
+      m_decoration.setShadowPosition(slot.x, slot.y);
+    }
   }
 
   wlr_box View::committedContentBox() const {
@@ -870,6 +889,11 @@ namespace umbriel {
     if (!sizeAnimating()) {
       return;
     }
+    if (m_layoutMotion) {
+      m_workspace->releaseLayoutMotion(this);
+      m_layoutMotion = false;
+    }
+    dropOpeningInset();
     const wlr_box content = committedContentBox();
     m_presentation.snapTo(content.width, content.height);
     finishSizeAnimation();
@@ -985,6 +1009,54 @@ namespace umbriel {
 
   void View::snapPosition(int x, int y) { setPosition(x, y); }
 
+  void View::setLayoutTarget(int x, int y) {
+    m_posX.snap(x);
+    m_posY.snap(y);
+    m_positioned = true;
+  }
+
+  void View::presentTiledBox(const wlr_box& box) {
+    wlr_box presented = box;
+    if (openingScaleActive()) {
+      const double scale = std::lerp(m_openingScale, 1.0, std::clamp(m_fade.current(), 0.0, 1.0));
+      presented.width = static_cast<int>(std::lround(box.width * scale));
+      presented.height = static_cast<int>(std::lround(box.height * scale));
+      presented.x = box.x + (box.width - presented.width) / 2;
+      presented.y = box.y + (box.height - presented.height) / 2;
+    }
+    presented.width = std::max(1, presented.width);
+    presented.height = std::max(1, presented.height);
+    wlr_scene_node_set_position(&m_sceneTree->node, presented.x, presented.y);
+    m_decoration.setShadowPosition(presented.x, presented.y);
+    m_presentation.setSize(presented.width, presented.height);
+    applyPresentedSize();
+    if (Overview* overview = m_server->overview(); overview != nullptr && overview->active()) {
+      overview->onViewPresentationChanged(this);
+    }
+    syncAnimationShaders();
+  }
+
+  void View::beginLayoutMotion(float direction) {
+    // The motion owns the presented size from here; a size tween still running would overwrite it on its next tick.
+    m_presentation.snapTo(m_presentation.width(), m_presentation.height());
+    m_layoutMotion = true;
+    m_layoutMotionDirection = direction;
+  }
+
+  void View::endLayoutMotion() {
+    if (!m_layoutMotion) {
+      return;
+    }
+    m_layoutMotion = false;
+    if (openingScaleActive() && m_workspace != nullptr) {
+      presentTiledBox(m_workspace->presentedTiledBox(this));
+    } else {
+      finishSizeAnimation();
+    }
+    // Clears the windows_move shader on the frame the motion ends.
+    syncAnimationShaders();
+  }
+
   void View::animateFadeTo(float toAlpha, int durationMs, const AnimationCurve& curve) {
     m_customFade = m_inScratchpad && animationShader(m_server->renderer(), AnimationEvent::Scratchpad) != nullptr;
     m_fade.snap(m_fadeAlpha);
@@ -1045,8 +1117,18 @@ namespace umbriel {
       return;
     }
     auto* renderer = m_server->renderer();
-    const auto& movement = m_posX.animating() ? m_posX : (m_posY.animating() ? m_posY : m_presentation.animation());
-    updateAnimationShader(&target->node, renderer, AnimationEvent::WindowsMove, movement);
+    if (m_posX.animating() || m_posY.animating() || m_presentation.animating()) {
+      const auto& movement = m_posX.animating() ? m_posX : (m_posY.animating() ? m_posY : m_presentation.animation());
+      updateAnimationShader(&target->node, renderer, AnimationEvent::WindowsMove, movement);
+    } else if (
+        const AnimatedValue* motion =
+            m_layoutMotion && m_workspace != nullptr ? m_workspace->layoutMotionValue() : nullptr;
+        motion != nullptr
+    ) {
+      updateAnimationShader(&target->node, renderer, AnimationEvent::WindowsMove, *motion, m_layoutMotionDirection);
+    } else {
+      updateAnimationShader(&target->node, renderer, AnimationEvent::WindowsMove, m_presentation.animation());
+    }
     updateAnimationShader(&target->node, renderer, AnimationEvent::DimUnfocused, m_focusDim);
     updateAnimationShader(
         &target->node, renderer, m_inScratchpad ? AnimationEvent::Scratchpad : AnimationEvent::WindowsIn, m_fade
@@ -1109,6 +1191,15 @@ namespace umbriel {
       setFadeAlpha(static_cast<float>(m_fade.current()));
       if (Overview* overview = m_server->overview(); overview != nullptr && overview->active()) {
         overview->onViewPresentationChanged(this);
+      }
+      // A tiled popin/zoom open shrinks its inset toward the slot with the fade; the motion presents it while it runs.
+      if (m_openingScale < 1.0 && !m_layoutMotion) {
+        if (openingScaleActive() && m_workspace != nullptr) {
+          presentTiledBox(m_workspace->presentedTiledBox(this));
+        } else {
+          dropOpeningInset();
+          finishSizeAnimation();
+        }
       }
       active = active || m_fade.animating();
     }
@@ -1861,7 +1952,7 @@ namespace umbriel {
     reloadBackdropColor();
   }
 
-  void View::beginCloseAnimation() {
+  CloseSnapshotId View::beginCloseAnimation() {
     const auto& animation = config().animation;
     if (!m_mapped
         || !m_onActiveWorkspace
@@ -1869,25 +1960,32 @@ namespace umbriel {
         || !animation.windowsOut.enabled
         || m_server->sessionLocked()
         || (m_server->overview() != nullptr && m_server->overview()->active())) {
-      return;
+      return kInvalidCloseSnapshot;
     }
 
     Output* output =
         m_workspace != nullptr && m_workspace->group() != nullptr ? m_workspace->group()->output() : currentOutput();
     if (output == nullptr) {
-      return;
+      return kInvalidCloseSnapshot;
     }
 
     // Under the output's clipped root, so a snapshot of a view straddling the shared edge stays contained while it
-    // fades. Server::removeOutput purges this output's snapshots before the Output is destroyed.
+    // fades. Server::removeOutput purges this output's snapshots before the Output is destroyed. The tree sits at the
+    // presented box so a layout motion can re-present it in output-root coordinates; the buffers keep their offsets
+    // relative to the view root inside the content subtree.
     wlr_scene_tree* snap = wlr_scene_tree_create(output->viewRoot());
     if (snap == nullptr) {
-      return;
+      return kInvalidCloseSnapshot;
     }
-    wlr_scene_node_set_position(&snap->node, m_sceneTree->node.x, m_sceneTree->node.y);
+    wlr_scene_node_set_position(&snap->node, m_presentedBox.x, m_presentedBox.y);
+    wlr_scene_tree* content = wlr_scene_tree_create(snap);
+    if (content == nullptr) {
+      wlr_scene_node_destroy(&snap->node);
+      return kInvalidCloseSnapshot;
+    }
 
     std::vector<BorderSnapshot> snapBorders;
-    m_decoration.snapshotBorders(snap, m_borderFocusedState, snapBorders);
+    m_decoration.snapshotBorders(snap, m_borderColorAnim.current(), effectiveOpacity(), snapBorders);
 
     // Copy surface buffers.
     struct CopyCtx {
@@ -1896,7 +1994,7 @@ namespace umbriel {
       int rootY;
       int buffersCopied;
     };
-    CopyCtx ctx{snap, m_sceneTree->node.x, m_sceneTree->node.y, 0};
+    CopyCtx ctx{content, m_sceneTree->node.x, m_sceneTree->node.y, 0};
     wlr_scene_node_for_each_buffer(
         &m_sceneTree->node,
         [](wlr_scene_buffer* src, int sx, int sy, void* data) {
@@ -1931,13 +2029,16 @@ namespace umbriel {
 
     if (ctx.buffersCopied == 0) {
       wlr_scene_node_destroy(&snap->node);
-      return;
+      return kInvalidCloseSnapshot;
     }
 
     wlr_scene_node_copy_animations_for_snapshot(&snap->node, &m_sceneTree->node);
     const auto shadow = m_decoration.snapshotShadow(output->viewRoot(), &snap->node);
-    m_server->animateCloseSnapshot(output, snap, std::move(snapBorders), std::nullopt, shadow);
+    const CloseSnapshotId id = m_server->animateCloseSnapshot(
+        output, snap, content, std::move(snapBorders), m_presentedBox, std::nullopt, shadow
+    );
     wlr_output_schedule_frame(output->wlr());
+    return id;
   }
 
   void View::setSurfaceTreeClip(const wlr_box* clip) {
@@ -2542,7 +2643,15 @@ namespace umbriel {
         m_fade.snap(0.0);
         m_fade.retarget(1.0, open.durationMs, open.curve);
 
-        if (!m_customFade && (open.style == "popin" || open.style == "zoom")) {
+        // A non-fullscreen tiled layout member gets its box from the workspace motion; popin/zoom scale inside that
+        // box and slide only fades. Floating and fullscreen windows keep tweening themselves.
+        const bool tiledMember =
+            m_tiled && !layoutFullscreen() && m_workspace != nullptr && m_workspace->layout().columnOf(this) >= 0;
+        if (!m_customFade && tiledMember) {
+          if (open.style == "popin" || open.style == "zoom") {
+            m_openingScale = std::clamp(open.style == "zoom" ? 0.5 : open.scale, 0.0, 1.0);
+          }
+        } else if (!m_customFade && (open.style == "popin" || open.style == "zoom")) {
           const int targetW = m_presentation.width();
           const int targetH = m_presentation.height();
           if (targetW > 0 && targetH > 0) {
@@ -2663,10 +2772,17 @@ namespace umbriel {
         m_workspace->setFocusedView(nullptr);
       }
     }
-    beginCloseAnimation();
+    const CloseSnapshotId ghost = beginCloseAnimation();
     // The closing snapshot must retain any in-flight opening shader first.
     wlr_scene_node_clear_animations(&m_sceneTree->node);
     cancelFadeAnimation();
+    // The ghost joins the workspace motion at the box it was captured from, before the size cancel below moves on.
+    if (ghost != kInvalidCloseSnapshot
+        && m_tiled
+        && m_workspace != nullptr
+        && m_workspace->layout().columnOf(this) >= 0) {
+      m_workspace->trackCloseSnapshot(ghost, m_presentedBox);
+    }
     cancelSizeAnimation();
     cancelPositionAnimation();
     m_decoration.setBordersEnabled(false);
@@ -2693,7 +2809,7 @@ namespace umbriel {
     m_server->scheduleIpcWindowsEvent();
     m_positioned = false;
     if (m_workspace != nullptr) {
-      m_workspace->layoutDetach(this, m_workspace->scrollingLayout() != nullptr);
+      m_workspace->layoutDetach(this, m_tiled);
       if (focusRevealedTile) {
         // The scene may still be animating from its old geometry. Arrange now, then read the authoritative layout
         // targets once so compositor motion cannot produce a chain of hover focus changes.

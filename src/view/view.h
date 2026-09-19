@@ -158,6 +158,15 @@ namespace umbriel {
     void setInScratchpad(bool scratchpad);
     void animateTo(int x, int y);
     void setPosition(int x, int y);
+    // True once a placement has put the node somewhere; an unpositioned tile is opening and has no `from` box.
+    [[nodiscard]] bool positioned() const { return m_positioned; }
+    // Record the layout slot origin without moving the node: the workspace motion carries the node there.
+    void setLayoutTarget(int x, int y);
+    // Per-frame presentation of a layout-assigned box, no bookkeeping. Width and height are clamped to at least 1.
+    void presentTiledBox(const wlr_box& box);
+    // The workspace motion owns this view's box until endLayoutMotion. `direction` feeds the windows_move shader.
+    void beginLayoutMotion(float direction);
+    void endLayoutMotion();
     // The authoritative layout position: where the window's slot is, not where its scene node happens to be
     // mid-animation. Workspace slides and arrange reflows move nodes without touching the animation targets, so window
     // listings that order by position must read these instead.
@@ -361,7 +370,7 @@ namespace umbriel {
     void watchViewSurfaceTree(wlr_surface* root, wlr_subsurface* attachment = nullptr);
     void watchViewSurface(wlr_surface* surface, wlr_subsurface* attachment);
     void clearViewSurfaceWatches();
-    void beginCloseAnimation();
+    [[nodiscard]] CloseSnapshotId beginCloseAnimation();
     void applyPresentedSize();
     // Refresh presentation through whichever owner currently holds the view.
     // Scratchpads are detached from workspaces but still need animated crop
@@ -380,7 +389,16 @@ namespace umbriel {
     // Shared tail of a finished/cancelled size animation: settle the presented
     // size on the committed geometry and refresh the derived chrome.
     void finishSizeAnimation();
-    [[nodiscard]] bool sizeAnimating() const { return m_presentation.animating(); }
+    [[nodiscard]] bool sizeAnimating() const {
+      return m_presentation.animating() || m_layoutMotion || openingScaleActive();
+    }
+    // A tiled popin/zoom open scales the presented box inside its slot while the fade-in runs. A fullscreen tile is
+    // presented against the output, not its slot, so it keeps the floating-style open tweens.
+    [[nodiscard]] bool openingScaleActive() const {
+      return m_tiled && !layoutFullscreen() && m_openingScale < 1.0 && m_fade.animating();
+    }
+    // Drop the opening inset and put the node back on its slot origin; the caller settles the presented size.
+    void dropOpeningInset();
     // True while the border ring exists and is showing. Fullscreen keeps the
     // tree but disables it, so the pointer alone does not answer this.
     [[nodiscard]] bool decorated() const;
@@ -546,6 +564,11 @@ namespace umbriel {
     // False until the first setPosition/animateTo places the node; the initial
     // placement snaps (avoids animating from the default (0,0) world origin).
     bool m_positioned = false;
+    // The workspace's layout motion currently drives the presented box.
+    bool m_layoutMotion = false;
+    float m_layoutMotionDirection = 1.0F;
+    // Inset scale a tiled popin/zoom open starts at; 1.0 = none.
+    double m_openingScale = 1.0;
     bool m_tiled = false;
     bool m_floatingMaximized = false;
     bool m_maximizedToEdges = false;

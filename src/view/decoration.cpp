@@ -85,7 +85,9 @@ namespace umbriel {
     return m_border->width != ring.box.width || m_border->height != ring.box.height;
   }
 
-  void ViewDecoration::snapshotBorders(wlr_scene_tree* snapshot, bool focused, std::vector<BorderSnapshot>& out) const {
+  void ViewDecoration::snapshotBorders(
+      wlr_scene_tree* snapshot, const std::array<float, 4>& innerColor, float opacity, std::vector<BorderSnapshot>& out
+  ) const {
     if (!bordersVisible() || m_border == nullptr) {
       return;
     }
@@ -102,13 +104,12 @@ namespace umbriel {
         &copy->node, m_borderTree->node.x + m_border->node.x, m_borderTree->node.y + m_border->node.y
     );
     wlr_scene_node_copy_animations_for_snapshot(&copy->node, &m_borderTree->node);
-    out.push_back(
-        BorderSnapshot{
-            .node = copy,
-            .innerColor = focused ? config().colors.border.focused : config().colors.border.unfocused,
-            .outerColor = config().colors.border.outer,
-        }
-    );
+    // Straight colours at the opacity the ring is drawn with right now, so the fade starts from what is on screen
+    // and stays in step with the content buffers, which keep their current opacity as their base.
+    BorderSnapshot captured{.node = copy, .innerColor = innerColor, .outerColor = config().colors.border.outer};
+    captured.innerColor[3] *= opacity;
+    captured.outerColor[3] *= opacity;
+    out.push_back(captured);
   }
 
   // Blur

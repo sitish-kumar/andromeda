@@ -363,10 +363,18 @@ namespace umbriel {
       std::string style = "fade";
       AnimationEvent event = AnimationEvent::WindowsOut;
     };
-    void animateCloseSnapshot(
-        Output* output, wlr_scene_tree* tree, std::vector<BorderSnapshot> borders,
-        std::optional<CloseSnapshotOverrides> overrides = std::nullopt, ShadowSnapshot shadow = {}
+    // `content` is the subtree holding the copied buffers; present() scales them into the box it is given (pass
+    // `tree` when there is no separate content tree). `box` is the ghost's presented box in output-root coordinates;
+    // an empty box marks a snapshot that is never re-presented. Returns kInvalidCloseSnapshot when the snapshot is
+    // dropped.
+    [[nodiscard]] CloseSnapshotId animateCloseSnapshot(
+        Output* output, wlr_scene_tree* tree, wlr_scene_tree* content, std::vector<BorderSnapshot> borders,
+        const wlr_box& box, std::optional<CloseSnapshotOverrides> overrides = std::nullopt, ShadowSnapshot shadow = {}
     );
+    // Move and resize a fading snapshot; a layout motion drives its ghost through this every frame.
+    void presentCloseSnapshot(CloseSnapshotId id, const wlr_box& box);
+    // The box a snapshot is currently presented at, nullopt once it has been reaped.
+    [[nodiscard]] std::optional<wlr_box> closeSnapshotBox(CloseSnapshotId id) const;
 
   private:
     static void
@@ -588,36 +596,60 @@ namespace umbriel {
     std::chrono::steady_clock::time_point m_startTime;
 
     // A fading copy of a closed window's scene tree. Owns that tree and destroys
-    // it once the fade completes.
+    // it once the fade completes. A snapshot with a presentable box draws its rings, shadow and scaled content at
+    // whatever box present() last set.
     class CloseSnapshot : public Animatable {
     public:
       CloseSnapshot(
-          Server& server, Output* output, wlr_scene_tree* tree, std::vector<BorderSnapshot> borders, int durationMs,
-          const AnimationCurve& curve, std::string_view style, AnimationEvent event, ShadowSnapshot shadow
+          Server& server, CloseSnapshotId id, Output* output, wlr_scene_tree* tree, wlr_scene_tree* content,
+          std::vector<BorderSnapshot> borders, const wlr_box& box, int durationMs, const AnimationCurve& curve,
+          std::string_view style, AnimationEvent event, ShadowSnapshot shadow
       );
       ~CloseSnapshot() override;
 
+      [[nodiscard]] CloseSnapshotId id() const { return m_id; }
+      [[nodiscard]] const wlr_box& box() const { return m_box; }
+      void present(const wlr_box& box);
+
       [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
       bool tickAnimations(uint64_t nowMsec) override;
-      [[nodiscard]] bool hasActiveAnimations() const override { return m_alpha.animating() || m_posY.animating(); }
+      [[nodiscard]] bool hasActiveAnimations() const override { return m_alpha.animating() || m_slide.animating(); }
       [[nodiscard]] bool animatesOn(const Output* output) const override { return m_output == output; }
 
     private:
+      void applySlide();
+
       Server* m_server = nullptr;
+      CloseSnapshotId m_id = kInvalidCloseSnapshot;
       wlr_scene_tree* m_tree = nullptr;
+      wlr_scene_tree* m_content = nullptr;
       Output* m_output = nullptr;
       AnimatedValue m_alpha;
       AnimationEvent m_event = AnimationEvent::WindowsOut;
-      AnimatedValue m_posY;
+      // Slide style: vertical offset of the whole ghost, 0 to 80.
+      AnimatedValue m_slide;
       int m_origX = 0;
       int m_origY = 0;
-      std::vector<std::pair<wlr_scene_buffer*, float>> m_buffers;
+      wlr_box m_from{};
+      wlr_box m_box{};
+      // Each copied buffer with the opacity, position and size it was captured at, relative to the content tree.
+      // present() scales them into the current box the way a live view scales its buffer during a size animation.
+      struct Buffer {
+        wlr_scene_buffer* node = nullptr;
+        float baseOpacity = 1.0F;
+        int x = 0;
+        int y = 0;
+        int width = 0;
+        int height = 0;
+      };
+      std::vector<Buffer> m_buffers;
       std::vector<BorderSnapshot> m_borders;
       ShadowSnapshot m_shadow;
     };
     // unique_ptr because the registry holds raw pointers to these: a vector of
     // values would move them out from under it on reallocation.
     std::vector<std::unique_ptr<CloseSnapshot>> m_closeSnapshots;
+    CloseSnapshotId m_nextCloseSnapshotId = 1;
     std::vector<Animatable*> m_animatables;
     std::vector<Animatable*> m_animatablesScratch;
 

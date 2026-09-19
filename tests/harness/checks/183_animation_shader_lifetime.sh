@@ -23,6 +23,10 @@ shader = "lifetime.glsl"
 shader = "$EXAMPLES/squash.glsl"
 [animation.windows_out]
 shader = "fixture-1.glsl"
+# Centre sampling right after map assumes the window is already at full size; a tiled window grows into its slot.
+[[window_rule]]
+match.title = "^shader-(example|retained|new-program)$"
+default_floating = true
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
 

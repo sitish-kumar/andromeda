@@ -129,6 +129,10 @@ namespace umbriel {
     [[nodiscard]] virtual bool animatesOn(const Output* output) const = 0;
   };
 
+  // Identifies a Server::CloseSnapshot for as long as it fades; 0 is never assigned.
+  using CloseSnapshotId = uint64_t;
+  constexpr CloseSnapshotId kInvalidCloseSnapshot = 0;
+
   // A single animatable scalar owned by the animated object. The owner ticks it from the central Server tick and reads
   // current() to drive its scene state. Retargeting mid-flight restarts the curve from the current value, so there is
   // no cancel bookkeeping and no snapping when a target changes.

@@ -2,10 +2,12 @@
 #include "config/config.h"
 #include "core/animation.h"
 #include "layout/layout.h"
+#include "layout/layout_motion.h"
 
 #include <array>
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -185,9 +187,21 @@ namespace umbriel {
     // Pull the scroll offset back into [0, maxScroll]. For removals and restored offsets only: a touchpad swipe
     // overscrolls on purpose.
     void clampScrollToRange();
+    // Every tiled member and closing ghost on this workspace is presented from one transition: each box interpolates
+    // between the layout it left and the layout it reached with a shared progress, so gaps survive the whole motion.
+    // A closing window's snapshot joins that transition at the box it was captured from (output-root coordinates).
+    void trackCloseSnapshot(CloseSnapshotId id, const wlr_box& outputBox);
+    // Drop `view` from the running motion without touching its presentation; the caller now owns its box.
+    void releaseLayoutMotion(View* view);
+    // The running motion's progress, for the windows_move shader; null when no motion runs.
+    [[nodiscard]] const AnimatedValue* layoutMotionValue() const;
+    // Advances the motion; true while it is still running.
+    bool tickLayoutMotion(uint64_t nowMsec);
+    [[nodiscard]] bool layoutMotionActive() const { return m_motion.progress.animating(); }
 
   private:
-    void applyPositions(bool animate);
+    // `resized` lists the members whose assigned size this arrange changed.
+    void applyPositions(bool animate, std::span<View* const> resized);
     [[nodiscard]] wlr_box tiledTargetBox(const View* view, const wlr_box& usable) const;
     [[nodiscard]] std::unique_ptr<Layout> previewLayout() const;
     [[nodiscard]] int layoutAttachIndex(const View* view) const;
@@ -210,6 +224,9 @@ namespace umbriel {
     bool moveWithinLane(int direction);
     // Take `view` out of the layout while holding visible lanes still.
     void detachFromLayout(View* view);
+    // Snap or animate every tiled member of the layout into its slot from wherever it is presented now.
+    void applyTiledMotion(const wlr_box& usable, bool animate, std::span<View* const> resized);
+    void endLayoutMotion();
     WorkspaceGroup* m_group = nullptr;
     wlr_ext_workspace_handle_v1* m_handle = nullptr;
     std::string m_id;
@@ -240,6 +257,29 @@ namespace umbriel {
     wlr_scene_tree* m_tiledLayer = nullptr;
     wlr_scene_tree* m_floatingLayer = nullptr;
     wlr_scene_tree* m_fullscreenTree = nullptr;
+    struct LayoutMotion {
+      struct ViewEntry {
+        View* view = nullptr;
+        wlr_box from{};
+        wlr_box to{};
+        float direction = 1.0F;
+      };
+      struct GhostEntry {
+        CloseSnapshotId id = kInvalidCloseSnapshot;
+        wlr_box from{};
+        wlr_box to{};
+      };
+      AnimatedValue progress;
+      std::vector<ViewEntry> views;
+      std::vector<GhostEntry> ghosts;
+    };
+    LayoutMotion m_motion;
+    // Ghosts captured since the last arrange, in workspace-local coordinates (slide offset removed).
+    struct PendingGhost {
+      CloseSnapshotId id = kInvalidCloseSnapshot;
+      wlr_box box{};
+    };
+    std::vector<PendingGhost> m_pendingGhosts;
   };
 
   class WorkspaceGroup : public Animatable {
@@ -297,7 +337,7 @@ namespace umbriel {
     // Advances the workspace slide; returns true while it is still running.
     [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Workspaces; }
     bool tickAnimations(uint64_t nowMsec) override;
-    [[nodiscard]] bool hasActiveAnimations() const override { return m_slideAnim.animating(); }
+    [[nodiscard]] bool hasActiveAnimations() const override;
     [[nodiscard]] bool animatesOn(const Output* output) const override { return m_output == output; }
 
   private:

@@ -119,6 +119,7 @@ namespace umbriel {
   }
 
   Workspace::~Workspace() {
+    endLayoutMotion();
     for (View* view : m_views) {
       view->cancelPositionAnimation();
       const bool fs = view->toplevel()->current.fullscreen || view->toplevel()->scheduled.fullscreen;
@@ -534,6 +535,8 @@ namespace umbriel {
         ? scrolling->scrollShiftForColumnRemoval(scrolling->columnOf(view), scrollViewportExtent())
         : 0.0;
     m_layout->removeView(view);
+    releaseLayoutMotion(view);
+    view->endLayoutMotion();
     if (scrolling != nullptr && shift != 0.0) {
       scrolling->setScroll(scrolling->scroll() - shift);
     }
@@ -628,6 +631,9 @@ namespace umbriel {
     // The map-time IPC event can fire before this arrange runs, leaving the previous window positions in the listing.
     // Re-emit now that the layout boxes are settled; the event coalescer caps this at one per frame.
     m_group->server()->scheduleIpcWindowsEvent();
+    // Members whose assigned size changed in this pass: only those animate their size. A client whose committed
+    // geometry never matches a stable configure (Chromium CSD) must not replay its resize on every focus arrange.
+    std::vector<View*> resized;
     for (View* view : m_views) {
       if (view == nullptr || !view->mapped() || !view->tiled()) {
         continue;
@@ -656,11 +662,7 @@ namespace umbriel {
       const auto& scheduled = view->toplevel()->scheduled;
       if (scheduled.width != width || scheduled.height != height) {
         wlr_xdg_toplevel_set_size(view->toplevel(), width, height);
-        // Start the presentation animation when the compositor changes the assigned size. Client geometry can differ
-        // from a stable configure, notably with Chromium CSD, and must not replay the resize on focus.
-        if (animate) {
-          view->beginResizeAnimation(width, height, view->toplevel()->current.fullscreen);
-        }
+        resized.push_back(view);
       }
     }
 
@@ -673,7 +675,7 @@ namespace umbriel {
 
     // One positioning path for every layout: targets already include any
     // layout-specific offset, and each view animates or snaps itself.
-    applyPositions(animate);
+    applyPositions(animate, resized);
     if (overviewActive) {
       overview->onWorkspaceArranged(this);
     }
@@ -739,7 +741,7 @@ namespace umbriel {
     view->applyPresentation(target);
   }
 
-  void Workspace::applyPositions(bool animate) {
+  void Workspace::applyPositions(bool animate, std::span<View* const> resized) {
     const Overview* overview = m_group != nullptr ? m_group->server()->overview() : nullptr;
     const bool overviewActive = overview != nullptr && overview->active();
     if ((!m_active && !m_inSwitchTransition && !overviewActive) || m_group == nullptr || m_group->output() == nullptr) {
@@ -754,8 +756,7 @@ namespace umbriel {
     }
     const int viewportPrimary = scrollViewportExtent();
 
-    // Position first, then let syncViewPresentation derive enable + clip from
-    // the node's current position so animated and resting views share one path.
+    // Fullscreen and floating views position themselves; tiled members share the workspace motion below.
     for (View* view : m_views) {
       if (view == nullptr || !view->mapped()) {
         continue;
@@ -788,16 +789,261 @@ namespace umbriel {
         // Floating (non-fullscreen): clip + enable against the home output.
         view->clampFloatingPosition();
         syncViewPresentation(view);
+      }
+    }
+    applyTiledMotion(usable, animate, resized);
+  }
+
+  namespace {
+
+    bool sameBox(const wlr_box& a, const wlr_box& b) {
+      return a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
+    }
+
+    float motionDirection(const wlr_box& from, const wlr_box& to) {
+      for (const int delta : {to.x - from.x, to.y - from.y, to.width - from.width}) {
+        if (delta != 0) {
+          return delta < 0 ? -1.0F : 1.0F;
+        }
+      }
+      return 1.0F;
+    }
+
+    // Squared distance a member's centre travels, in quarter pixels so no rounding is needed.
+    long travelSquared(const wlr_box& from, const wlr_box& to) {
+      const long dx = (2L * to.x + to.width) - (2L * from.x + from.width);
+      const long dy = (2L * to.y + to.height) - (2L * from.y + from.height);
+      return dx * dx + dy * dy;
+    }
+
+  } // namespace
+
+  void Workspace::applyTiledMotion(const wlr_box& usable, bool animate, std::span<View* const> resized) {
+    const Overview* overview = m_group->server()->overview();
+    const bool overviewActive = overview != nullptr && overview->active();
+
+    struct Member {
+      View* view;
+      wlr_box from;
+      wlr_box to;
+      bool positioned;
+    };
+    std::vector<Member> members;
+    for (View* view : m_views) {
+      if (view == nullptr
+          || !view->mapped()
+          || !view->tiled()
+          || view->layoutFullscreen()
+          || m_layout->columnOf(view) < 0) {
         continue;
       }
-      wlr_box target = tiledTargetBox(view, usable);
-      if (animate) {
-        view->animateTo(target.x, target.y);
-      } else {
-        view->setPosition(target.x, target.y);
+      const wlr_box slot = tiledTargetBox(view, usable);
+      // Read before setLayoutTarget: an opener has no placement yet, whatever box its map commit presented at the
+      // node's default origin.
+      const wlr_box& presented = view->presentedBox();
+      const bool positioned = view->positioned() && presented.width > 0 && presented.height > 0;
+      view->setLayoutTarget(slot.x, slot.y);
+      if ((!view->onActiveWorkspace() && !overviewActive) || slot.width <= 0 || slot.height <= 0) {
+        releaseLayoutMotion(view);
+        view->endLayoutMotion();
+        view->presentTiledBox(slot);
+        continue;
       }
-      syncViewPresentation(view);
+      const wlr_scene_node& node = view->sceneTree()->node;
+      // A positioned member animates its size only when this pass reconfigured it or a motion already carries it;
+      // otherwise it keeps the size it presents, which stays inside the slot.
+      wlr_box to = slot;
+      if (positioned
+          && !std::ranges::contains(resized, view)
+          && std::ranges::none_of(m_motion.views, [view](const LayoutMotion::ViewEntry& entry) {
+               return entry.view == view;
+             })) {
+        to.width = std::min(presented.width, slot.width);
+        to.height = std::min(presented.height, slot.height);
+      }
+      members.push_back({
+          .view = view,
+          .from = positioned ? wlr_box{node.x, node.y, presented.width, presented.height} : wlr_box{},
+          .to = to,
+          .positioned = positioned,
+      });
     }
+
+    const auto& animation = config().animation;
+    const auto& move = animation.windowsMove;
+    if (!animate || !animation.enabled || !move.enabled || move.durationMs <= 0) {
+      endLayoutMotion();
+      m_pendingGhosts.clear();
+      for (const Member& member : members) {
+        member.view->presentTiledBox(member.to);
+      }
+      return;
+    }
+
+    // Positioned members: the neighbours every ghost and opener is confined by, and entries where they move.
+    std::vector<MotionBox> neighbours;
+    std::vector<LayoutMotion::ViewEntry> views;
+    std::vector<size_t> openers;
+    bool changed = false;
+    for (const Member& member : members) {
+      if (!member.positioned) {
+        openers.push_back(views.size());
+        views.push_back({.view = member.view, .from = {}, .to = member.to, .direction = 1.0F});
+        changed = true;
+        continue;
+      }
+      neighbours.push_back({member.from, member.to});
+      if (sameBox(member.from, member.to)) {
+        member.view->endLayoutMotion();
+        syncViewPresentation(member.view);
+        continue;
+      }
+      views.push_back({
+          .view = member.view,
+          .from = member.from,
+          .to = member.to,
+          .direction = motionDirection(member.from, member.to),
+      });
+    }
+    changed = changed || !m_pendingGhosts.empty();
+
+    // A running motion heading for the same layout keeps going; anything else restarts from the current boxes.
+    if (!changed && m_motion.progress.animating() && views.size() == m_motion.views.size()) {
+      bool same = true;
+      for (size_t i = 0; i < views.size() && same; ++i) {
+        same = views[i].view == m_motion.views[i].view && sameBox(views[i].to, m_motion.views[i].to);
+      }
+      if (same) {
+        return;
+      }
+    }
+    for (const LayoutMotion::ViewEntry& running : m_motion.views) {
+      if (std::ranges::none_of(views, [&](const LayoutMotion::ViewEntry& entry) {
+            return entry.view == running.view;
+          })) {
+        running.view->endLayoutMotion();
+      }
+    }
+
+    // Ghosts: those still fading from the running motion continue from where they are, new ones from their capture.
+    std::vector<LayoutMotion::GhostEntry> ghosts;
+    Server* server = m_group->server();
+    for (const LayoutMotion::GhostEntry& running : m_motion.ghosts) {
+      if (const auto box = server->closeSnapshotBox(running.id)) {
+        ghosts.push_back(
+            {.id = running.id, .from = {box->x - m_slideOffsetX, box->y - m_slideOffsetY, box->width, box->height}}
+        );
+      }
+    }
+    for (const PendingGhost& pending : m_pendingGhosts) {
+      ghosts.push_back({.id = pending.id, .from = pending.box});
+    }
+    m_pendingGhosts.clear();
+    const bool vertical = scrollingVertical();
+    for (LayoutMotion::GhostEntry& ghost : ghosts) {
+      ghost.to = confineToNeighbours(ghost.from, neighbours, false);
+      if (ghost.to.width > 0 && ghost.to.height > 0) {
+        ghost.to = collapseBox(ghost.to, vertical);
+      }
+      neighbours.push_back({ghost.from, ghost.to});
+    }
+    for (const size_t index : openers) {
+      views[index].from = confineToNeighbours(views[index].to, neighbours, true);
+    }
+    if (views.empty() && ghosts.empty()) {
+      endLayoutMotion();
+      return;
+    }
+
+    // A pair of positioned members whose side relation changes cannot stay disjoint; the one travelling farther passes
+    // over the other. Openers grow out of an edge and never take part.
+    std::vector<bool> raise(views.size(), false);
+    for (size_t i = 0; i < views.size(); ++i) {
+      if (std::ranges::contains(openers, i)) {
+        continue;
+      }
+      for (size_t j = i + 1; j < views.size(); ++j) {
+        if (std::ranges::contains(openers, j)) {
+          continue;
+        }
+        const MotionBox a{views[i].from, views[i].to};
+        const MotionBox b{views[j].from, views[j].to};
+        if (keepsSeparation(a, b)) {
+          continue;
+        }
+        raise[travelSquared(a.from, a.to) > travelSquared(b.from, b.to) ? i : j] = true;
+      }
+    }
+
+    m_motion.views = std::move(views);
+    m_motion.ghosts = std::move(ghosts);
+    m_motion.progress.snap(0.0);
+    m_motion.progress.retarget(1.0, move.durationMs, move.curve);
+    for (size_t i = 0; i < m_motion.views.size(); ++i) {
+      const LayoutMotion::ViewEntry& entry = m_motion.views[i];
+      entry.view->beginLayoutMotion(entry.direction);
+      entry.view->presentTiledBox(entry.from);
+      if (raise[i]) {
+        entry.view->raiseToTop();
+      }
+    }
+    for (const LayoutMotion::GhostEntry& ghost : m_motion.ghosts) {
+      server->presentCloseSnapshot(
+          ghost.id, {ghost.from.x + m_slideOffsetX, ghost.from.y + m_slideOffsetY, ghost.from.width, ghost.from.height}
+      );
+    }
+    wlr_output_schedule_frame(m_group->output()->wlr());
+  }
+
+  bool Workspace::tickLayoutMotion(uint64_t nowMsec) {
+    if (!m_motion.progress.tick(nowMsec)) {
+      return false;
+    }
+    // Geometry never overshoots, so tiles cannot cross on an overshooting curve; shaders still read the raw value.
+    const double progress = std::clamp(m_motion.progress.current(), 0.0, 1.0);
+    for (size_t i = 0; i < m_motion.views.size(); ++i) {
+      const LayoutMotion::ViewEntry& entry = m_motion.views[i];
+      if (entry.view->mapped() && m_layout->columnOf(entry.view) >= 0) {
+        entry.view->presentTiledBox(interpolateBox(entry.from, entry.to, progress));
+      }
+    }
+    Server* server = m_group->server();
+    for (const LayoutMotion::GhostEntry& ghost : m_motion.ghosts) {
+      wlr_box box = interpolateBox(ghost.from, ghost.to, progress);
+      box.x += m_slideOffsetX;
+      box.y += m_slideOffsetY;
+      server->presentCloseSnapshot(ghost.id, box);
+    }
+    if (!m_motion.progress.animating()) {
+      endLayoutMotion();
+      return false;
+    }
+    return true;
+  }
+
+  void Workspace::endLayoutMotion() {
+    m_motion.progress.snap(1.0);
+    std::vector<LayoutMotion::ViewEntry> views = std::move(m_motion.views);
+    m_motion.views.clear();
+    m_motion.ghosts.clear();
+    for (const LayoutMotion::ViewEntry& entry : views) {
+      entry.view->endLayoutMotion();
+    }
+  }
+
+  void Workspace::trackCloseSnapshot(CloseSnapshotId id, const wlr_box& outputBox) {
+    m_pendingGhosts.push_back({
+        .id = id,
+        .box = {outputBox.x - m_slideOffsetX, outputBox.y - m_slideOffsetY, outputBox.width, outputBox.height},
+    });
+  }
+
+  void Workspace::releaseLayoutMotion(View* view) {
+    std::erase_if(m_motion.views, [view](const LayoutMotion::ViewEntry& entry) { return entry.view == view; });
+  }
+
+  const AnimatedValue* Workspace::layoutMotionValue() const {
+    return m_motion.progress.animating() ? &m_motion.progress : nullptr;
   }
 
   wlr_box Workspace::tiledTargetBox(const View* view, const wlr_box& usable) const {
@@ -1564,6 +1810,8 @@ namespace umbriel {
       markArrange(true);
       return;
     }
+    // The members leave one layout and join another; the next arrange carries them there from their current boxes.
+    endLayoutMotion();
     std::vector<View*> tiledViews;
     for (View* view : m_views) {
       if (m_layout != nullptr && m_layout->columnOf(view) >= 0) {
@@ -2206,16 +2454,26 @@ namespace umbriel {
   bool WorkspaceGroup::tickAnimations(uint64_t nowMsec) {
     const bool ticked = m_slideAnim.tick(nowMsec);
     updateAnimationShader(&m_output->viewRoot()->node, m_server->renderer(), AnimationEvent::Workspaces, m_slideAnim);
-    if (!ticked) {
-      return false;
+    bool active = false;
+    if (ticked) {
+      slideApply(m_slideAnim.current());
+      if (m_slideAnim.animating()) {
+        active = true;
+      } else {
+        slideFinish();
+        reconcileDynamic();
+      }
     }
-    slideApply(m_slideAnim.current());
-    if (!m_slideAnim.animating()) {
-      slideFinish();
-      reconcileDynamic();
-      return false;
+    // After reconcileDynamic, which may have dropped an emptied workspace.
+    for (const auto& workspace : m_workspaces) {
+      active = workspace->tickLayoutMotion(nowMsec) || active;
     }
-    return true;
+    return active;
+  }
+
+  bool WorkspaceGroup::hasActiveAnimations() const {
+    return m_slideAnim.animating()
+        || std::ranges::any_of(m_workspaces, [](const auto& workspace) { return workspace->layoutMotionActive(); });
   }
 
   void WorkspaceGroup::activate(Workspace* workspace, bool animate) {
