@@ -972,12 +972,26 @@ namespace umbriel {
       return true;
     }
 
-    bool actionToggleFloating(Server& server, const Keybind& /*bind*/, std::string* /*error*/) {
-      if (scratchpadHoldsFocus(server)) {
+    bool actionToggleFloating(Server& server, const Keybind& bind, std::string* error) {
+      if (const auto* arg = payloadIf<WindowIdArg>(bind); arg != nullptr && !arg->id.empty()) {
+        View* view = viewByForeignIdentifier(server, arg->id);
+        if (view == nullptr) {
+          if (error != nullptr) {
+            *error = "unknown window: " + arg->id;
+          }
+          return false;
+        }
+
+        view->setFloating(view->tiled(), false);
         return true;
-      }
-      if (Workspace* workspace = activeWorkspace(server)) {
-        workspace->toggleFocusedFloating();
+      } else {
+
+        if (scratchpadHoldsFocus(server)) {
+          return true;
+        }
+        if (Workspace* workspace = activeWorkspace(server)) {
+          workspace->toggleFocusedFloating();
+        }
       }
       return true;
     }
