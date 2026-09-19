@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Built-in slide keeps more opacity than fade at the same point in the timeline, so its existing movement remains
+# visible during both window opening and closing.
+set -euo pipefail
+
+readonly CLIENT="${UMBRIEL_UNMAP_CLIENT:-./build-debug/tests/unmap-client}"
+readonly IMAGE="$UMBRIEL_RUNTIME_DIR/builtin-window-styles.png"
+readonly DURATION_MS=5000
+
+cat >> "$UMBRIEL_CONFIG" <<'EOF'
+
+[colors]
+backdrop = "#000000FF"
+
+[appearance]
+border_width = 0
+outer_border_width = 0
+corner_radius = 0
+
+[appearance.shadow]
+enabled = false
+
+[animation]
+duration_ms = 5000
+curve = "linear"
+
+[animation.windows_in]
+style = "fade" # OPEN_STYLE
+
+[animation.windows_out]
+style = "fade" # CLOSE_STYLE
+
+[animation.windows_move]
+enabled = false
+
+[animation.dim_unfocused]
+enabled = false
+
+[[window_rule]]
+match.title = "^style-fade$"
+default_floating = true
+default_floating_size_px = { width = 400, height = 240 }
+default_position = { x = 100, y = 180, anchor = "top_left" }
+
+[[window_rule]]
+match.title = "^style-slide$"
+default_floating = true
+default_floating_size_px = { width = 400, height = 240 }
+default_position = { x = 760, y = 180, anchor = "top_left" }
+EOF
+"$UMBRIEL" msg config-reload > /dev/null
+
+wait_for_window() {
+  local title=$1
+  for _ in $(seq 100); do
+    if "$UMBRIEL" windows --json | jq -e --arg title "$title" '.[] | select(.title == $title)' > /dev/null; then
+      return 0
+    fi
+    sleep 0.025
+  done
+  echo "timed out waiting for $title"
+  return 1
+}
+
+spawn() {
+  local title=$1
+  FILL_COLOR=0xFF0000FF "$CLIENT" "$title" 400 240 > "$UMBRIEL_RUNTIME_DIR/$title.log" 2>&1 &
+  wait_for_window "$title"
+}
+
+window_id() {
+  "$UMBRIEL" windows --json | jq -r --arg title "$1" '.[] | select(.title == $title) | .id'
+}
+
+sample_blue() {
+  local x=$1 y=$2
+  grim "$IMAGE"
+  magick "$IMAGE" -crop "40x40+$x+$y" -format '%[fx:round(255*mean.b)]\n' info:
+}
+
+assert_slide_brighter() {
+  local phase=$1 fade=$2 slide=$3
+  if ! (( fade >= 90 && fade <= 165 )); then
+    echo "$phase fade sample was outside the middle of its timeline: $fade"
+    exit 1
+  fi
+  if ! (( slide >= 150 && slide <= 215 && slide >= fade + 30 )); then
+    echo "$phase slide was not visibly more opaque than fade: fade=$fade slide=$slide"
+    exit 1
+  fi
+}
+
+spawn style-fade
+sleep 2.35
+fade_open=$(sample_blue 280 280)
+sleep 2.85
+
+sed -i 's/^style = "fade" # OPEN_STYLE$/style = "slide" # OPEN_STYLE/' "$UMBRIEL_CONFIG"
+"$UMBRIEL" msg config-reload > /dev/null
+spawn style-slide
+sleep 2.35
+slide_open=$(sample_blue 940 310)
+assert_slide_brighter opening "$fade_open" "$slide_open"
+sleep 2.85
+
+"$UMBRIEL" msg "window-close:$(window_id style-fade)" > /dev/null
+sleep 2.35
+fade_close=$(sample_blue 280 280)
+sleep 2.85
+
+sed -i 's/^style = "fade" # CLOSE_STYLE$/style = "slide" # CLOSE_STYLE/' "$UMBRIEL_CONFIG"
+"$UMBRIEL" msg config-reload > /dev/null
+"$UMBRIEL" msg "window-close:$(window_id style-slide)" > /dev/null
+sleep 2.35
+slide_close=$(sample_blue 940 310)
+assert_slide_brighter closing "$fade_close" "$slide_close"
+
+echo "built-in slide remained visibly distinct from fade while opening and closing"

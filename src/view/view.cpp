@@ -1188,7 +1188,13 @@ namespace umbriel {
           && animationShader(
                  m_server->renderer(), m_inScratchpad ? AnimationEvent::Scratchpad : AnimationEvent::WindowsIn
              ) != nullptr;
-      setFadeAlpha(static_cast<float>(m_fade.current()));
+      const float rawAlpha = std::clamp(static_cast<float>(m_fade.current()), 0.0F, 1.0F);
+      const bool builtInSlide = !m_inScratchpad
+          && !m_customFade
+          && config().animation.windowsIn.style == "slide"
+          && animationShader(m_server->renderer(), AnimationEvent::WindowsIn) == nullptr;
+      // Keep the window visible through more of its travel so slide is clearly distinct from fade.
+      setFadeAlpha(builtInSlide ? std::sqrt(rawAlpha) : rawAlpha);
       if (Overview* overview = m_server->overview(); overview != nullptr && overview->active()) {
         overview->onViewPresentationChanged(this);
       }

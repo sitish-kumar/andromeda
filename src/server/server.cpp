@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <csignal>
 #include <cstdlib>
 #include <optional>
@@ -1105,9 +1106,11 @@ namespace umbriel {
       return false;
     }
     // Overshooting curves can push this out of range; wlr_scene_buffer_set_opacity asserts opacity is in [0, 1].
-    const auto alpha = animationShader(m_server->renderer(), m_event) != nullptr
-        ? 1.0F
-        : std::clamp(static_cast<float>(m_alpha.current()), 0.0F, 1.0F);
+    const float rawAlpha = std::clamp(static_cast<float>(m_alpha.current()), 0.0F, 1.0F);
+    const bool customShader = animationShader(m_server->renderer(), m_event) != nullptr;
+    const bool builtInSlide = !customShader && m_slide.target() != m_slide.from();
+    // Keep the moving snapshot visible long enough for slide to read as motion. Fade keeps the configured timeline.
+    const float alpha = customShader ? 1.0F : (builtInSlide ? std::sqrt(rawAlpha) : rawAlpha);
     for (const Buffer& buffer : m_buffers) {
       wlr_scene_buffer_set_opacity(buffer.node, std::clamp(buffer.baseOpacity * alpha, 0.0F, 1.0F));
     }
@@ -1121,7 +1124,7 @@ namespace umbriel {
 
     if (m_shadow.node != nullptr) {
       auto color = m_shadow.color;
-      color[3] *= std::clamp(static_cast<float>(m_alpha.current()), 0.0F, 1.0F);
+      color[3] *= builtInSlide ? alpha : rawAlpha;
       wlr_scene_shadow_set_color(m_shadow.node, color.data());
     }
 
