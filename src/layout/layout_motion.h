@@ -34,8 +34,8 @@ namespace umbriel {
   [[nodiscard]] wlr_box
   confineToNeighbours(const wlr_box& anchor, std::span<const MotionBox> neighbours, bool anchorIsTo);
 
-  // Zero the extent along one axis at its low edge (x when !vertical, y when vertical). Used on a ghost whose confined
-  // box still has area on both axes, so a closing window always shrinks along the layout's primary axis.
+  // Zero the extent along one axis at its low edge (x when !vertical, y when vertical). Used as a conservative fallback
+  // when live layout participants reflow but a ghost's neighbour-confined target still has area on both axes.
   [[nodiscard]] wlr_box collapseBox(const wlr_box& box, bool vertical);
 
   // True when some axis and order separates `a` and `b` on both sides of the transition, i.e. interpolating them with

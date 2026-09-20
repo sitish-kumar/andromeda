@@ -189,7 +189,8 @@ namespace umbriel {
     void clampScrollToRange();
     // Every tiled member and closing ghost on this workspace is presented from one transition: each box interpolates
     // between the layout it left and the layout it reached with a shared progress, so gaps survive the whole motion.
-    // A closing window's snapshot joins that transition at the box it was captured from (output-root coordinates).
+    // Opening and closing lifecycle progress can hold that shared geometry back. A closing window's snapshot joins at
+    // the box it was captured from (output-root coordinates).
     void trackCloseSnapshot(CloseSnapshotId id, const wlr_box& outputBox);
     // Drop `view` from the running motion without touching its presentation; the caller now owns its box.
     void releaseLayoutMotion(View* view);
@@ -197,7 +198,7 @@ namespace umbriel {
     [[nodiscard]] const AnimatedValue* layoutMotionValue() const;
     // Advances the motion; true while it is still running.
     bool tickLayoutMotion(uint64_t nowMsec);
-    [[nodiscard]] bool layoutMotionActive() const { return m_motion.progress.animating() || !m_motion.ghosts.empty(); }
+    [[nodiscard]] bool layoutMotionActive() const;
 
   private:
     // `resized` lists the members whose assigned size this arrange changed.
@@ -263,6 +264,9 @@ namespace umbriel {
         wlr_box from{};
         wlr_box to{};
         float direction = 1.0F;
+        // windows_in progress at the start of this geometry segment. A layout interruption rebases the remaining
+        // opening transition from the box currently being presented instead of rewinding it.
+        std::optional<double> openingProgressFrom;
       };
       struct GhostEntry {
         CloseSnapshotId id = kInvalidCloseSnapshot;

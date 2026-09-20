@@ -397,6 +397,9 @@ namespace umbriel {
     [[nodiscard]] bool openingScaleActive() const {
       return m_tiled && !layoutFullscreen() && m_openingScale < 1.0 && m_fade.animating();
     }
+    // Eased progress of the active windows_in transition. A mapped tiled opener exposes this to the workspace so its
+    // shared geometry cannot finish before the effect that is revealing it.
+    [[nodiscard]] std::optional<double> openingProgress() const;
     // Drop the opening inset and put the node back on its slot origin; the caller settles the presented size.
     void dropOpeningInset();
     // True while the border ring exists and is showing. Fullscreen keeps the

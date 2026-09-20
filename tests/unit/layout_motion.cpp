@@ -74,9 +74,10 @@ namespace {
     return {confineToNeighbours(to, neighbours, true), to};
   }
 
-  MotionBox ghost(const wlr_box& from, std::span<const MotionBox> neighbours, bool vertical) {
+  MotionBox
+  ghost(const wlr_box& from, std::span<const MotionBox> neighbours, bool vertical, bool layoutReflows = true) {
     wlr_box to = confineToNeighbours(from, neighbours, false);
-    if (to.width > 0 && to.height > 0) {
+    if (layoutReflows && to.width > 0 && to.height > 0) {
       to = collapseBox(to, vertical);
     }
     return {from, to};
@@ -202,14 +203,14 @@ UMBRIEL_TEST(ghostOfRowIsAbsorbedByRowAbove) {
   checkAllKeepSeparation(members);
 }
 
-UMBRIEL_TEST(ghostWithoutMovingNeighbourCollapsesAlongPrimaryAxis) {
+UMBRIEL_TEST(ghostWithoutLayoutReflowKeepsCapturedBox) {
   const std::vector<MotionBox> neighbours{still(kColumnA)};
-  const MotionBox horizontal = ghost(kColumnB, neighbours, false);
-  CHECK(sameBox(horizontal.to, {kColumnB.x, 0, 0, 800}));
-  const MotionBox vertical = ghost(kColumnB, neighbours, true);
-  CHECK(sameBox(vertical.to, {kColumnB.x, 0, 400, 0}));
+  const MotionBox besideStaticNeighbour = ghost(kColumnB, neighbours, false, false);
+  CHECK(sameBox(besideStaticNeighbour.to, kColumnB));
+  const MotionBox alone = ghost(kColumnB, {}, true, false);
+  CHECK(sameBox(alone.to, kColumnB));
   std::vector<MotionBox> members = neighbours;
-  members.push_back(horizontal);
+  members.push_back(besideStaticNeighbour);
   checkDisjointThroughout(members);
 }
 

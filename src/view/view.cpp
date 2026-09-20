@@ -756,6 +756,14 @@ namespace umbriel {
     setFadeAlpha(1.0F);
   }
 
+  std::optional<double> View::openingProgress() const {
+    if (!m_mapped || m_inScratchpad || !m_fade.animating() || m_fade.target() <= m_fade.from()) {
+      return std::nullopt;
+    }
+    const double distance = m_fade.target() - m_fade.from();
+    return std::clamp((m_fade.current() - m_fade.from()) / distance, 0.0, 1.0);
+  }
+
   void View::dropOpeningInset() {
     if (m_openingScale >= 1.0) {
       return;
@@ -1051,6 +1059,7 @@ namespace umbriel {
     if (openingScaleActive() && m_workspace != nullptr) {
       presentTiledBox(m_workspace->presentedTiledBox(this));
     } else {
+      dropOpeningInset();
       finishSizeAnimation();
     }
     // Clears the windows_move shader on the frame the motion ends.

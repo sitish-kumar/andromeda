@@ -705,7 +705,8 @@ enabled = true                                  # Master animation switch
 duration_ms = 250                               # Shared duration, 1-10000 ms
 curve = "easeout"                               # Built-in or registered bezier/spring curve name
 
-# Window opening animation
+# Window opening animation. When tiled reflow is animated, an insertion cannot
+# finish its geometry before this transition even when windows_move is shorter.
 [animation.windows_in]
 enabled = true
 duration_ms = 150
@@ -714,7 +715,8 @@ style = "popin"                                 # popin, zoom, slide, fade, or n
 scale = 0.85                                    # Popin start scale, 0.1-1.0
 # shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
 
-# Window closing animation
+# Window closing animation. A snapshot shrinks when live tiles reflow; when no
+# live tile moves, it keeps its captured box for this transition.
 [animation.windows_out]
 enabled = true
 duration_ms = 150
