@@ -6,7 +6,9 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -187,16 +189,16 @@ namespace umbriel {
     // Pull the scroll offset back into [0, maxScroll]. For removals and restored offsets only: a touchpad swipe
     // overscrolls on purpose.
     void clampScrollToRange();
-    // Established tiled members interpolate between the layout they left and the layout they reached with one
-    // windows_move progress, so gaps between live peers survive the whole motion. Lifecycle views and snapshots own
-    // their final or captured boxes independently.
+    // Own every view close snapshot so it follows workspace visibility and translation. A layout-managed tiled
+    // snapshot also gets a spatial mask that shares windows_move progress with established live members.
+    void trackCloseSnapshot(CloseSnapshotId id, const wlr_box& outputBox, bool layoutManaged);
     // Drop `view` from the running motion without touching its presentation; the caller now owns its box.
     void releaseLayoutMotion(View* view);
     // The running motion's progress, for the windows_move shader; null when no motion runs.
     [[nodiscard]] const AnimatedValue* layoutMotionValue() const;
     // Advances the motion; true while it is still running.
     bool tickLayoutMotion(uint64_t nowMsec);
-    [[nodiscard]] bool layoutMotionActive() const;
+    [[nodiscard]] bool layoutMotionActive() const { return m_motion.progress.animating() || !m_motion.ghosts.empty(); }
 
   private:
     // `resized` lists the members whose assigned size this arrange changed.
@@ -225,7 +227,9 @@ namespace umbriel {
     void detachFromLayout(View* view);
     // Snap or animate every tiled member of the layout into its slot from wherever it is presented now.
     void applyTiledMotion(const wlr_box& usable, bool animate, std::span<View* const> resized);
-    void endLayoutMotion();
+    void endLayoutMotion(bool preserveGhosts = false);
+    void syncCloseSnapshots();
+    void discardCloseSnapshots();
     WorkspaceGroup* m_group = nullptr;
     wlr_ext_workspace_handle_v1* m_handle = nullptr;
     std::string m_id;
@@ -263,10 +267,33 @@ namespace umbriel {
         wlr_box to{};
         float direction = 1.0F;
       };
+      struct GhostEntry {
+        CloseSnapshotId id = kInvalidCloseSnapshot;
+        wlr_box canvas{};
+        wlr_box from{};
+        wlr_box to{};
+        wlr_box presented{};
+        // Once live layout geometry starts reclaiming this canvas, keep final-output clipping active across rebases.
+        bool constrained = false;
+        // Set only while the first layout pass attributes confinement to this close request.
+        bool newlyCaptured = false;
+      };
       AnimatedValue progress;
       std::vector<ViewEntry> views;
+      std::vector<GhostEntry> ghosts;
     };
     LayoutMotion m_motion;
+    struct PendingGhost {
+      CloseSnapshotId id = kInvalidCloseSnapshot;
+      wlr_box box{};
+    };
+    std::vector<PendingGhost> m_pendingGhosts;
+    struct TrackedCloseSnapshot {
+      CloseSnapshotId id = kInvalidCloseSnapshot;
+      wlr_box canvas{};
+      bool layoutManaged = false;
+    };
+    std::vector<TrackedCloseSnapshot> m_trackedCloseSnapshots;
   };
 
   class WorkspaceGroup : public Animatable {

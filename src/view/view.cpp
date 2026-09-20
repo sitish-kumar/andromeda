@@ -442,8 +442,10 @@ namespace umbriel {
     m_onActiveWorkspace = active;
     if (m_sceneTree != nullptr) {
       wlr_scene_node_set_enabled(&m_sceneTree->node, active);
+      m_decoration.setShadowEnabled(active);
+    } else {
+      m_decoration.setShadowEnabled(active);
     }
-    m_decoration.setShadowEnabled(active);
     if (!m_mapped) {
       return;
     }
@@ -2072,7 +2074,7 @@ namespace umbriel {
 
     wlr_scene_node_copy_animations_for_snapshot(&snap->node, &m_sceneTree->node);
     // A close snapshot owns captured geometry and its windows_out lifecycle. Keep a possible interrupted windows_in
-    // effect, but do not freeze windows_move into the snapshot while live peers start their independent reflow.
+    // effect, but do not freeze windows_move into the snapshot while the workspace moves its independent mask.
     wlr_scene_node_set_animation(&snap->node, static_cast<unsigned>(AnimationEvent::WindowsMove), nullptr, nullptr);
     const auto shadow = m_decoration.snapshotShadow(output->viewRoot(), &snap->node);
     const CloseSnapshotId id = m_server->animateCloseSnapshot(
@@ -2814,10 +2816,16 @@ namespace umbriel {
         m_workspace->setFocusedView(nullptr);
       }
     }
-    (void)beginCloseAnimation();
+    const CloseSnapshotId ghost = beginCloseAnimation();
     // The closing snapshot must retain any in-flight opening shader first.
     wlr_scene_node_clear_animations(&m_sceneTree->node);
     cancelFadeAnimation();
+    // The snapshot keeps its captured shader canvas. Tiled reflow drives only a mask over that canvas, from the box
+    // visible at capture time, so live peers and the closing pixels share one non-overlapping geometry transition.
+    if (ghost != kInvalidCloseSnapshot && m_workspace != nullptr) {
+      const bool layoutManaged = m_tiled && m_workspace->layout().columnOf(this) >= 0;
+      m_workspace->trackCloseSnapshot(ghost, m_presentedBox, layoutManaged);
+    }
     cancelSizeAnimation();
     cancelPositionAnimation();
     m_decoration.setBordersEnabled(false);

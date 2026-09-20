@@ -82,15 +82,23 @@ assert_tiled_strip "after column-move-right" 3
 "$UMBRIEL" msg workspace-switch:1 > /dev/null
 assert_tiled_strip "after workspace round trip" 3
 
-# Closing a window runs a fade-out snapshot alongside the survivors' re-tile.
+# Closing a window animates its snapshot and the surviving layout from the same spatial transition.
 kill -TERM "${CLIENT_PIDS[-1]}" 2>/dev/null || true
 wait_for_count 2
-assert_tiled_strip "after close" 2
+expected_close='[{"h":700,"w":624,"x":10},{"h":700,"w":624,"x":646}]'
+settled=""
+for _ in $(seq 80); do
+  current=$(geometry)
+  if [[ $current == "$expected_close" ]]; then
+    settled=$current
+    break
+  fi
+  sleep 0.25
+done
 
-# Two 624 columns plus one gap are exactly the 1260 viewport, so maxScroll is 0 and the strip must sit flush at the left edge pad. Losing the re-anchor on
-# removal leaves it scrolled, with a survivor cut off and empty space right.
-if [[ $settled != '[{"h":700,"w":624,"x":10},{"h":700,"w":624,"x":646}]' ]]; then
-  echo "strip not re-anchored after close: $settled"
+# Two 624 columns plus one gap exactly fill the 1260 viewport.
+if [[ $settled != "$expected_close" ]]; then
+  echo "strip did not re-anchor after close: last=${current:-unknown}"
   exit 1
 fi
 

@@ -370,6 +370,11 @@ namespace umbriel {
         Output* output, wlr_scene_tree* tree, wlr_scene_tree* content, std::vector<BorderSnapshot> borders,
         const wlr_box& box, std::optional<CloseSnapshotOverrides> overrides = std::nullopt, ShadowSnapshot shadow = {}
     );
+    // Limit a snapshot to the part of its captured canvas still owned by a closing tile. The shader canvas and copied
+    // buffers remain fixed; only the final output is masked.
+    void presentCloseSnapshotMask(CloseSnapshotId id, const wlr_box& box, int canvasX, int canvasY, bool constrained);
+    // Current output-root mask, or nullopt after the snapshot has been reaped.
+    [[nodiscard]] std::optional<wlr_box> closeSnapshotBox(CloseSnapshotId id) const;
 
   private:
     static void
@@ -604,6 +609,8 @@ namespace umbriel {
       ~CloseSnapshot() override;
 
       [[nodiscard]] CloseSnapshotId id() const { return m_id; }
+      [[nodiscard]] const wlr_box& box() const { return m_box; }
+      void presentMask(const wlr_box& box, int canvasX, int canvasY, bool constrained);
 
       [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
       bool tickAnimations(uint64_t nowMsec) override;
@@ -612,6 +619,7 @@ namespace umbriel {
 
     private:
       void applySlide();
+      void applyMask();
 
       Server* m_server = nullptr;
       CloseSnapshotId m_id = kInvalidCloseSnapshot;
@@ -621,8 +629,19 @@ namespace umbriel {
       AnimationEvent m_event = AnimationEvent::WindowsOut;
       // Slide style: vertical offset of the whole snapshot, 0 to 80.
       AnimatedValue m_slide;
-      int m_origX = 0;
-      int m_origY = 0;
+      wlr_box m_from{};
+      wlr_box m_box{};
+      int m_canvasX = 0;
+      int m_canvasY = 0;
+      bool m_maskConstrained = false;
+      struct MaskInsets {
+        int left = 0;
+        int top = 0;
+        int right = 0;
+        int bottom = 0;
+      };
+      MaskInsets m_borderMaskInsets;
+      MaskInsets m_shadowMaskInsets;
       // Each copied buffer and its captured opacity.
       struct Buffer {
         wlr_scene_buffer* node = nullptr;

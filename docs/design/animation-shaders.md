@@ -45,6 +45,15 @@ then runs each enclosing shader once. Subsurfaces therefore share the window's
 effect rather than restarting it. Overview cards reuse the source view's
 animation state. Window shadows remain in their native separate stacking tree.
 
+An animation node can carry a final-composite output clip in node-local
+coordinates. Capture, shader input, and feedback history retain the full target;
+only the final active slot is intersected with this clip. An empty clip therefore
+keeps custom shader evaluation and history advancement alive without
+compositing pixels. If no shader composite exists, the caller uses an ordinary
+scene-tree clip instead. Shadow silhouette capture ignores the source output
+clip, then the separately stacked shadow receives the corresponding visible
+clip.
+
 Shadow nodes hold an addon association with their source window, without
 changing the scene ABI. While that window or a descendant has an active shader,
 the renderer captures its post-effect alpha separately from the backdrop and
@@ -119,17 +128,40 @@ fade even when a custom shader replaces the window's own fade.
 
 Tiled lifecycle actors remain outside layout-motion interpolation. An opener is
 presented in its current final layout box while `windows_in` owns its visual
-transition. A close snapshot keeps its captured box, drops any copied movement
-effect, and runs `windows_out`. Established neighbours alone interpolate their
-old and new boxes using the `windows_move` duration and curve. None of these
-three clocks caps another.
+transition. Established neighbours concurrently interpolate their old and new
+boxes using the independent `windows_move` duration and curve. Admissions are
+never delayed behind a closing lifecycle.
 
-This separation can produce temporary visual overlap while established tiles
-move beneath an opener or close snapshot. The overlap is intentional. It keeps
-the lifecycle shader canvas from being squeezed or stretched by reflow and
-lets a fast movement transition complete during a slower opening or closing
-effect. Closing a card from overview follows the same `windows_out` lifecycle;
-entering or leaving overview is owned by the `overview` event.
+A normal tiled close snapshots a fixed shader canvas and drops any copied
+movement effect. The new layout applies immediately. Established survivors and
+a spatial ghost for the closing tile share one `windows_move` geometry
+transition. The ghost becomes a final-composite vacancy mask over the fixed
+snapshot, so survivor geometry can reclaim the slot without resizing or
+preclipping the closing shader. If a close interrupts consume, expel, or another
+layout motion, the new shared motion rebases from every actor's current
+presentation. A constrained ghost remains constrained across later rebases.
+With no layout reflow, its mask stays unconstrained so the built-in close slide
+can leave the captured box normally. A retained unconstrained ghost ignores
+later layout motion elsewhere. It starts vacating only when a live final box
+directly claims its presented region.
+
+The `windows_out` snapshot and `windows_move` geometry retain independent
+timelines. A snapshot may be reaped before survivor geometry settles. In the
+opposite order, an empty vacancy mask keeps an active custom shader target and
+its feedback history running to lifecycle completion while compositing no
+pixels. Concurrent closes each keep their own `windows_out` lifecycle and join
+the current shared geometry motion from their captured presentations.
+
+Every ordinary view close snapshot is tracked by its source workspace,
+including snapshots that do not participate in tiled layout geometry. The
+workspace translates their fixed canvases during a workspace slide and applies
+an empty final mask while the workspace is neither active nor transitioning.
+Workspace destruction also empties the mask while leaving server-owned
+animation teardown to the normal post-tick reap.
+
+Closing a card from overview remains an independent `windows_out` lifecycle. It
+does not join a workspace vacancy mask or alter motion owned by the `overview`
+event.
 
 Scene destruction releases addon references. Renderer destruction invalidates
 remaining programs without accessing a dead context; renderer replacement
@@ -152,16 +184,27 @@ The isolated running-compositor checks `180_animation_shaders`,
 `181_animation_shader_events`, `182_animation_shader_composition`,
 `192_tiled_close_lifetime`, `193_tiled_open_reflow_timing`,
 `194_tiled_close_no_reflow`, `195_tiled_open_shader_box`,
-`196_tiled_lifecycle_move_timing`, and `330_overview_close_fade` inspect
+`196_tiled_lifecycle_move_timing`, `197_tiled_close_vacancy`,
+`198_close_snapshot_workspace`, `199_tiled_close_mask_chrome`,
+`200_tiled_close_retained_no_reflow`, and
+`330_overview_close_fade` inspect
 shader-specific intermediate pixels, file-watcher reloads, every animation
 event, both layer lifecycle directions, rotated fractional-scale UVs, nested
 sampling, output containment, invalid-GLSL fallback, and a tiled close effect
-that outlasts its configured `windows_move` timeline. They also verify that
-tiled lifecycle actors retain stable boxes while established neighbours follow
-the independent `windows_move` timeline. The overview check also verifies that
-a closing card drops its copied movement effect before `windows_out` samples
-the captured client buffer. The
-`183_animation_shader_lifetime` and `184_animation_squash` checks also cover
+that outlasts its configured `windows_move` timeline. They also verify that a
+tiled opener remains stable while established neighbours follow the independent
+`windows_move` timeline. Check 197 starts ordinary, consume, and expel closes,
+then verifies that the fixed close canvas keeps complete shader input while its
+vacancy mask and survivors finish on the configured `windows_move` timeline.
+Check 198 covers tiled and non-layout close snapshots following workspace
+translation and visibility while their independent lifecycle continues. Check
+199 covers edge-aware vacancy clipping for captured borders and shadows. Check
+200 keeps a no-reflow close fixed through an unrelated opening and consume. The
+overview check verifies that a card
+close remains outside workspace vacancy motion and that the closing card drops
+its copied movement effect before `windows_out` samples the captured client
+buffer. The `183_animation_shader_lifetime` and `184_animation_squash` checks
+also cover
 program retention across reloads, close-during-open snapshots, shader removal,
 and the bundled squash effect's intermediate pixels. Bright-green shadow
 assertions in `184_animation_squash`, `185_animation_shadows`,

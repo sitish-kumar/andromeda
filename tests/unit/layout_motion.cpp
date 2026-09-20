@@ -7,9 +7,12 @@
 #include <vector>
 
 using umbriel::boxesOverlap;
+using umbriel::collapseBox;
+using umbriel::confineToNeighbours;
 using umbriel::interpolateBox;
 using umbriel::keepsSeparation;
 using umbriel::MotionBox;
+using umbriel::vacancyNeedsCollapse;
 
 namespace {
 
@@ -45,6 +48,17 @@ namespace {
         CHECK(keepsSeparation(members[i], members[j]));
       }
     }
+  }
+
+  MotionBox still(const wlr_box& box) { return {box, box}; }
+
+  MotionBox
+  ghost(const wlr_box& from, std::span<const MotionBox> neighbours, bool vertical, bool layoutReflows = true) {
+    wlr_box to = confineToNeighbours(from, neighbours, false);
+    if (layoutReflows && to.width > 0 && to.height > 0) {
+      to = collapseBox(to, vertical);
+    }
+    return {from, to};
   }
 
   constexpr wlr_box kColumnA{0, 0, 400, 800};
@@ -97,6 +111,61 @@ UMBRIEL_TEST(establishedColumnsStaySeparateDuringClosingReflow) {
   };
   checkDisjointThroughout(peers, kGap);
   checkAllKeepSeparation(peers);
+}
+
+UMBRIEL_TEST(middleColumnGhostShrinksAsNeighbourSlidesIn) {
+  const std::vector<MotionBox> neighbours{still(kColumnA), {kColumnC, kColumnB}};
+  const MotionBox closing = ghost(kColumnB, neighbours, false);
+  CHECK(sameBox(closing.to, {kColumnB.x - kGap / 2, 0, 0, 800}));
+  std::vector<MotionBox> members = neighbours;
+  members.push_back(closing);
+  checkDisjointThroughout(members, kGap / 2);
+  checkAllKeepSeparation(members);
+}
+
+UMBRIEL_TEST(rowGhostIsAbsorbedByRowAbove) {
+  const int rowHeight = (800 - kGap) / 2;
+  const std::vector<MotionBox> neighbours{
+      still(kColumnA),
+      {{kColumnB.x, 0, 400, rowHeight}, kColumnB},
+  };
+  const MotionBox closing = ghost({kColumnB.x, rowHeight + kGap, 400, 800 - rowHeight - kGap}, neighbours, false);
+  CHECK(sameBox(closing.to, {kColumnB.x, 800 + kGap, 400, 0}));
+  std::vector<MotionBox> members = neighbours;
+  members.push_back(closing);
+  checkDisjointThroughout(members, kGap);
+  checkAllKeepSeparation(members);
+}
+
+UMBRIEL_TEST(ghostWithoutLayoutReflowKeepsCapturedBox) {
+  const std::vector<MotionBox> neighbours{still(kColumnA)};
+  const MotionBox besideStaticNeighbour = ghost(kColumnB, neighbours, false, false);
+  CHECK(sameBox(besideStaticNeighbour.to, kColumnB));
+  const MotionBox alone = ghost(kColumnB, {}, true, false);
+  CHECK(sameBox(alone.to, kColumnB));
+  std::vector<MotionBox> members = neighbours;
+  members.push_back(besideStaticNeighbour);
+  checkDisjointThroughout(members);
+}
+
+UMBRIEL_TEST(unrelatedMotionDoesNotCollapseRetainedVacancy) {
+  const wlr_box vacancy{800, 0, 300, 300};
+  const std::vector<MotionBox> unrelated{
+      {{0, 0, 300, 300}, {50, 0, 300, 300}},
+  };
+  const wlr_box confined = confineToNeighbours(vacancy, unrelated, false);
+  CHECK(!sameBox(confined, vacancy));
+  CHECK(!boxesOverlap(vacancy, unrelated.front().to));
+  CHECK(!vacancyNeedsCollapse(vacancy, confined, unrelated, false, false));
+  CHECK(vacancyNeedsCollapse(vacancy, confined, unrelated, true, false));
+  CHECK(vacancyNeedsCollapse(vacancy, confined, unrelated, false, true));
+}
+
+UMBRIEL_TEST(openerClaimingRetainedVacancyStartsCollapse) {
+  const std::vector<MotionBox> opener{still(kColumnB)};
+  const wlr_box confined = confineToNeighbours(kColumnB, opener, false);
+  CHECK(sameBox(confined, kColumnB));
+  CHECK(vacancyNeedsCollapse(kColumnB, confined, opener, false, false));
 }
 
 UMBRIEL_TEST(keepsSeparationFlagsRearrangements) {

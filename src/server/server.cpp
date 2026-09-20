@@ -31,6 +31,10 @@
 #include "workspace/workspace.h"
 #include "xwayland/supervisor.h"
 
+extern "C" {
+#include <umbrielfx/render/animation.h>
+}
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -968,11 +972,25 @@ namespace umbriel {
       std::vector<BorderSnapshot> borders, const wlr_box& box, int durationMs, const AnimationCurve& curve,
       std::string_view style, AnimationEvent event, ShadowSnapshot shadow
   )
-      : m_server(&server), m_id(id), m_tree(tree), m_output(output), m_borders(std::move(borders)), m_shadow(shadow) {
+      : m_server(&server), m_id(id), m_tree(tree), m_output(output), m_from(box), m_box(box), m_canvasX(box.x),
+        m_canvasY(box.y), m_borders(std::move(borders)), m_shadow(shadow) {
     m_event = event;
-    if (m_tree != nullptr) {
-      m_origX = m_tree->node.x;
-      m_origY = m_tree->node.y;
+    for (const BorderSnapshot& border : m_borders) {
+      if (border.node == nullptr) {
+        continue;
+      }
+      m_borderMaskInsets.left = std::max(m_borderMaskInsets.left, -border.node->node.x);
+      m_borderMaskInsets.top = std::max(m_borderMaskInsets.top, -border.node->node.y);
+      m_borderMaskInsets.right =
+          std::max(m_borderMaskInsets.right, border.node->node.x + border.node->width - box.width);
+      m_borderMaskInsets.bottom =
+          std::max(m_borderMaskInsets.bottom, border.node->node.y + border.node->height - box.height);
+    }
+    if (m_shadow.node != nullptr) {
+      m_shadowMaskInsets.left = std::max(0, -m_shadow.node->node.x);
+      m_shadowMaskInsets.top = std::max(0, -m_shadow.node->node.y);
+      m_shadowMaskInsets.right = std::max(0, m_shadow.node->node.x + m_shadow.node->width - box.width);
+      m_shadowMaskInsets.bottom = std::max(0, m_shadow.node->node.y + m_shadow.node->height - box.height);
     }
     if (content != nullptr && box.width > 0 && box.height > 0) {
       const wlr_box clip{.x = 0, .y = 0, .width = box.width, .height = box.height};
@@ -1015,16 +1033,106 @@ namespace umbriel {
 
   void Server::CloseSnapshot::applySlide() {
     const int slide = static_cast<int>(std::lround(m_slide.current()));
-    wlr_scene_node_set_position(&m_tree->node, m_origX, m_origY + slide);
+    wlr_scene_node_set_position(&m_tree->node, m_canvasX, m_canvasY + slide);
     if (m_shadow.tree != nullptr) {
       wlr_scene_node_set_position(&m_shadow.tree->node, m_tree->node.x, m_tree->node.y);
     }
+    applyMask();
+  }
+
+  void Server::CloseSnapshot::applyMask() {
+    if (!m_maskConstrained) {
+      wlr_scene_node_set_enabled(&m_tree->node, true);
+      (void)wlr_scene_node_set_animation_output_clip(&m_tree->node, nullptr);
+      wlr_scene_tree_set_clip(m_tree, nullptr);
+      if (m_shadow.tree != nullptr) {
+        wlr_scene_node_set_enabled(&m_shadow.tree->node, true);
+        wlr_scene_tree_set_clip(m_shadow.tree, nullptr);
+      }
+      return;
+    }
+    const bool visible = m_box.width > 0 && m_box.height > 0;
+    const auto expand = [](const wlr_box& box, const MaskInsets& insets) {
+      return wlr_box{
+          .x = box.x - insets.left,
+          .y = box.y - insets.top,
+          .width = box.width + insets.left + insets.right,
+          .height = box.height + insets.top + insets.bottom,
+      };
+    };
+    const auto expandCapturedEdges = [&](const wlr_box& box, const MaskInsets& insets) {
+      const int localLeft = box.x - m_canvasX;
+      const int localTop = box.y - m_canvasY;
+      const int localRight = localLeft + box.width;
+      const int localBottom = localTop + box.height;
+      const int left = localLeft <= 0 ? insets.left : 0;
+      const int top = localTop <= 0 ? insets.top : 0;
+      const int right = localRight >= m_from.width ? insets.right : 0;
+      const int bottom = localBottom >= m_from.height ? insets.bottom : 0;
+      return wlr_box{
+          .x = box.x - left,
+          .y = box.y - top,
+          .width = box.width + left + right,
+          .height = box.height + top + bottom,
+      };
+    };
+    const wlr_box mask = visible ? expandCapturedEdges(m_box, m_borderMaskInsets) : m_box;
+    const wlr_box fullMask = expand({m_tree->node.x, m_tree->node.y, m_from.width, m_from.height}, m_borderMaskInsets);
+    const bool fullAtRoot = visible
+        && mask.x == fullMask.x
+        && mask.y == fullMask.y
+        && mask.width == fullMask.width
+        && mask.height == fullMask.height;
+    const wlr_box treeClip{
+        .x = mask.x - m_tree->node.x,
+        .y = mask.y - m_tree->node.y,
+        .width = mask.width,
+        .height = mask.height,
+    };
+    const bool animated = wlr_scene_node_set_animation_output_clip(&m_tree->node, fullAtRoot ? nullptr : &treeClip);
+    wlr_scene_node_set_enabled(&m_tree->node, visible || animated);
+    if (animated) {
+      wlr_scene_tree_set_clip(m_tree, nullptr);
+    } else {
+      if (fullAtRoot) {
+        wlr_scene_tree_set_clip(m_tree, nullptr);
+      } else {
+        wlr_scene_tree_set_clip(m_tree, &treeClip);
+      }
+    }
+    if (m_shadow.tree != nullptr) {
+      wlr_scene_node_set_enabled(&m_shadow.tree->node, visible);
+      if (!visible) {
+        return;
+      }
+      if (fullAtRoot) {
+        wlr_scene_tree_set_clip(m_shadow.tree, nullptr);
+      } else {
+        const wlr_box shadowMask = expandCapturedEdges(m_box, m_shadowMaskInsets);
+        const wlr_box shadowClip{
+            .x = shadowMask.x - m_shadow.tree->node.x,
+            .y = shadowMask.y - m_shadow.tree->node.y,
+            .width = shadowMask.width,
+            .height = shadowMask.height,
+        };
+        wlr_scene_tree_set_clip(m_shadow.tree, &shadowClip);
+      }
+    }
+  }
+
+  void Server::CloseSnapshot::presentMask(const wlr_box& box, int canvasX, int canvasY, bool constrained) {
+    m_maskConstrained = constrained;
+    m_box = box;
+    m_canvasX = canvasX;
+    m_canvasY = canvasY;
+    applySlide();
   }
 
   bool Server::CloseSnapshot::tickAnimations(uint64_t nowMsec) {
     const bool movedAlpha = m_alpha.tick(nowMsec);
     const bool movedSlide = m_slide.tick(nowMsec);
     updateAnimationShader(&m_tree->node, m_server->renderer(), m_event, m_alpha, -1.0F);
+    applyMask();
 
     if (!movedAlpha && !movedSlide) {
       return false;
@@ -1162,6 +1270,25 @@ namespace umbriel {
     registerAnimatable(snapshot.get());
     m_closeSnapshots.push_back(std::move(snapshot));
     return id;
+  }
+
+  void
+  Server::presentCloseSnapshotMask(CloseSnapshotId id, const wlr_box& box, int canvasX, int canvasY, bool constrained) {
+    for (const auto& snapshot : m_closeSnapshots) {
+      if (snapshot->id() == id) {
+        snapshot->presentMask(box, canvasX, canvasY, constrained);
+        return;
+      }
+    }
+  }
+
+  std::optional<wlr_box> Server::closeSnapshotBox(CloseSnapshotId id) const {
+    for (const auto& snapshot : m_closeSnapshots) {
+      if (snapshot->id() == id) {
+        return snapshot->box();
+      }
+    }
+    return std::nullopt;
   }
 
   uint64_t Server::uptimeMs() const {
