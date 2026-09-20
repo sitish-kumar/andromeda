@@ -118,6 +118,10 @@ namespace {
       xkbName = XKB_MOD_NAME_ALT;
     } else if (name == "logo" || name == "super") {
       xkbName = XKB_MOD_NAME_LOGO;
+    } else if (name == "caps") {
+      xkbName = XKB_MOD_NAME_CAPS;
+    } else if (name == "num") {
+      xkbName = XKB_MOD_NAME_NUM;
     } else if (name == "none") {
       return 0;
     } else {
@@ -252,11 +256,13 @@ int main(int argc, char** argv) {
         i += 1;
         zwlr_virtual_pointer_v1_axis_stop(pointer, nextTime(), axis);
       }
-    } else if (command == "mod") {
+    } else if (command == "mod" || command == "lock") {
       needs(1);
-      const uint32_t depressed = modifierMask(keyboard, args[i + 1]);
+      const uint32_t mask = modifierMask(keyboard, args[i + 1]);
       i += 1;
-      zwp_virtual_keyboard_v1_modifiers(keyboard.protocol, depressed, 0, 0, 0);
+      zwp_virtual_keyboard_v1_modifiers(
+          keyboard.protocol, command == "mod" ? mask : 0, 0, command == "lock" ? mask : 0, 0
+      );
     } else if (command == "tap" || command == "key-press" || command == "key-release") {
       needs(1);
       const auto key = static_cast<uint32_t>(std::atoi(args[i + 1].c_str()));

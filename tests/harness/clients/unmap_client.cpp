@@ -194,7 +194,13 @@ namespace {
       .ready2 = imageDescriptionReady2,
   };
 
-  void keyboardKeymap(void*, wl_keyboard*, uint32_t, int32_t fd, uint32_t) { close(fd); }
+  void keyboardKeymap(void*, wl_keyboard*, uint32_t, int32_t fd, uint32_t) {
+    close(fd);
+    if (std::getenv("UMBRIEL_LOG_KEYMAPS") != nullptr) {
+      std::println("keymap");
+      std::fflush(stdout);
+    }
+  }
 
   void keyboardEnter(void* data, wl_keyboard*, uint32_t, wl_surface* surface, wl_array*) {
     auto& state = *static_cast<State*>(data);
