@@ -1023,6 +1023,11 @@ namespace umbriel {
     }
   }
 
+  double Server::CloseSnapshot::progress() const {
+    const double distance = m_alpha.target() - m_alpha.from();
+    return std::clamp(distance != 0.0 ? (m_alpha.current() - m_alpha.from()) / distance : m_alpha.progress(), 0.0, 1.0);
+  }
+
   void Server::CloseSnapshot::applySlide() {
     const int slide = static_cast<int>(std::lround(m_slide.current()));
     if (m_content == m_tree) {
@@ -1253,6 +1258,15 @@ namespace umbriel {
     for (const auto& snapshot : m_closeSnapshots) {
       if (snapshot->id() == id) {
         return snapshot->box();
+      }
+    }
+    return std::nullopt;
+  }
+
+  std::optional<double> Server::closeSnapshotProgress(CloseSnapshotId id) const {
+    for (const auto& snapshot : m_closeSnapshots) {
+      if (snapshot->id() == id) {
+        return snapshot->progress();
       }
     }
     return std::nullopt;

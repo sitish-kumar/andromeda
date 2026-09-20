@@ -197,7 +197,7 @@ namespace umbriel {
     [[nodiscard]] const AnimatedValue* layoutMotionValue() const;
     // Advances the motion; true while it is still running.
     bool tickLayoutMotion(uint64_t nowMsec);
-    [[nodiscard]] bool layoutMotionActive() const { return m_motion.progress.animating(); }
+    [[nodiscard]] bool layoutMotionActive() const { return m_motion.progress.animating() || !m_motion.ghosts.empty(); }
 
   private:
     // `resized` lists the members whose assigned size this arrange changed.
@@ -268,8 +268,15 @@ namespace umbriel {
         CloseSnapshotId id = kInvalidCloseSnapshot;
         wlr_box from{};
         wlr_box to{};
+        // Snapshot progress at the start of this geometry segment. Layout interruption starts a fresh segment from
+        // the currently presented box without rewinding the close effect that owns the ghost.
+        double closeProgressFrom = 0.0;
       };
       AnimatedValue progress;
+      // Last shared progress whose live ghosts all had nonzero geometry. An overshooting close curve may reach its
+      // endpoint before its clock finishes; retaining this value keeps the snapshot present without moving peers
+      // through it.
+      double presentedProgress = 0.0;
       std::vector<ViewEntry> views;
       std::vector<GhostEntry> ghosts;
     };

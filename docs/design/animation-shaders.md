@@ -117,6 +117,14 @@ destroyed with the snapshot. Its source association is detached safely when
 either node is destroyed. Analytic fallback shadows follow the native lifecycle
 fade even when a custom shader replaces the window's own fade.
 
+A tiled close snapshot and its surviving neighbours retain one shared geometry
+progress, preserving their separation throughout reflow. That progress cannot
+advance beyond the snapshot's eased `windows_out` progress. If `windows_move`
+finishes first, the workspace keeps presenting the coordinated geometry until
+the close effect finishes. Restarting layout motion records the current close
+progress as the next segment's origin, so interruption does not rewind the
+effect or let geometry jump ahead of it.
+
 Scene destruction releases addon references. Renderer destruction invalidates
 remaining programs without accessing a dead context; renderer replacement
 prepares new configured programs. Timeline owners clear finished effects and
@@ -135,10 +143,12 @@ sandbox shader execution or prevent an expensive shader from stalling a driver.
 source-content reload effects, dependency deduplication, and dependency removal.
 
 The isolated running-compositor checks `180_animation_shaders`,
-`181_animation_shader_events`, and `182_animation_shader_composition` inspect
+`181_animation_shader_events`, `182_animation_shader_composition`, and
+`192_tiled_close_lifetime` inspect
 shader-specific intermediate pixels, file-watcher reloads, every animation
 event, both layer lifecycle directions, rotated fractional-scale UVs, nested
-sampling, output containment, and invalid-GLSL fallback. The
+sampling, output containment, invalid-GLSL fallback, and a tiled close effect
+that outlasts its configured `windows_move` timeline. The
 `183_animation_shader_lifetime` and `184_animation_squash` checks also cover
 program retention across reloads, close-during-open snapshots, shader removal,
 and the bundled squash effect's intermediate pixels. Bright-green shadow

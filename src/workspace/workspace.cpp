@@ -929,14 +929,20 @@ namespace umbriel {
     std::vector<LayoutMotion::GhostEntry> ghosts;
     Server* server = m_group->server();
     for (const LayoutMotion::GhostEntry& running : m_motion.ghosts) {
-      if (const auto box = server->closeSnapshotBox(running.id)) {
-        ghosts.push_back(
-            {.id = running.id, .from = {box->x - m_slideOffsetX, box->y - m_slideOffsetY, box->width, box->height}}
-        );
+      const auto box = server->closeSnapshotBox(running.id);
+      const auto closeProgress = server->closeSnapshotProgress(running.id);
+      if (box && closeProgress) {
+        ghosts.push_back({
+            .id = running.id,
+            .from = {box->x - m_slideOffsetX, box->y - m_slideOffsetY, box->width, box->height},
+            .closeProgressFrom = *closeProgress,
+        });
       }
     }
     for (const PendingGhost& pending : m_pendingGhosts) {
-      ghosts.push_back({.id = pending.id, .from = pending.box});
+      if (const auto closeProgress = server->closeSnapshotProgress(pending.id)) {
+        ghosts.push_back({.id = pending.id, .from = pending.box, .closeProgressFrom = *closeProgress});
+      }
     }
     m_pendingGhosts.clear();
     const bool vertical = scrollingVertical();
@@ -979,6 +985,7 @@ namespace umbriel {
     m_motion.ghosts = std::move(ghosts);
     m_motion.progress.snap(0.0);
     m_motion.progress.retarget(1.0, move.durationMs, move.curve);
+    m_motion.presentedProgress = 0.0;
     for (size_t i = 0; i < m_motion.views.size(); ++i) {
       const LayoutMotion::ViewEntry& entry = m_motion.views[i];
       entry.view->beginLayoutMotion(entry.direction);
@@ -996,33 +1003,63 @@ namespace umbriel {
   }
 
   bool Workspace::tickLayoutMotion(uint64_t nowMsec) {
-    if (!m_motion.progress.tick(nowMsec)) {
+    const bool geometryTicked = m_motion.progress.tick(nowMsec);
+    if (!geometryTicked && m_motion.ghosts.empty()) {
       return false;
     }
     // Geometry never overshoots, so tiles cannot cross on an overshooting curve; shaders still read the raw value.
-    const double progress = std::clamp(m_motion.progress.current(), 0.0, 1.0);
+    double progress = std::clamp(m_motion.progress.current(), 0.0, 1.0);
+    Server* server = m_group->server();
+    bool liveGhost = false;
+    for (const LayoutMotion::GhostEntry& ghost : m_motion.ghosts) {
+      const auto closeProgress = server->closeSnapshotProgress(ghost.id);
+      if (!closeProgress) {
+        continue;
+      }
+      liveGhost = true;
+      const double remaining = 1.0 - ghost.closeProgressFrom;
+      const double segmentProgress =
+          remaining > 0.0 ? std::clamp((*closeProgress - ghost.closeProgressFrom) / remaining, 0.0, 1.0) : 1.0;
+      // Every participant shares this progress, so slowing the reflow for a longer close effect preserves the same
+      // no-overlap guarantee as the ordinary windows_move transition.
+      progress = std::min(progress, segmentProgress);
+    }
+    for (const LayoutMotion::GhostEntry& ghost : m_motion.ghosts) {
+      if (!server->closeSnapshotProgress(ghost.id)) {
+        continue;
+      }
+      const wlr_box box = interpolateBox(ghost.from, ghost.to, progress);
+      if (box.width <= 0 || box.height <= 0) {
+        progress = m_motion.presentedProgress;
+        break;
+      }
+    }
+    m_motion.presentedProgress = progress;
     for (size_t i = 0; i < m_motion.views.size(); ++i) {
       const LayoutMotion::ViewEntry& entry = m_motion.views[i];
       if (entry.view->mapped() && m_layout->columnOf(entry.view) >= 0) {
         entry.view->presentTiledBox(interpolateBox(entry.from, entry.to, progress));
       }
     }
-    Server* server = m_group->server();
     for (const LayoutMotion::GhostEntry& ghost : m_motion.ghosts) {
+      if (!server->closeSnapshotProgress(ghost.id)) {
+        continue;
+      }
       wlr_box box = interpolateBox(ghost.from, ghost.to, progress);
       box.x += m_slideOffsetX;
       box.y += m_slideOffsetY;
       server->presentCloseSnapshot(ghost.id, box);
     }
-    if (!m_motion.progress.animating()) {
+    if (!m_motion.progress.animating() && !liveGhost) {
       endLayoutMotion();
       return false;
     }
-    return true;
+    return m_motion.progress.animating() || liveGhost;
   }
 
   void Workspace::endLayoutMotion() {
     m_motion.progress.snap(1.0);
+    m_motion.presentedProgress = 1.0;
     std::vector<LayoutMotion::ViewEntry> views = std::move(m_motion.views);
     m_motion.views.clear();
     m_motion.ghosts.clear();

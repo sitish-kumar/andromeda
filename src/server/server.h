@@ -375,6 +375,9 @@ namespace umbriel {
     void presentCloseSnapshot(CloseSnapshotId id, const wlr_box& box);
     // The box a snapshot is currently presented at, nullopt once it has been reaped.
     [[nodiscard]] std::optional<wlr_box> closeSnapshotBox(CloseSnapshotId id) const;
+    // Eased lifecycle progress in [0, 1], nullopt once the snapshot has been reaped. Tiled layout motion uses this as
+    // a barrier so it cannot collapse a ghost before the snapshot's own close effect reaches the same point.
+    [[nodiscard]] std::optional<double> closeSnapshotProgress(CloseSnapshotId id) const;
 
   private:
     static void
@@ -612,6 +615,7 @@ namespace umbriel {
 
       [[nodiscard]] CloseSnapshotId id() const { return m_id; }
       [[nodiscard]] const wlr_box& box() const { return m_box; }
+      [[nodiscard]] double progress() const;
       void present(const wlr_box& box);
 
       [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
