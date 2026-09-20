@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # A closing tiled snapshot keeps its captured geometry whether survivors reflow into its space or stay still.
-# windows_out owns its opacity and cleanup; windows_move must never reshape the lifecycle snapshot.
+# windows_out owns its opacity and cleanup; windows_move must never reshape it, and live tiles must render above it.
 set -euo pipefail
 
 readonly IMAGE="$UMBRIEL_RUNTIME_DIR/tiled-close-no-reflow.png"
@@ -37,7 +37,7 @@ style = "fade"
 
 [animation.windows_move]
 enabled = true
-duration_ms = 150
+duration_ms = 1000
 curve = "linear"
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
@@ -63,11 +63,6 @@ sample() {
 is_blue() {
   local red=$1 green=$2 blue=$3
   ((blue > 50 && red < 30 && green < 30))
-}
-
-has_blue_over_red() {
-  local red=$1 green=$2 blue=$3
-  ((blue > 50 && blue > red + 20 && green < 30))
 }
 
 is_red() {
@@ -193,8 +188,8 @@ if ! is_black "$near_red" "$near_green" "$near_blue" \
   exit 1
 fi
 
-# In master, closing the stack tile makes the red master expand through the blue snapshot's old slot. Blue must remain
-# across the whole captured box while that independent survivor reflow completes.
+# In master, closing the stack tile makes the red master expand through the blue snapshot's old slot. The fixed blue
+# snapshot remains visible ahead of that edge, but the live red tile must cover it where the two boxes overlap.
 sed -i 's/^mode = "scrolling"$/mode = "master"/' "$UMBRIEL_CONFIG"
 "$UMBRIEL" msg config-reload > /dev/null
 spawn tiled-close-reflow-survivor 0xFFFF0000 1200
@@ -227,24 +222,23 @@ slot_w=$((1280 - x))
 near_x=$((x + slot_w / 4))
 far_x=$((x + 3 * slot_w / 4))
 mid_y=$((y + h / 2))
-sleep 0.8
+sleep 0.35
 grim "$IMAGE"
 read -r near_red near_green near_blue < <(sample "$near_x" "$mid_y")
 read -r far_red far_green far_blue < <(sample "$far_x" "$mid_y")
-if ! has_blue_over_red "$near_red" "$near_green" "$near_blue" \
-    || ! has_blue_over_red "$far_red" "$far_green" "$far_blue"; then
-  echo "windows_move reshaped the reflowing close snapshot: near=$near_red $near_green $near_blue, far=$far_red $far_green $far_blue"
+if ! is_red "$near_red" "$near_green" "$near_blue" || ! is_blue "$far_red" "$far_green" "$far_blue"; then
+  echo "reflowing survivor did not cover the close snapshot progressively: near=$near_red $near_green $near_blue, far=$far_red $far_green $far_blue"
   exit 1
 fi
 
-sleep 1.3
+sleep 0.9
 grim "$IMAGE"
 read -r near_red near_green near_blue < <(sample "$near_x" "$mid_y")
 read -r far_red far_green far_blue < <(sample "$far_x" "$mid_y")
 if ! is_red "$near_red" "$near_green" "$near_blue" \
     || ! is_red "$far_red" "$far_green" "$far_blue"; then
-  echo "reflowing close snapshot did not clean up to reveal its settled survivor"
+  echo "settled survivor did not cover the still-running close snapshot"
   exit 1
 fi
 
-echo "stationary, lone, and reflowing tiled closes kept captured geometry until windows_out finished"
+echo "tiled close snapshots kept captured geometry while live reflowing tiles rendered above them"

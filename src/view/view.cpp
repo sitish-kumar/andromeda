@@ -2007,11 +2007,13 @@ namespace umbriel {
     if (output == nullptr) {
       return kInvalidCloseSnapshot;
     }
+    const bool tiledUnderlay = m_workspace != nullptr && m_sceneTree->node.parent == m_workspace->viewLayer(true);
 
     // Under the output's clipped root, so a snapshot of a view straddling the shared edge stays contained while it
-    // fades. Server::removeOutput purges this output's snapshots before the Output is destroyed. The tree remains at
-    // the captured presented box in output-root coordinates; the buffers keep their offsets inside the content subtree.
-    wlr_scene_tree* snap = wlr_scene_tree_create(output->viewRoot());
+    // fades. An ordinary tiled snapshot uses the persistent underlay beneath workspace roots; other window classes
+    // retain their existing top-level stacking. Server::removeOutput purges snapshots before Output is destroyed.
+    wlr_scene_tree* snapshotParent = tiledUnderlay ? output->tiledCloseRoot() : output->viewRoot();
+    wlr_scene_tree* snap = wlr_scene_tree_create(snapshotParent);
     if (snap == nullptr) {
       return kInvalidCloseSnapshot;
     }
