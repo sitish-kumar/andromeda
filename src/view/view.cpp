@@ -189,6 +189,8 @@ namespace umbriel {
     wl_signal_add(&m_toplevel->base->surface->events.map, &m_map);
     m_unmap.notify = onUnmap;
     wl_signal_add(&m_toplevel->base->surface->events.unmap, &m_unmap);
+    m_rootSurfaceDestroy.notify = onRootSurfaceDestroy;
+    wl_signal_add(&m_toplevel->base->surface->events.destroy, &m_rootSurfaceDestroy);
 
     m_sceneTree = wlr_scene_xdg_surface_create(m_server->xdgTree(), m_toplevel->base);
     m_sceneTree->node.data = sceneNodeData(this);
@@ -209,6 +211,8 @@ namespace umbriel {
     // The surface watcher must run before the general commit handler so a
     // newly committed content type participates in initial window rules.
     watchViewSurfaceTree(m_toplevel->base->surface);
+    m_clientCommit.notify = onClientCommit;
+    wl_signal_add(&m_toplevel->base->surface->events.client_commit, &m_clientCommit);
     m_commit.notify = onCommit;
     wl_signal_add(&m_toplevel->base->surface->events.commit, &m_commit);
     m_destroy.notify = onDestroy;
@@ -263,6 +267,7 @@ namespace umbriel {
       wl_event_source_remove(m_acceptClientMaximizeIdle);
       m_acceptClientMaximizeIdle = nullptr;
     }
+    releaseTiledCommitHold();
     m_server->unregisterAnimatable(this);
     clearViewSurfaceWatches();
     setWorkspace(nullptr);
@@ -278,6 +283,16 @@ namespace umbriel {
       wl_list_remove(&m_setParent.link);
       wl_list_remove(&m_setTitle.link);
       wl_list_remove(&m_setAppId.link);
+    }
+    if (m_clientCommit.link.next != nullptr) {
+      wl_list_remove(&m_clientCommit.link);
+      m_clientCommit.link.next = nullptr;
+      m_clientCommit.link.prev = nullptr;
+    }
+    if (m_rootSurfaceDestroy.link.next != nullptr) {
+      wl_list_remove(&m_rootSurfaceDestroy.link);
+      m_rootSurfaceDestroy.link.next = nullptr;
+      m_rootSurfaceDestroy.link.prev = nullptr;
     }
     if (m_foreign != nullptr) {
       leaveForeignOutput();
@@ -468,6 +483,7 @@ namespace umbriel {
   }
 
   void View::setNodeEnabled(bool enabled) {
+    enabled = enabled && !m_tiledOpeningDeferred;
     wlr_scene_node_set_enabled(&m_sceneTree->node, enabled);
     m_decoration.setShadowEnabled(enabled);
     m_server->updateIdleInhibit();
@@ -769,12 +785,11 @@ namespace umbriel {
         && m_fade.target() > m_fade.from();
   }
 
-  std::optional<double> View::openingProgress() const {
-    if (!tiledOpeningActive()) {
+  std::optional<wlr_box> View::openingLayoutBox() const {
+    if (!tiledOpeningActive() || m_presentedTiledBox.width <= 0 || m_presentedTiledBox.height <= 0) {
       return std::nullopt;
     }
-    const double distance = m_fade.target() - m_fade.from();
-    return std::clamp((m_fade.current() - m_fade.from()) / distance, 0.0, 1.0);
+    return m_presentedTiledBox;
   }
 
   void View::dropOpeningInset() {
@@ -812,7 +827,7 @@ namespace umbriel {
     if (sizeGrabActive()) {
       return target.width;
     }
-    if (sizeAnimating()) {
+    if (layoutPresentationOwned()) {
       return m_presentation.width();
     }
     if (m_toplevel->current.fullscreen) {
@@ -827,7 +842,7 @@ namespace umbriel {
     if (sizeGrabActive()) {
       return target.height;
     }
-    if (sizeAnimating()) {
+    if (layoutPresentationOwned()) {
       return m_presentation.height();
     }
     if (m_toplevel->current.fullscreen) {
@@ -907,9 +922,12 @@ namespace umbriel {
   }
 
   void View::cancelSizeAnimation() {
-    if (!sizeAnimating()) {
+    if (!layoutPresentationOwned()) {
       return;
     }
+    m_layoutPresentationHeld = false;
+    releaseTiledCommitHold();
+    m_tiledSizeRequest.reset();
     if (m_layoutMotion) {
       m_workspace->releaseLayoutMotion(this);
       m_layoutMotion = false;
@@ -1037,9 +1055,10 @@ namespace umbriel {
   }
 
   void View::presentTiledBox(const wlr_box& box) {
+    m_presentedTiledBox = box;
     if (tiledOpeningActive() && m_presentation.animating()) {
-      // windows_in owns this view's final slot. A resize tween started by the arrange that admitted it would otherwise
-      // win shader selection and keep applying windows_move on top of the lifecycle presentation.
+      // windows_in owns lifecycle composition. A resize tween started by the admitting arrange would otherwise win
+      // shader selection and apply a second windows_move over the workspace-owned logical presentation.
       m_presentation.snapTo(m_presentation.width(), m_presentation.height());
     }
     wlr_box presented = box;
@@ -1062,19 +1081,129 @@ namespace umbriel {
     syncAnimationShaders();
   }
 
+  void View::deferTiledOpening() {
+    if (m_tiledOpeningDeferred || !m_mapped) {
+      return;
+    }
+    m_tiledOpeningDeferred = true;
+    m_fade.snap(0.0);
+    setFadeAlpha(0.0F);
+    setNodeEnabled(false);
+    syncAnimationShaders();
+  }
+
+  void View::resumeTiledOpening() {
+    if (!m_tiledOpeningDeferred) {
+      return;
+    }
+    m_tiledOpeningDeferred = false;
+    if (!m_mapped) {
+      return;
+    }
+
+    const auto& animation = config().animation;
+    const auto& open = animation.windowsIn;
+    m_customFade = animation.enabled
+        && open.enabled
+        && animationShader(m_server->renderer(), AnimationEvent::WindowsIn) != nullptr;
+    m_openingScale = 1.0;
+    if (!animation.enabled
+        || !open.enabled
+        || (open.style == "none" && animationShader(m_server->renderer(), AnimationEvent::WindowsIn) == nullptr)) {
+      m_fade.snap(1.0);
+      setFadeAlpha(1.0F);
+    } else {
+      m_fade.snap(0.0);
+      m_fade.retarget(1.0, open.durationMs, open.curve);
+      setFadeAlpha(0.0F);
+      if (!m_customFade && (open.style == "popin" || open.style == "zoom")) {
+        m_openingScale = std::clamp(open.style == "zoom" ? 0.5 : open.scale, 0.0, 1.0);
+      }
+      scheduleFrame();
+    }
+    setNodeEnabled(m_onActiveWorkspace);
+    syncAnimationShaders();
+  }
+
   void View::beginLayoutMotion(float direction) {
     // The motion owns the presented size from here; a size tween still running would overwrite it on its next tick.
     m_presentation.snapTo(m_presentation.width(), m_presentation.height());
+    m_layoutPresentationHeld = false;
     m_layoutMotion = true;
     m_layoutMotionDirection = direction;
   }
 
-  void View::endLayoutMotion() {
-    if (!m_layoutMotion) {
+  void View::prepareTiledCommitHold() {
+    releaseTiledCommitHold();
+    m_holdTiledCommits = true;
+  }
+
+  void View::releaseTiledCommitHold() {
+    m_holdTiledCommits = false;
+    wlr_surface* surface = m_toplevel->base->surface;
+    std::vector<uint32_t> locked = std::move(m_lockedTiledCommitSeqs);
+    m_lockedTiledCommitSeqs.clear();
+    for (const uint32_t seq : locked) {
+      wlr_surface_unlock_cached(surface, seq);
+    }
+  }
+
+  void View::requestTiledSize(int width, int height) {
+    m_tiledSizeRequest = TiledSizeRequest{
+        .serial = wlr_xdg_toplevel_set_size(m_toplevel, width, height),
+        .width = width,
+        .height = height,
+    };
+  }
+
+  bool View::settleTiledSizeRequest() {
+    if (!m_tiledSizeRequest) {
+      return true;
+    }
+    const TiledSizeRequest& request = *m_tiledSizeRequest;
+    if (!serialSettled(m_toplevel->base->current.configure_serial, request.serial)) {
+      return false;
+    }
+    const wlr_box content = committedContentBox();
+    if (content.width != request.width || content.height != request.height) {
+      return false;
+    }
+    m_tiledSizeRequest.reset();
+    if (m_layoutPresentationHeld) {
+      m_layoutPresentationHeld = false;
+      m_presentation.setSize(content.width, content.height);
+      m_presentation.snapTo(content.width, content.height);
+      resetPresentedSurface();
+    }
+    return true;
+  }
+
+  void View::completeLayoutMotion(const wlr_box& target) {
+    if (!m_layoutMotion && !m_layoutPresentationHeld) {
       return;
     }
     m_layoutMotion = false;
-    if (openingScaleActive() && m_workspace != nullptr) {
+    releaseTiledCommitHold();
+    m_layoutPresentationHeld = !settleTiledSizeRequest();
+    if (m_layoutPresentationHeld) {
+      presentTiledBox(target);
+    } else {
+      finishSizeAnimation();
+    }
+    syncAnimationShaders();
+  }
+
+  void View::endLayoutMotion() {
+    if (!m_layoutMotion && !m_layoutPresentationHeld) {
+      releaseTiledCommitHold();
+      m_tiledSizeRequest.reset();
+      return;
+    }
+    m_layoutMotion = false;
+    m_layoutPresentationHeld = false;
+    releaseTiledCommitHold();
+    m_tiledSizeRequest.reset();
+    if (tiledOpeningActive() && m_workspace != nullptr) {
       presentTiledBox(m_workspace->presentedTiledBox(this));
     } else {
       dropOpeningInset();
@@ -1225,8 +1354,9 @@ namespace umbriel {
       if (Overview* overview = m_server->overview(); overview != nullptr && overview->active()) {
         overview->onViewPresentationChanged(this);
       }
-      // A tiled lifecycle view owns its final slot while the fade runs. Popin/zoom applies an inset within that slot;
-      // custom shaders receive the stable final-sized canvas. Established peers own their independent layout motion.
+      // A fresh tiled opener owns its final slot while the fade runs. After a later admission, an already positioned
+      // opener can instead receive intermediate logical boxes from windows_move. Popin/zoom applies its inset to either
+      // box, and a custom shader stays composed over the lifecycle presentation.
       const bool finishingTiledOpen = m_mapped
           && !m_inScratchpad
           && m_tiled
@@ -1495,6 +1625,24 @@ namespace umbriel {
   void View::onUnmap(wl_listener* listener, void* /*data*/) {
     View* self = wl_container_of(listener, self, m_unmap);
     self->handleUnmap();
+  }
+
+  void View::onRootSurfaceDestroy(wl_listener* listener, void* /*data*/) {
+    View* self = wl_container_of(listener, self, m_rootSurfaceDestroy);
+    self->releaseTiledCommitHold();
+    if (self->m_clientCommit.link.next != nullptr) {
+      wl_list_remove(&self->m_clientCommit.link);
+      self->m_clientCommit.link.next = nullptr;
+      self->m_clientCommit.link.prev = nullptr;
+    }
+    wl_list_remove(&self->m_rootSurfaceDestroy.link);
+    self->m_rootSurfaceDestroy.link.next = nullptr;
+    self->m_rootSurfaceDestroy.link.prev = nullptr;
+  }
+
+  void View::onClientCommit(wl_listener* listener, void* /*data*/) {
+    View* self = wl_container_of(listener, self, m_clientCommit);
+    self->handleClientCommit();
   }
 
   void View::onCommit(wl_listener* listener, void* /*data*/) {
@@ -1996,6 +2144,7 @@ namespace umbriel {
   CloseSnapshotId View::beginCloseAnimation() {
     const auto& animation = config().animation;
     if (!m_mapped
+        || m_tiledOpeningDeferred
         || !m_onActiveWorkspace
         || !animation.enabled
         || !animation.windowsOut.enabled
@@ -2073,8 +2222,8 @@ namespace umbriel {
     }
 
     wlr_scene_node_copy_animations_for_snapshot(&snap->node, &m_sceneTree->node);
-    // A close snapshot owns captured geometry and its windows_out lifecycle. Keep a possible interrupted windows_in
-    // effect, but do not freeze windows_move into the snapshot while the workspace moves its independent mask.
+    // A close snapshot owns its windows_out lifecycle. Keep a possible interrupted windows_in effect, but do not
+    // freeze windows_move into the snapshot. A tiled workspace drives the snapshot's ghost geometry separately.
     wlr_scene_node_set_animation(&snap->node, static_cast<unsigned>(AnimationEvent::WindowsMove), nullptr, nullptr);
     const auto shadow = m_decoration.snapshotShadow(output->viewRoot(), &snap->node);
     const CloseSnapshotId id = m_server->animateCloseSnapshot(
@@ -2511,7 +2660,7 @@ namespace umbriel {
     };
     setSurfaceTreeClip(&surfaceClip);
     applyCornerRadius();
-    if (sizeAnimating() || sizeGrabActive()) {
+    if (layoutPresentationOwned() || sizeGrabActive()) {
       // The clip crops 1:1 in surface coordinates and caps the destination at the committed surface size, so it cannot
       // express an animated or interactive presented size. Program the buffer directly; the clip above keeps the buffer
       // node positioned at the visible box origin.
@@ -2528,6 +2677,8 @@ namespace umbriel {
     // keep its cached double-buffered state authoritative.
     syncContentType(m_toplevel->base->surface);
     m_mapped = true;
+    m_tiledOpeningDeferred = false;
+    m_presentedTiledBox = {};
     m_acceptClientMaximizeRequests = config().general.honorRestoredMaximize;
     // Firefox often re-assert session maximize after map. With honor off, consume that one request so
     // it cannot override alone/default opening policy; later maximize requests stay valid.
@@ -2816,17 +2967,19 @@ namespace umbriel {
         m_workspace->setFocusedView(nullptr);
       }
     }
-    const CloseSnapshotId ghost = beginCloseAnimation();
+    const CloseSnapshotId snapshot = beginCloseAnimation();
     // The closing snapshot must retain any in-flight opening shader first.
     wlr_scene_node_clear_animations(&m_sceneTree->node);
     cancelFadeAnimation();
-    // The snapshot keeps its captured shader canvas. Tiled reflow drives only a mask over that canvas, from the box
-    // visible at capture time, so live peers and the closing pixels share one non-overlapping geometry transition.
-    if (ghost != kInvalidCloseSnapshot && m_workspace != nullptr) {
+    // Let the workspace coordinate a tiled snapshot with any reflow that reclaims its canvas.
+    if (snapshot != kInvalidCloseSnapshot && m_workspace != nullptr) {
       const bool layoutManaged = m_tiled && m_workspace->layout().columnOf(this) >= 0;
-      m_workspace->trackCloseSnapshot(ghost, m_presentedBox, layoutManaged);
+      m_workspace->trackCloseSnapshot(snapshot, m_presentedBox, layoutManaged);
     }
     cancelSizeAnimation();
+    releaseTiledCommitHold();
+    m_tiledSizeRequest.reset();
+    m_layoutPresentationHeld = false;
     cancelPositionAnimation();
     m_decoration.setBordersEnabled(false);
     m_decoration.hideEffects();
@@ -2851,6 +3004,7 @@ namespace umbriel {
     }
     m_server->scheduleIpcWindowsEvent();
     m_positioned = false;
+    m_presentedTiledBox = {};
     if (m_workspace != nullptr) {
       m_workspace->layoutDetach(this, m_tiled);
       if (focusRevealedTile) {
@@ -2957,6 +3111,23 @@ namespace umbriel {
     if (m_mapped) {
       applyDynamicRules();
     }
+  }
+
+  void View::handleClientCommit() {
+    if (!m_holdTiledCommits || !m_tiledSizeRequest) {
+      return;
+    }
+    wlr_surface* surface = m_toplevel->base->surface;
+    // Never cache an unmap behind a layout transition. Release any earlier resize commit first, then let the null
+    // buffer retire the view through the normal lifecycle path.
+    if ((surface->pending.committed & WLR_SURFACE_STATE_BUFFER) != 0 && surface->pending.buffer == nullptr) {
+      releaseTiledCommitHold();
+      return;
+    }
+    if (!serialSettled(m_toplevel->base->pending.configure_serial, m_tiledSizeRequest->serial)) {
+      return;
+    }
+    m_lockedTiledCommitSeqs.push_back(wlr_surface_lock_pending(surface));
   }
 
   void View::handleCommit(bool reconfigureOpeningState) {
@@ -3142,6 +3313,7 @@ namespace umbriel {
         m_savedScrollingExtent = rule.defaultScrollingExtent;
       }
     }
+    (void)settleTiledSizeRequest();
     if (!sizeAnimating()) {
       const wlr_box& geometry = m_toplevel->base->geometry;
       if (m_decoration.borderGeometryStale(geometry.width, geometry.height)) {
@@ -3696,6 +3868,7 @@ namespace umbriel {
       const int keepX = m_sceneTree->node.x;
       const int keepY = m_sceneTree->node.y;
       m_tiled = false;
+      m_presentedTiledBox = {};
       if (m_workspace != nullptr) {
         wlr_scene_node_reparent(&m_sceneTree->node, m_workspace->viewLayer(m_tiled));
         m_workspace->syncFloatingStack(this);

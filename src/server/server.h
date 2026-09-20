@@ -370,11 +370,15 @@ namespace umbriel {
         Output* output, wlr_scene_tree* tree, wlr_scene_tree* content, std::vector<BorderSnapshot> borders,
         const wlr_box& box, std::optional<CloseSnapshotOverrides> overrides = std::nullopt, ShadowSnapshot shadow = {}
     );
-    // Limit a snapshot to the part of its captured canvas still owned by a closing tile. The shader canvas and copied
-    // buffers remain fixed; only the final output is masked.
+    // Move and resize a snapshot as a complete geometry ghost. This does not crop the lifecycle shader or alter its
+    // independent progress.
+    void presentCloseSnapshot(CloseSnapshotId id, const wlr_box& box);
+    // Present a snapshot at its captured canvas, or hide it while its workspace is not visible.
     void presentCloseSnapshotMask(CloseSnapshotId id, const wlr_box& box, int canvasX, int canvasY, bool constrained);
-    // Current output-root mask, or nullopt after the snapshot has been reaped.
+    // Current output-root mask or geometry box, or nullopt after the snapshot has been reaped.
     [[nodiscard]] std::optional<wlr_box> closeSnapshotBox(CloseSnapshotId id) const;
+    // Linear time left on the independent close lifecycle, or nullopt after the snapshot has been reaped.
+    [[nodiscard]] std::optional<uint64_t> closeSnapshotRemainingMs(CloseSnapshotId id) const;
 
   private:
     static void
@@ -610,6 +614,8 @@ namespace umbriel {
 
       [[nodiscard]] CloseSnapshotId id() const { return m_id; }
       [[nodiscard]] const wlr_box& box() const { return m_box; }
+      [[nodiscard]] uint64_t remainingMs() const;
+      void present(const wlr_box& box);
       void presentMask(const wlr_box& box, int canvasX, int canvasY, bool constrained);
 
       [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
@@ -619,11 +625,15 @@ namespace umbriel {
 
     private:
       void applySlide();
+      void applyPresentation();
+      void applyGeometry(const wlr_box& box);
+      void restoreCapturedGeometry();
       void applyMask();
 
       Server* m_server = nullptr;
       CloseSnapshotId m_id = kInvalidCloseSnapshot;
       wlr_scene_tree* m_tree = nullptr;
+      wlr_scene_tree* m_content = nullptr;
       Output* m_output = nullptr;
       AnimatedValue m_alpha;
       AnimationEvent m_event = AnimationEvent::WindowsOut;
@@ -633,6 +643,7 @@ namespace umbriel {
       wlr_box m_box{};
       int m_canvasX = 0;
       int m_canvasY = 0;
+      bool m_geometryPresented = false;
       bool m_maskConstrained = false;
       struct MaskInsets {
         int left = 0;
@@ -642,14 +653,21 @@ namespace umbriel {
       };
       MaskInsets m_borderMaskInsets;
       MaskInsets m_shadowMaskInsets;
-      // Each copied buffer and its captured opacity.
+      // Each copied buffer with its captured opacity, position and size relative to the content tree.
       struct Buffer {
         wlr_scene_buffer* node = nullptr;
         float baseOpacity = 1.0F;
+        int x = 0;
+        int y = 0;
+        int width = 0;
+        int height = 0;
       };
       std::vector<Buffer> m_buffers;
       std::vector<BorderSnapshot> m_borders;
       ShadowSnapshot m_shadow;
+      int m_shadowWidth = 0;
+      int m_shadowHeight = 0;
+      wlr_box m_shadowHole{};
     };
     // unique_ptr because the registry holds raw pointers to these: a vector of
     // values would move them out from under it on reallocation.

@@ -3,11 +3,14 @@
 #include "check.h"
 
 #include <algorithm>
+#include <limits>
 #include <span>
 #include <vector>
 
+using umbriel::alignedMotionDelay;
 using umbriel::boxesOverlap;
 using umbriel::collapseBox;
+using umbriel::collapseVacancy;
 using umbriel::confineToNeighbours;
 using umbriel::interpolateBox;
 using umbriel::keepsSeparation;
@@ -177,6 +180,66 @@ UMBRIEL_TEST(keepsSeparationFlagsRearrangements) {
   CHECK(!keepsSeparation(a, b));
   CHECK(keepsSeparation(b, c));
   CHECK(keepsSeparation(a, c));
+}
+
+UMBRIEL_TEST(interruptedRearrangementDrainsInheritedGhostOverlap) {
+  const wlr_box closing{369, 154, 640, 567};
+  const std::vector<MotionBox> neighbours{
+      {{1, 1, 640, 567}, {0, 0, 640, 720}},
+  };
+  const wlr_box confined = confineToNeighbours(closing, neighbours, false);
+  const wlr_box target = collapseVacancy(closing, confined, neighbours, false);
+  CHECK(sameBox(target, {640, 154, 0, 567}));
+
+  long previousOverlap = std::numeric_limits<long>::max();
+  for (int step = 0; step <= 100; ++step) {
+    const double progress = step / 100.0;
+    const wlr_box ghost = interpolateBox(closing, target, progress);
+    const wlr_box survivor = interpolateBox(neighbours.front().from, neighbours.front().to, progress);
+    const int overlapWidth =
+        std::max(0, std::min(ghost.x + ghost.width, survivor.x + survivor.width) - std::max(ghost.x, survivor.x));
+    const int overlapHeight =
+        std::max(0, std::min(ghost.y + ghost.height, survivor.y + survivor.height) - std::max(ghost.y, survivor.y));
+    const long overlap = static_cast<long>(overlapWidth) * overlapHeight;
+    CHECK(overlap <= previousOverlap);
+    previousOverlap = overlap;
+  }
+  CHECK(previousOverlap == 0);
+}
+
+UMBRIEL_TEST(collapseDoesNotTradeInheritedOverlapForANewNeighbourOverlap) {
+  const wlr_box closing{0, 0, 100, 100};
+  const std::vector<MotionBox> neighbours{
+      {closing, {-80, 0, 100, 100}},
+      {{100, 0, 100, 100}, {20, 0, 50, 100}},
+  };
+
+  // The first neighbour releases inherited overlap while the second crosses the vacancy. Aggregate overlap still
+  // decreases when collapsing towards x=70, but that direction creates fresh overlap with the initially disjoint
+  // neighbour. Following its moving edge towards x=20 preserves that neighbour's separation instead.
+  const wlr_box target = collapseVacancy(closing, closing, neighbours, false);
+  CHECK(sameBox(target, {20, 0, 0, 100}));
+  for (int step = 0; step <= 100; ++step) {
+    const double progress = step / 100.0;
+    const wlr_box ghost = interpolateBox(closing, target, progress);
+    const wlr_box incoming = interpolateBox(neighbours[1].from, neighbours[1].to, progress);
+    CHECK(!boxesOverlap(ghost, incoming));
+  }
+}
+
+UMBRIEL_TEST(alignedMotionDelayPreservesArbitraryDurations) {
+  CHECK(alignedMotionDelay(1500, 1250) == 250);
+  CHECK(alignedMotionDelay(1250, 1500) == 0);
+  CHECK(alignedMotionDelay(1000, 1000) == 0);
+  CHECK(alignedMotionDelay(0, 600) == 0);
+  CHECK(alignedMotionDelay(600, 0) == 600);
+
+  for (uint64_t closeMs : {1U, 150U, 600U, 1250U, 1500U, 6500U}) {
+    for (uint64_t moveMs : {1U, 150U, 600U, 1250U, 1500U, 6500U}) {
+      const uint64_t delayMs = alignedMotionDelay(closeMs, moveMs);
+      CHECK(delayMs + moveMs == std::max(closeMs, moveMs));
+    }
+  }
 }
 
 int main() { return RUN_TESTS(); }

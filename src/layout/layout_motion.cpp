@@ -2,7 +2,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
+#include <optional>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace umbriel {
 
@@ -13,6 +18,52 @@ namespace umbriel {
     }
 
     bool rangesOverlap(int aLo, int aHi, int bLo, int bHi) { return aLo < bHi && bLo < aHi; }
+
+    int64_t overlapArea(const wlr_box& a, const wlr_box& b) {
+      const int width = std::max(0, std::min(a.x + a.width, b.x + b.width) - std::max(a.x, b.x));
+      const int height = std::max(0, std::min(a.y + a.height, b.y + b.height) - std::max(a.y, b.y));
+      return static_cast<int64_t>(width) * height;
+    }
+
+    struct CollapseScore {
+      int64_t largestIncrease = 0;
+      int64_t totalIncrease = 0;
+      int64_t centreTravel = 0;
+      int64_t overlapIntegral = 0;
+
+      [[nodiscard]] auto rank() const {
+        return std::tie(largestIncrease, totalIncrease, centreTravel, overlapIntegral);
+      }
+    };
+
+    CollapseScore collapseScore(const wlr_box& from, const wlr_box& to, std::span<const MotionBox> neighbours) {
+      constexpr int kSamples = 128;
+      CollapseScore score;
+      std::vector<int64_t> previous;
+      previous.reserve(neighbours.size());
+      for (const MotionBox& neighbour : neighbours) {
+        const int64_t overlap = overlapArea(from, neighbour.from);
+        previous.push_back(overlap);
+        score.overlapIntegral += overlap;
+      }
+      for (int step = 1; step <= kSamples; ++step) {
+        const double progress = static_cast<double>(step) / kSamples;
+        const wlr_box ghost = interpolateBox(from, to, progress);
+        for (size_t i = 0; i < neighbours.size(); ++i) {
+          const MotionBox& neighbour = neighbours[i];
+          const int64_t overlap = overlapArea(ghost, interpolateBox(neighbour.from, neighbour.to, progress));
+          const int64_t increase = std::max<int64_t>(0, overlap - previous[i]);
+          score.largestIncrease = std::max(score.largestIncrease, increase);
+          score.totalIncrease += increase;
+          score.overlapIntegral += overlap;
+          previous[i] = overlap;
+        }
+      }
+      const int64_t centreDx = (2LL * to.x + to.width) - (2LL * from.x + from.width);
+      const int64_t centreDy = (2LL * to.y + to.height) - (2LL * from.y + from.height);
+      score.centreTravel = std::abs(centreDx) + std::abs(centreDy);
+      return score;
+    }
 
   } // namespace
 
@@ -100,6 +151,76 @@ namespace umbriel {
     return collapsed;
   }
 
+  wlr_box
+  collapseVacancy(const wlr_box& from, const wlr_box& confined, std::span<const MotionBox> neighbours, bool vertical) {
+    const wlr_box ordinary = collapseBox(confined, vertical);
+
+    const auto candidatesForAxis = [&](bool candidateVertical) {
+      std::vector<wlr_box> candidates;
+      const auto add = [&](int edge) {
+        wlr_box candidate = from;
+        if (candidateVertical) {
+          candidate.y = edge;
+          candidate.height = 0;
+        } else {
+          candidate.x = edge;
+          candidate.width = 0;
+        }
+        if (std::ranges::none_of(candidates, [&](const wlr_box& existing) {
+              return existing.x == candidate.x
+                  && existing.y == candidate.y
+                  && existing.width == candidate.width
+                  && existing.height == candidate.height;
+            })) {
+          candidates.push_back(candidate);
+        }
+      };
+      if (candidateVertical) {
+        add(from.y);
+        add(from.y + from.height);
+        add(confined.y);
+        add(confined.y + confined.height);
+        for (const MotionBox& neighbour : neighbours) {
+          add(neighbour.to.y);
+          add(neighbour.to.y + neighbour.to.height);
+        }
+      } else {
+        add(from.x);
+        add(from.x + from.width);
+        add(confined.x);
+        add(confined.x + confined.width);
+        for (const MotionBox& neighbour : neighbours) {
+          add(neighbour.to.x);
+          add(neighbour.to.x + neighbour.to.width);
+        }
+      }
+      return candidates;
+    };
+
+    const auto bestCandidate = [&](bool candidateVertical) {
+      std::optional<std::pair<wlr_box, CollapseScore>> best;
+      for (const wlr_box& candidate : candidatesForAxis(candidateVertical)) {
+        const CollapseScore score = collapseScore(from, candidate, neighbours);
+        if (!best || score.rank() < best->second.rank()) {
+          best = std::pair{candidate, score};
+        }
+      }
+      return best;
+    };
+
+    std::pair<wlr_box, CollapseScore> chosen{ordinary, collapseScore(from, ordinary, neighbours)};
+    const auto consider = [&](const std::optional<std::pair<wlr_box, CollapseScore>>& candidate) {
+      if (candidate && candidate->second.rank() < chosen.second.rank()) {
+        chosen = *candidate;
+      }
+    };
+    // Evaluate both axes for every layout. `vertical` remains the stable tie-break through the order here, while the
+    // score selects the axis that actually drains this transition without making inherited overlap worse.
+    consider(bestCandidate(vertical));
+    consider(bestCandidate(!vertical));
+    return chosen.first;
+  }
+
   bool keepsSeparation(const MotionBox& a, const MotionBox& b) {
     // `lo` entirely on the low side of `hi` along one axis, touching allowed.
     const auto leftOf = [](const wlr_box& lo, const wlr_box& hi) { return lo.x + lo.width <= hi.x; };
@@ -108,6 +229,10 @@ namespace umbriel {
         || (leftOf(b.from, a.from) && leftOf(b.to, a.to))
         || (above(a.from, b.from) && above(a.to, b.to))
         || (above(b.from, a.from) && above(b.to, a.to));
+  }
+
+  uint64_t alignedMotionDelay(uint64_t closeRemainingMs, uint64_t moveDurationMs) {
+    return closeRemainingMs > moveDurationMs ? closeRemainingMs - moveDurationMs : 0;
   }
 
 } // namespace umbriel

@@ -2,6 +2,7 @@
 #include "scene/color.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string_view>
@@ -85,6 +86,25 @@ namespace umbriel {
   [[nodiscard]] inline double evaluateCurve(const AnimationCurve& curve, double progress) {
     return applyEasing(curve, progress);
   }
+
+  // Logical layout geometry must remain between its endpoints and advance in one direction. Curves that reverse or
+  // overshoot are projected onto cumulative travel, so their timing remains visible for the full configured duration
+  // without letting tiled boxes cross a protected boundary. Already bounded monotonic curves are evaluated directly.
+  class MonotonicEasing {
+  public:
+    MonotonicEasing();
+    explicit MonotonicEasing(const AnimationCurve& curve);
+
+    void reset(const AnimationCurve& curve);
+    [[nodiscard]] double value(double linearProgress) const;
+
+  private:
+    static constexpr std::size_t kSampleCount = 512;
+
+    AnimationCurve m_curve{.easing = Easing::Linear};
+    std::array<double, kSampleCount + 1> m_progress{};
+    bool m_direct = true;
+  };
 
   // Registry for named animation curves (supporting custom named beziers and springs)
   class CurveRegistry {

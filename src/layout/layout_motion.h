@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <span>
 
 extern "C" {
@@ -40,8 +41,18 @@ namespace umbriel {
   // neighbour confinement alone leaves it with area after the live layout has reflowed.
   [[nodiscard]] wlr_box collapseBox(const wlr_box& box, bool vertical);
 
+  // Choose the zero-area endpoint for a closing vacancy. The ordinary confined endpoint is preferred, but an
+  // interrupted rearrangement may already overlap the closing actor. In that case, collapse toward a final neighbour
+  // boundary that drains the inherited overlap instead of making it worse.
+  [[nodiscard]] wlr_box
+  collapseVacancy(const wlr_box& from, const wlr_box& confined, std::span<const MotionBox> neighbours, bool vertical);
+
   // True when some axis and order separates `a` and `b` on both sides of the transition, i.e. interpolating them with
   // a shared progress can never make them cross. False marks a pair whose side relation changes (a rearrangement).
   [[nodiscard]] bool keepsSeparation(const MotionBox& a, const MotionBox& b);
+
+  // Delay the shorter movement clock just enough that it ends with a longer close clock. A movement at least as long
+  // as the remaining close starts immediately. Both configured durations remain unchanged.
+  [[nodiscard]] uint64_t alignedMotionDelay(uint64_t closeRemainingMs, uint64_t moveDurationMs);
 
 } // namespace umbriel

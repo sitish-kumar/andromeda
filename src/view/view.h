@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -163,10 +164,19 @@ namespace umbriel {
     // Record the authoritative layout slot origin without moving the node. An established view's workspace motion or an
     // opening lifecycle presentation carries the scene node there.
     void setLayoutTarget(int x, int y);
-    // Per-frame presentation of a layout-assigned box, no bookkeeping. Width and height are clamped to at least 1.
+    // Per-frame presentation of a layout-assigned box. Remembers the unscaled logical box underneath an opening
+    // popin or zoom. Width and height are clamped to at least 1.
     void presentTiledBox(const wlr_box& box);
+    // Keep a fresh tiled opener invisible while a close lifecycle still owns its destination, then restart windows_in
+    // when that canvas is released.
+    void deferTiledOpening();
+    void resumeTiledOpening();
+    [[nodiscard]] bool tiledOpeningDeferred() const { return m_tiledOpeningDeferred; }
     // windows_move owns this established view's box until endLayoutMotion. `direction` feeds its custom shader.
     void beginLayoutMotion(float direction);
+    // Finish at the workspace target without falling back to an older committed client buffer. If the configure that
+    // supplies the target buffer is still outstanding, compositor presentation remains authoritative until it lands.
+    void completeLayoutMotion(const wlr_box& target);
     void endLayoutMotion();
     // The authoritative layout position: where the window's slot is, not where its scene node happens to be
     // mid-animation. Workspace slides and arrange reflows move nodes without touching the animation targets, so window
@@ -304,6 +314,8 @@ namespace umbriel {
 
     static void onMap(wl_listener* listener, void* data);
     static void onUnmap(wl_listener* listener, void* data);
+    static void onRootSurfaceDestroy(wl_listener* listener, void* data);
+    static void onClientCommit(wl_listener* listener, void* data);
     static void onCommit(wl_listener* listener, void* data);
     static void onDestroy(wl_listener* listener, void* data);
     static void onRequestMove(wl_listener* listener, void* data);
@@ -326,6 +338,7 @@ namespace umbriel {
     static void onCaptureSourceDestroy(wl_listener* listener, void* data);
     void handleMap();
     void handleUnmap();
+    void handleClientCommit();
     void handleCommit(bool reconfigureOpeningState = false);
     void setXdgTag(std::string_view tag);
     void syncContentType(wlr_surface* committedSurface = nullptr);
@@ -393,15 +406,20 @@ namespace umbriel {
     [[nodiscard]] bool sizeAnimating() const {
       return m_presentation.animating() || m_layoutMotion || tiledOpeningActive();
     }
-    // While windows_in owns a tiled view, presentation follows its final layout slot rather than the client's possibly
-    // stale committed geometry. This keeps a custom lifecycle shader's canvas stable while established peers reflow.
+    [[nodiscard]] bool layoutPresentationOwned() const { return sizeAnimating() || m_layoutPresentationHeld; }
+    void prepareTiledCommitHold();
+    void releaseTiledCommitHold();
+    void requestTiledSize(int width, int height);
+    [[nodiscard]] bool settleTiledSizeRequest();
+    // While windows_in owns a freshly admitted tiled view, presentation follows its final layout slot rather than the
+    // client's possibly stale committed geometry. A later arrange can move its cached logical box independently.
     [[nodiscard]] bool tiledOpeningActive() const;
     // A tiled popin/zoom open scales the presented box inside its slot while the fade-in runs. A fullscreen tile is
     // presented against the output, not its slot, so it keeps the floating-style open tweens.
     [[nodiscard]] bool openingScaleActive() const { return m_openingScale < 1.0 && tiledOpeningActive(); }
-    // Eased progress of the active tiled windows_in transition. The workspace uses its presence to keep that lifecycle
-    // view out of windows_move when an arrange repeats before the opening effect finishes.
-    [[nodiscard]] std::optional<double> openingProgress() const;
+    // Unscaled logical box underneath an active tiled windows_in presentation. Once another layout change arrives, the
+    // view can retain its lifecycle effect while this box participates independently in windows_move.
+    [[nodiscard]] std::optional<wlr_box> openingLayoutBox() const;
     // Drop the opening inset and put the node back on its slot origin; the caller settles the presented size.
     void dropOpeningInset();
     // True while the border ring exists and is showing. Fullscreen keeps the
@@ -547,6 +565,9 @@ namespace umbriel {
     ViewDecoration m_decoration;
     ViewPresentation m_presentation;
     wlr_box m_presentedBox{};
+    // Last unscaled box supplied by the workspace. A tiled popin or zoom presents an inset inside this logical box,
+    // so a later layout change must animate from the logical box rather than scaling the inset a second time.
+    wlr_box m_presentedTiledBox{};
     wlr_foreign_toplevel_handle_v1* m_foreign = nullptr;
     wlr_ext_foreign_toplevel_handle_v1* m_extForeign = nullptr;
     wlr_output* m_foreignOutput = nullptr;
@@ -571,7 +592,19 @@ namespace umbriel {
     bool m_positioned = false;
     // The workspace's layout motion currently drives the presented box.
     bool m_layoutMotion = false;
+    // A completed layout motion keeps its final logical size until the client commit for that configure arrives.
+    bool m_layoutPresentationHeld = false;
+    // During an alignment delay, cache the target-size commit so the old buffer remains visible until movement starts.
+    bool m_holdTiledCommits = false;
+    struct TiledSizeRequest {
+      uint32_t serial = 0;
+      int width = 0;
+      int height = 0;
+    };
+    std::optional<TiledSizeRequest> m_tiledSizeRequest;
+    std::vector<uint32_t> m_lockedTiledCommitSeqs;
     float m_layoutMotionDirection = 1.0F;
+    bool m_tiledOpeningDeferred = false;
     // Inset scale a tiled popin/zoom open starts at; 1.0 = none.
     double m_openingScale = 1.0;
     bool m_tiled = false;
@@ -631,6 +664,8 @@ namespace umbriel {
 
     wl_listener m_map{};
     wl_listener m_unmap{};
+    wl_listener m_rootSurfaceDestroy{};
+    wl_listener m_clientCommit{};
     wl_listener m_commit{};
     wl_listener m_destroy{};
     wl_listener m_requestMove{};

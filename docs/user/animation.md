@@ -83,7 +83,7 @@ fields are specific to individual event tables:
 | Table                       | Additional fields                                                                     | Transition                                                                                                                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `[animation.windows_in]`    | `style` (`popin`, `zoom`, `slide`, `fade`, or `none`); `scale` (0.1-1.0, for `popin`) | Window open. A tiled opener uses its current final layout box while this transition runs independently of neighbouring reflow. `popin` and `zoom` scale inside that box. `slide` rises into place for floating and fullscreen windows and becomes visible sooner than `fade`; tiled windows use the same quicker fade without leaving their slot. |
-| `[animation.windows_out]`   | `style` (`fade` or `slide`)                                                           | Window close, using a scene snapshot with a fixed shader canvas. During tiled reflow, `windows_move` drives a separate vacancy mask while `windows_out` keeps its own timeline. A card closed from overview uses this event independently. `slide` moves down and retains more opacity during that motion than `fade`. |
+| `[animation.windows_out]`   | `style` (`fade` or `slide`)                                                           | Window close, using a scene snapshot. During a tiled reflow, that snapshot becomes a geometry ghost coordinated with `windows_move`, while its close style or shader keeps the independent `windows_out` clock. A card closed from overview uses this event independently. `slide` moves down and retains more opacity during that motion than `fade`. |
 | `[animation.windows_move]`  | None                                                                                  | Window move, resize, established-window layout reflow, maximize and restore, and floating maximize transitions, including visible scratchpad size actions.                     |
 | `[animation.workspaces]`    | None                                                                                  | Workspace switch.                                                                                                                                                              |
 | `[animation.overview]`      | `workspace_curve` (default `spring:1,1000`)                                           | Entering and leaving overview; `workspace_curve` moves the filmstrip between workspace previews. Closing a window card uses `windows_out`.                                     |
@@ -97,27 +97,52 @@ Established tiled windows animate layout changes through one shared
 between the layout it left and the layout it reached with the same progress.
 An opening tile is instead presented in its current final slot while
 `windows_in` runs. Its established neighbours reflow concurrently with their
-own `windows_move` duration and curve.
+own `windows_move` duration and curve. If another tile opens before an earlier
+tile finishes `windows_in`, that earlier tile is already an established layout
+participant: its unscaled logical box follows `windows_move` while its opening
+shader, popin, or zoom continues. Popin and zoom are applied once to each
+logical presentation, so a second admission cannot scale the visible box a
+second time.
 
-A normal tiled close does not delay the new layout. Its snapshot keeps the
-captured shader canvas fixed while established neighbours immediately reflow
-with `windows_move`. A separate vacancy mask over the snapshot shares that
-geometry progress, so the closing pixels and live tiles do not occupy the same
-space. The mask affects only the final composite: a custom `windows_out` shader
-continues to sample the complete captured canvas, and feedback history keeps
-the same target size.
+A tiled close snapshot keeps its natural `windows_out` curve and configured
+duration. When survivors reclaim its layout vacancy, Umbriel presents that
+snapshot as a closing geometry ghost. The ghost and survivors follow one
+`windows_move` geometry transition, so they vacate and claim the same space
+without crossing. Moving the ghost changes its presented position and size,
+including `umbriel_size`, but does not retime its close style, shader progress,
+transition identity, random seed, or feedback history.
 
-`windows_out` and `windows_move` retain their separately configured durations
-and curves. If movement finishes first, the now-empty visible mask stops
-compositing the close snapshot, but its custom shader and feedback history keep
-running until `windows_out` completes. If `windows_out` finishes first, the
-snapshot disappears while established tiles finish their movement. Overlapping
-closes keep independent close timelines and rebase the shared layout motion
-from the boxes currently on screen. New tiled windows are admitted immediately:
-the opener owns its final slot through `windows_in`, while established peers use
-`windows_move`. A close that caused no layout reflow keeps its full mask through
-later unrelated layout changes; it begins vacating only if live final geometry
-claims its presented region.
+The target-size configure is sent to each survivor immediately. If `C` is the
+longest conflicting close time remaining and `M` is the configured
+`windows_move` duration, visible movement begins after
+`max(C - M, 0)` milliseconds. A client may prepare its target buffer during
+that alignment delay, but Umbriel retains the old visible buffer until movement
+starts. Therefore a longer close delays the shorter movement just enough for
+both to finish together, equal durations start together, and a longer movement
+starts immediately and continues after the close has finished. Disabling
+`windows_move` makes the reflow instant without changing the independent
+`windows_out` lifecycle.
+
+At the end of movement, Umbriel keeps the compositor-owned target geometry
+until the client has committed the matching configure serial and exact buffer
+size. This prevents a slow or size-refusing client from snapping back to a
+stale buffer, including across later layout passes that leave its target
+unchanged.
+
+Several closes may join or interrupt one reflow. The layout rebases from the
+currently presented boxes toward the latest targets and aligns against the
+longest conflicting close time still remaining. Each close keeps its own
+`windows_out` lifecycle, rather than adding close durations together or
+restarting an earlier shader. A close that caused no layout reflow remains
+independent and fixed unless a later motion path directly claims its captured
+region. New tiled windows outside a claimed region retain the normal opening
+behavior described above.
+
+A fresh tiled opener whose destination intersects a conflicting close canvas
+stays invisible until both that close and the coordinated survivor reflow have
+finished. It then receives a fresh admission using its configured `windows_in`
+behavior. That admission is immediate when `windows_in` is disabled or has no
+visible style.
 
 Every ordinary view close snapshot remains owned by its source workspace. It
 follows workspace-slide translation and the workspace's visibility until its
@@ -125,11 +150,14 @@ lifecycle ends. A card closed from overview is independent of workspace vacancy
 motion and continues to use `windows_out` without changing overview motion.
 
 Closing during consume, expel, or another active layout transition rebases the
-survivors and close mask from their current presentations onto one shared
-`windows_move` timeline. Swaps and column moves likewise draw the moving window
-above the neighbours it passes over. Geometry progress is clamped, so an
-overshooting curve cannot make established tiles cross; shaders still see their
-own unclamped progress.
+survivors and close ghosts from their current presentations toward the latest
+layout targets. Swaps and column moves likewise draw the moving window above
+the neighbours it passes over. Geometry uses the configured curve directly
+when it is already bounded and monotonic. A curve that overshoots or reverses
+is projected onto monotonic cumulative travel across the full configured
+duration, so established tiles do not cross or finish at the curve's first
+endpoint crossing. Custom movement shaders still receive the original eased
+`umbriel_progress` and linear `umbriel_linear_progress` values.
 
 `workspace_curve` covers every way the filmstrip moves: a wheel notch, a
 keyboard action, and the release of a touchpad gesture. A spring curve settles
@@ -321,11 +349,12 @@ one target. Borders can also have their own inner effect. Workspace effects
 process the output's workspace view root, and overview effects process each
 output's overview tree. Scratchpad backdrops have their own targets.
 
-For a tiled close, the vacancy mask is applied after the closing shader rather
-than to its input. The shader therefore keeps the captured size and sampling
-coordinates while `windows_move` changes only how much of its result is visible.
-An empty visible mask still evaluates the custom shader and advances its
-feedback history until the `windows_out` lifecycle completes.
+For a tiled close with coordinated reflow, the snapshot follows the shared
+geometry path as a scaled and positioned ghost. Its shader target size and
+normalized sampling coordinates follow that presented ghost, while the
+`windows_out` progress, transition identity, random seed, and feedback history
+continue on the original independent lifecycle. A close with no conflicting
+reflow keeps its captured geometry.
 
 Window shadows follow the alpha silhouette produced by active window or border
 shaders, including reveal masks and squash effects. The compositor applies the

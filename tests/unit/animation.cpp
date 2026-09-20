@@ -64,6 +64,61 @@ UMBRIEL_TEST(animatedValueReachesItsTargetOnTheConfiguredTimeline) {
   CHECK(!value.animating());
 }
 
+UMBRIEL_TEST(monotonicEasingPreservesSafeCurvesAndProjectsOvershootAcrossTheFullTimeline) {
+  const umbriel::AnimationCurve ordinary{
+      .easing = umbriel::Easing::CustomBezier,
+      .bezier = {.x1 = 0.25, .y1 = 0.46, .x2 = 0.35, .y2 = 1.0},
+  };
+  const umbriel::MonotonicEasing ordinaryMotion{ordinary};
+  for (int step = 0; step <= 20; ++step) {
+    const double linear = static_cast<double>(step) / 20.0;
+    CHECK(std::abs(ordinaryMotion.value(linear) - umbriel::evaluateCurve(ordinary, linear)) < 0.000001);
+  }
+
+  const umbriel::AnimationCurve snappy{.easing = umbriel::Easing::Snappy};
+  const umbriel::MonotonicEasing safeMotion{snappy};
+  double previous = 0.0;
+  for (int step = 0; step <= 100; ++step) {
+    const double linear = static_cast<double>(step) / 100.0;
+    const double progress = safeMotion.value(linear);
+    CHECK(progress >= previous);
+    CHECK(progress >= 0.0);
+    CHECK(progress <= 1.0);
+    if (step < 100) {
+      CHECK(progress < 1.0);
+    }
+    previous = progress;
+  }
+  CHECK(safeMotion.value(0.75) < safeMotion.value(1.0));
+}
+
+UMBRIEL_TEST(monotonicEasingBoundsReversingPresets) {
+  for (const umbriel::Easing easing : {
+           umbriel::Easing::EaseInBack,
+           umbriel::Easing::EaseOutBack,
+           umbriel::Easing::EaseInOutBack,
+           umbriel::Easing::EaseInElastic,
+           umbriel::Easing::EaseOutElastic,
+           umbriel::Easing::EaseInOutElastic,
+           umbriel::Easing::EaseInBounce,
+           umbriel::Easing::EaseOutBounce,
+           umbriel::Easing::EaseInOutBounce,
+           umbriel::Easing::Spring,
+       }) {
+    const umbriel::MonotonicEasing motion{umbriel::AnimationCurve{.easing = easing}};
+    double previous = 0.0;
+    for (int step = 0; step <= 200; ++step) {
+      const double progress = motion.value(static_cast<double>(step) / 200.0);
+      CHECK(progress >= previous);
+      CHECK(progress >= 0.0);
+      CHECK(progress <= 1.0);
+      previous = progress;
+    }
+    CHECK_EQ(motion.value(0.0), 0.0);
+    CHECK_EQ(motion.value(1.0), 1.0);
+  }
+}
+
 UMBRIEL_TEST(animationTransitionIdentityIsStableAndRefreshesOnRetarget) {
   umbriel::AnimatedValue value{10.0};
   CHECK_EQ(value.transitionId(), uint64_t{0});

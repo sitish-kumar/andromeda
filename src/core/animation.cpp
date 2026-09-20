@@ -639,6 +639,80 @@ namespace umbriel {
     return linear;
   }
 
+  MonotonicEasing::MonotonicEasing() { reset(AnimationCurve{.easing = Easing::Linear}); }
+
+  MonotonicEasing::MonotonicEasing(const AnimationCurve& curve) { reset(curve); }
+
+  void MonotonicEasing::reset(const AnimationCurve& curve) {
+    m_curve = curve;
+    std::array<double, kSampleCount + 1> raw{};
+    raw.front() = 0.0;
+    raw.back() = 1.0;
+
+    m_direct = true;
+    double previous = raw.front();
+    for (std::size_t i = 1; i < kSampleCount; ++i) {
+      const double progress = static_cast<double>(i) / static_cast<double>(kSampleCount);
+      const double current = evaluateCurve(curve, progress);
+      if (!std::isfinite(current)) {
+        m_curve = AnimationCurve{.easing = Easing::Linear};
+        m_direct = true;
+        return;
+      }
+      raw[i] = current;
+      if (current < previous || current < 0.0 || current > 1.0) {
+        m_direct = false;
+      }
+      previous = current;
+    }
+    if (raw.back() < previous) {
+      m_direct = false;
+    }
+    if (m_direct) {
+      return;
+    }
+
+    // Scale before subtracting so even extreme, but finite, custom Bezier control points cannot overflow a delta.
+    double scale = 1.0;
+    for (const double sample : raw) {
+      scale = std::max(scale, std::abs(sample));
+    }
+    m_progress.front() = 0.0;
+    for (std::size_t i = 1; i <= kSampleCount; ++i) {
+      const double delta = std::abs(raw[i] / scale - raw[i - 1] / scale);
+      m_progress[i] = m_progress[i - 1] + delta;
+    }
+    const double total = m_progress.back();
+    if (!std::isfinite(total) || total <= std::numeric_limits<double>::epsilon()) {
+      m_curve = AnimationCurve{.easing = Easing::Linear};
+      m_direct = true;
+      return;
+    }
+    for (double& sample : m_progress) {
+      sample /= total;
+    }
+    m_progress.front() = 0.0;
+    m_progress.back() = 1.0;
+  }
+
+  double MonotonicEasing::value(double linearProgress) const {
+    const double linear = std::clamp(linearProgress, 0.0, 1.0);
+    if (linear <= 0.0) {
+      return 0.0;
+    }
+    if (linear >= 1.0) {
+      return 1.0;
+    }
+    if (m_direct) {
+      return std::clamp(evaluateCurve(m_curve, linear), 0.0, 1.0);
+    }
+
+    const double sample = linear * static_cast<double>(kSampleCount);
+    const std::size_t lower = static_cast<std::size_t>(sample);
+    const double fraction = sample - static_cast<double>(lower);
+    return std::lerp(m_progress[lower], m_progress[lower + 1], fraction);
+  }
+
   // CurveRegistry methods
   void CurveRegistry::registerCurve(std::string_view name, const AnimationCurve& curve) {
     registryImpl().registerCurve(name, curve);

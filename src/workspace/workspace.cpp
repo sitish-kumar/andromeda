@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <format>
 #include <iterator>
+#include <limits>
 #include <ranges>
 #include <utility>
 #include "wlr.h"
@@ -634,9 +635,16 @@ namespace umbriel {
     // The map-time IPC event can fire before this arrange runs, leaving the previous window positions in the listing.
     // Re-emit now that the layout boxes are settled; the event coalescer caps this at one per frame.
     m_group->server()->scheduleIpcWindowsEvent();
-    // Members whose assigned size changed in this pass: only those animate their size. A client whose committed
-    // geometry never matches a stable configure (Chromium CSD) must not replay its resize on every focus arrange.
+    struct ResizeRequest {
+      View* view;
+      int width;
+      int height;
+    };
+    // Plan size requests before presenting the new layout. A close barrier may need to retain both the old box and the
+    // old client buffer until windows_out finishes. A client whose committed geometry never matches a stable configure
+    // (Chromium CSD) must not replay its resize on every focus arrange.
     std::vector<View*> resized;
+    std::vector<ResizeRequest> resizeRequests;
     for (View* view : m_views) {
       if (view == nullptr || !view->mapped() || !view->tiled()) {
         continue;
@@ -664,20 +672,26 @@ namespace umbriel {
       const int height = view->maximizedToEdges() ? target.height : clampXdgHeight(target.height, hints);
       const auto& scheduled = view->toplevel()->scheduled;
       if (scheduled.width != width || scheduled.height != height) {
-        wlr_xdg_toplevel_set_size(view->toplevel(), width, height);
         resized.push_back(view);
+        resizeRequests.push_back({.view = view, .width = width, .height = height});
       }
     }
     // Visual state below (scroll, positions) only applies while visible.
     Overview* overview = m_group->server()->overview();
     const bool overviewActive = overview != nullptr && overview->active();
     if (!m_active && !m_inSwitchTransition && !overviewActive) {
+      for (const ResizeRequest& request : resizeRequests) {
+        request.view->requestTiledSize(request.width, request.height);
+      }
       return;
     }
 
     // One positioning path for every layout: targets already include any
     // layout-specific offset, and each view animates or snaps itself.
     applyPositions(animate, resized);
+    for (const ResizeRequest& request : resizeRequests) {
+      request.view->requestTiledSize(request.width, request.height);
+    }
     if (overviewActive) {
       overview->onWorkspaceArranged(this);
     }
@@ -845,20 +859,27 @@ namespace umbriel {
       // node's default origin.
       const wlr_box& presented = view->presentedBox();
       const bool positioned = view->positioned() && presented.width > 0 && presented.height > 0;
-      const bool opening = !positioned || view->openingProgress().has_value();
+      const bool opening = !positioned || view->tiledOpeningDeferred();
+      const std::optional<wlr_box> openingLayoutBox = view->openingLayoutBox();
       view->setLayoutTarget(slot.x, slot.y);
-      if ((!view->onActiveWorkspace() && !overviewActive) || slot.width <= 0 || slot.height <= 0) {
+      if ((!view->onActiveWorkspace() && !m_inSwitchTransition && !overviewActive)
+          || slot.width <= 0
+          || slot.height <= 0) {
         releaseLayoutMotion(view);
         view->endLayoutMotion();
         view->presentTiledBox(slot);
         continue;
       }
       const wlr_scene_node& node = view->sceneTree()->node;
+      const wlr_box from = openingLayoutBox.value_or(
+          wlr_box{.x = node.x, .y = node.y, .width = presented.width, .height = presented.height}
+      );
       // A positioned member animates its size only when this pass reconfigured it or a motion already carries it;
       // otherwise it keeps the size it presents, which stays inside the slot.
       wlr_box to = slot;
       if (positioned
           && !opening
+          && !openingLayoutBox.has_value()
           && !std::ranges::contains(resized, view)
           && std::ranges::none_of(m_motion.views, [view](const LayoutMotion::ViewEntry& entry) {
                return entry.view == view;
@@ -868,7 +889,7 @@ namespace umbriel {
       }
       members.push_back({
           .view = view,
-          .from = positioned ? wlr_box{node.x, node.y, presented.width, presented.height} : wlr_box{},
+          .from = positioned ? from : wlr_box{},
           .to = to,
           .opening = opening,
       });
@@ -876,24 +897,21 @@ namespace umbriel {
 
     const auto& animation = config().animation;
     const auto& move = animation.windowsMove;
-    // Lifecycle views own their final slot immediately. Established peers participate in windows_move, and every live
-    // member still contributes a spatial boundary for a closing snapshot mask.
+    // A fresh unpositioned opener owns its final slot immediately. Established peers, including a tile still running
+    // windows_in after an earlier admission, participate in windows_move. Every live member also describes whether a
+    // survivor reflow would reclaim a closing snapshot's canvas.
     std::vector<MotionBox> neighbours;
     std::vector<LayoutMotion::ViewEntry> views;
+    std::vector<Member> stableViews;
+    std::vector<View*> openingViews;
     for (const Member& member : members) {
       if (member.opening) {
-        member.view->endLayoutMotion();
-        member.view->presentTiledBox(member.to);
-        // Lifecycle actors are overlays while established peers reflow underneath. Reassert that ordering on every
-        // arrange because an older peer may have been raised for an interrupted rearrangement.
-        member.view->raiseToTop();
         neighbours.push_back({member.to, member.to});
         continue;
       }
       neighbours.push_back({member.from, member.to});
       if (sameBox(member.from, member.to)) {
-        member.view->endLayoutMotion();
-        syncViewPresentation(member.view);
+        stableViews.push_back(member);
         continue;
       }
       views.push_back({
@@ -904,68 +922,94 @@ namespace umbriel {
       });
     }
 
-    // Running ghosts restart from the mask currently presented; newly captured ghosts start from their closing box.
-    const bool hadPendingGhosts = !m_pendingGhosts.empty();
-    std::vector<LayoutMotion::GhostEntry> ghosts;
     Server* server = m_group->server();
-    for (const LayoutMotion::GhostEntry& running : m_motion.ghosts) {
-      if (server->closeSnapshotBox(running.id)) {
-        ghosts.push_back({
-            .id = running.id,
-            .canvas = running.canvas,
-            .from = running.presented,
-            .presented = running.presented,
-            .constrained = running.constrained,
-        });
+    std::erase_if(m_trackedCloseSnapshots, [server](const TrackedCloseSnapshot& snapshot) {
+      return !server->closeSnapshotBox(snapshot.id).has_value();
+    });
+    std::vector<LayoutMotion::GhostEntry> ghosts;
+    const bool layoutReflows = !views.empty();
+    for (TrackedCloseSnapshot& snapshot : m_trackedCloseSnapshots) {
+      if (!snapshot.layoutManaged) {
+        continue;
       }
-    }
-    for (const PendingGhost& pending : m_pendingGhosts) {
-      if (server->closeSnapshotBox(pending.id)) {
-        ghosts.push_back({
-            .id = pending.id,
-            .canvas = pending.box,
-            .from = pending.box,
-            .presented = pending.box,
-            .newlyCaptured = true,
-        });
+      const bool alreadyCoordinated = std::ranges::any_of(m_motion.ghosts, [&](const LayoutMotion::GhostEntry& ghost) {
+        return ghost.id == snapshot.id;
+      });
+      const wlr_box confined = confineToNeighbours(snapshot.presented, neighbours, false);
+      const MotionBox fixedCanvas{snapshot.presented, snapshot.presented};
+      const bool pathClaimsCanvas = std::ranges::any_of(neighbours, [&](const MotionBox& neighbour) {
+        return !keepsSeparation(fixedCanvas, neighbour);
+      });
+      // The first pass may identify the vacancy through adjacent edges moving into it. A retained close that caused no
+      // reflow remains independent until a later motion path claims its canvas.
+      const bool blocks = pathClaimsCanvas
+          || vacancyNeedsCollapse(snapshot.presented, confined, neighbours, alreadyCoordinated, snapshot.newlyCaptured);
+      snapshot.newlyCaptured = false;
+      if (!blocks || !layoutReflows) {
+        continue;
       }
+      wlr_box target = confined;
+      if (target.width > 0 && target.height > 0) {
+        target = collapseVacancy(snapshot.presented, target, neighbours, scrollingVertical());
+      }
+      ghosts.push_back({
+          .id = snapshot.id,
+          .from = snapshot.presented,
+          .to = target,
+          .presented = snapshot.presented,
+      });
+      neighbours.push_back({snapshot.presented, target});
     }
-    m_pendingGhosts.clear();
 
-    const bool vertical = scrollingVertical();
-    for (LayoutMotion::GhostEntry& ghost : ghosts) {
-      const wlr_box confined = confineToNeighbours(ghost.from, neighbours, false);
-      // A retained no-reflow close must ignore unrelated layout motion elsewhere. Continue collapsing a mask that
-      // already started vacating, or start only when neighbouring geometry confines or directly claims this canvas.
-      if (vacancyNeedsCollapse(ghost.from, confined, neighbours, ghost.constrained, ghost.newlyCaptured)) {
-        ghost.to = confined;
-        if (ghost.to.width > 0 && ghost.to.height > 0) {
-          ghost.to = collapseBox(ghost.to, vertical);
+    std::erase_if(m_motion.deferredOpenings, [&](const LayoutMotion::DeferredOpening& opening) {
+      return opening.view == nullptr
+          || !opening.view->mapped()
+          || opening.view->workspace() != this
+          || m_layout->columnOf(opening.view) < 0;
+    });
+    for (const Member& member : members) {
+      if (!member.opening) {
+        continue;
+      }
+      const bool destinationBlocked =
+          std::ranges::any_of(m_trackedCloseSnapshots, [&](const TrackedCloseSnapshot& snapshot) {
+            return snapshot.layoutManaged && boxesOverlap(snapshot.canvas, member.to);
+          });
+      if (destinationBlocked) {
+        member.view->deferTiledOpening();
+        const auto deferred =
+            std::ranges::find_if(m_motion.deferredOpenings, [&](const LayoutMotion::DeferredOpening& opening) {
+              return opening.view == member.view;
+            });
+        if (deferred != m_motion.deferredOpenings.end()) {
+          deferred->to = member.to;
+        } else {
+          m_motion.deferredOpenings.push_back({.view = member.view, .to = member.to});
         }
-      } else {
-        ghost.to = ghost.from;
+        continue;
       }
-      ghost.newlyCaptured = false;
-      ghost.constrained = ghost.constrained || !sameBox(ghost.from, ghost.canvas) || !sameBox(ghost.to, ghost.canvas);
-      neighbours.push_back({ghost.from, ghost.to});
-    }
 
-    if (!animate || !animation.enabled || !move.enabled || move.durationMs <= 0) {
-      endLayoutMotion();
-      for (const Member& member : members) {
-        member.view->presentTiledBox(member.to);
-      }
-      for (LayoutMotion::GhostEntry& ghost : ghosts) {
-        ghost.presented = ghost.to;
-      }
-      m_motion.ghosts = std::move(ghosts);
-      syncCloseSnapshots();
-      return;
+      std::erase_if(m_motion.deferredOpenings, [&](const LayoutMotion::DeferredOpening& opening) {
+        return opening.view == member.view;
+      });
+      member.view->resumeTiledOpening();
+      member.view->endLayoutMotion();
+      member.view->presentTiledBox(member.to);
+      // Lifecycle actors are overlays while established peers reflow underneath. Reassert that ordering on every
+      // arrange because an older peer may have been raised for an interrupted rearrangement.
+      member.view->raiseToTop();
+      openingViews.push_back(member.view);
+    }
+    for (const Member& member : stableViews) {
+      // A client may still owe the buffer for a completed resize. Remove the view from any old motion, then retain the
+      // compositor-owned endpoint until that exact configure and size have committed.
+      releaseLayoutMotion(member.view);
+      member.view->completeLayoutMotion(member.to);
+      syncViewPresentation(member.view);
     }
 
     // A running motion heading for the same layout keeps going; anything else restarts from the current boxes.
-    if (!hadPendingGhosts
-        && m_motion.progress.animating()
+    if ((m_motion.progress.animating() || m_motion.delay.animating())
         && views.size() == m_motion.views.size()
         && ghosts.size() == m_motion.ghosts.size()) {
       bool same = true;
@@ -980,22 +1024,12 @@ namespace umbriel {
       }
     }
     for (const LayoutMotion::ViewEntry& running : m_motion.views) {
+      running.view->releaseTiledCommitHold();
       if (std::ranges::none_of(views, [&](const LayoutMotion::ViewEntry& entry) {
             return entry.view == running.view;
           })) {
         running.view->endLayoutMotion();
       }
-    }
-
-    const bool geometryChanges =
-        !views.empty() || std::ranges::any_of(ghosts, [](const LayoutMotion::GhostEntry& ghost) {
-          return !sameBox(ghost.from, ghost.to);
-        });
-    if (!geometryChanges) {
-      endLayoutMotion();
-      m_motion.ghosts = std::move(ghosts);
-      syncCloseSnapshots();
-      return;
     }
 
     // A pair of positioned members whose side relation changes cannot stay disjoint; the one travelling farther passes
@@ -1012,10 +1046,51 @@ namespace umbriel {
       }
     }
 
+    const bool animateMove = animate && animation.enabled && move.enabled && move.durationMs > 0;
+    if (views.empty()) {
+      endLayoutMotion(true);
+      syncCloseSnapshots();
+      return;
+    }
+    if (!animateMove) {
+      endLayoutMotion(true);
+      for (const Member& member : members) {
+        member.view->presentTiledBox(member.to);
+      }
+      syncCloseSnapshots();
+      return;
+    }
+
     m_motion.views = std::move(views);
     m_motion.ghosts = std::move(ghosts);
     m_motion.progress.snap(0.0);
-    m_motion.progress.retarget(1.0, move.durationMs, move.curve);
+    m_motion.delay.snap(1.0);
+    m_motion.presentedProgress = 0.0;
+    m_motion.geometryCurve.reset(move.curve);
+    m_motion.moveDurationMs = move.durationMs;
+    m_motion.moveCurve = move.curve;
+
+    uint64_t longestCloseMs = 0;
+    for (const LayoutMotion::GhostEntry& ghost : m_motion.ghosts) {
+      if (const auto remaining = server->closeSnapshotRemainingMs(ghost.id)) {
+        longestCloseMs = std::max(longestCloseMs, *remaining);
+      }
+    }
+    const uint64_t moveMs = static_cast<uint64_t>(move.durationMs);
+    const uint64_t delayMs = alignedMotionDelay(longestCloseMs, moveMs);
+    if (delayMs > 0) {
+      m_motion.delay.snap(0.0);
+      m_motion.delay.retarget(
+          1.0, static_cast<int>(std::min<uint64_t>(delayMs, static_cast<uint64_t>(std::numeric_limits<int>::max()))),
+          Easing::Linear
+      );
+      for (const LayoutMotion::ViewEntry& entry : m_motion.views) {
+        entry.view->prepareTiledCommitHold();
+      }
+    } else {
+      m_motion.progress.retarget(1.0, move.durationMs, move.curve);
+    }
+
     for (size_t i = 0; i < m_motion.views.size(); ++i) {
       const LayoutMotion::ViewEntry& entry = m_motion.views[i];
       entry.view->beginLayoutMotion(entry.direction);
@@ -1024,50 +1099,141 @@ namespace umbriel {
         entry.view->raiseToTop();
       }
     }
+    for (View* view : openingViews) {
+      view->raiseToTop();
+    }
     syncCloseSnapshots();
     wlr_output_schedule_frame(m_group->output()->wlr());
   }
 
   bool Workspace::tickLayoutMotion(uint64_t nowMsec) {
-    const bool geometryTicked = m_motion.progress.tick(nowMsec);
-    if (!geometryTicked && m_motion.ghosts.empty()) {
-      return false;
+    Server* server = m_group->server();
+    std::erase_if(m_trackedCloseSnapshots, [server](const TrackedCloseSnapshot& snapshot) {
+      return !server->closeSnapshotBox(snapshot.id).has_value();
+    });
+    std::erase_if(m_motion.ghosts, [server](const LayoutMotion::GhostEntry& ghost) {
+      return !server->closeSnapshotBox(ghost.id).has_value();
+    });
+
+    // A deferred opener remains hidden until both the conflicting close and its survivor reflow finish. Revealing it
+    // after a shorter close but during a longer windows_move would introduce a new actor into geometry still in flight.
+    std::erase_if(m_motion.deferredOpenings, [&](const LayoutMotion::DeferredOpening& opening) {
+      if (opening.view == nullptr
+          || !opening.view->mapped()
+          || opening.view->workspace() != this
+          || m_layout->columnOf(opening.view) < 0) {
+        return true;
+      }
+      const bool blocked = std::ranges::any_of(m_trackedCloseSnapshots, [&](const TrackedCloseSnapshot& snapshot) {
+        return snapshot.layoutManaged && boxesOverlap(snapshot.canvas, opening.to);
+      });
+      const bool geometryMoving =
+          m_motion.delay.animating() || m_motion.progress.animating() || !m_motion.views.empty();
+      if (blocked || geometryMoving) {
+        return false;
+      }
+      opening.view->resumeTiledOpening();
+      opening.view->presentTiledBox(opening.to);
+      opening.view->raiseToTop();
+      return true;
+    });
+
+    const auto releaseCommits = [&] {
+      for (LayoutMotion::ViewEntry& entry : m_motion.views) {
+        entry.view->releaseTiledCommitHold();
+      }
+    };
+
+    if (m_motion.delay.animating()) {
+      // A close can finish or be cancelled while the alignment delay runs. There is no longer a canvas to reserve, so
+      // begin the full configured movement immediately rather than waiting on a stale deadline.
+      if (m_motion.ghosts.empty()) {
+        m_motion.delay.snap(1.0);
+      } else {
+        m_motion.delay.tick(nowMsec);
+      }
+      syncCloseSnapshots();
+      if (m_motion.delay.animating()) {
+        return true;
+      }
+      releaseCommits();
+      if (!m_motion.views.empty() && m_motion.moveDurationMs > 0) {
+        m_motion.progress.snap(0.0);
+        m_motion.progress.retarget(1.0, m_motion.moveDurationMs, m_motion.moveCurve);
+        // Establish the movement clock on the exact frame the delay completes. Waiting for the following frame would
+        // make windows_move finish one refresh after the close clock it was aligned with.
+        m_motion.progress.tick(nowMsec);
+        m_motion.presentedProgress = 0.0;
+        for (const LayoutMotion::ViewEntry& entry : m_motion.views) {
+          entry.view->beginLayoutMotion(entry.direction);
+          entry.view->presentTiledBox(entry.from);
+        }
+        wlr_output_schedule_frame(m_group->output()->wlr());
+      }
     }
-    // Geometry never overshoots, so tiles cannot cross on an overshooting curve; shaders still read the raw value.
-    const double progress = std::clamp(m_motion.progress.current(), 0.0, 1.0);
+
+    const bool geometryTicked = m_motion.progress.tick(nowMsec);
+    const bool needsFinalPresentation =
+        !m_motion.progress.animating() && !m_motion.views.empty() && m_motion.ghosts.empty();
+    if (!geometryTicked && !needsFinalPresentation) {
+      syncCloseSnapshots();
+      return !m_motion.ghosts.empty() || !m_motion.deferredOpenings.empty();
+    }
+
+    // Logical geometry never reverses or overshoots even when its shader curve does. A close ghost keeps its own last
+    // non-empty rounded box for the final fraction of a frame, while survivors continue all the way to their target.
+    const double progress =
+        std::max(m_motion.geometryCurve.value(m_motion.progress.progress()), m_motion.presentedProgress);
+    m_motion.presentedProgress = progress;
+    for (LayoutMotion::GhostEntry& ghost : m_motion.ghosts) {
+      const wlr_box presented = interpolateBox(ghost.from, ghost.to, progress);
+      if (presented.width > 0 && presented.height > 0) {
+        ghost.presented = presented;
+      }
+    }
     for (const LayoutMotion::ViewEntry& entry : m_motion.views) {
       if (entry.view->mapped() && m_layout->columnOf(entry.view) >= 0) {
         entry.view->presentTiledBox(interpolateBox(entry.from, entry.to, progress));
       }
     }
-    Server* server = m_group->server();
-    std::erase_if(m_motion.ghosts, [&](LayoutMotion::GhostEntry& ghost) {
-      if (!server->closeSnapshotBox(ghost.id)) {
-        return true;
-      }
-      ghost.presented = interpolateBox(ghost.from, ghost.to, progress);
-      return false;
-    });
     syncCloseSnapshots();
     if (!m_motion.progress.animating()) {
+      if (!m_motion.ghosts.empty()) {
+        return true;
+      }
       std::vector<LayoutMotion::ViewEntry> views = std::move(m_motion.views);
       m_motion.views.clear();
       for (const LayoutMotion::ViewEntry& entry : views) {
-        entry.view->endLayoutMotion();
+        if (entry.view->mapped() && m_layout->columnOf(entry.view) >= 0) {
+          entry.view->completeLayoutMotion(entry.to);
+        } else {
+          entry.view->endLayoutMotion();
+        }
       }
-      if (m_motion.ghosts.empty()) {
-        return false;
-      }
+      m_motion.ghosts.clear();
+      m_motion.presentedProgress = 1.0;
+      m_motion.moveDurationMs = 0;
+      return !m_motion.deferredOpenings.empty();
     }
     return true;
   }
 
-  void Workspace::endLayoutMotion(bool preserveGhosts) {
+  void Workspace::endLayoutMotion(bool preserveCloseCoordination) {
     m_motion.progress.snap(1.0);
+    m_motion.delay.snap(1.0);
+    m_motion.presentedProgress = 1.0;
     std::vector<LayoutMotion::ViewEntry> views = std::move(m_motion.views);
     m_motion.views.clear();
-    if (!preserveGhosts) {
-      m_motion.ghosts.clear();
+    m_motion.ghosts.clear();
+    m_motion.moveDurationMs = 0;
+    if (!preserveCloseCoordination) {
+      for (const LayoutMotion::DeferredOpening& opening : m_motion.deferredOpenings) {
+        if (opening.view != nullptr && opening.view->mapped() && opening.view->workspace() == this) {
+          opening.view->resumeTiledOpening();
+          opening.view->presentTiledBox(opening.to);
+        }
+      }
+      m_motion.deferredOpenings.clear();
     }
     for (const LayoutMotion::ViewEntry& entry : views) {
       entry.view->endLayoutMotion();
@@ -1076,10 +1242,13 @@ namespace umbriel {
 
   void Workspace::trackCloseSnapshot(CloseSnapshotId id, const wlr_box& outputBox, bool layoutManaged) {
     const wlr_box canvas{outputBox.x - m_slideOffsetX, outputBox.y - m_slideOffsetY, outputBox.width, outputBox.height};
-    m_trackedCloseSnapshots.push_back({.id = id, .canvas = canvas, .layoutManaged = layoutManaged});
-    if (layoutManaged) {
-      m_pendingGhosts.push_back({.id = id, .box = canvas});
-    }
+    m_trackedCloseSnapshots.push_back({
+        .id = id,
+        .canvas = canvas,
+        .presented = canvas,
+        .layoutManaged = layoutManaged,
+        .newlyCaptured = layoutManaged,
+    });
     syncCloseSnapshots();
   }
 
@@ -1093,7 +1262,13 @@ namespace umbriel {
     });
 
     const bool visible = m_active || m_inSwitchTransition;
-    for (const TrackedCloseSnapshot& snapshot : m_trackedCloseSnapshots) {
+    for (TrackedCloseSnapshot& snapshot : m_trackedCloseSnapshots) {
+      const auto ghost = std::ranges::find_if(m_motion.ghosts, [&](const LayoutMotion::GhostEntry& entry) {
+        return entry.id == snapshot.id;
+      });
+      if (ghost != m_motion.ghosts.end()) {
+        snapshot.presented = ghost->presented;
+      }
       const int canvasX = snapshot.canvas.x + m_slideOffsetX;
       const int canvasY = snapshot.canvas.y + m_slideOffsetY;
       if (!visible) {
@@ -1106,29 +1281,15 @@ namespace umbriel {
         );
         continue;
       }
-      const auto running = std::ranges::find_if(m_motion.ghosts, [&](const LayoutMotion::GhostEntry& ghost) {
-        return ghost.id == snapshot.id;
-      });
-      if (running != m_motion.ghosts.end()) {
-        server->presentCloseSnapshotMask(
-            snapshot.id,
-            {running->presented.x + m_slideOffsetX, running->presented.y + m_slideOffsetY, running->presented.width,
-             running->presented.height},
-            canvasX, canvasY, running->constrained
-        );
-        continue;
-      }
-      const auto pending =
-          std::ranges::find_if(m_pendingGhosts, [&](const PendingGhost& ghost) { return ghost.id == snapshot.id; });
-      if (pending != m_pendingGhosts.end()) {
-        server->presentCloseSnapshotMask(
-            snapshot.id,
-            {pending->box.x + m_slideOffsetX, pending->box.y + m_slideOffsetY, pending->box.width, pending->box.height},
-            canvasX, canvasY, false
-        );
-      } else {
-        server->presentCloseSnapshotMask(snapshot.id, {}, canvasX, canvasY, true);
-      }
+      server->presentCloseSnapshot(
+          snapshot.id,
+          {
+              snapshot.presented.x + m_slideOffsetX,
+              snapshot.presented.y + m_slideOffsetY,
+              snapshot.presented.width,
+              snapshot.presented.height,
+          }
+      );
     }
   }
 
@@ -1143,11 +1304,25 @@ namespace umbriel {
     }
     m_trackedCloseSnapshots.clear();
     m_motion.ghosts.clear();
-    m_pendingGhosts.clear();
+    m_motion.delay.snap(1.0);
+    m_motion.presentedProgress = 1.0;
+    for (const LayoutMotion::DeferredOpening& opening : m_motion.deferredOpenings) {
+      if (opening.view != nullptr && opening.view->mapped()) {
+        opening.view->resumeTiledOpening();
+      }
+    }
+    m_motion.deferredOpenings.clear();
   }
 
   void Workspace::releaseLayoutMotion(View* view) {
     std::erase_if(m_motion.views, [view](const LayoutMotion::ViewEntry& entry) { return entry.view == view; });
+    if (std::erase_if(
+            m_motion.deferredOpenings,
+            [view](const LayoutMotion::DeferredOpening& opening) { return opening.view == view; }
+        )
+        > 0) {
+      view->resumeTiledOpening();
+    }
   }
 
   const AnimatedValue* Workspace::layoutMotionValue() const {
