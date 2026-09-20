@@ -124,12 +124,10 @@ effect, and runs `windows_out`. Established neighbours alone interpolate their
 old and new boxes using the `windows_move` duration and curve. None of these
 three clocks caps another.
 
-This separation can produce temporary visual overlap. An opener stays above
-established tiles as they move, while an ordinary tiled close snapshot uses an
-output-owned underlay beneath every live workspace. Survivors therefore cover
-the closing image progressively instead of passing behind it. The lifecycle
-shader canvas remains fixed in either case, so reflow cannot squeeze or stretch
-it and a fast movement transition can complete during a slower lifecycle
+This separation can produce temporary visual overlap while established tiles
+move beneath an opener or close snapshot. The overlap is intentional. It keeps
+the lifecycle shader canvas from being squeezed or stretched by reflow and
+lets a fast movement transition complete during a slower opening or closing
 effect. Closing a card from overview follows the same `windows_out` lifecycle;
 entering or leaving overview is owned by the `overview` event.
 
@@ -154,18 +152,15 @@ The isolated running-compositor checks `180_animation_shaders`,
 `181_animation_shader_events`, `182_animation_shader_composition`,
 `192_tiled_close_lifetime`, `193_tiled_open_reflow_timing`,
 `194_tiled_close_no_reflow`, `195_tiled_open_shader_box`,
-`196_tiled_lifecycle_move_timing`, `197_consume_expel_close_stacking`, and
-`330_overview_close_fade` inspect
+`196_tiled_lifecycle_move_timing`, and `330_overview_close_fade` inspect
 shader-specific intermediate pixels, file-watcher reloads, every animation
 event, both layer lifecycle directions, rotated fractional-scale UVs, nested
 sampling, output containment, invalid-GLSL fallback, and a tiled close effect
 that outlasts its configured `windows_move` timeline. They also verify that
 tiled lifecycle actors retain stable boxes while established neighbours follow
-the independent `windows_move` timeline. They also verify that live tiles cover
-the tiled close underlay and that consume and expel retain their crossing order,
-including when a close interrupts either motion. The overview check also
-verifies that a closing card drops its copied movement effect before
-`windows_out` samples the captured client buffer. The
+the independent `windows_move` timeline. The overview check also verifies that
+a closing card drops its copied movement effect before `windows_out` samples
+the captured client buffer. The
 `183_animation_shader_lifetime` and `184_animation_squash` checks also cover
 program retention across reloads, close-during-open snapshots, shader removal,
 and the bundled squash effect's intermediate pixels. Bright-green shadow

@@ -49,9 +49,6 @@ namespace umbriel {
     // is what keeps a scrolled or animating view from rendering on, or entering, a neighbouring output. Positioned at
     // the layout origin, so root-local coordinates are layout coordinates.
     [[nodiscard]] wlr_scene_tree* viewRoot() const { return m_viewRoot; }
-    // Ordinary tiled close snapshots live below every workspace tree. Their captured windows_out canvas remains
-    // stable while live survivors reflow over it.
-    [[nodiscard]] wlr_scene_tree* tiledCloseRoot() const { return m_tiledCloseRoot; }
     [[nodiscard]] wlr_scene_tree* fullscreenRoot() const { return m_fullscreenRoot; }
     [[nodiscard]] wlr_scene_tree* pinnedRoot() const { return m_pinnedRoot; }
     [[nodiscard]] wlr_scene_tree* pinnedShadowRoot() const { return m_pinnedShadowRoot; }
@@ -151,7 +148,6 @@ namespace umbriel {
     wlr_scene_tree* m_layerTrees[kLayerCount]{};
     wlr_scene_tree* m_popupTree = nullptr;
     wlr_scene_tree* m_viewRoot = nullptr;
-    wlr_scene_tree* m_tiledCloseRoot = nullptr;
     wlr_scene_tree* m_fullscreenRoot = nullptr;
     wlr_scene_tree* m_pinnedRoot = nullptr;
     wlr_scene_tree* m_pinnedShadowRoot = nullptr;

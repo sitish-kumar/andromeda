@@ -714,7 +714,9 @@ style = "popin"                                 # popin, zoom, slide, fade, or n
 scale = 0.85                                    # Popin start scale, 0.1-1.0
 # shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
 
-# Window closing animation
+# Window closing animation. The snapshot keeps its captured box while
+# established neighbours reflow independently using windows_move. Closing a
+# card from overview also uses this event.
 [animation.windows_out]
 enabled = true
 duration_ms = 150

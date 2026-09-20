@@ -84,8 +84,6 @@ namespace umbriel {
     }
     m_popupTree = wlr_scene_tree_create(m_server->shellLayerTree(ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY));
     m_viewRoot = wlr_scene_tree_create(m_server->xdgTree());
-    // Workspace roots are created later by WorkspaceGroup, so this first child remains their structural underlay.
-    m_tiledCloseRoot = wlr_scene_tree_create(m_viewRoot);
     m_fullscreenRoot = wlr_scene_tree_create(m_server->fullscreenTree());
     m_pinnedRoot = wlr_scene_tree_create(m_server->pinnedTree());
     m_pinnedShadowRoot = wlr_scene_tree_create(m_server->pinnedShadowTree());
@@ -713,7 +711,6 @@ namespace umbriel {
       }
     }
     m_viewRoot = nullptr;
-    m_tiledCloseRoot = nullptr;
     m_fullscreenRoot = nullptr;
     m_pinnedRoot = nullptr;
     m_pinnedShadowRoot = nullptr;
