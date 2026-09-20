@@ -756,8 +756,19 @@ namespace umbriel {
     setFadeAlpha(1.0F);
   }
 
+  bool View::tiledOpeningActive() const {
+    return m_mapped
+        && !m_inScratchpad
+        && m_tiled
+        && !layoutFullscreen()
+        && m_workspace != nullptr
+        && m_workspace->layout().columnOf(this) >= 0
+        && m_fade.animating()
+        && m_fade.target() > m_fade.from();
+  }
+
   std::optional<double> View::openingProgress() const {
-    if (!m_mapped || m_inScratchpad || !m_fade.animating() || m_fade.target() <= m_fade.from()) {
+    if (!tiledOpeningActive()) {
       return std::nullopt;
     }
     const double distance = m_fade.target() - m_fade.from();
@@ -1024,6 +1035,11 @@ namespace umbriel {
   }
 
   void View::presentTiledBox(const wlr_box& box) {
+    if (tiledOpeningActive() && m_presentation.animating()) {
+      // windows_in owns this view's final slot. A resize tween started by the arrange that admitted it would otherwise
+      // win shader selection and keep applying windows_move on top of the lifecycle presentation.
+      m_presentation.snapTo(m_presentation.width(), m_presentation.height());
+    }
     wlr_box presented = box;
     if (openingScaleActive()) {
       const double scale = std::lerp(m_openingScale, 1.0, std::clamp(m_fade.current(), 0.0, 1.0));
@@ -1207,9 +1223,17 @@ namespace umbriel {
       if (Overview* overview = m_server->overview(); overview != nullptr && overview->active()) {
         overview->onViewPresentationChanged(this);
       }
-      // A tiled popin/zoom open shrinks its inset toward the slot with the fade; the motion presents it while it runs.
-      if (m_openingScale < 1.0 && !m_layoutMotion) {
-        if (openingScaleActive() && m_workspace != nullptr) {
+      // A tiled lifecycle view owns its final slot while the fade runs. Popin/zoom applies an inset within that slot;
+      // custom shaders receive the stable final-sized canvas. Established peers own their independent layout motion.
+      const bool finishingTiledOpen = m_mapped
+          && !m_inScratchpad
+          && m_tiled
+          && !layoutFullscreen()
+          && m_workspace != nullptr
+          && m_workspace->layout().columnOf(this) >= 0
+          && m_fade.target() > m_fade.from();
+      if (finishingTiledOpen && !m_layoutMotion) {
+        if (tiledOpeningActive()) {
           presentTiledBox(m_workspace->presentedTiledBox(this));
         } else {
           dropOpeningInset();
@@ -1985,9 +2009,8 @@ namespace umbriel {
     }
 
     // Under the output's clipped root, so a snapshot of a view straddling the shared edge stays contained while it
-    // fades. Server::removeOutput purges this output's snapshots before the Output is destroyed. The tree sits at the
-    // presented box so a layout motion can re-present it in output-root coordinates; the buffers keep their offsets
-    // relative to the view root inside the content subtree.
+    // fades. Server::removeOutput purges this output's snapshots before the Output is destroyed. The tree remains at
+    // the captured presented box in output-root coordinates; the buffers keep their offsets inside the content subtree.
     wlr_scene_tree* snap = wlr_scene_tree_create(output->viewRoot());
     if (snap == nullptr) {
       return kInvalidCloseSnapshot;
@@ -2048,6 +2071,9 @@ namespace umbriel {
     }
 
     wlr_scene_node_copy_animations_for_snapshot(&snap->node, &m_sceneTree->node);
+    // A close snapshot owns captured geometry and its windows_out lifecycle. Keep a possible interrupted windows_in
+    // effect, but do not freeze windows_move into the snapshot while live peers start their independent reflow.
+    wlr_scene_node_set_animation(&snap->node, static_cast<unsigned>(AnimationEvent::WindowsMove), nullptr, nullptr);
     const auto shadow = m_decoration.snapshotShadow(output->viewRoot(), &snap->node);
     const CloseSnapshotId id = m_server->animateCloseSnapshot(
         output, snap, content, std::move(snapBorders), m_presentedBox, std::nullopt, shadow
@@ -2658,8 +2684,9 @@ namespace umbriel {
         m_fade.snap(0.0);
         m_fade.retarget(1.0, open.durationMs, open.curve);
 
-        // A non-fullscreen tiled layout member gets its box from the workspace motion; popin/zoom scale inside that
-        // box and slide only fades. Floating and fullscreen windows keep tweening themselves.
+        // A non-fullscreen tiled layout member owns its final slot throughout windows_in; popin/zoom scales inside that
+        // slot and slide only fades. Established peers reflow independently through windows_move. Floating and
+        // fullscreen windows keep tweening themselves.
         const bool tiledMember =
             m_tiled && !layoutFullscreen() && m_workspace != nullptr && m_workspace->layout().columnOf(this) >= 0;
         if (!m_customFade && tiledMember) {
@@ -2787,17 +2814,10 @@ namespace umbriel {
         m_workspace->setFocusedView(nullptr);
       }
     }
-    const CloseSnapshotId ghost = beginCloseAnimation();
+    (void)beginCloseAnimation();
     // The closing snapshot must retain any in-flight opening shader first.
     wlr_scene_node_clear_animations(&m_sceneTree->node);
     cancelFadeAnimation();
-    // The ghost joins the workspace motion at the box it was captured from, before the size cancel below moves on.
-    if (ghost != kInvalidCloseSnapshot
-        && m_tiled
-        && m_workspace != nullptr
-        && m_workspace->layout().columnOf(this) >= 0) {
-      m_workspace->trackCloseSnapshot(ghost, m_presentedBox);
-    }
     cancelSizeAnimation();
     cancelPositionAnimation();
     m_decoration.setBordersEnabled(false);

@@ -986,6 +986,9 @@ namespace umbriel {
       return;
     }
     wlr_scene_node_copy_animations_for_snapshot(&snapshot->node, &card.tree->node);
+    // The frozen card owns its captured geometry and windows_out lifecycle. Retain an interrupted windows_in effect,
+    // but do not carry the live card's windows_move effect into the close snapshot.
+    wlr_scene_node_set_animation(&snapshot->node, static_cast<unsigned>(AnimationEvent::WindowsMove), nullptr, nullptr);
     (void)m_server->animateCloseSnapshot(card.owner->output, snapshot, snapshot, std::move(borders), {});
     wlr_output_schedule_frame(card.owner->output->wlr());
   }

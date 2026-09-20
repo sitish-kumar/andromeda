@@ -30,10 +30,10 @@ opening, closing, scratchpad, layers, workspaces, then overview.
 | Event | Target and timeline owner |
 | --- | --- |
 | `windows_in` | View tree and existing map fade |
-| `windows_out` | Close snapshot and existing close fade |
+| `windows_out` | Close snapshot, including a card closed from overview, and existing close fade |
 | `windows_move` | View tree and position/presentation-size animation |
 | `workspaces` | Output workspace view root and workspace slide |
-| `overview` | Per-output overview tree and zoom/row settling |
+| `overview` | Per-output overview tree when entering or leaving overview and zoom/row settling |
 | `scratchpad` | View show/hide fade and separate dim/blur backdrop targets |
 | `border` | Border tree and focus-color animation |
 | `dim_unfocused` | View tree and focus-opacity animation |
@@ -117,16 +117,19 @@ destroyed with the snapshot. Its source association is detached safely when
 either node is destroyed. Analytic fallback shadows follow the native lifecycle
 fade even when a custom shader replaces the window's own fade.
 
-A tiled opener, close snapshot, and surviving neighbours retain one shared
-geometry progress, preserving their separation throughout reflow. That progress
-cannot advance beyond an opener's eased `windows_in` progress or a snapshot's
-eased `windows_out` progress. If `windows_move` finishes first, the workspace
-keeps applying those lifecycle progress barriers while their effects remain
-active. Restarting layout motion records the current opening and closing
-progress as the next segment's origin, so interruption does not rewind an
-effect or let geometry jump ahead of it. When a live tiled view reflows, a close
-snapshot shrinks with that reflow; when no live tiled view moves, it keeps its
-captured box until `windows_out` finishes.
+Tiled lifecycle actors remain outside layout-motion interpolation. An opener is
+presented in its current final layout box while `windows_in` owns its visual
+transition. A close snapshot keeps its captured box, drops any copied movement
+effect, and runs `windows_out`. Established neighbours alone interpolate their
+old and new boxes using the `windows_move` duration and curve. None of these
+three clocks caps another.
+
+This separation can produce temporary visual overlap while established tiles
+move beneath an opener or close snapshot. The overlap is intentional. It keeps
+the lifecycle shader canvas from being squeezed or stretched by reflow and
+lets a fast movement transition complete during a slower opening or closing
+effect. Closing a card from overview follows the same `windows_out` lifecycle;
+entering or leaving overview is owned by the `overview` event.
 
 Scene destruction releases addon references. Renderer destruction invalidates
 remaining programs without accessing a dead context; renderer replacement
@@ -147,14 +150,17 @@ source-content reload effects, dependency deduplication, and dependency removal.
 
 The isolated running-compositor checks `180_animation_shaders`,
 `181_animation_shader_events`, `182_animation_shader_composition`,
-`192_tiled_close_lifetime`, `193_tiled_open_reflow_timing`, and
-`194_tiled_close_no_reflow` inspect
+`192_tiled_close_lifetime`, `193_tiled_open_reflow_timing`,
+`194_tiled_close_no_reflow`, `195_tiled_open_shader_box`,
+`196_tiled_lifecycle_move_timing`, and `330_overview_close_fade` inspect
 shader-specific intermediate pixels, file-watcher reloads, every animation
 event, both layer lifecycle directions, rotated fractional-scale UVs, nested
 sampling, output containment, invalid-GLSL fallback, and a tiled close effect
-that outlasts its configured `windows_move` timeline. They also verify that a
-tiled opener paces shared reflow through `windows_in` and that a no-reflow close
-keeps its captured box. The
+that outlasts its configured `windows_move` timeline. They also verify that
+tiled lifecycle actors retain stable boxes while established neighbours follow
+the independent `windows_move` timeline. The overview check also verifies that
+a closing card drops its copied movement effect before `windows_out` samples
+the captured client buffer. The
 `183_animation_shader_lifetime` and `184_animation_squash` checks also cover
 program retention across reloads, close-during-open snapshots, shader removal,
 and the bundled squash effect's intermediate pixels. Bright-green shadow

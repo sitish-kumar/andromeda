@@ -2,10 +2,6 @@
 
 #include <array>
 
-extern "C" {
-#include <wlr/util/box.h>
-}
-
 struct wlr_scene_shadow;
 struct wlr_scene_tree;
 struct wlr_scene_node;
@@ -16,11 +12,6 @@ namespace umbriel {
     wlr_scene_tree* tree = nullptr;
     wlr_scene_shadow* node = nullptr;
     std::array<float, 4> color{};
-    // Node size and hole at capture time, so a snapshot presented at another box can grow or shrink both by the
-    // same delta.
-    int width = 0;
-    int height = 0;
-    wlr_box hole{};
   };
 
   // Owns the desired-state logic for one SceneFX drop-shadow node. The node is a

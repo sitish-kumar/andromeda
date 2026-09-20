@@ -363,21 +363,13 @@ namespace umbriel {
       std::string style = "fade";
       AnimationEvent event = AnimationEvent::WindowsOut;
     };
-    // `content` is the subtree holding the copied buffers; present() scales them into the box it is given (pass
-    // `tree` when there is no separate content tree). `box` is the ghost's presented box in output-root coordinates;
-    // an empty box marks a snapshot that is never re-presented. Returns kInvalidCloseSnapshot when the snapshot is
-    // dropped.
+    // `content` is the subtree holding the copied buffers (pass `tree` when there is no separate content tree). A
+    // positive `box` clips that subtree to the captured content extent. Returns kInvalidCloseSnapshot when the snapshot
+    // is dropped.
     [[nodiscard]] CloseSnapshotId animateCloseSnapshot(
         Output* output, wlr_scene_tree* tree, wlr_scene_tree* content, std::vector<BorderSnapshot> borders,
         const wlr_box& box, std::optional<CloseSnapshotOverrides> overrides = std::nullopt, ShadowSnapshot shadow = {}
     );
-    // Move and resize a fading snapshot; a layout motion drives its ghost through this every frame.
-    void presentCloseSnapshot(CloseSnapshotId id, const wlr_box& box);
-    // The box a snapshot is currently presented at, nullopt once it has been reaped.
-    [[nodiscard]] std::optional<wlr_box> closeSnapshotBox(CloseSnapshotId id) const;
-    // Eased lifecycle progress in [0, 1], nullopt once the snapshot has been reaped. Tiled layout motion uses this as
-    // a barrier so it cannot collapse a ghost before the snapshot's own close effect reaches the same point.
-    [[nodiscard]] std::optional<double> closeSnapshotProgress(CloseSnapshotId id) const;
 
   private:
     static void
@@ -601,9 +593,7 @@ namespace umbriel {
     uint64_t m_lastAnimTickMsec = 0;
     std::chrono::steady_clock::time_point m_startTime;
 
-    // A fading copy of a closed window's scene tree. Owns that tree and destroys
-    // it once the fade completes. A snapshot with a presentable box draws its rings, shadow and scaled content at
-    // whatever box present() last set.
+    // A fading copy of a closed window's scene tree. Owns that tree and destroys it once the fade completes.
     class CloseSnapshot : public Animatable {
     public:
       CloseSnapshot(
@@ -614,9 +604,6 @@ namespace umbriel {
       ~CloseSnapshot() override;
 
       [[nodiscard]] CloseSnapshotId id() const { return m_id; }
-      [[nodiscard]] const wlr_box& box() const { return m_box; }
-      [[nodiscard]] double progress() const;
-      void present(const wlr_box& box);
 
       [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
       bool tickAnimations(uint64_t nowMsec) override;
@@ -629,25 +616,17 @@ namespace umbriel {
       Server* m_server = nullptr;
       CloseSnapshotId m_id = kInvalidCloseSnapshot;
       wlr_scene_tree* m_tree = nullptr;
-      wlr_scene_tree* m_content = nullptr;
       Output* m_output = nullptr;
       AnimatedValue m_alpha;
       AnimationEvent m_event = AnimationEvent::WindowsOut;
-      // Slide style: vertical offset of the whole ghost, 0 to 80.
+      // Slide style: vertical offset of the whole snapshot, 0 to 80.
       AnimatedValue m_slide;
       int m_origX = 0;
       int m_origY = 0;
-      wlr_box m_from{};
-      wlr_box m_box{};
-      // Each copied buffer with the opacity, position and size it was captured at, relative to the content tree.
-      // present() scales them into the current box the way a live view scales its buffer during a size animation.
+      // Each copied buffer and its captured opacity.
       struct Buffer {
         wlr_scene_buffer* node = nullptr;
         float baseOpacity = 1.0F;
-        int x = 0;
-        int y = 0;
-        int width = 0;
-        int height = 0;
       };
       std::vector<Buffer> m_buffers;
       std::vector<BorderSnapshot> m_borders;

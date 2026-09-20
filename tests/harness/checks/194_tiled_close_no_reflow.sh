@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# A closing tiled snapshot keeps its captured geometry when no survivor reflows into its space. windows_out still owns
-# its opacity and cleanup; windows_move must not invent motion solely to collapse it.
+# A closing tiled snapshot keeps its captured geometry whether survivors reflow into its space or stay still.
+# windows_out owns its opacity and cleanup; windows_move must never reshape the lifecycle snapshot.
 set -euo pipefail
 
 readonly IMAGE="$UMBRIEL_RUNTIME_DIR/tiled-close-no-reflow.png"
@@ -43,8 +43,8 @@ EOF
 "$UMBRIEL" msg config-reload > /dev/null
 
 spawn() {
-  local title=$1 color=$2
-  FILL_COLOR="$color" "$UMBRIEL_UNMAP_CLIENT" "$title" 600 700 > "$UMBRIEL_RUNTIME_DIR/$title.log" 2>&1 &
+  local title=$1 color=$2 width=${3:-600}
+  FILL_COLOR="$color" "$UMBRIEL_UNMAP_CLIENT" "$title" "$width" 700 > "$UMBRIEL_RUNTIME_DIR/$title.log" 2>&1 &
   for _ in $(seq 80); do
     window=$("$UMBRIEL" windows --json | jq -c --arg title "$title" '.[] | select(.title == $title)')
     [[ -n $window ]] && return 0
@@ -63,6 +63,11 @@ sample() {
 is_blue() {
   local red=$1 green=$2 blue=$3
   ((blue > 50 && red < 30 && green < 30))
+}
+
+has_blue_over_red() {
+  local red=$1 green=$2 blue=$3
+  ((blue > 50 && blue > red + 20 && green < 30))
 }
 
 is_red() {
@@ -188,4 +193,58 @@ if ! is_black "$near_red" "$near_green" "$near_blue" \
   exit 1
 fi
 
-echo "stationary-neighbour and lone tiled closes kept captured geometry until windows_out finished"
+# In master, closing the stack tile makes the red master expand through the blue snapshot's old slot. Blue must remain
+# across the whole captured box while that independent survivor reflow completes.
+sed -i 's/^mode = "scrolling"$/mode = "master"/' "$UMBRIEL_CONFIG"
+"$UMBRIEL" msg config-reload > /dev/null
+spawn tiled-close-reflow-survivor 0xFFFF0000 1200
+sleep 0.25
+spawn tiled-close-reflow-snapshot 0xFF0000FF 1200
+sleep 0.3
+closing=$("$UMBRIEL" windows --json | jq -c '.[] | select(.title == "tiled-close-reflow-snapshot")')
+if [[ -z $closing ]]; then
+  echo "could not resolve reflowing close tile"
+  exit 1
+fi
+id=$(jq -r .id <<< "$closing")
+x=$(jq -r .x <<< "$closing")
+y=$(jq -r .y <<< "$closing")
+w=$(jq -r .w <<< "$closing")
+h=$(jq -r .h <<< "$closing")
+"$UMBRIEL" msg "window-close:$id" > /dev/null
+for _ in $(seq 80); do
+  grep -q '^unmapped$' "$UMBRIEL_RUNTIME_DIR/tiled-close-reflow-snapshot.log" && break
+  sleep 0.025
+done
+if ! grep -q '^unmapped$' "$UMBRIEL_RUNTIME_DIR/tiled-close-reflow-snapshot.log"; then
+  echo "reflowing close tile did not unmap"
+  exit 1
+fi
+
+# IPC can still report the fixed client's committed width. The master stack slot reaches the known headless output
+# edge, so derive its captured width from that edge.
+slot_w=$((1280 - x))
+near_x=$((x + slot_w / 4))
+far_x=$((x + 3 * slot_w / 4))
+mid_y=$((y + h / 2))
+sleep 0.8
+grim "$IMAGE"
+read -r near_red near_green near_blue < <(sample "$near_x" "$mid_y")
+read -r far_red far_green far_blue < <(sample "$far_x" "$mid_y")
+if ! has_blue_over_red "$near_red" "$near_green" "$near_blue" \
+    || ! has_blue_over_red "$far_red" "$far_green" "$far_blue"; then
+  echo "windows_move reshaped the reflowing close snapshot: near=$near_red $near_green $near_blue, far=$far_red $far_green $far_blue"
+  exit 1
+fi
+
+sleep 1.3
+grim "$IMAGE"
+read -r near_red near_green near_blue < <(sample "$near_x" "$mid_y")
+read -r far_red far_green far_blue < <(sample "$far_x" "$mid_y")
+if ! is_red "$near_red" "$near_green" "$near_blue" \
+    || ! is_red "$far_red" "$far_green" "$far_blue"; then
+  echo "reflowing close snapshot did not clean up to reveal its settled survivor"
+  exit 1
+fi
+
+echo "stationary, lone, and reflowing tiled closes kept captured geometry until windows_out finished"

@@ -187,11 +187,9 @@ namespace umbriel {
     // Pull the scroll offset back into [0, maxScroll]. For removals and restored offsets only: a touchpad swipe
     // overscrolls on purpose.
     void clampScrollToRange();
-    // Every tiled member and closing ghost on this workspace is presented from one transition: each box interpolates
-    // between the layout it left and the layout it reached with a shared progress, so gaps survive the whole motion.
-    // Opening and closing lifecycle progress can hold that shared geometry back. A closing window's snapshot joins at
-    // the box it was captured from (output-root coordinates).
-    void trackCloseSnapshot(CloseSnapshotId id, const wlr_box& outputBox);
+    // Established tiled members interpolate between the layout they left and the layout they reached with one
+    // windows_move progress, so gaps between live peers survive the whole motion. Lifecycle views and snapshots own
+    // their final or captured boxes independently.
     // Drop `view` from the running motion without touching its presentation; the caller now owns its box.
     void releaseLayoutMotion(View* view);
     // The running motion's progress, for the windows_move shader; null when no motion runs.
@@ -264,33 +262,11 @@ namespace umbriel {
         wlr_box from{};
         wlr_box to{};
         float direction = 1.0F;
-        // windows_in progress at the start of this geometry segment. A layout interruption rebases the remaining
-        // opening transition from the box currently being presented instead of rewinding it.
-        std::optional<double> openingProgressFrom;
-      };
-      struct GhostEntry {
-        CloseSnapshotId id = kInvalidCloseSnapshot;
-        wlr_box from{};
-        wlr_box to{};
-        // Snapshot progress at the start of this geometry segment. Layout interruption starts a fresh segment from
-        // the currently presented box without rewinding the close effect that owns the ghost.
-        double closeProgressFrom = 0.0;
       };
       AnimatedValue progress;
-      // Last shared progress whose live ghosts all had nonzero geometry. An overshooting close curve may reach its
-      // endpoint before its clock finishes; retaining this value keeps the snapshot present without moving peers
-      // through it.
-      double presentedProgress = 0.0;
       std::vector<ViewEntry> views;
-      std::vector<GhostEntry> ghosts;
     };
     LayoutMotion m_motion;
-    // Ghosts captured since the last arrange, in workspace-local coordinates (slide offset removed).
-    struct PendingGhost {
-      CloseSnapshotId id = kInvalidCloseSnapshot;
-      wlr_box box{};
-    };
-    std::vector<PendingGhost> m_pendingGhosts;
   };
 
   class WorkspaceGroup : public Animatable {

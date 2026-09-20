@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# Tiled windows and closing snapshots on a workspace animate from one shared transition, so no two of them ever
-# overlap mid-motion: opens, closes, an interrupted maximize, and a close-everything reflow, in every layout mode,
-# with the default popin open and at both a half and the default column extent in scrolling. Every window is 50% red
-# over the black headless background with a pure green border ring, so a single content layer never reads above
-# r = 0.5 while two read r = 0.5 + 0.25 * alpha, and a ring crossing another window's content mixes red with green.
-# A frame with either kind of pixel is a failure.
+# Established tiled peers share one windows_move transition and remain disjoint through interrupted geometry changes.
+# Lifecycle actors are deliberately outside this contract, so opens and closes settle before sampling. Every window is
+# 50% red over black with a green border ring. Two content layers raise red above 0.5, while a border crossing content
+# mixes red with green. A blue tint supplied only by windows_move also proves the sampled transition really ran.
 set -euo pipefail
 
 readonly CLIENT="${UMBRIEL_UNMAP_CLIENT:-./build-debug/tests/unmap-client}"
@@ -16,8 +14,7 @@ cat >> "$UMBRIEL_CONFIG" <<'EOF'
 [layout]
 mode = "scrolling"
 
-# Half-width columns make opening, closing and maximizing reflow visible neighbours; the scrolling pass at the default
-# extent covers the strip scrolling a new full-width column into view.
+# Half-width columns make maximizing reflow visible neighbours.
 [layout.scrolling]
 default_extent_fraction = 0.5
 
@@ -27,6 +24,9 @@ curve = "linear"
 
 [animation.windows_in]
 style = "popin"
+
+[animation.windows_move]
+shader = "layout-motion.glsl"
 
 [appearance]
 border_width = 2
@@ -41,6 +41,12 @@ outer = "#00FF00FF"
 [appearance.shadow]
 enabled = false
 EOF
+cat > "$UMBRIEL_RUNTIME_DIR/layout-motion.glsl" <<'GLSL'
+vec4 animation(vec2 uv) {
+    vec4 source = umbriel_sample(uv);
+    return vec4(source.r, source.g, source.a, source.a);
+}
+GLSL
 "$UMBRIEL" msg config-reload > /dev/null
 
 spawn() {
@@ -65,14 +71,19 @@ window_id() {
 
 # Fraction of the output covered by pixels only two red layers, or a ring over red content, can produce.
 overlap_pixels() {
-  magick "$1" -alpha off -fx '(r > 0.56 && g < 0.1 && b < 0.1) || (r > 0.1 && g > 0.2) ? 1 : 0' \
+  magick "$1" -alpha off -fx '(r > 0.56 && g < 0.1) || (r > 0.1 && g > 0.2) ? 1 : 0' \
     -format '%[fx:mean]' info:
+}
+
+move_marker_pixels() {
+  magick "$1" -alpha off -fx 'b > 0.2 && r > 0.2 ? 1 : 0' -format '%[fx:round(mean*w*h)]' info:
 }
 
 # Fourteen frames 100 ms apart, captured first and analysed afterwards so the samples span the whole 1500 ms motion.
 sample() {
   local phase=$1
   local i
+  local saw_marker=0
   for i in $(seq 14); do
     grim "$SHOTS/$phase-$i.png"
     sleep 0.1
@@ -84,12 +95,22 @@ sample() {
       echo "$phase: frame $i shows overlapping tiles (overlap fraction $overlap): $SHOTS/$phase-$i.png"
       exit 1
     fi
+    if (( $(move_marker_pixels "$SHOTS/$phase-$i.png") > 1000 )); then
+      saw_marker=1
+    fi
   done
+  if ((!saw_marker)); then
+    echo "$phase: no windows_move shader marker appeared during the established-peer transition"
+    exit 1
+  fi
 }
 
-# Capturing and analysing a phase takes longer than the 1500 ms motion, so only a short margin is needed after it.
-settle() {
+settle_motion() {
   sleep 0.3
+}
+
+settle_lifecycle() {
+  sleep 1.7
 }
 
 close_all() {
@@ -109,39 +130,30 @@ run_mode() {
 
   spawn "motion-$tag-a"
   wait_for_windows 1
-  settle
+  settle_lifecycle
 
   spawn "motion-$tag-b"
-  sample "$tag-open-b"
   wait_for_windows 2
-  settle
+  settle_lifecycle
 
   spawn "motion-$tag-c"
-  sample "$tag-open-c"
   wait_for_windows 3
-  settle
-
-  "$UMBRIEL" msg "window-close:$(window_id "motion-$tag-b")" > /dev/null
-  sample "$tag-close-b"
-  wait_for_windows 2
-  settle
+  settle_lifecycle
 
   "$UMBRIEL" msg "window-focus:$(window_id "motion-$tag-a")" > /dev/null
   "$UMBRIEL" msg window-toggle-maximize > /dev/null
   sleep 0.3
   "$UMBRIEL" msg window-toggle-maximize > /dev/null
   sample "$tag-maximize-interrupt"
-  settle
+  settle_motion
 
   close_all
-  sample "$tag-close-all"
   wait_for_windows 0
-  settle
+  sleep 1.8
 }
 
 run_mode scrolling 0.5
-run_mode scrolling 1.0
 run_mode dwindle 0.5
 run_mode master 0.5
 
-echo "tiled windows and closing snapshots never overlapped while animating in scrolling, dwindle, and master"
+echo "established tiled peers used windows_move and remained disjoint in scrolling, dwindle, and master"

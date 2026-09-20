@@ -73,9 +73,12 @@ navigation cannot extend the zoom deadline.
 Unmap is the one transition that cannot remain live because the client buffer
 may disappear immediately. Before removing an unmapped card, the overview
 freezes its already-scaled buffers and borders into a scene snapshot. That tree
-uses the same `Server::CloseSnapshot` animation owner, easing, half-duration,
-and starting buffer opacity as a close on the normal workspace. Overview owns
-only the projection into card coordinates, not a separate close timeline.
+uses the same `Server::CloseSnapshot` animation owner, `windows_out` timing and
+effect, and starting buffer opacity as a close on the normal workspace. It
+keeps the captured card geometry while the remaining cards reflow independently.
+Overview owns only the projection into card coordinates, not a separate close
+timeline. The `overview` event controls entering and leaving overview, not the
+close of an individual card.
 
 ## Decoration and clipping
 
@@ -172,8 +175,9 @@ The relevant checks are:
   for adjacent focus reassignment when the focused window closes in the
   overview.
 - [`tests/harness/checks/330_overview_close_fade.sh`](../../tests/harness/checks/330_overview_close_fade.sh)
-  for a card remaining visible after unmap and disappearing when the shared
-  close snapshot settles.
+  for a card dropping its live movement effect, running the configured
+  `windows_out` shader after unmap, and disappearing when the close snapshot
+  settles.
 - [`tests/harness/checks/340_overview_focus_motion.sh`](../../tests/harness/checks/340_overview_focus_motion.sh)
   for selected-column focus and reveal beginning during the closing zoom.
 - [`tests/harness/checks/361_overview_focus_marker.sh`](../../tests/harness/checks/361_overview_focus_marker.sh)

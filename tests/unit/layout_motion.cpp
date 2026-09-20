@@ -7,8 +7,6 @@
 #include <vector>
 
 using umbriel::boxesOverlap;
-using umbriel::collapseBox;
-using umbriel::confineToNeighbours;
 using umbriel::interpolateBox;
 using umbriel::keepsSeparation;
 using umbriel::MotionBox;
@@ -49,40 +47,6 @@ namespace {
     }
   }
 
-  // The opener's start box lies inside the union of its neighbours' current boxes and its own slot, widened by one
-  // gap: a zero-extent start sits one gap outside the neighbour it grows away from.
-  void checkOpenerInsideLayout(const wlr_box& from, const wlr_box& to, std::span<const MotionBox> neighbours) {
-    int left = to.x - kGap;
-    int top = to.y - kGap;
-    int right = to.x + to.width + kGap;
-    int bottom = to.y + to.height + kGap;
-    for (const MotionBox& neighbour : neighbours) {
-      left = std::min(left, neighbour.from.x);
-      top = std::min(top, neighbour.from.y);
-      right = std::max(right, neighbour.from.x + neighbour.from.width);
-      bottom = std::max(bottom, neighbour.from.y + neighbour.from.height);
-    }
-    CHECK(from.x >= left);
-    CHECK(from.y >= top);
-    CHECK(from.x + from.width <= right);
-    CHECK(from.y + from.height <= bottom);
-  }
-
-  MotionBox still(const wlr_box& box) { return {box, box}; }
-
-  MotionBox opener(const wlr_box& to, std::span<const MotionBox> neighbours) {
-    return {confineToNeighbours(to, neighbours, true), to};
-  }
-
-  MotionBox
-  ghost(const wlr_box& from, std::span<const MotionBox> neighbours, bool vertical, bool layoutReflows = true) {
-    wlr_box to = confineToNeighbours(from, neighbours, false);
-    if (layoutReflows && to.width > 0 && to.height > 0) {
-      to = collapseBox(to, vertical);
-    }
-    return {from, to};
-  }
-
   constexpr wlr_box kColumnA{0, 0, 400, 800};
   constexpr wlr_box kColumnB{400 + kGap, 0, 400, 800};
   constexpr wlr_box kColumnC{2 * (400 + kGap), 0, 400, 800};
@@ -117,114 +81,22 @@ UMBRIEL_TEST(boxesOverlapIgnoresTouchingEdges) {
   CHECK(!boxesOverlap({0, 0, 0, 10}, {0, 0, 10, 10}));
 }
 
-UMBRIEL_TEST(scrollingInsertBetweenColumnsStartsInsideTheGap) {
-  const std::vector<MotionBox> neighbours{still(kColumnA), {kColumnB, kColumnC}};
-  const MotionBox inserted = opener(kColumnB, neighbours);
-  // Only one gap separates A from C's current edge, so the opener starts in its middle and both gaps grow from half.
-  CHECK(sameBox(inserted.from, {kColumnB.x - kGap / 2, 0, 0, 800}));
-  checkOpenerInsideLayout(inserted.from, inserted.to, neighbours);
-  std::vector<MotionBox> members = neighbours;
-  members.push_back(inserted);
-  checkDisjointThroughout(members, kGap / 2);
-  checkAllKeepSeparation(members);
-}
-
-UMBRIEL_TEST(scrollingInsertWhileStripShiftsLeft) {
-  const int shift = 500;
-  const std::vector<MotionBox> neighbours{
-      {kColumnA, {kColumnA.x - shift, 0, 400, 800}},
-      {kColumnB, {kColumnC.x - shift, 0, 400, 800}},
+UMBRIEL_TEST(establishedColumnsStaySeparateDuringInsertionReflow) {
+  const std::vector<MotionBox> peers{
+      {{0, 0, 600, 800}, kColumnA},
+      {{600 + kGap, 0, 600, 800}, kColumnB},
   };
-  const wlr_box slot{kColumnB.x - shift, 0, 400, 800};
-  const MotionBox inserted = opener(slot, neighbours);
-  checkOpenerInsideLayout(inserted.from, inserted.to, neighbours);
-  std::vector<MotionBox> members = neighbours;
-  members.push_back(inserted);
-  checkDisjointThroughout(members, kGap / 2);
-  checkAllKeepSeparation(members);
+  checkDisjointThroughout(peers, kGap);
+  checkAllKeepSeparation(peers);
 }
 
-UMBRIEL_TEST(dwindleVerticalSplitStartsOneGapBelowLeaf) {
-  const int rowHeight = (800 - kGap) / 2;
-  const std::vector<MotionBox> neighbours{
-      still(kColumnA),
-      {kColumnB, {kColumnB.x, 0, 400, rowHeight}},
+UMBRIEL_TEST(establishedColumnsStaySeparateDuringClosingReflow) {
+  const std::vector<MotionBox> peers{
+      {kColumnA, {0, 0, 600, 800}},
+      {kColumnC, {600 + kGap, 0, 600, 800}},
   };
-  const wlr_box slot{kColumnB.x, rowHeight + kGap, 400, 800 - rowHeight - kGap};
-  const MotionBox leaf = opener(slot, neighbours);
-  CHECK(sameBox(leaf.from, {kColumnB.x, 800 + kGap, 400, 0}));
-  checkOpenerInsideLayout(leaf.from, leaf.to, neighbours);
-  std::vector<MotionBox> members = neighbours;
-  members.push_back(leaf);
-  checkDisjointThroughout(members, kGap);
-  checkAllKeepSeparation(members);
-}
-
-UMBRIEL_TEST(masterStackAppendResizesRowsToThirds) {
-  const wlr_box master{0, 0, 600, 800};
-  const int stackX = 600 + kGap;
-  const int half = (800 - kGap) / 2;
-  const int third = (800 - 2 * kGap) / 3;
-  const std::vector<MotionBox> neighbours{
-      still(master),
-      {{stackX, 0, 400, half}, {stackX, 0, 400, third}},
-      {{stackX, half + kGap, 400, 800 - half - kGap}, {stackX, third + kGap, 400, third}},
-  };
-  const wlr_box slot{stackX, 2 * (third + kGap), 400, 800 - 2 * (third + kGap)};
-  const MotionBox appended = opener(slot, neighbours);
-  checkOpenerInsideLayout(appended.from, appended.to, neighbours);
-  std::vector<MotionBox> members = neighbours;
-  members.push_back(appended);
-  checkDisjointThroughout(members, kGap);
-  checkAllKeepSeparation(members);
-}
-
-UMBRIEL_TEST(ghostOfMiddleColumnShrinksAsNeighbourSlidesIn) {
-  const std::vector<MotionBox> neighbours{still(kColumnA), {kColumnC, kColumnB}};
-  const MotionBox closing = ghost(kColumnB, neighbours, false);
-  CHECK(sameBox(closing.to, {kColumnB.x - kGap / 2, 0, 0, 800}));
-  std::vector<MotionBox> members = neighbours;
-  members.push_back(closing);
-  checkDisjointThroughout(members, kGap / 2);
-  checkAllKeepSeparation(members);
-}
-
-UMBRIEL_TEST(ghostOfRowIsAbsorbedByRowAbove) {
-  const int rowHeight = (800 - kGap) / 2;
-  const std::vector<MotionBox> neighbours{
-      still(kColumnA),
-      {{kColumnB.x, 0, 400, rowHeight}, kColumnB},
-  };
-  const MotionBox closing = ghost({kColumnB.x, rowHeight + kGap, 400, 800 - rowHeight - kGap}, neighbours, false);
-  CHECK(sameBox(closing.to, {kColumnB.x, 800 + kGap, 400, 0}));
-  std::vector<MotionBox> members = neighbours;
-  members.push_back(closing);
-  checkDisjointThroughout(members, kGap);
-  checkAllKeepSeparation(members);
-}
-
-UMBRIEL_TEST(ghostWithoutLayoutReflowKeepsCapturedBox) {
-  const std::vector<MotionBox> neighbours{still(kColumnA)};
-  const MotionBox besideStaticNeighbour = ghost(kColumnB, neighbours, false, false);
-  CHECK(sameBox(besideStaticNeighbour.to, kColumnB));
-  const MotionBox alone = ghost(kColumnB, {}, true, false);
-  CHECK(sameBox(alone.to, kColumnB));
-  std::vector<MotionBox> members = neighbours;
-  members.push_back(besideStaticNeighbour);
-  checkDisjointThroughout(members);
-}
-
-UMBRIEL_TEST(replaceInPlaceKeepsGhostAndOpenerApart) {
-  const std::vector<MotionBox> positioned{still(kColumnA), still(kColumnC)};
-  const MotionBox closing = ghost(kColumnB, positioned, false);
-  std::vector<MotionBox> neighbours = positioned;
-  neighbours.push_back(closing);
-  const MotionBox replacement = opener(kColumnB, neighbours);
-  checkOpenerInsideLayout(replacement.from, replacement.to, neighbours);
-  std::vector<MotionBox> members = neighbours;
-  members.push_back(replacement);
-  checkDisjointThroughout(members);
-  checkAllKeepSeparation(members);
+  checkDisjointThroughout(peers, kGap);
+  checkAllKeepSeparation(peers);
 }
 
 UMBRIEL_TEST(keepsSeparationFlagsRearrangements) {

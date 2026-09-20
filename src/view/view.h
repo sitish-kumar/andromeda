@@ -160,11 +160,12 @@ namespace umbriel {
     void setPosition(int x, int y);
     // True once a placement has put the node somewhere; an unpositioned tile is opening and has no `from` box.
     [[nodiscard]] bool positioned() const { return m_positioned; }
-    // Record the layout slot origin without moving the node: the workspace motion carries the node there.
+    // Record the authoritative layout slot origin without moving the node. An established view's workspace motion or an
+    // opening lifecycle presentation carries the scene node there.
     void setLayoutTarget(int x, int y);
     // Per-frame presentation of a layout-assigned box, no bookkeeping. Width and height are clamped to at least 1.
     void presentTiledBox(const wlr_box& box);
-    // The workspace motion owns this view's box until endLayoutMotion. `direction` feeds the windows_move shader.
+    // windows_move owns this established view's box until endLayoutMotion. `direction` feeds its custom shader.
     void beginLayoutMotion(float direction);
     void endLayoutMotion();
     // The authoritative layout position: where the window's slot is, not where its scene node happens to be
@@ -390,15 +391,16 @@ namespace umbriel {
     // size on the committed geometry and refresh the derived chrome.
     void finishSizeAnimation();
     [[nodiscard]] bool sizeAnimating() const {
-      return m_presentation.animating() || m_layoutMotion || openingScaleActive();
+      return m_presentation.animating() || m_layoutMotion || tiledOpeningActive();
     }
+    // While windows_in owns a tiled view, presentation follows its final layout slot rather than the client's possibly
+    // stale committed geometry. This keeps a custom lifecycle shader's canvas stable while established peers reflow.
+    [[nodiscard]] bool tiledOpeningActive() const;
     // A tiled popin/zoom open scales the presented box inside its slot while the fade-in runs. A fullscreen tile is
     // presented against the output, not its slot, so it keeps the floating-style open tweens.
-    [[nodiscard]] bool openingScaleActive() const {
-      return m_tiled && !layoutFullscreen() && m_openingScale < 1.0 && m_fade.animating();
-    }
-    // Eased progress of the active windows_in transition. A mapped tiled opener exposes this to the workspace so its
-    // shared geometry cannot finish before the effect that is revealing it.
+    [[nodiscard]] bool openingScaleActive() const { return m_openingScale < 1.0 && tiledOpeningActive(); }
+    // Eased progress of the active tiled windows_in transition. The workspace uses its presence to keep that lifecycle
+    // view out of windows_move when an arrange repeats before the opening effect finishes.
     [[nodiscard]] std::optional<double> openingProgress() const;
     // Drop the opening inset and put the node back on its slot origin; the caller settles the presented size.
     void dropOpeningInset();

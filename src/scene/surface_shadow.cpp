@@ -127,9 +127,6 @@ namespace umbriel {
     ShadowSnapshot result{
         .tree = tree,
         .node = node,
-        .width = m_node->width,
-        .height = m_node->height,
-        .hole = m_node->clipped_region.area,
     };
     std::copy_n(m_node->color, 4, result.color.begin());
     return result;
