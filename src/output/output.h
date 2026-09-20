@@ -67,11 +67,18 @@ namespace umbriel {
     void markDirty(Dirty what);
     void onGammaChanged(wlr_gamma_control_v1* control);
     void applyOutputState();
-    // DPMS power is independent of configured enablement. A powered-off output
+    // Adopt a successfully committed wlr-output-management state in two
+    // phases. Logical state changes first so callbacks cannot revive a
+    // disabled output, then layout membership changes after transient UI has
+    // been closed safely.
+    void adoptOutputManagerEnabled(bool enabled);
+    void applyOutputManagerLayout(int x, int y);
+    // DPMS power is independent of logical enablement. A powered-off output
     // stays in the logical layout with its workspace and windows intact.
     [[nodiscard]] bool setPowered(bool powered);
     [[nodiscard]] bool dpmsOff() const { return m_dpmsOff; }
     [[nodiscard]] bool configuredEnabled() const;
+    [[nodiscard]] bool desktopEnabled() const { return m_desktopEnabled; }
     [[nodiscard]] HdrMode hdrMode() const;
     [[nodiscard]] bool hdrRequested() const;
     [[nodiscard]] bool hdrActive() const;
@@ -155,6 +162,7 @@ namespace umbriel {
     bool m_gammaDirty = false;
     bool m_softwareCursorLocked = false;
     bool m_animationRenderLocked = false;
+    bool m_desktopEnabled = true;
     bool m_dpmsOff = false;
     bool m_hdrGammaWarningLogged = false;
     bool m_modeFallbackWarned = false;

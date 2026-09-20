@@ -69,11 +69,12 @@ namespace umbriel {
         wl_event_loop_add_timer(wl_display_get_event_loop(m_server->display()), onFrameRetryTimer, this);
 
     applyCursorConfig();
+    m_desktopEnabled = configuredEnabled();
     (void)applyConfiguredState();
     m_sceneOutput = wlr_scene_output_create(m_server->scene(), m_output);
     wlr_scene_output_set_direct_scanout_enabled(m_sceneOutput, configuredDirectScanoutEnabled());
     updateSceneSdrWhite();
-    if (configuredEnabled()) {
+    if (desktopEnabled()) {
       wlr_output_layout_output* layoutOutput = addToLayout();
       wlr_scene_output_layout_add_output(m_server->sceneLayout(), layoutOutput, m_sceneOutput);
     }
@@ -237,8 +238,7 @@ namespace umbriel {
   bool Output::applyConfiguredState() {
     const OutputRule* rule = findOutputRule(config(), identity());
     const std::optional<double> configuredScale = rule != nullptr ? rule->scale : std::nullopt;
-    const bool configured = configuredEnabled();
-    const bool enabled = configured && !m_dpmsOff;
+    const bool enabled = desktopEnabled() && !m_dpmsOff;
     wlr_output_state state{};
     wlr_output_state_init(&state);
     wlr_output_state_set_enabled(&state, enabled);
@@ -428,8 +428,8 @@ namespace umbriel {
           "output '{}': applied mode={}x{}@{}mHz scale={} transform={}", m_output->name, m_output->width,
           m_output->height, m_output->refresh, m_output->scale, static_cast<int>(m_output->transform)
       );
-    } else if (!configured) {
-      kLog.info("output '{}': disabled by config", m_output->name);
+    } else if (!desktopEnabled()) {
+      kLog.info("output '{}': disabled by {}", m_output->name, configuredEnabled() ? "output management" : "config");
     } else {
       kLog.info("output '{}': powered off", m_output->name);
     }
@@ -546,6 +546,14 @@ namespace umbriel {
   }
 
   void Output::applyOutputState() {
+    const bool previousDesktopEnabled = m_desktopEnabled;
+    const bool previousDpmsOff = m_dpmsOff;
+    m_desktopEnabled = configuredEnabled();
+    if (m_desktopEnabled != previousDesktopEnabled) {
+      // Logical disablement subsumes DPMS. A later logical enable must power
+      // the connector on instead of reviving it in a stale DPMS-off state.
+      m_dpmsOff = false;
+    }
     const HdrMode nextHdrMode = hdrMode();
     if (nextHdrMode == HdrMode::Auto) {
       m_fullscreenHdrRequested = false;
@@ -560,9 +568,11 @@ namespace umbriel {
       m_fullscreenHdrRequested = false;
     }
     if (!applyConfiguredState()) {
+      m_desktopEnabled = previousDesktopEnabled;
+      m_dpmsOff = previousDpmsOff;
       return;
     }
-    if (configuredEnabled()) {
+    if (desktopEnabled()) {
       wlr_output_layout_output* layoutOutput = addToLayout();
       // Re-bind the scene output after a disable removed it from the layout.
       // No-op while it is still bound.
@@ -577,8 +587,32 @@ namespace umbriel {
     wlr_output_schedule_frame(m_output);
   }
 
+  void Output::adoptOutputManagerEnabled(bool enabled) {
+    const bool wasDesktopEnabled = m_desktopEnabled;
+    m_desktopEnabled = enabled;
+    if (!enabled || !wasDesktopEnabled) {
+      // A logical disable is not a pending DPMS request. Re-enabling through
+      // output management must therefore bring the connector up.
+      m_dpmsOff = false;
+    }
+  }
+
+  void Output::applyOutputManagerLayout(int x, int y) {
+    if (desktopEnabled()) {
+      wlr_output_layout_output* layoutOutput = wlr_output_layout_add(m_server->outputLayout(), m_output, x, y);
+      wlr_scene_output_layout_add_output(m_server->sceneLayout(), layoutOutput, m_sceneOutput);
+    } else {
+      wlr_output_layout_remove(m_server->outputLayout(), m_output);
+    }
+    handleExternalConfigChange();
+    kLog.info(
+        "output '{}': {} by output management, power {}", m_output->name, desktopEnabled() ? "enabled" : "disabled",
+        m_output->enabled ? "on" : "off"
+    );
+  }
+
   bool Output::setPowered(bool powered) {
-    if (!configuredEnabled()) {
+    if (!desktopEnabled()) {
       return false;
     }
     const bool dpmsOff = !powered;
@@ -600,6 +634,7 @@ namespace umbriel {
         m_server->updateLockBlank();
       }
       wlr_output_schedule_frame(m_output);
+      m_server->scheduleDisplacedViewRestore();
     }
     m_server->updateOutputManagerConfig();
     return true;

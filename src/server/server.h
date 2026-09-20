@@ -557,6 +557,9 @@ namespace umbriel {
     wlr_xdg_activation_v1* m_xdgActivation = nullptr;
     wlr_gamma_control_manager_v1* m_gammaManager = nullptr;
     wlr_output_manager_v1* m_outputManager = nullptr;
+    // Layout mutations emit synchronously. Hold manager publication until a
+    // multi-output transaction has reached its final logical state.
+    bool m_deferOutputManagerConfig = false;
     wlr_scene_tree* m_shellLayerTrees[kLayerCount]{};
     wlr_scene_tree* m_xdgTree = nullptr;
     wlr_scene_tree* m_scratchpadTree = nullptr;

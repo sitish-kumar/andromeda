@@ -299,6 +299,18 @@ seat_log_client = executable(
   dependencies: [wayland_client_dep],
 )
 
+# Harness helper that sends complete test or apply transactions through
+# wlr-output-management, including logical output disable and re-enable.
+output_management_client = executable(
+  'output-management-client',
+  [
+    'harness/clients/output_management_client.cpp',
+    output_mgmt_client_h,
+    output_mgmt_client_c,
+  ],
+  dependencies: [wayland_client_dep],
+)
+
 harness_client_targets = [
   pointer_client,
   keyboard_keymap_client,
@@ -317,4 +329,5 @@ harness_client_targets = [
   lock_client,
   security_context_client,
   seat_log_client,
+  output_management_client,
 ]

@@ -491,9 +491,9 @@ namespace umbriel {
           continue;
         }
         found = true;
-        if (!output->configuredEnabled()) {
+        if (!output->desktopEnabled()) {
           if (!requested.empty()) {
-            return reject(error, "output is disabled by config: " + requested);
+            return reject(error, "output is disabled: " + requested);
           }
           continue;
         }
@@ -506,7 +506,7 @@ namespace umbriel {
         return reject(error, "unknown output: " + requested);
       }
       if (!changed) {
-        return reject(error, "no configured outputs");
+        return reject(error, "no enabled outputs");
       }
       return true;
     }

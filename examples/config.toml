@@ -82,7 +82,7 @@ honor_restored_maximize = false                 # Honor restored maximized state
 # name, for example [output."Some Make Some Model ABC123"].
 
 # [output.DP-1]
-# enabled = true                                # False removes the output but preserves its state
+# enabled = true                                # Persistent membership; live tools can override it
 # mode = "2560x1440@144"                        # WIDTHxHEIGHT or WIDTHxHEIGHT@HZ
 # position = [0, 0]                             # Logical top-left; omit for automatic placement
 # scale = 1.25                                  # Logical size is mode size divided by scale
