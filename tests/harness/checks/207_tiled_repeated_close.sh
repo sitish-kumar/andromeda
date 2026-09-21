@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 # A second scrolling-layout close can interrupt an active vacancy reflow without starving or reversing the surviving
-# column. Each close keeps its own windows_out shader clock, while the rebased windows_move still finishes on the
-# second close's endpoint-aligned timeline instead of waiting for the two configured durations in series.
+# column. Each close keeps its own windows_out shader clock, while the survivor starts windows_move immediately and
+# keeps one monotonic movement toward its unchanged target instead of restarting or waiting for both durations.
 set -euo pipefail
 
 readonly SHOTS="$UMBRIEL_RUNTIME_DIR/tiled-repeated-close"
 readonly OUT_MS=1370
 readonly MOVE_MS=830
-readonly MOVE_DELAY_MS=$((OUT_MS - MOVE_MS))
-readonly SECOND_CLOSE_MS=760
+readonly SECOND_CLOSE_MS=450
 readonly COLUMN_WIDTH=576
 readonly MARKER_PIXELS=100
 mkdir -p "$SHOTS"
 
+# The close snapshot holds its captured column for its whole lifecycle, so it paints only a top band and leaves the
+# rest transparent. The survivor growing underneath stays measurable while each close keeps its own phase colours.
 cat > "$UMBRIEL_RUNTIME_DIR/repeated-close-phases.glsl" <<'GLSL'
 vec4 animation(vec2 uv) {
+    if (uv.y > 0.08) {
+        return vec4(0.0);
+    }
     vec4 source = umbriel_sample(uv);
     bool green = source.g > source.b;
     float progress = umbriel_clamped_progress;
@@ -286,8 +290,8 @@ fi
 
 timing_tolerance=$((2 * max_gap_ms + 120))
 first_move_elapsed=$((sample_times[first_move_first] - first_request_ms))
-if ((first_move_elapsed < MOVE_DELAY_MS - timing_tolerance || first_move_elapsed > MOVE_DELAY_MS + timing_tolerance)); then
-  echo "first windows_move began at ${first_move_elapsed} ms, expected ${MOVE_DELAY_MS} ms within ${timing_tolerance} ms"
+if ((first_move_elapsed > timing_tolerance)); then
+  echo "first windows_move began at ${first_move_elapsed} ms, expected it to start immediately within ${timing_tolerance} ms"
   exit 1
 fi
 
@@ -338,9 +342,8 @@ if ((rebased_move_first < 0)); then
   exit 1
 fi
 rebased_move_elapsed=$((sample_times[rebased_move_first] - second_request_ms))
-if ((rebased_move_elapsed < MOVE_DELAY_MS - timing_tolerance \
-    || rebased_move_elapsed > MOVE_DELAY_MS + timing_tolerance)); then
-  echo "rebased survivor geometry began at ${rebased_move_elapsed} ms, expected ${MOVE_DELAY_MS} ms within ${timing_tolerance} ms"
+if ((rebased_move_elapsed > timing_tolerance)); then
+  echo "rebased survivor geometry began at ${rebased_move_elapsed} ms, expected it to start immediately within ${timing_tolerance} ms"
   exit 1
 fi
 
@@ -370,9 +373,9 @@ if ((final_elapsed > OUT_MS + timing_tolerance)); then
   echo "repeated close summed windows_out and windows_move delays: survivor settled after ${final_elapsed} ms"
   exit 1
 fi
-rebased_move_span=$((sample_times[final_frame] - sample_times[rebased_move_first]))
-if ((rebased_move_span < MOVE_MS - timing_tolerance || rebased_move_span > MOVE_MS + timing_tolerance)); then
-  echo "rebased survivor geometry ran for ${rebased_move_span} ms, expected ${MOVE_MS} ms within ${timing_tolerance} ms"
+move_span=$((sample_times[final_frame] - first_request_ms))
+if ((move_span < MOVE_MS - timing_tolerance || move_span > MOVE_MS + timing_tolerance)); then
+  echo "survivor geometry ran for ${move_span} ms after the first close, expected ${MOVE_MS} ms within ${timing_tolerance} ms"
   exit 1
 fi
 marker_during_reflow=0
@@ -393,6 +396,6 @@ if ((red_x[last_frame] != 0 || red_y[last_frame] != 0 \
   exit 1
 fi
 
-printf 'repeated scrolling close: first marker=%d ms, rebased geometry=%d..%d ms, survivor=%d..%d px\n' \
+printf 'repeated scrolling close: first marker=%d ms, motion resumed=%d ms, settled=%d ms after the second close, survivor=%d..%d px\n' \
   "$first_move_elapsed" "$rebased_move_elapsed" "$final_elapsed" "$initial_width" "$COLUMN_WIDTH"
-echo "interrupted scrolling closes preserved both shaders and one monotonic endpoint-aligned survivor reflow"
+echo "interrupted scrolling closes preserved both shaders and one monotonic survivor reflow on a single move clock"

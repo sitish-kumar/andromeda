@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# A tiled opener owns its final slot and its longer windows_in fade while established neighbours reflow on the shorter
-# windows_move timeline. The peer must already be settled while the opener is still visibly mid-fade.
+# A tiled opener stays hidden while established neighbours reflow on windows_move, then runs its own windows_in in the
+# settled slot. The neighbour must be mid-reflow with no opener visible, and the opener mid-fade once it has settled.
 set -euo pipefail
 
 readonly IMAGE="$UMBRIEL_RUNTIME_DIR/tiled-open-reflow.png"
@@ -44,7 +44,7 @@ enabled = false
 
 [animation.windows_move]
 enabled = true
-duration_ms = 150
+duration_ms = 600
 curve = "linear"
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
@@ -86,11 +86,15 @@ opener=$window
 # the output's right edge, so derive a point well inside its final slot from that edge.
 opener_x=$(jq -r '.x + ((1280 - .x) / 2 | floor)' <<< "$opener")
 opener_y=$(jq -r '.y + (((720 - .y) * 7 / 8) | floor)' <<< "$opener")
-sleep 0.35
+sleep 0.3
 early=$(red_width)
 early_blue=$(blue_at "$opener_x" "$opener_y")
 
-sleep 1.4
+sleep 1.1
+mid=$(red_width)
+mid_blue=$(blue_at "$opener_x" "$opener_y")
+
+sleep 1.1
 final=$(red_width)
 final_blue=$(blue_at "$opener_x" "$opener_y")
 
@@ -98,13 +102,21 @@ if ((before - final < 300)); then
   echo "opening a second tile did not produce a measurable reflow: before=$before final=$final"
   exit 1
 fi
-if ((early < final - 20 || early > final + 20)); then
-  echo "established tile did not finish on windows_move timing: before=$before early=$early final=$final"
+if ((early <= final + 20 || early >= before - 20)); then
+  echo "survivor was not mid-windows_move at 0.3 s: before=$before early=$early final=$final"
   exit 1
 fi
-if ! ((early_blue > 10 && early_blue < 180 && final_blue > 220)); then
-  echo "opener did not retain its independent windows_in fade: early_blue=$early_blue final_blue=$final_blue"
+if ((early_blue > 10)); then
+  echo "opener was visible during the neighbour reflow: $early_blue"
+  exit 1
+fi
+if ((mid < final - 20 || mid > final + 20)); then
+  echo "survivor had not settled before the opener's windows_in: mid=$mid final=$final"
+  exit 1
+fi
+if ! ((mid_blue >= 40 && mid_blue <= 220 && final_blue > 220)); then
+  echo "opener did not run its own windows_in after the reflow: mid=$mid_blue final=$final_blue"
   exit 1
 fi
 
-echo "established tile settled on windows_move while the opener continued its independent windows_in fade"
+echo "tiled opener stayed hidden through the neighbour reflow, then ran windows_in in its settled slot"

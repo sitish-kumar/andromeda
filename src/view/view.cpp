@@ -211,8 +211,6 @@ namespace umbriel {
     // The surface watcher must run before the general commit handler so a
     // newly committed content type participates in initial window rules.
     watchViewSurfaceTree(m_toplevel->base->surface);
-    m_clientCommit.notify = onClientCommit;
-    wl_signal_add(&m_toplevel->base->surface->events.client_commit, &m_clientCommit);
     m_commit.notify = onCommit;
     wl_signal_add(&m_toplevel->base->surface->events.commit, &m_commit);
     m_destroy.notify = onDestroy;
@@ -267,7 +265,6 @@ namespace umbriel {
       wl_event_source_remove(m_acceptClientMaximizeIdle);
       m_acceptClientMaximizeIdle = nullptr;
     }
-    releaseTiledCommitHold();
     m_server->unregisterAnimatable(this);
     clearViewSurfaceWatches();
     setWorkspace(nullptr);
@@ -283,11 +280,6 @@ namespace umbriel {
       wl_list_remove(&m_setParent.link);
       wl_list_remove(&m_setTitle.link);
       wl_list_remove(&m_setAppId.link);
-    }
-    if (m_clientCommit.link.next != nullptr) {
-      wl_list_remove(&m_clientCommit.link);
-      m_clientCommit.link.next = nullptr;
-      m_clientCommit.link.prev = nullptr;
     }
     if (m_rootSurfaceDestroy.link.next != nullptr) {
       wl_list_remove(&m_rootSurfaceDestroy.link);
@@ -926,7 +918,6 @@ namespace umbriel {
       return;
     }
     m_layoutPresentationHeld = false;
-    releaseTiledCommitHold();
     m_tiledSizeRequest.reset();
     if (m_layoutMotion) {
       m_workspace->releaseLayoutMotion(this);
@@ -1133,21 +1124,6 @@ namespace umbriel {
     m_layoutMotionDirection = direction;
   }
 
-  void View::prepareTiledCommitHold() {
-    releaseTiledCommitHold();
-    m_holdTiledCommits = true;
-  }
-
-  void View::releaseTiledCommitHold() {
-    m_holdTiledCommits = false;
-    wlr_surface* surface = m_toplevel->base->surface;
-    std::vector<uint32_t> locked = std::move(m_lockedTiledCommitSeqs);
-    m_lockedTiledCommitSeqs.clear();
-    for (const uint32_t seq : locked) {
-      wlr_surface_unlock_cached(surface, seq);
-    }
-  }
-
   void View::requestTiledSize(int width, int height) {
     m_tiledSizeRequest = TiledSizeRequest{
         .serial = wlr_xdg_toplevel_set_size(m_toplevel, width, height),
@@ -1183,7 +1159,6 @@ namespace umbriel {
       return;
     }
     m_layoutMotion = false;
-    releaseTiledCommitHold();
     m_layoutPresentationHeld = !settleTiledSizeRequest();
     if (m_layoutPresentationHeld) {
       presentTiledBox(target);
@@ -1195,13 +1170,11 @@ namespace umbriel {
 
   void View::endLayoutMotion() {
     if (!m_layoutMotion && !m_layoutPresentationHeld) {
-      releaseTiledCommitHold();
       m_tiledSizeRequest.reset();
       return;
     }
     m_layoutMotion = false;
     m_layoutPresentationHeld = false;
-    releaseTiledCommitHold();
     m_tiledSizeRequest.reset();
     if (tiledOpeningActive() && m_workspace != nullptr) {
       presentTiledBox(m_workspace->presentedTiledBox(this));
@@ -1629,20 +1602,9 @@ namespace umbriel {
 
   void View::onRootSurfaceDestroy(wl_listener* listener, void* /*data*/) {
     View* self = wl_container_of(listener, self, m_rootSurfaceDestroy);
-    self->releaseTiledCommitHold();
-    if (self->m_clientCommit.link.next != nullptr) {
-      wl_list_remove(&self->m_clientCommit.link);
-      self->m_clientCommit.link.next = nullptr;
-      self->m_clientCommit.link.prev = nullptr;
-    }
     wl_list_remove(&self->m_rootSurfaceDestroy.link);
     self->m_rootSurfaceDestroy.link.next = nullptr;
     self->m_rootSurfaceDestroy.link.prev = nullptr;
-  }
-
-  void View::onClientCommit(wl_listener* listener, void* /*data*/) {
-    View* self = wl_container_of(listener, self, m_clientCommit);
-    self->handleClientCommit();
   }
 
   void View::onCommit(wl_listener* listener, void* /*data*/) {
@@ -2223,7 +2185,7 @@ namespace umbriel {
 
     wlr_scene_node_copy_animations_for_snapshot(&snap->node, &m_sceneTree->node);
     // A close snapshot owns its windows_out lifecycle. Keep a possible interrupted windows_in effect, but do not
-    // freeze windows_move into the snapshot. A tiled workspace drives the snapshot's ghost geometry separately.
+    // freeze windows_move into the snapshot.
     wlr_scene_node_set_animation(&snap->node, static_cast<unsigned>(AnimationEvent::WindowsMove), nullptr, nullptr);
     const auto shadow = m_decoration.snapshotShadow(output->viewRoot(), &snap->node);
     const CloseSnapshotId id = m_server->animateCloseSnapshot(
@@ -2824,29 +2786,25 @@ namespace umbriel {
     if (m_onActiveWorkspace) {
       const auto& animation = config().animation;
       const auto& open = animation.windowsIn;
-      m_customFade = animation.enabled
-          && open.enabled
-          && animationShader(m_server->renderer(), AnimationEvent::WindowsIn) != nullptr;
-      if (!animation.enabled
-          || !open.enabled
-          || (open.style == "none" && animationShader(m_server->renderer(), AnimationEvent::WindowsIn) == nullptr)) {
+      const bool customShader = animationShader(m_server->renderer(), AnimationEvent::WindowsIn) != nullptr;
+      m_customFade = animation.enabled && open.enabled && customShader;
+      const bool animates = animation.enabled && open.enabled && (open.style != "none" || customShader);
+      const bool tiledMember =
+          m_tiled && !layoutFullscreen() && m_workspace != nullptr && m_workspace->layout().columnOf(this) >= 0;
+      if (!animates) {
         setFadeAlpha(1.0F);
         m_fade.snap(1.0);
+      } else if (tiledMember) {
+        // The admitting arrange reveals a tiled member: immediately when its slot is already settled, otherwise once
+        // the windows_move reflow that makes room for it completes.
+        deferTiledOpening();
       } else {
         setFadeAlpha(0.0F);
         m_fade.snap(0.0);
         m_fade.retarget(1.0, open.durationMs, open.curve);
 
-        // A non-fullscreen tiled layout member owns its final slot throughout windows_in; popin/zoom scales inside that
-        // slot and slide only fades. Established peers reflow independently through windows_move. Floating and
-        // fullscreen windows keep tweening themselves.
-        const bool tiledMember =
-            m_tiled && !layoutFullscreen() && m_workspace != nullptr && m_workspace->layout().columnOf(this) >= 0;
-        if (!m_customFade && tiledMember) {
-          if (open.style == "popin" || open.style == "zoom") {
-            m_openingScale = std::clamp(open.style == "zoom" ? 0.5 : open.scale, 0.0, 1.0);
-          }
-        } else if (!m_customFade && (open.style == "popin" || open.style == "zoom")) {
+        // Floating and fullscreen windows tween themselves.
+        if (!m_customFade && (open.style == "popin" || open.style == "zoom")) {
           const int targetW = m_presentation.width();
           const int targetH = m_presentation.height();
           if (targetW > 0 && targetH > 0) {
@@ -2971,13 +2929,11 @@ namespace umbriel {
     // The closing snapshot must retain any in-flight opening shader first.
     wlr_scene_node_clear_animations(&m_sceneTree->node);
     cancelFadeAnimation();
-    // Let the workspace coordinate a tiled snapshot with any reflow that reclaims its canvas.
+    // The workspace owns the snapshot's visibility and its slide translation from here.
     if (snapshot != kInvalidCloseSnapshot && m_workspace != nullptr) {
-      const bool layoutManaged = m_tiled && m_workspace->layout().columnOf(this) >= 0;
-      m_workspace->trackCloseSnapshot(snapshot, m_presentedBox, layoutManaged);
+      m_workspace->trackCloseSnapshot(snapshot, m_presentedBox);
     }
     cancelSizeAnimation();
-    releaseTiledCommitHold();
     m_tiledSizeRequest.reset();
     m_layoutPresentationHeld = false;
     cancelPositionAnimation();
@@ -3111,23 +3067,6 @@ namespace umbriel {
     if (m_mapped) {
       applyDynamicRules();
     }
-  }
-
-  void View::handleClientCommit() {
-    if (!m_holdTiledCommits || !m_tiledSizeRequest) {
-      return;
-    }
-    wlr_surface* surface = m_toplevel->base->surface;
-    // Never cache an unmap behind a layout transition. Release any earlier resize commit first, then let the null
-    // buffer retire the view through the normal lifecycle path.
-    if ((surface->pending.committed & WLR_SURFACE_STATE_BUFFER) != 0 && surface->pending.buffer == nullptr) {
-      releaseTiledCommitHold();
-      return;
-    }
-    if (!serialSettled(m_toplevel->base->pending.configure_serial, m_tiledSizeRequest->serial)) {
-      return;
-    }
-    m_lockedTiledCommitSeqs.push_back(wlr_surface_lock_pending(surface));
   }
 
   void View::handleCommit(bool reconfigureOpeningState) {

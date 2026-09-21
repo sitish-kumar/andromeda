@@ -6,7 +6,6 @@ set -euo pipefail
 readonly SHOTS="$UMBRIEL_RUNTIME_DIR/dwindle-many-close-timing"
 readonly OUT_MS=${DWINDLE_OUT_MS:-1370}
 readonly MOVE_MS=${DWINDLE_MOVE_MS:-1030}
-readonly MOVE_DELAY_MS=$((OUT_MS > MOVE_MS ? OUT_MS - MOVE_MS : 0))
 readonly MOVE_CURVE=${DWINDLE_MOVE_CURVE:-snappy}
 mkdir -p "$SHOTS"
 
@@ -177,9 +176,9 @@ fi
 timing_tolerance=$((2 * max_gap_ms + 120))
 marker_start_ms=$((sample_times[marker_first] - request_ms))
 marker_end_ms=$((sample_times[marker_last] - request_ms))
-expected_end_ms=$((MOVE_DELAY_MS + MOVE_MS))
-if ((marker_start_ms < MOVE_DELAY_MS - timing_tolerance || marker_start_ms > MOVE_DELAY_MS + timing_tolerance)); then
-  echo "windows_move marker began at ${marker_start_ms} ms, expected ${MOVE_DELAY_MS} ms within ${timing_tolerance} ms"
+expected_end_ms=$MOVE_MS
+if ((marker_start_ms > timing_tolerance)); then
+  echo "windows_move marker began at ${marker_start_ms} ms, expected it to start immediately within ${timing_tolerance} ms"
   exit 1
 fi
 if ((marker_end_ms < expected_end_ms - timing_tolerance || marker_end_ms > expected_end_ms + timing_tolerance)); then
@@ -229,8 +228,8 @@ for colour in "${colours[@]}"; do
   last_elapsed=$((sample_times[last_change] - request_ms))
   printf '%s survivor: delta=%d px, visible geometry=%d..%d ms, %s -> %s\n' \
     "$colour" "$delta" "$first_elapsed" "$last_elapsed" "$initial" "$final"
-  if ((first_elapsed < MOVE_DELAY_MS - timing_tolerance || first_elapsed > MOVE_DELAY_MS + timing_tolerance)); then
-    echo "$colour survivor began at ${first_elapsed} ms, expected ${MOVE_DELAY_MS} ms within ${timing_tolerance} ms"
+  if ((first_elapsed > timing_tolerance)); then
+    echo "$colour survivor began at ${first_elapsed} ms, expected it to start immediately within ${timing_tolerance} ms"
     exit 1
   fi
   # Allow rounding to remove the final few pixels, but not the final quarter of the configured motion. In particular,
@@ -249,5 +248,5 @@ if ((early_survivors > 0)); then
   exit 1
 fi
 
-printf 'five-window dwindle close: %d survivors followed %s for %d ms after a %d ms alignment delay\n' \
-  "$moving_survivors" "$MOVE_CURVE" "$MOVE_MS" "$MOVE_DELAY_MS"
+printf 'five-window dwindle close: %d survivors followed %s for %d ms starting immediately\n' \
+  "$moving_survivors" "$MOVE_CURVE" "$MOVE_MS"

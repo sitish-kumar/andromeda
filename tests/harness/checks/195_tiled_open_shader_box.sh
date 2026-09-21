@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Every tiled opener with a custom windows_in shader is presented at its final slot immediately. Existing tiles may
-# reflow around it, but neither a collapsed opening box nor windows_move shader composition may replace its effect.
+# A tiled opener stays hidden under the neighbour that vacates its slot, then shows its windows_in shader in the final
+# slot. Neither a collapsed opening box nor windows_move shader composition may replace that effect.
 set -euo pipefail
 
 readonly IMAGE="$UMBRIEL_RUNTIME_DIR/tiled-open-shader-box.png"
@@ -62,7 +62,7 @@ spawn() {
 }
 
 sample_center() {
-  local description=$1 json=$2
+  local description=$1 json=$2 expect=$3
   local x y red green blue
   # IPC reports the final target origin but may still expose committed client size. An inset from that origin stays
   # inside either stack row, including the default new-on-top placement of the third window.
@@ -73,6 +73,13 @@ sample_center() {
     magick "$IMAGE" -alpha off -crop "8x8+$((x - 4))+$((y - 4))" +repage \
       -format '%[fx:round(255*mean.r)] %[fx:round(255*mean.g)] %[fx:round(255*mean.b)]\n' info:
   )
+  if [[ $expect == moving ]]; then
+    if ! ((red > 200 && green < 40 && blue < 40)); then
+      echo "$description slot did not still belong to the neighbour's windows_move shader: $red $green $blue"
+      exit 1
+    fi
+    return 0
+  fi
   if ! ((red < 40 && green > 200 && blue < 40)); then
     echo "$description did not show its windows_in shader over its final slot: $red $green $blue"
     exit 1
@@ -85,12 +92,16 @@ sleep 1.1
 spawn tiled-shader-second
 second=$window
 sleep 0.15
-sample_center "second tiled opener" "$second"
-sleep 1
+sample_center "second tiled opener" "$second" moving
+sleep 1.0
+sample_center "second tiled opener" "$second" revealed
+sleep 1.0
 
 spawn tiled-shader-third
 third=$window
 sleep 0.15
-sample_center "third tiled opener" "$third"
+sample_center "third tiled opener" "$third" moving
+sleep 1.0
+sample_center "third tiled opener" "$third" revealed
 
-echo "each sequential tiled opener kept its final slot and windows_in shader while neighbours reflowed"
+echo "each tiled opener stayed hidden through the reflow, then showed its windows_in shader in its final slot"

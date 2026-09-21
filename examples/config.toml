@@ -709,7 +709,7 @@ curve = "easeout"                               # Built-in or registered bezier/
 [animation.windows_in]
 enabled = true
 duration_ms = 150
-curve = "easeout"
+curve = "spring:1,1000"
 style = "popin"                                 # popin, zoom, slide, fade, or none
 scale = 0.85                                    # Popin start scale, 0.1-1.0
 # shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
@@ -718,16 +718,17 @@ scale = 0.85                                    # Popin start scale, 0.1-1.0
 [animation.windows_out]
 enabled = true
 duration_ms = 150
-curve = "easeout"
-style = "fade"                                  # fade or slide
+curve = "spring:1,1000"
+style = "fade"                                  # fade, slide, popin, or zoom
+scale = 0.8                                     # Popin end scale, 0.1-1.0
 # shader = "shaders/reveal.glsl"
 
 # Window movement, resizing, layout changes, maximize and restore, and visible
 # scratchpad resizing
 [animation.windows_move]
 enabled = true
-duration_ms = 250
-curve = "snappy"
+duration_ms = 150
+curve = "spring:1,1000"
 # shader = "shaders/squash.glsl"      # Subtle compression and settle during move/resize
 
 # Workspace switching

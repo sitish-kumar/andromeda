@@ -361,6 +361,7 @@ namespace umbriel {
       int durationMs = 0;
       AnimationCurve curve{.easing = Easing::EaseOutCubic};
       std::string style = "fade";
+      double scale = 0.8;
       AnimationEvent event = AnimationEvent::WindowsOut;
     };
     // `content` is the subtree holding the copied buffers (pass `tree` when there is no separate content tree). A
@@ -370,15 +371,11 @@ namespace umbriel {
         Output* output, wlr_scene_tree* tree, wlr_scene_tree* content, std::vector<BorderSnapshot> borders,
         const wlr_box& box, std::optional<CloseSnapshotOverrides> overrides = std::nullopt, ShadowSnapshot shadow = {}
     );
-    // Move and resize a snapshot as a complete geometry ghost. This does not crop the lifecycle shader or alter its
-    // independent progress.
-    void presentCloseSnapshot(CloseSnapshotId id, const wlr_box& box);
-    // Present a snapshot at its captured canvas, or hide it while its workspace is not visible.
-    void presentCloseSnapshotMask(CloseSnapshotId id, const wlr_box& box, int canvasX, int canvasY, bool constrained);
-    // Current output-root mask or geometry box, or nullopt after the snapshot has been reaped.
-    [[nodiscard]] std::optional<wlr_box> closeSnapshotBox(CloseSnapshotId id) const;
-    // Linear time left on the independent close lifecycle, or nullopt after the snapshot has been reaped.
-    [[nodiscard]] std::optional<uint64_t> closeSnapshotRemainingMs(CloseSnapshotId id) const;
+    // Place a snapshot's captured box at a canvas origin in output-root coordinates, or hide it while its workspace
+    // is not showing.
+    void presentCloseSnapshot(CloseSnapshotId id, int canvasX, int canvasY, bool visible);
+    // False once the snapshot has been reaped.
+    [[nodiscard]] bool closeSnapshotAlive(CloseSnapshotId id) const;
 
   private:
     static void
@@ -608,15 +605,14 @@ namespace umbriel {
       CloseSnapshot(
           Server& server, CloseSnapshotId id, Output* output, wlr_scene_tree* tree, wlr_scene_tree* content,
           std::vector<BorderSnapshot> borders, const wlr_box& box, int durationMs, const AnimationCurve& curve,
-          std::string_view style, AnimationEvent event, ShadowSnapshot shadow
+          std::string_view style, double scale, AnimationEvent event, ShadowSnapshot shadow
       );
       ~CloseSnapshot() override;
 
       [[nodiscard]] CloseSnapshotId id() const { return m_id; }
-      [[nodiscard]] const wlr_box& box() const { return m_box; }
-      [[nodiscard]] uint64_t remainingMs() const;
-      void present(const wlr_box& box);
-      void presentMask(const wlr_box& box, int canvasX, int canvasY, bool constrained);
+      // Place the captured box at a canvas origin in output-root coordinates, or hide it while its workspace is not
+      // showing.
+      void present(int canvasX, int canvasY, bool visible);
 
       [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
       bool tickAnimations(uint64_t nowMsec) override;
@@ -624,11 +620,8 @@ namespace umbriel {
       [[nodiscard]] bool animatesOn(const Output* output) const override { return m_output == output; }
 
     private:
-      void applySlide();
       void applyPresentation();
-      void applyGeometry(const wlr_box& box);
-      void restoreCapturedGeometry();
-      void applyMask();
+      void applyShrink(int width, int height);
 
       Server* m_server = nullptr;
       CloseSnapshotId m_id = kInvalidCloseSnapshot;
@@ -639,20 +632,12 @@ namespace umbriel {
       AnimationEvent m_event = AnimationEvent::WindowsOut;
       // Slide style: vertical offset of the whole snapshot, 0 to 80.
       AnimatedValue m_slide;
-      wlr_box m_from{};
-      wlr_box m_box{};
+      wlr_box m_captured{};
       int m_canvasX = 0;
       int m_canvasY = 0;
-      bool m_geometryPresented = false;
-      bool m_maskConstrained = false;
-      struct MaskInsets {
-        int left = 0;
-        int top = 0;
-        int right = 0;
-        int bottom = 0;
-      };
-      MaskInsets m_borderMaskInsets;
-      MaskInsets m_shadowMaskInsets;
+      bool m_visible = true;
+      // popin/zoom end scale; 1.0 = no shrink.
+      double m_shrinkTo = 1.0;
       // Each copied buffer with its captured opacity, position and size relative to the content tree.
       struct Buffer {
         wlr_scene_buffer* node = nullptr;

@@ -2652,7 +2652,8 @@ scale = 0.7
 
 [animation.windows_out]
 curve = "bouncy"
-style = "slide"
+style = "popin"
+scale = 0.6
 
 [animation.overview]
 enabled = false
@@ -2679,7 +2680,8 @@ blur = true
   CHECK_EQ(animation.windowsIn.style, std::string{"zoom"});
   CHECK_EQ(animation.windowsIn.scale, 0.7);
   CHECK(animation.windowsOut.curve.easing == umbriel::Easing::Spring);
-  CHECK_EQ(animation.windowsOut.style, std::string{"slide"});
+  CHECK_EQ(animation.windowsOut.style, std::string{"popin"});
+  CHECK_EQ(animation.windowsOut.scale, 0.6);
   CHECK(!animation.overview.enabled);
   CHECK_EQ(animation.overview.durationMs, 700);
   CHECK(animation.overview.curve.easing == umbriel::Easing::CustomBezier);

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Tiled close and reflow clocks align for every duration ordering. The shorter movement starts late only when the
-# close is longer, equal clocks start together, and a longer movement continues after the close has finished.
+# A tiled close keeps its captured box for its whole windows_out while survivors begin windows_move at once. Both
+# clocks keep their configured durations for every duration ordering.
 set -euo pipefail
 
 readonly SHOTS="$UMBRIEL_RUNTIME_DIR/tiled-close-duration-alignment"
@@ -153,6 +153,7 @@ run_case() {
   local i gap max_gap=0 green blue red
   local close_first=-1 close_last=-1 move_first=-1 move_last=-1
   local final_green=0 final_blue=0 final_red=0
+  local bounds_x=0 bounds_y=0 bounds_w=0 bounds_h=0 bx by bw bh
   for ((i = 1; i < count; i++)); do
     gap=$((sample_times[i] - sample_times[i - 1]))
     ((gap > max_gap)) && max_gap=$gap
@@ -169,7 +170,22 @@ run_case() {
     final_blue=$blue
     final_red=$red
     if ((green >= MARKER_PIXELS)); then
-      ((close_first < 0)) && close_first=$i
+      read -r bx by bw bh < <(magick "$SHOTS/$phase-$i.png" -alpha off \
+        -fx '(g > 0.8 && r < 0.2 && b < 0.2) ? 1 : 0' -bordercolor black -border 1 -trim \
+        -format '%X %Y %w %h\n' info: 2> /dev/null)
+      if ((close_first < 0)); then
+        close_first=$i
+        bounds_x=$bx
+        bounds_y=$by
+        bounds_w=$bw
+        bounds_h=$bh
+      elif ((bx - bounds_x > 2 || bounds_x - bx > 2
+             || by - bounds_y > 2 || bounds_y - by > 2
+             || bw - bounds_w > 2 || bounds_w - bw > 2
+             || bh - bounds_h > 2 || bounds_h - bh > 2)); then
+        echo "$phase: close snapshot changed geometry at frame $i: $bx $by $bw $bh, expected $bounds_x $bounds_y $bounds_w $bounds_h"
+        return 1
+      fi
       close_last=$i
     fi
     if ((blue >= MARKER_PIXELS)); then
@@ -194,9 +210,8 @@ run_case() {
   local last_time=${sample_times[close_last]}
   ((sample_times[move_last] > last_time)) && last_time=${sample_times[move_last]}
   local total_span=$((last_time - first_time))
-  local expected_start=0 expected_end=0
-  ((close_ms > move_ms)) && expected_start=$((close_ms - move_ms))
-  ((move_ms > close_ms)) && expected_end=$((move_ms - close_ms))
+  local expected_start=0
+  local expected_end=$((move_ms - close_ms))
 
   assert_near "$phase" "windows_out span" "$close_span" "$close_ms" "$tolerance"
   assert_near "$phase" "windows_move span" "$move_span" "$move_ms" "$tolerance"
@@ -217,4 +232,4 @@ run_case long-close 1 1200 600
 run_case equal 2 900 900
 run_case long-move 3 600 1200
 
-echo "tiled close and reflow clocks aligned for longer, equal, and shorter windows_out durations"
+echo "close snapshot held its captured box while survivors moved immediately, for every duration ordering"

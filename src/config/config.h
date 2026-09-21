@@ -536,7 +536,7 @@ namespace umbriel {
         std::optional<AnimationShaderSource> shader;
         bool enabled = true;
         int durationMs = 150;
-        AnimationCurve curve{.easing = Easing::EaseOutCubic};
+        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 1000.0}};
         std::string style = "popin";
         double scale = 0.85;
         bool operator==(const WindowsIn&) const = default;
@@ -546,16 +546,17 @@ namespace umbriel {
         std::optional<AnimationShaderSource> shader;
         bool enabled = true;
         int durationMs = 150;
-        AnimationCurve curve{.easing = Easing::EaseOutCubic};
+        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 1000.0}};
         std::string style = "fade";
+        double scale = 0.8;
         bool operator==(const WindowsOut&) const = default;
       } windowsOut;
 
       struct WindowsMove {
         std::optional<AnimationShaderSource> shader;
         bool enabled = true;
-        int durationMs = 250;
-        AnimationCurve curve{.easing = Easing::Snappy};
+        int durationMs = 150;
+        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 1000.0}};
         bool operator==(const WindowsMove&) const = default;
       } windowsMove;
 

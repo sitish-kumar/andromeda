@@ -189,9 +189,9 @@ namespace umbriel {
     // Pull the scroll offset back into [0, maxScroll]. For removals and restored offsets only: a touchpad swipe
     // overscrolls on purpose.
     void clampScrollToRange();
-    // Own every view close snapshot so it follows workspace visibility and translation. A tiled snapshot joins the
-    // same geometry transition as the surviving tiles while its lifecycle shader keeps its own clock.
-    void trackCloseSnapshot(CloseSnapshotId id, const wlr_box& outputBox, bool layoutManaged);
+    // Own every view close snapshot so it follows workspace visibility and translation: the workspace translates the
+    // snapshot with its slides and hides it while the workspace is not showing.
+    void trackCloseSnapshot(CloseSnapshotId id, const wlr_box& outputBox);
     // Drop `view` from the running motion without touching its presentation; the caller now owns its box.
     void releaseLayoutMotion(View* view);
     // The running motion's progress, for the windows_move shader; null when no motion runs.
@@ -199,11 +199,7 @@ namespace umbriel {
     // Advances the motion; true while it is still running.
     bool tickLayoutMotion(uint64_t nowMsec);
     [[nodiscard]] bool layoutMotionActive() const {
-      return m_motion.progress.animating()
-          || m_motion.delay.animating()
-          || !m_motion.views.empty()
-          || !m_motion.ghosts.empty()
-          || !m_motion.deferredOpenings.empty();
+      return m_motion.progress.animating() || !m_motion.views.empty() || !m_motion.pendingOpenings.empty();
     }
 
   private:
@@ -233,7 +229,9 @@ namespace umbriel {
     void detachFromLayout(View* view);
     // Snap or animate every tiled member of the layout into its slot from wherever it is presented now.
     void applyTiledMotion(const wlr_box& usable, bool animate, std::span<View* const> resized);
-    void endLayoutMotion(bool preserveCloseCoordination = false);
+    void endLayoutMotion();
+    // Reveal every pending opener once no geometry motion runs. True while some opener still waits.
+    bool revealPendingOpenings();
     void syncCloseSnapshots();
     void discardCloseSnapshots();
     WorkspaceGroup* m_group = nullptr;
@@ -273,41 +271,20 @@ namespace umbriel {
         wlr_box to{};
         float direction = 1.0F;
       };
-      struct DeferredOpening {
+      // A fresh tiled opener waiting for the reflow that made room for it.
+      struct PendingOpening {
         View* view = nullptr;
         wlr_box to{};
       };
-      struct GhostEntry {
-        CloseSnapshotId id = kInvalidCloseSnapshot;
-        wlr_box from{};
-        wlr_box to{};
-        // Last non-empty box shown while the lifecycle snapshot is alive. Rounding the collapsing axis to zero must
-        // not freeze the independent survivor motion that shares this transition.
-        wlr_box presented{};
-      };
       AnimatedValue progress;
-      // When windows_out is longer, wait only by the duration difference before starting windows_move. Both clocks
-      // then retain their configured duration and curve and finish together.
-      AnimatedValue delay;
-      // Last geometry fraction actually presented. A curve may overshoot its endpoint before the close snapshot is
-      // reaped; keeping this monotonic and non-terminal prevents the ghost from vanishing and reappearing.
-      double presentedProgress = 0.0;
       MonotonicEasing geometryCurve;
-      int moveDurationMs = 0;
-      AnimationCurve moveCurve{};
       std::vector<ViewEntry> views;
-      std::vector<GhostEntry> ghosts;
-      std::vector<DeferredOpening> deferredOpenings;
+      std::vector<PendingOpening> pendingOpenings;
     };
     LayoutMotion m_motion;
     struct TrackedCloseSnapshot {
       CloseSnapshotId id = kInvalidCloseSnapshot;
       wlr_box canvas{};
-      wlr_box presented{};
-      bool layoutManaged = false;
-      // Only the first layout pass may infer a claim from adjacent edges moving inward. Later unrelated reflows must
-      // overlap the canvas directly before this snapshot delays them.
-      bool newlyCaptured = false;
     };
     std::vector<TrackedCloseSnapshot> m_trackedCloseSnapshots;
   };

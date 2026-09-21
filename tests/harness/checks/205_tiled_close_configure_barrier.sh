@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# A survivor receives its target configure immediately, so it can prepare the new buffer during the alignment delay.
-# Its visible geometry remains held until windows_move starts, while the independent windows_out clock stays active.
+# A survivor receives its target configure and begins visible movement immediately while the independent windows_out
+# clock runs. A later stale-size client keeps the compositor endpoint instead of falling back to its old buffer.
 set -euo pipefail
 
 readonly OUT_MS=1000
@@ -8,8 +8,11 @@ readonly MOVE_MS=600
 readonly SHOTS="$UMBRIEL_RUNTIME_DIR/tiled-close-configure"
 mkdir -p "$SHOTS"
 
+# The snapshot holds its captured box above the vacancy for its whole lifecycle, so mark only its bottom band. That
+# band stays clear of the survivor until the movement has finished, keeping the survivor's geometry observable while
+# the close clock is still running.
 cat > "$UMBRIEL_RUNTIME_DIR/configure-close.glsl" <<'GLSL'
-vec4 animation(vec2 uv) { return vec4(0.0, 0.5, 0.0, 0.5); }
+vec4 animation(vec2 uv) { return uv.y > 0.9 ? vec4(0.0, 0.5, 0.0, 0.5) : vec4(0.0); }
 GLSL
 cat >> "$UMBRIEL_CONFIG" <<EOF
 
@@ -81,8 +84,9 @@ wait_for_log_since() {
   return 1
 }
 
+# The marker band may sit over the moving survivor, so identify it by its green channel alone.
 green_pixels() {
-  magick "$1" -alpha off -fx '(r < 0.08 && g > 0.08 && b < 0.08) ? 1 : 0' \
+  magick "$1" -alpha off -fx '(g > 0.12 && b < 0.08) ? 1 : 0' \
     -format '%[fx:round(mean*w*h)]\n' info:
 }
 
@@ -124,15 +128,15 @@ verify_layout() {
   "$UMBRIEL" msg "window-close:$closing_id" > /dev/null
   wait_for_log "$third_log" '^unmapped$' "$mode third window did not unmap"
   wait_for_log_since "$survivor_log" "$mark" 'configured-size=640x720' \
-    "$mode survivor did not receive its target configure during the alignment delay"
+    "$mode survivor did not receive its target configure"
 
   sleep 0.2
   grim "$SHOTS/$mode-held.png"
 
-  # OUT_MS minus MOVE_MS is 400 ms. By 600 ms the movement has started but windows_out is still active.
-  sleep 0.35
+  # windows_move runs for MOVE_MS from the close; windows_out keeps running past it on its own clock.
+  sleep 0.15
   grim "$SHOTS/$mode-moving.png"
-  sleep 0.55
+  sleep 0.6
   grim "$SHOTS/$mode-final.png"
 
   local before_x before_y before_w before_h held_x held_y held_w held_h
@@ -141,9 +145,8 @@ verify_layout() {
   read -r held_x held_y held_w held_h <<< "$(red_bounds "$SHOTS/$mode-held.png")"
   read -r moving_x moving_y moving_w moving_h <<< "$(red_bounds "$SHOTS/$mode-moving.png")"
   read -r final_x final_y final_w final_h <<< "$(red_bounds "$SHOTS/$mode-final.png")"
-  if ! bounds_match 3 "$held_x" "$held_y" "$held_w" "$held_h" \
-      "$before_x" "$before_y" "$before_w" "$before_h"; then
-    echo "$mode survivor changed visible geometry during alignment: before=$before_x $before_y $before_w $before_h held=$held_x $held_y $held_w $held_h"
+  if ((held_h <= before_h + 20 || held_h >= 700)); then
+    echo "$mode survivor had not started windows_move by the first sample: before=$before_h held=$held_h"
     exit 1
   fi
   if ((moving_h <= held_h + 20 || moving_h >= 700)); then
@@ -217,4 +220,4 @@ if ! bounds_match 3 "$final_x" "$final_y" "$final_w" "$final_h" 0 0 1280 720; th
   exit 1
 fi
 
-echo "dwindle and master prepared target buffers early, held visible geometry, and retained stale-client endpoints"
+echo "dwindle and master started moving at once, kept the close clock running, and retained stale-client endpoints"

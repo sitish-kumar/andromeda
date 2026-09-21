@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# A tiled close keeps its natural windows_out shader timeline while survivor geometry follows its independent,
-# endpoint-aligned windows_move clock. Exercise ordinary closure, interrupted consume and expel, plus disabled movement,
-# where the survivor snaps immediately without shortening the close lifecycle.
+# A tiled close keeps its natural windows_out shader timeline while survivor geometry follows its independent
+# windows_move clock. Exercise ordinary closure, interrupted consume and expel, plus disabled movement, where the
+# survivor snaps immediately without shortening the close lifecycle.
 set -euo pipefail
 
 readonly SHOTS="$UMBRIEL_RUNTIME_DIR/tiled-close-shader-visibility"
@@ -199,19 +199,12 @@ verify_close() {
     local initial_x initial_y initial_width initial_height
     read -r initial_x initial_y initial_width initial_height <<< "${red_boxes[0]}"
     if [[ $phase == ordinary ]]; then
-      if ! bounds_match "$REBASE_TOLERANCE" "$initial_x" "$initial_y" "$initial_width" "$initial_height" \
-          "$before_x" "$before_y" "$before_width" "$before_height"; then
-        echo "$phase: survivor jumped when close reflow rebased: before=$before_box frame0=${red_boxes[0]}"
-        return 1
-      fi
-    else
-      # The consume and expel motions can advance between the before screenshot and processing the close request.
-      # Frame zero is the first observable post-rebase box; the alignment delay must hold it on the following frame.
+      # No alignment delay: by the second sample the survivor has left the box it held before the close.
       local held_x held_y held_width held_height
       read -r held_x held_y held_width held_height <<< "${red_boxes[1]}"
-      if ! bounds_match 2 "$held_x" "$held_y" "$held_width" "$held_height" \
-          "$initial_x" "$initial_y" "$initial_width" "$initial_height"; then
-        echo "$phase: interrupted motion was not held after rebasing: frame0=${red_boxes[0]} frame1=${red_boxes[1]}"
+      if bounds_match "$REBASE_TOLERANCE" "$held_x" "$held_y" "$held_width" "$held_height" \
+          "$before_x" "$before_y" "$before_width" "$before_height"; then
+        echo "$phase: survivor was still held at its pre-close box: before=$before_box frame1=${red_boxes[1]}"
         return 1
       fi
     fi
@@ -239,8 +232,8 @@ verify_close() {
         fi
       fi
     done
-    if ((first_intermediate < 1 || first_intermediate > 6)); then
-      echo "$phase: survivor did not start windows_move after the aligned delay: frame=$first_intermediate"
+    if ((first_intermediate < 0 || first_intermediate > 2)); then
+      echo "$phase: survivor did not start windows_move immediately: frame=$first_intermediate"
       return 1
     fi
     if ((concurrent == 0)); then
@@ -249,12 +242,8 @@ verify_close() {
     fi
     # An interrupted consume or expel already has a windows_move shader at frame zero. Geometry above still proves
     # when the rebased motion begins; this marker proves that its shader remains active through the close.
-    if ((move_first < 0 || move_first > 6 || move_last < move_first)); then
-      echo "$phase: windows_move shader did not retain its aligned timeline: frames=$move_first..$move_last"
-      return 1
-    fi
-    if ((move_last < last_close - 3 || move_last > last_close + 3)); then
-      echo "$phase: independent close and move clocks did not converge: close=$last_close move=$move_first..$move_last"
+    if ((move_first < 0 || move_first > 2 || move_last < move_first)); then
+      echo "$phase: windows_move shader did not run on its own timeline: frames=$move_first..$move_last"
       return 1
     fi
     if ((first_final < first_intermediate || first_final > last_close + 3)); then

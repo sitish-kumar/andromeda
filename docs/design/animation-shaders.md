@@ -126,41 +126,40 @@ destroyed with the snapshot. Its source association is detached safely when
 either node is destroyed. Analytic fallback shadows follow the native lifecycle
 fade even when a custom shader replaces the window's own fade.
 
-The freshly admitted, unpositioned tiled opener remains outside layout-motion
-interpolation and is presented in its current final layout box while
-`windows_in` owns its visual transition. Established neighbours concurrently
-interpolate their old and new boxes using the independent `windows_move`
-duration and curve. A tile still running `windows_in`
-becomes an established geometry participant when a later tile is admitted. Its
-cached unscaled layout box joins `windows_move`, while `windows_in` remains
-composed over each presentation. This separation also prevents popin and zoom
-from applying their scale to an already scaled box.
+A freshly admitted tiled opener never animates alongside the reflow it caused.
+`Workspace::applyTiledMotion` collects the established members first; when that
+set still has to move on `windows_move`, every opener in the same pass is held
+by `View::deferTiledOpening`, which disables its node, resets its fade, and
+records the target in `LayoutMotion::pendingOpenings`. Each later arrange
+refreshes that target. `Workspace::revealPendingOpenings` runs when no geometry
+motion is left, in the same tick the motion completes, and calls
+`View::resumeTiledOpening` to start a fresh `windows_in` at the settled slot.
+An arrange that animates nothing reveals the opener inline, so the first window
+on a workspace and any admission with `windows_move` disabled appear at once.
+A tile still running `windows_in` becomes an established geometry participant
+when a later tile is admitted. Its cached unscaled layout box joins
+`windows_move`, while `windows_in` remains composed over each presentation.
+This separation also prevents popin and zoom from applying their scale to an
+already scaled box.
 
-A normal tiled close snapshots the complete decorated view and drops any copied
-movement effect. Before presenting the new layout, the workspace checks whether
-the live motion paths claim that captured region. A conflicting snapshot joins
-the layout transition as a ghost. `confineToNeighbours` and
-`collapseVacancy` choose its destination inside the vacancy left by the live
-members. The ghost and survivors then interpolate with one shared geometry
-fraction, so neither side crosses the other while space is transferred.
+A normal tiled close snapshots the complete decorated view, drops any copied
+movement effect, and is appended above every workspace tree under the output's
+view root. It is a fixed canvas: `CloseSnapshot::present(canvasX, canvasY,
+visible)` only translates it with its workspace's slide and hides it while that
+workspace is not showing. `umbriel_size` is therefore constant for a close
+snapshot unless the built-in `popin` or `zoom` style shrinks it, which scales
+the frozen buffers, borders, and shadow toward the captured box's centre using
+`1 - alpha`, the same eased progress its fade follows.
 
-The snapshot's frozen buffers, borders, and shadow scale and translate with the
-presented ghost. Consequently the shader target and `umbriel_size` follow the
-ghost geometry. Its `windows_out` `AnimatedValue` remains untouched and still
-owns eased progress, linear progress, transition identity, random seed,
-feedback history, and lifecycle duration. Geometry coordination therefore does
-not accelerate, restart, or skip close shader phases.
+The snapshot's `windows_out` `AnimatedValue` owns eased progress, linear
+progress, transition identity, random seed, feedback history, and lifecycle
+duration. Nothing outside it retimes a close.
 
-The arrange pass sends each survivor's target-size configure immediately. If
-the longest conflicting close has `C` milliseconds remaining and
-`windows_move` lasts `M` milliseconds, `alignedMotionDelay` returns
-`max(C - M, 0)`. During a nonzero delay the view caches a target-sized client
-commit and keeps its old buffer presented. Once the delay expires, cached
-commits are released and the complete configured movement begins. A longer
-close and shorter move finish together, equal clocks start together, and a
-longer move starts immediately and continues after the close snapshot is
-reaped. With movement disabled, live geometry snaps while the close lifecycle
-continues independently.
+The arrange pass sends each survivor's target-size configure and begins the
+configured `windows_move` in the same pass, with no alignment delay and no
+cached client commits. Both clocks run from the close, each with its own
+duration and curve. With movement disabled, live geometry snaps while the close
+lifecycle continues independently.
 
 When movement completes, `completeLayoutMotion` keeps the compositor-owned
 endpoint until both the configure serial and committed content dimensions
@@ -168,23 +167,12 @@ match the tiled size request. Geometry-stable arrange passes preserve that
 hold. This prevents a late or size-refusing client from replacing the final
 presentation with an older buffer size.
 
-A close that interrupts consume, expel, or another layout motion starts from
-the exact current presentations. A later close likewise rebuilds the ghost and
-survivor set from what is currently visible, then starts a fresh full-duration
-`windows_move` aligned to the longest remaining conflicting close. Every close
-snapshot keeps its original `windows_out` clock. Durations are not summed, and
-an earlier close shader is not restarted or starved.
-
-A fresh tiled opener whose destination intersects a tracked close canvas is
-kept disabled and its initial fade is reset. Repeated arrange passes update its
-latest target. The opener remains deferred until both the conflicting close
-and any coordinated geometry motion have finished, then starts a fresh
-`windows_in` admission at that target. Unrelated openers continue normally.
-
-A no-reflow close cannot delay unrelated layout motion. The workspace keeps
-tracking its captured geometry for visibility and workspace-slide translation.
-It joins a later geometry transition only when a live path directly claims its
-presented region.
+A close that interrupts consume, expel, or another layout motion rebuilds the
+survivor set from the exact current presentations and starts a fresh
+full-duration `windows_move`. A motion already heading for the same targets
+keeps its running clock instead of restarting. Every close snapshot keeps its
+original `windows_out` clock. Durations are not summed, and an earlier close
+shader is not restarted or starved.
 
 Logical tiled geometry uses `MonotonicEasing`. Curves already bounded and
 monotonic keep their exact easing. Overshooting or reversing curves are
@@ -223,45 +211,37 @@ sandbox shader execution or prevent an expensive shader from stalling a driver.
 source-content reload effects, dependency deduplication, and dependency removal.
 `tests/unit/animation.cpp` verifies that tiled geometry preserves safe curves and
 projects overshooting or reversing curves into bounded monotonic full-duration
-travel. `tests/unit/layout_motion.cpp` covers close-vacancy confinement and
-collapse, separation, interpolation, and duration alignment.
+travel. `tests/unit/layout_motion.cpp` covers shared-progress interpolation and
+the separation test that orders a rearrangement's raises.
 
 The isolated running-compositor checks `180_animation_shaders`,
 `181_animation_shader_events`, `182_animation_shader_composition`,
 `192_tiled_close_lifetime`, `193_tiled_open_reflow_timing`,
 `194_tiled_close_no_reflow`, `195_tiled_open_shader_box`,
-`196_tiled_lifecycle_move_timing`, `197_tiled_close_vacancy`,
-`198_close_snapshot_workspace`, `199_tiled_close_mask_chrome`,
-`200_tiled_close_retained_no_reflow`, `201_tiled_open_overlap_reflow`,
-`202_tiled_close_shader_visibility`, `203_tiled_open_popin_overlap`,
-`204_tiled_close_deferred_open`, `205_tiled_close_configure_barrier`,
-`206_tiled_close_duration_alignment`, `207_tiled_repeated_close`,
-`208_dwindle_many_close_timing`, and `330_overview_close_fade` inspect
+`196_tiled_lifecycle_move_timing`, `198_close_snapshot_workspace`,
+`200_tiled_close_retained_no_reflow`, `202_tiled_close_shader_visibility`,
+`205_tiled_close_configure_barrier`, `206_tiled_close_fixed_snapshot`,
+`207_tiled_repeated_close`, `208_dwindle_many_close_timing`, and
+`330_overview_close_fade` inspect
 shader-specific intermediate pixels, file-watcher reloads, every animation
 event, both layer lifecycle directions, rotated fractional-scale UVs, nested
 sampling, output containment, invalid-GLSL fallback, and a tiled close effect
-that outlasts its configured `windows_move` timeline. They also verify that a
-tiled opener remains stable while established neighbours follow the independent
-`windows_move` timeline. Check 197 starts ordinary, consume, and expel closes,
-then verifies that the complete close ghost and its survivors share geometry
-without changing either configured clock.
+that outlasts its configured `windows_move` timeline. Checks 193 and 195 also
+verify that a tiled opener stays hidden while its established neighbours
+reflow, then runs its own `windows_in` in the settled slot.
 Check 198 covers tiled and non-layout close snapshots following workspace
-translation and visibility while their independent lifecycle continues. Check
-199 covers coordinated geometry for captured borders and shadows. Check
-200 keeps a no-reflow close fixed through an unrelated opening and consume.
-The overlapping-open checks keep both custom and built-in lifecycle
-presentation active while the earlier tile follows `windows_move`, including
-one-scale popin geometry. Check 202 verifies that ordinary, consume, expel, and
+translation and visibility while their independent lifecycle continues.
+Check 200 keeps a no-reflow close fixed through an unrelated opening and
+consume. Check 202 verifies that ordinary, consume, expel, and
 disabled-movement closes preserve natural early, middle, and late shader phases
-while survivor geometry follows its endpoint-aligned clock. Check 204 keeps a
-fresh opener invisible until its destination close canvas and the coordinated
-reflow are finished. Check 205 verifies immediate target configures, delayed
-visible geometry and commit release, plus compositor endpoint ownership for a
-client that retains stale buffer dimensions across a later stable arrange.
-Check 206 covers longer, equal, and shorter `windows_out` duration orderings
-against `windows_move`. Check 207 interrupts scrolling reflow with a second
-close and verifies independent shader phases, current-presentation rebasing,
-monotonic survivor motion, and no summed delay or starvation. Check 208 closes
+while survivors start moving at once. Check 205 verifies immediate target
+configures and immediate visible movement, plus compositor endpoint ownership
+for a client that retains stale buffer dimensions across a later stable
+arrange. Check 206 covers longer, equal, and shorter `windows_out` duration
+orderings against `windows_move` and asserts that the snapshot holds its
+captured box for every sampled frame. Check 207 interrupts scrolling reflow
+with a second close and verifies independent shader phases, monotonic survivor
+motion on a single movement clock, and no summed delay or starvation. Check 208 closes
 the root leaf of a five-window dwindle tree and verifies that every changing
 survivor follows an overshooting movement curve across its full configured
 clock instead of pinning at its first endpoint crossing. The overview check

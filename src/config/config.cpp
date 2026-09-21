@@ -1139,8 +1139,9 @@ namespace umbriel {
       s.sub("windows_out", [&](Section& section) {
         readShader(section, animation.windowsOut);
         section.boolean("enabled", animation.windowsOut.enabled)
-            .integer("duration_ms", 1, 10000, animation.windowsOut.durationMs);
-        readStyle(section, animation.windowsOut.style, {"fade", "slide"});
+            .integer("duration_ms", 1, 10000, animation.windowsOut.durationMs)
+            .real("scale", 0.1, 1.0, animation.windowsOut.scale);
+        readStyle(section, animation.windowsOut.style, {"fade", "slide", "popin", "zoom"});
         readCurve(section, "animation.windows_out", animation.windowsOut.curve);
       });
       s.sub("windows_move", [&](Section& section) {
