@@ -348,6 +348,9 @@ void Application::initLockScreenAndSession() {
         if (m_logindService != nullptr) {
           m_logindService->setSessionLockedHint(true);
         }
+        if (m_screenSaverService != nullptr) {
+          m_screenSaverService->emitActiveChanged(true);
+        }
         releaseSleepDelayInhibitIfPending();
       },
       [this]() {
@@ -360,6 +363,9 @@ void Application::initLockScreenAndSession() {
         requestAllSurfacesRedraw();
         if (m_logindService != nullptr) {
           m_logindService->setSessionLockedHint(false);
+        }
+        if (m_screenSaverService != nullptr) {
+          m_screenSaverService->emitActiveChanged(false);
         }
       },
       [this]() {
