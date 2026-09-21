@@ -947,7 +947,7 @@ namespace settings {
         ToggleSetting{cfg.dock.showInstanceCount}, "badge windows"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Dock, "behavior", tr("settings.schema.dock.launcher-position.label"),
+        SettingsSection::Dock, "layout", tr("settings.schema.dock.launcher-position.label"),
         tr("settings.schema.dock.launcher-position.description"), {"dock", "launcher_position"},
         asSegmented(enumSelect(kDockLauncherPositions, cfg.dock.launcherPosition)), "launcher apps grid"
     ));
@@ -957,7 +957,7 @@ namespace settings {
     };
     {
       auto e = makeEntry(
-          SettingsSection::Dock, "behavior", tr("settings.schema.dock.launcher-icon.label"),
+          SettingsSection::Dock, "layout", tr("settings.schema.dock.launcher-icon.label"),
           tr("settings.schema.dock.launcher-icon.description"), {"dock", "launcher_icon"},
           TextSetting{.value = cfg.dock.launcherIcon, .placeholder = "grid-dots", .browseFileExtensions = {}},
           "launcher apps icon glyph"
@@ -967,7 +967,7 @@ namespace settings {
     }
     {
       auto e = makeEntry(
-          SettingsSection::Dock, "behavior", tr("settings.schema.dock.launcher-custom-image.label"),
+          SettingsSection::Dock, "layout", tr("settings.schema.dock.launcher-custom-image.label"),
           tr("settings.schema.dock.launcher-custom-image.description"), {"dock", "launcher_custom_image"},
           TextSetting{
               .value = cfg.dock.launcherCustomImage,
@@ -983,7 +983,7 @@ namespace settings {
     }
     {
       auto e = makeEntry(
-          SettingsSection::Dock, "behavior", tr("settings.schema.dock.launcher-custom-image-colorize.label"),
+          SettingsSection::Dock, "layout", tr("settings.schema.dock.launcher-custom-image-colorize.label"),
           tr("settings.schema.dock.launcher-custom-image-colorize.description"),
           {"dock", "launcher_custom_image_colorize"}, ToggleSetting{cfg.dock.launcherCustomImageColorize},
           "launcher apps image tint color"
