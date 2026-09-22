@@ -197,6 +197,12 @@ namespace umbriel {
       return;
     }
     wlr_scene_node_set_enabled(&card.tree->node, true);
+    // A tiled opener waiting for the reflow that made room for it is not showing yet. Its card follows.
+    if (view->tiledOpeningDeferred()) {
+      card.blur.hide();
+      wlr_scene_node_set_enabled(&card.tree->node, false);
+      return;
+    }
 
     const double z = metrics.zoom;
     const wlr_box& world = view->presentedBox();

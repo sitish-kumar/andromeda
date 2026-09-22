@@ -136,6 +136,8 @@ motion is left, in the same tick the motion completes, and calls
 `View::resumeTiledOpening` to start a fresh `windows_in` at the settled slot.
 An arrange that animates nothing reveals the opener inline, so the first window
 on a workspace and any admission with `windows_move` disabled appear at once.
+An overview card mirrors buffers rather than the live node, so `Overview::layoutCard`
+reads `View::tiledOpeningDeferred` and hides the card for the same wait.
 A tile still running `windows_in` becomes an established geometry participant
 when a later tile is admitted. Its cached unscaled layout box joins
 `windows_move`, while `windows_in` remains composed over each presentation.

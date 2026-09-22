@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# A card admitted while the overview is open fades in on windows_in at its own card, and closing a card during tiled
-# reflow must discard the copied windows_move effect before windows_out runs. The move shader paints the live blue
-# card red. The close shader then paints its snapshot green only when it samples the original blue client, or magenta
-# when the stale move shader is still composed into the snapshot.
+# A card admitted while the overview is open follows the same reveal as a normal-mode opener: hidden while the
+# neighbour reflows on windows_move, then fading in on windows_in. Closing a card during tiled reflow must discard
+# the copied windows_move effect before windows_out runs. The move shader paints the live blue card red. The close
+# shader then paints its snapshot green only when it samples the original blue client, or magenta when the stale
+# move shader is still composed into the snapshot.
 set -euo pipefail
 
 readonly FIRST_LOG="$UMBRIEL_RUNTIME_DIR/overview-close-first.log"
@@ -10,6 +11,7 @@ readonly SECOND_LOG="$UMBRIEL_RUNTIME_DIR/overview-close-second.log"
 readonly MOVING="$UMBRIEL_RUNTIME_DIR/overview-close-moving.png"
 readonly DURING="$UMBRIEL_RUNTIME_DIR/overview-close-during.png"
 readonly OPENED="$UMBRIEL_RUNTIME_DIR/overview-close-opened.png"
+readonly OPENING="$UMBRIEL_RUNTIME_DIR/overview-close-opening.png"
 readonly AFTER="$UMBRIEL_RUNTIME_DIR/overview-close-after.png"
 
 cat > "$UMBRIEL_RUNTIME_DIR/overview-move.glsl" <<'GLSL'
@@ -88,7 +90,7 @@ sleep 0.2
 sleep 1.1
 
 # Mapping the second tile starts a long windows_move transition on the established first tile and its overview card.
-FILL_COLOR=0xFF0000FF "$UMBRIEL_UNMAP_CLIENT" overview-close-second 1200 700 > "$SECOND_LOG" 2>&1 &
+FILL_COLOR=0xFF00FFFF "$UMBRIEL_UNMAP_CLIENT" overview-close-second 1200 700 > "$SECOND_LOG" 2>&1 &
 for _ in $(seq 80); do
   if [[ $("$UMBRIEL" windows --json | jq length) -eq 2 ]]; then
     break
@@ -107,23 +109,26 @@ if ((moving_red < 1000)); then
   exit 1
 fi
 
-# The opener is mirrored into its own card straight away and fades there: neither hidden for the reflow nor instantly
-# opaque.
-moving_dim_blue=$(color_pixels "$MOVING" 'b > 0.08 && b < 0.7 && r < 0.1')
-moving_opaque_blue=$(color_pixels "$MOVING" 'b > 0.8 && r < 0.1')
-if ((moving_dim_blue < 1000)); then
-  echo "the overview opener was not visible while its windows_in ran: dim=$moving_dim_blue"
+# The opener waits out the reflow its admission caused, exactly as it would outside the overview.
+moving_cyan=$(color_pixels "$MOVING" 'g > 0.08 && b > 0.08 && r < 0.1')
+if ((moving_cyan > 200)); then
+  echo "the overview opener was shown while the neighbour reflow ran: cyan=$moving_cyan"
   exit 1
 fi
-if ((moving_opaque_blue > 200)); then
-  echo "the overview opener skipped windows_in and appeared fully opaque: opaque=$moving_opaque_blue"
+
+# windows_move ends 1600 ms after the admission; windows_in then runs for 600 ms on the settled card.
+sleep 1.75
+grim "$OPENING"
+opening_dim=$(color_pixels "$OPENING" 'g > 0.08 && g < 0.7 && b > 0.08 && b < 0.7 && r < 0.1')
+if ((opening_dim < 1000)); then
+  echo "the overview opener did not fade in after the reflow: dim=$opening_dim"
   exit 1
 fi
-sleep 0.7
+sleep 0.55
 grim "$OPENED"
-opened_blue=$(color_pixels "$OPENED" 'b > 0.8 && r < 0.1')
-if ((opened_blue < 1000)); then
-  echo "the overview opener never finished its windows_in: opaque=$opened_blue"
+opened_cyan=$(color_pixels "$OPENED" 'g > 0.8 && b > 0.8 && r < 0.1')
+if ((opened_cyan < 1000)); then
+  echo "the overview opener never finished its windows_in: opaque=$opened_cyan"
   exit 1
 fi
 
@@ -158,4 +163,4 @@ if ((after_green > 10 || after_magenta > 10)); then
   exit 1
 fi
 
-echo "an overview opener faded in on windows_in, and the close discarded windows_move and cleaned up its snapshot"
+echo "an overview opener waited for its reflow then faded in, and the close discarded windows_move and cleaned up"
