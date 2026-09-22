@@ -1048,6 +1048,36 @@ UMBRIEL_TEST(overviewWorkspaceCurveLoadsAndFallsBackToItsSpring) {
   CHECK_EQ(store.config().animation.overview.workspaceCurve.spring.stiffness, 1000.0);
 }
 
+UMBRIEL_TEST(durationBesideASpringCurveIsReportedAsInert) {
+  const TempConfig file;
+  ConfigStore& store = umbriel::configStore();
+  store.setRootPath(file.path(), true);
+
+  // A spring derives its own length, so the duration next to it reaches nothing and must not look honoured.
+  file.write("[animation.windows_in]\nduration_ms = 200\ncurve = \"spring:1,1000\"\n");
+  CHECK(store.reload().success);
+  CHECK(containsDiagnostic(store, "animation.windows_in.duration_ms has no effect"));
+
+  // The same duration with a duration-based curve is honoured and silent.
+  file.write("[animation.windows_in]\nduration_ms = 200\ncurve = \"easeout\"\n");
+  CHECK(store.reload().success);
+  CHECK_EQ(store.config().animation.windowsIn.durationMs, 200);
+  CHECK(!containsDiagnostic(store, "has no effect"));
+
+  // A shared spring curve makes every event derive its length, which leaves the shared duration inert too.
+  file.write("[animation]\nduration_ms = 200\ncurve = \"spring:1,1000\"\n");
+  CHECK(store.reload().success);
+  CHECK(containsDiagnostic(store, "animation.duration_ms has no effect"));
+
+  // One duration-based event is enough for the shared duration to reach something.
+  file.write(
+      "[animation]\nduration_ms = 200\ncurve = \"spring:1,1000\"\n\n[animation.workspaces]\ncurve = \"easeout\"\n"
+  );
+  CHECK(store.reload().success);
+  CHECK(!containsDiagnostic(store, "animation.duration_ms has no effect"));
+  CHECK_EQ(store.config().animation.workspaces.durationMs, 200);
+}
+
 UMBRIEL_TEST(overviewWorkspaceWallpaperLoads) {
   const TempConfig file;
   ConfigStore& store = umbriel::configStore();

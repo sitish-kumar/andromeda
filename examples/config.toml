@@ -704,6 +704,8 @@ blur_optimized = false
 enabled = true                                  # Master animation switch
 duration_ms = 250                               # Shared duration, 1-10000 ms
 curve = "easeout"                               # Built-in or registered bezier/spring curve name
+# A spring curve such as "spring:1,1000" (damping, stiffness) sets its own length from its physics and
+# ignores duration_ms: raise stiffness for a faster settle, lower damping below 1 for overshoot.
 
 # Window opening animation
 [animation.windows_in]

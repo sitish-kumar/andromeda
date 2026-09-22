@@ -200,6 +200,59 @@ UMBRIEL_TEST(springSettleStartsFromTheReleaseVelocityAndStops) {
   CHECK_EQ(value.current(), 0.0);
 }
 
+UMBRIEL_TEST(springCurveTimescaleComesFromItsParameters) {
+  const auto stiff = umbriel::CurveRegistry::parse("spring:1,4000");
+  const auto soft = umbriel::CurveRegistry::parse("spring:1,250");
+  CHECK(stiff.has_value());
+  CHECK(soft.has_value());
+  if (!stiff || !soft) {
+    return;
+  }
+
+  umbriel::AnimatedValue fast;
+  fast.retarget(1.0, 5000, *stiff);
+  umbriel::AnimatedValue slow;
+  slow.retarget(1.0, 5000, *soft);
+
+  // duration_ms never reaches a spring; the sixteenfold stiffness quarters the settle time.
+  CHECK(fast.durationMs() != 5000);
+  CHECK(slow.durationMs() != 5000);
+  const double stiffnessRatio = static_cast<double>(slow.durationMs()) / static_cast<double>(fast.durationMs());
+  CHECK(std::abs(stiffnessRatio - 4.0) < 0.05);
+
+  // Mass is the other half of the timescale: four times the mass takes twice as long.
+  const int light = umbriel::springDurationMs({.damping = 1.0, .stiffness = 1000.0, .mass = 1.0});
+  const int heavy = umbriel::springDurationMs({.damping = 1.0, .stiffness = 1000.0, .mass = 4.0});
+  const double massRatio = static_cast<double>(heavy) / static_cast<double>(light);
+  CHECK(std::abs(massRatio - 2.0) < 0.05);
+
+  // Damping shapes the response instead: it must not leave the timescale untouched either.
+  CHECK(umbriel::springDurationMs({.damping = 2.0, .stiffness = 1000.0, .mass = 1.0}) > light);
+}
+
+UMBRIEL_TEST(springCurveSettlesOnItsTargetBeforeTheTimelineEnds) {
+  struct Case {
+    const char* text;
+    bool overshoots;
+  };
+  // Underdamped, critically damped, and overdamped all have to be within a tenth of a percent of the target on the
+  // last frame, otherwise the timeline's final snap is a visible jump.
+  for (const Case& probe : {Case{"spring:0.4,600", true}, Case{"spring:1,600", false}, Case{"spring:2,600", false}}) {
+    const auto curve = umbriel::CurveRegistry::parse(probe.text);
+    CHECK(curve.has_value());
+    if (!curve) {
+      continue;
+    }
+    CHECK(std::abs(umbriel::applyEasing(*curve, 0.999) - 1.0) < 0.001);
+
+    double peak = 0.0;
+    for (int sample = 0; sample <= 1000; ++sample) {
+      peak = std::max(peak, umbriel::applyEasing(*curve, static_cast<double>(sample) / 1000.0));
+    }
+    CHECK_EQ(peak > 1.001, probe.overshoots);
+  }
+}
+
 UMBRIEL_TEST(overdampedSpringVelocityMatchesItsPositionDerivative) {
   constexpr double sampleTime = 0.075;
   constexpr double delta = 0.000001;

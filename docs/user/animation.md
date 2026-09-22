@@ -2,8 +2,9 @@
 
 Animation settings live in the top-level `animation` section. `duration_ms` and
 `curve` set defaults for every event when present; a nested event can override
-either value. The master switch makes every transition instant. Each event also
-has its own switch.
+either value. A spring curve brings its own length, so `duration_ms` is unused
+wherever one is configured. The master switch makes every transition instant.
+Each event also has its own switch.
 
 ```toml
 [animation]
@@ -145,11 +146,11 @@ movement shaders still receive the original eased `umbriel_progress` and linear
 `umbriel_linear_progress` values.
 
 `workspace_curve` covers every way the filmstrip moves: a wheel notch, a
-keyboard action, and the release of a touchpad gesture. A spring curve settles
-from wherever the previews currently are and keeps the speed a swipe let go
-with, so `duration_ms` does not apply to it; any other curve runs over
-`duration_ms` and starts from rest. The shared `[animation] curve` does not
-reach it, because dropping the spring would drop the release velocity with it.
+keyboard action, and the release of a touchpad gesture. A spring curve there
+settles from wherever the previews currently are and keeps the speed a swipe
+let go with; any other curve runs over `duration_ms` and starts from rest. The
+shared `[animation] curve` does not reach it, because dropping the spring would
+drop the release velocity with it.
 
 An event's `enabled = false` makes only that transition instant. Scratchpad
 `dim` and `blur` remain active, without a fade, when animation is disabled.
@@ -162,7 +163,28 @@ Each curve accepts a built-in name such as `linear`, `ease`, `easeout`,
 `snappy`, `bounce`, or `elastic`; a cubic bezier string
 `"x1,y1,x2,y2"`; or a spring string `"spring: damping,stiffness"`. Bezier x
 coordinates must be between 0 and 1. Spring damping must be between 0.01 and 5,
-and stiffness between 1 and 1000.
+and stiffness between 1 and 10000.
+
+A spring is solved as a real damped oscillator and sets its own length: the
+event runs until the spring has settled on its target, so `duration_ms` does
+not apply to a spring curve. Stiffness is the speed knob, since the settle time
+scales with the square root of `1 / stiffness`. Damping is the shape knob:
+below 1 the spring overshoots and swings back, 1 arrives without overshoot, and
+above 1 it crawls in and takes longer than 1 does.
+
+| curve | length | shape |
+| --- | --- | --- |
+| `spring:1,4000` | 192 ms | no overshoot |
+| `spring:1,1000` | 383 ms | no overshoot |
+| `spring:0.6,1000` | 475 ms | 9% overshoot |
+| `spring:1,100` | 1210 ms | no overshoot |
+| `spring:2,1000` | 1100 ms | no overshoot, slow approach |
+
+A spring whose settle time exceeds 10 s is cut off there, the same ceiling
+`duration_ms` has.
+
+A `duration_ms` next to a spring curve is reported as having no effect, for the
+event that configures both and for the shared key once every curve is a spring.
 
 Custom named curves can be registered once and reused by name:
 
