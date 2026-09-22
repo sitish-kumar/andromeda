@@ -170,8 +170,8 @@ namespace umbriel {
     // Present `box` carrying whatever opening inset is running: position the node, adopt the presented size, refresh
     // the derived chrome. Width and height are clamped to at least 1.
     void presentBox(const wlr_box& box);
-    // Keep a fresh tiled opener invisible at its slot until the workspace reveals it. Resuming starts a fresh
-    // windows_in there.
+    // Keep a fresh tiled opener invisible from map until the admitting arrange places it. Resuming starts a fresh
+    // windows_in at that slot.
     void deferTiledOpening();
     void resumeTiledOpening();
     [[nodiscard]] bool tiledOpeningDeferred() const { return m_tiledOpeningDeferred; }

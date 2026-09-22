@@ -537,9 +537,9 @@ namespace umbriel {
         bool enabled = true;
         // Springs derive their own length; duration_ms stays at the shared value for a duration-based curve.
         int durationMs = 250;
-        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 1900.0}};
+        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 900.0}};
         std::string style = "popin";
-        double scale = 0.85;
+        double scale = 0.5;
         bool operator==(const WindowsIn&) const = default;
       } windowsIn;
 
@@ -547,8 +547,8 @@ namespace umbriel {
         std::optional<AnimationShaderSource> shader;
         bool enabled = true;
         int durationMs = 250;
-        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 900.0}};
-        std::string style = "fade";
+        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 1400.0}};
+        std::string style = "popin";
         double scale = 0.8;
         bool operator==(const WindowsOut&) const = default;
       } windowsOut;
@@ -557,7 +557,7 @@ namespace umbriel {
         std::optional<AnimationShaderSource> shader;
         bool enabled = true;
         int durationMs = 250;
-        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 4400.0}};
+        AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 1100.0}};
         bool operator==(const WindowsMove&) const = default;
       } windowsMove;
 

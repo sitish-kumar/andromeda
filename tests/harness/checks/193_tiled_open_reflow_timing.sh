@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# A tiled opener stays hidden while established neighbours reflow on windows_move, then runs its own windows_in in the
-# settled slot. The neighbour must be mid-reflow with no opener visible, and the opener mid-fade once it has settled.
-# An opener that takes the whole width through default_maximize reflows them on that same clock.
+# A tiled opener starts its windows_in in its final slot on the same tick established neighbours begin their
+# windows_move reflow. Both clocks run independently: the opener is already visible while the neighbour is mid-reflow,
+# and still mid-fade after that shorter reflow has settled. An opener that takes the whole width through
+# default_maximize reflows them on that same clock.
 set -euo pipefail
 
 readonly IMAGE="$UMBRIEL_RUNTIME_DIR/tiled-open-reflow.png"
@@ -95,7 +96,7 @@ sleep 0.3
 early=$(red_width)
 early_blue=$(blue_at "$opener_x" "$opener_y")
 
-sleep 1.1
+sleep 0.6
 mid=$(red_width)
 mid_blue=$(blue_at "$opener_x" "$opener_y")
 
@@ -111,16 +112,16 @@ if ((early <= final + 20 || early >= before - 20)); then
   echo "survivor was not mid-windows_move at 0.3 s: before=$before early=$early final=$final"
   exit 1
 fi
-if ((early_blue > 10)); then
-  echo "opener was visible during the neighbour reflow: $early_blue"
+if ! ((early_blue >= 15 && early_blue <= 110)); then
+  echo "opener did not start windows_in alongside the neighbour reflow: $early_blue"
   exit 1
 fi
 if ((mid < final - 20 || mid > final + 20)); then
-  echo "survivor had not settled before the opener's windows_in: mid=$mid final=$final"
+  echo "survivor had not settled on its own windows_move clock: mid=$mid final=$final"
   exit 1
 fi
-if ! ((mid_blue >= 40 && mid_blue <= 220 && final_blue > 220)); then
-  echo "opener did not run its own windows_in after the reflow: mid=$mid_blue final=$final_blue"
+if ! ((mid_blue > early_blue + 40 && mid_blue <= 220 && final_blue > 220)); then
+  echo "opener windows_in did not keep its own clock past the reflow: early=$early_blue mid=$mid_blue final=$final_blue"
   exit 1
 fi
 
@@ -140,4 +141,4 @@ if ((maximized_early <= maximized_final + 20 || maximized_early >= settled - 20)
   exit 1
 fi
 
-echo "tiled opener stayed hidden through the neighbour reflow, ran windows_in in its settled slot, and a maximized opener reflowed that neighbour on windows_move too"
+echo "tiled opener ran windows_in in its final slot alongside the neighbour reflow, and a maximized opener reflowed that neighbour on windows_move too"

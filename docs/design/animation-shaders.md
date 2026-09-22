@@ -126,18 +126,17 @@ destroyed with the snapshot. Its source association is detached safely when
 either node is destroyed. Analytic fallback shadows follow the native lifecycle
 fade even when a custom shader replaces the window's own fade.
 
-A freshly admitted tiled opener never animates alongside the reflow it caused.
-`Workspace::applyTiledMotion` collects the established members first; when that
-set still has to move on `windows_move`, every opener in the same pass is held
-by `View::deferTiledOpening`, which disables its node, resets its fade, and
-records the target in `LayoutMotion::pendingOpenings`. Each later arrange
-refreshes that target. `Workspace::revealPendingOpenings` runs when no geometry
-motion is left, in the same tick the motion completes, and calls
-`View::resumeTiledOpening` to start a fresh `windows_in` at the settled slot.
-An arrange that animates nothing reveals the opener inline, so the first window
-on a workspace and any admission with `windows_move` disabled appear at once.
-An overview card mirrors buffers rather than the live node, so `Overview::layoutCard`
-reads `View::tiledOpeningDeferred` and hides the card for the same wait.
+A freshly admitted tiled opener never joins the reflow it caused, but it runs
+alongside it. `View::handleMap` holds the opener with `View::deferTiledOpening`,
+which disables its node and resets its fade, only until the admitting arrange
+places it. `Workspace::applyTiledMotion` then calls `View::resumeTiledOpening`
+and presents the opener at its final slot in the same pass that starts
+`windows_move` for the established members, so both clocks begin on the same
+tick. The opener's box is never interpolated: popin and zoom scale its
+presentation around the final slot, and it is raised above the members that
+reflow beneath it. An overview card mirrors buffers rather than the live node,
+so `Overview::layoutCard` reads `View::tiledOpeningDeferred` and hides the card
+until the same arrange.
 A tile still running `windows_in` becomes an established geometry participant
 when a later tile is admitted. Its cached unscaled layout box joins
 `windows_move`, while `windows_in` remains composed over each presentation.
@@ -237,8 +236,9 @@ shader-specific intermediate pixels, file-watcher reloads, every animation
 event, both layer lifecycle directions, rotated fractional-scale UVs, nested
 sampling, output containment, invalid-GLSL fallback, and a tiled close effect
 that outlasts its configured `windows_move` timeline. Checks 193 and 195 also
-verify that a tiled opener stays hidden while its established neighbours
-reflow, then runs its own `windows_in` in the settled slot.
+verify that a tiled opener runs its own `windows_in` in its final slot on the
+same tick its established neighbours begin to reflow, with each clock keeping
+its own duration.
 Check 198 covers tiled and non-layout close snapshots following workspace
 translation and visibility while their independent lifecycle continues.
 Check 200 keeps a no-reflow close fixed through an unrelated opening and

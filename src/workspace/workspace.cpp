@@ -908,37 +908,15 @@ namespace umbriel {
       });
     }
 
-    // Only a fresh map reveals late: View::handleMap hides a tiled opener whose windows_in will run, and it waits here
-    // while this arrange animates established members. A member that merely rejoins the layout, from floating or from
-    // another workspace, keeps whatever it is already showing.
-    const bool reflowing = animateMove && !views.empty();
-    std::erase_if(m_motion.pendingOpenings, [&](const LayoutMotion::PendingOpening& opening) {
-      return opening.view == nullptr
-          || !opening.view->mapped()
-          || opening.view->workspace() != this
-          || m_layout->columnOf(opening.view) < 0;
-    });
+    // A fresh map starts windows_in in its final slot on the same tick established members begin windows_move. The
+    // opener never joins the geometry motion, so its box is never interpolated, and the reflow it causes does not run
+    // ahead of it. View::handleMap only hides it until this arrange places it. A member that merely rejoins the layout,
+    // from floating or from another workspace, keeps whatever it is already showing.
     std::vector<View*> openingViews;
     for (const Member& member : members) {
       if (!member.opening) {
         continue;
       }
-      if (reflowing && member.view->tiledOpeningDeferred()) {
-        const auto pending =
-            std::ranges::find_if(m_motion.pendingOpenings, [&](const LayoutMotion::PendingOpening& opening) {
-              return opening.view == member.view;
-            });
-        if (pending != m_motion.pendingOpenings.end()) {
-          pending->to = member.to;
-        } else {
-          m_motion.pendingOpenings.push_back({.view = member.view, .to = member.to});
-        }
-        continue;
-      }
-
-      std::erase_if(m_motion.pendingOpenings, [&](const LayoutMotion::PendingOpening& opening) {
-        return opening.view == member.view;
-      });
       member.view->resumeTiledOpening();
       member.view->endLayoutMotion();
       member.view->presentTiledBox(member.to);
@@ -1022,7 +1000,7 @@ namespace umbriel {
     const bool geometryTicked = m_motion.progress.tick(nowMsec);
     const bool needsFinalPresentation = !m_motion.progress.animating() && !m_motion.views.empty();
     if (!geometryTicked && !needsFinalPresentation) {
-      return revealPendingOpenings();
+      return false;
     }
 
     const double progress = m_motion.geometryCurve.value(m_motion.progress.progress());
@@ -1044,26 +1022,6 @@ namespace umbriel {
         entry.view->endLayoutMotion();
       }
     }
-    return revealPendingOpenings();
-  }
-
-  bool Workspace::revealPendingOpenings() {
-    if (m_motion.progress.animating() || !m_motion.views.empty()) {
-      return !m_motion.pendingOpenings.empty();
-    }
-    std::vector<LayoutMotion::PendingOpening> pending = std::move(m_motion.pendingOpenings);
-    m_motion.pendingOpenings.clear();
-    for (const LayoutMotion::PendingOpening& opening : pending) {
-      if (opening.view == nullptr
-          || !opening.view->mapped()
-          || opening.view->workspace() != this
-          || m_layout->columnOf(opening.view) < 0) {
-        continue;
-      }
-      opening.view->resumeTiledOpening();
-      opening.view->presentTiledBox(opening.to);
-      opening.view->raiseToTop();
-    }
     return false;
   }
 
@@ -1071,7 +1029,6 @@ namespace umbriel {
     m_motion.progress.snap(1.0);
     std::vector<LayoutMotion::ViewEntry> views = std::move(m_motion.views);
     m_motion.views.clear();
-    revealPendingOpenings();
     for (const LayoutMotion::ViewEntry& entry : views) {
       entry.view->endLayoutMotion();
     }
@@ -1114,13 +1071,6 @@ namespace umbriel {
 
   void Workspace::releaseLayoutMotion(View* view) {
     std::erase_if(m_motion.views, [view](const LayoutMotion::ViewEntry& entry) { return entry.view == view; });
-    if (std::erase_if(
-            m_motion.pendingOpenings,
-            [view](const LayoutMotion::PendingOpening& opening) { return opening.view == view; }
-        )
-        > 0) {
-      view->resumeTiledOpening();
-    }
   }
 
   const AnimatedValue* Workspace::layoutMotionValue() const {
