@@ -72,6 +72,7 @@ cat >> "$UMBRIEL_CONFIG" <<'EOF'
 
 [animation.overview]
 duration_ms = 500
+curve = "linear"
 
 [layout.scrolling]
 default_extent_fraction = 0.5

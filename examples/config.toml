@@ -710,8 +710,7 @@ curve = "easeout"                               # Built-in or registered bezier/
 # Window opening animation
 [animation.windows_in]
 enabled = true
-duration_ms = 200
-curve = "easeout"
+curve = "spring:1,1900"                         # 278 ms critically damped settle
 style = "popin"                                 # popin, zoom, slide, fade, or none
 scale = 0.85                                    # Popin start scale, 0.1-1.0
 # shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
@@ -719,8 +718,7 @@ scale = 0.85                                    # Popin start scale, 0.1-1.0
 # Window closing animation
 [animation.windows_out]
 enabled = true
-duration_ms = 150
-curve = "easeout"
+curve = "spring:1,900"                          # 403 ms critically damped settle
 style = "fade"                                  # fade, slide, popin, or zoom
 scale = 0.8                                     # Popin end scale, 0.1-1.0
 # shader = "shaders/reveal.glsl"
@@ -729,30 +727,26 @@ scale = 0.8                                     # Popin end scale, 0.1-1.0
 # scratchpad resizing
 [animation.windows_move]
 enabled = true
-duration_ms = 150
-curve = "easeout"
+curve = "spring:1,4400"                         # 183 ms critically damped settle
 # shader = "shaders/squash.glsl"      # Subtle compression and settle during move/resize
 
 # Workspace switching
 [animation.workspaces]
 enabled = true
-duration_ms = 250
-curve = "easeout"
+curve = "spring:1,800"                          # 428 ms critically damped settle
 
 # Entering and leaving overview
 [animation.overview]
 enabled = true
-duration_ms = 250
-curve = "easeout"
+curve = "spring:1,800"                          # 428 ms critically damped settle
 # Filmstrip movement from wheel, keyboard, and touchpad navigation
 workspace_curve = "spring:1,1000"
 
 # Scratchpad show, hide, and backdrop
 [animation.scratchpad]
-enabled = false
-duration_ms = 250
-curve = "easeout"
-dim = 0.5                                       # Backdrop dim amount, 0.0-1.0
+enabled = true
+curve = "spring:1,800"                          # 428 ms critically damped settle
+dim = 0.8                                       # Backdrop dim amount, 0.0-1.0
 blur = false                                    # Requires appearance.blur.enabled
 scale = 0.0                                     # 0 keeps geometry; 0.1-1.0 centers and scales
 maximize = false                                # Maximize to usable-area edges while shown
@@ -760,9 +754,8 @@ fullscreen = false                              # Make the scratchpad window ful
 
 # Focus border color
 [animation.border]
-enabled = false
-duration_ms = 250
-curve = "easeout"
+enabled = true
+curve = "spring:1,600"                          # 494 ms critically damped settle
 
 # Unfocused window opacity
 [animation.dim_unfocused]

@@ -14,48 +14,41 @@ curve = "easeout"
 
 [animation.windows_in]
 enabled = true
-duration_ms = 200
-curve = "easeout"
+curve = "spring:1,1900"
 style = "popin"       # "popin", "zoom", "slide", "fade", or "none"
 scale = 0.85          # 0.1-1.0, used by "popin"
 
 [animation.windows_out]
 enabled = true
-duration_ms = 150
-curve = "easeout"
+curve = "spring:1,900"
 style = "fade"        # "fade", "slide", "popin", or "zoom"
 scale = 0.8           # 0.1-1.0, used by "popin"
 
 [animation.windows_move]
 enabled = true
-duration_ms = 150
-curve = "easeout"
+curve = "spring:1,4400"
 
 [animation.workspaces]
 enabled = true
-duration_ms = 250
-curve = "easeout"
+curve = "spring:1,800"
 
 [animation.overview]
 enabled = true
-duration_ms = 250
-curve = "easeout"
+curve = "spring:1,800"
 workspace_curve = "spring:1,1000"
 
 [animation.scratchpad]
-enabled = false
-duration_ms = 250
-curve = "easeout"
-dim = 0.5             # 0.0-1.0
+enabled = true
+curve = "spring:1,800"
+dim = 0.8             # 0.0-1.0
 blur = false          # requires appearance.blur.enabled
 scale = 0.0           # 0 preserves geometry; 0.1-1.0 sizes and centers on entry
 maximize = false      # maximize to edges on entry
 fullscreen = false    # fullscreen on entry
 
 [animation.border]
-enabled = false
-duration_ms = 250
-curve = "easeout"
+enabled = true
+curve = "spring:1,600"
 
 [animation.dim_unfocused]
 enabled = false
@@ -76,6 +69,23 @@ curve = "easeout"
 | `enabled`     | bool   | `true`    | Master switch. When false, every animation transition is instant.           |
 | `duration_ms` | int    | `250`     | Default duration for all events when explicitly set (1-10000 milliseconds). |
 | `curve`       | string | `easeout` | Default curve for all events when explicitly set.                           |
+
+Each event's own defaults:
+
+| Event             | Enabled | Curve             | Length |
+| ----------------- | ------- | ----------------- | ------ |
+| `windows_in`      | yes     | `spring:1,1900`   | 278 ms |
+| `windows_out`     | yes     | `spring:1,900`    | 403 ms |
+| `windows_move`    | yes     | `spring:1,4400`   | 183 ms |
+| `workspaces`      | yes     | `spring:1,800`    | 428 ms |
+| `overview`        | yes     | `spring:1,800`    | 428 ms |
+| `scratchpad`      | yes     | `spring:1,800`    | 428 ms |
+| `border`          | yes     | `spring:1,600`    | 494 ms |
+| `dim_unfocused`   | no      | `easeout`         | 250 ms |
+| `layers`          | no      | `easeout`         | 250 ms |
+
+A spring's length comes from its parameters, so `duration_ms` applies only to
+the two events with a duration-based curve.
 
 ## Event tables
 
