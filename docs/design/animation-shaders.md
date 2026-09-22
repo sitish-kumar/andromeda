@@ -20,6 +20,16 @@ target-local previous-result sampling, a stable four-channel random seed,
 logical target size, eased and linear progress, and transition direction.
 Compiler diagnostics retain source line numbers and the file/event label.
 
+Without a custom shader, `windows_in` and `windows_out` bind a built-in fade
+program through `lifecycleShader`, except for the `slide` style, whose opacity
+curve differs from its progress. The window, its subsurfaces, and its border
+are composited once and faded as a group, so overlapping surfaces never show
+through each other mid-fade. `View::fadeComposited` and the close snapshot keep
+buffer and border opacity at 1 while such a program runs. The built-in program
+is marked shape-preserving, so its window keeps the analytic shadow, which the
+view fades itself. Scratchpad and layer fades stay per buffer, because they can
+start from a partial alpha that normalized progress does not carry.
+
 ## Scene processing
 
 Effect state is attached through scene-node addons, preserving the scene ABI.
@@ -65,7 +75,7 @@ not preattenuated by the native fade. Ancestor shaders are excluded from the
 caster capture and subsequently process the window and shadow together.
 
 The normal analytic rounded-rectangle shadow remains the fast path without
-window-subtree shaders, and the fallback on capture or internal-program failure.
+window-subtree shaders other than shape-preserving ones, and the fallback on capture or internal-program failure.
 The two internal programs are cached per renderer, including failures. Shadow
 captures use the existing output/depth buffer pool and working color format.
 The horizontal pass uses a reduced grid matched to the kernel spacing; linear
@@ -263,7 +273,8 @@ arrange. Check 206 covers longer, equal, and shorter `windows_out` duration
 orderings against `windows_move` and asserts that the snapshot holds its
 captured box for every sampled frame. Check 207 interrupts scrolling reflow
 with a second close and verifies independent shader phases, monotonic survivor
-motion on a single movement clock, and no summed delay or starvation. Check 209 redraws a reflowing neighbour in a new colour at its new size and
+motion on a single movement clock, and no summed delay or starvation. Check 191 fades a window whose opaque subsurface covers its parent and verifies
+that the parent never shows through while opening or closing. Check 209 redraws a reflowing neighbour in a new colour at its new size and
 observes blended pixels mid-reflow, then the redrawn frame alone. Check 208 closes
 the root leaf of a five-window dwindle tree and verifies that every changing
 survivor follows an overshooting movement curve across its full configured

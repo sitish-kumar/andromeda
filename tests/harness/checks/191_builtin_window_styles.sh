@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Built-in slide keeps more opacity than fade at the same point in the timeline, so its existing movement remains
 # visible during both window opening and closing. Built-in popin shrinks a closing snapshot toward its own centre.
+# Built-in fade applies one alpha to the whole window: a red parent fully covered by a blue subsurface never shows
+# through it while opening or closing, as it would if each buffer faded on its own.
 set -euo pipefail
 
 readonly CLIENT="${UMBRIEL_UNMAP_CLIENT:-./build-debug/tests/unmap-client}"
+readonly SUBSURFACE_CLIENT="${UMBRIEL_SUBSURFACE_CLIENT:-./build-debug/tests/subsurface-client}"
 readonly IMAGE="$UMBRIEL_RUNTIME_DIR/builtin-window-styles.png"
 readonly DURATION_MS=5000
 
@@ -49,6 +52,12 @@ default_floating_size_px = { width = 400, height = 240 }
 default_position = { x = 760, y = 180, anchor = "top_left" }
 
 [[window_rule]]
+match.title = "^style-group$"
+default_floating = true
+default_floating_size_px = { width = 400, height = 240 }
+default_position = { x = 760, y = 440, anchor = "top_left" }
+
+[[window_rule]]
 match.title = "^style-popin$"
 default_floating = true
 default_floating_size_px = { width = 400, height = 240 }
@@ -76,6 +85,25 @@ spawn() {
 
 window_id() {
   "$UMBRIEL" windows --json | jq -r --arg title "$1" '.[] | select(.title == $title) | .id'
+}
+
+sample_rgb() {
+  local x=$1 y=$2
+  grim "$IMAGE"
+  magick "$IMAGE" -alpha off -crop "40x40+$x+$y" +repage \
+    -format '%[fx:round(255*mean.r)] %[fx:round(255*mean.b)]\n' info:
+}
+
+assert_group_fade() {
+  local phase=$1 red=$2 blue=$3
+  if ! ((blue >= 90 && blue <= 165)); then
+    echo "$phase subsurface window was outside the middle of its fade: blue=$blue"
+    exit 1
+  fi
+  if ((red > 15)); then
+    echo "$phase covered parent showed through its subsurface: red=$red blue=$blue"
+    exit 1
+  fi
 }
 
 sample_blue() {
@@ -153,4 +181,21 @@ if ((mid_cx < 594 || mid_cx > 606 || mid_cy < 1114 || mid_cy > 1126)); then
   exit 1
 fi
 
-echo "built-in slide stayed distinct from fade while opening and closing, and popin shrank the close snapshot"
+sleep 2.85
+
+sed -i 's/^style = "slide" # OPEN_STYLE$/style = "fade" # OPEN_STYLE/' "$UMBRIEL_CONFIG"
+sed -i 's/^style = "popin" # CLOSE_STYLE$/style = "fade" # CLOSE_STYLE/' "$UMBRIEL_CONFIG"
+"$UMBRIEL" msg config-reload > /dev/null
+"$SUBSURFACE_CLIENT" style-group 400 240 > "$UMBRIEL_RUNTIME_DIR/style-group.log" 2>&1 &
+group_pid=$!
+wait_for_window style-group
+sleep 2.35
+read -r group_open_red group_open_blue <<< "$(sample_rgb 940 540)"
+assert_group_fade opening "$group_open_red" "$group_open_blue"
+sleep 2.85
+kill "$group_pid"
+sleep 2.35
+read -r group_close_red group_close_blue <<< "$(sample_rgb 940 540)"
+assert_group_fade closing "$group_close_red" "$group_close_blue"
+
+echo "built-in slide stayed distinct from fade, popin shrank the close snapshot, and fade kept subsurfaces opaque over their parent"

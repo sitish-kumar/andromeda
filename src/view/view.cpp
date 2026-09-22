@@ -666,10 +666,18 @@ namespace umbriel {
     }
   }
 
+  bool View::fadeComposited() const {
+    if (!m_fade.animating()) {
+      return false;
+    }
+    return m_customFade
+        || (!m_inScratchpad && lifecycleShader(m_server->renderer(), AnimationEvent::WindowsIn) != nullptr);
+  }
+
   float View::effectiveOpacity() const {
     // Overshooting curves can push this past [0, 1]; wlr_scene_buffer_set_opacity asserts.
     const float ruleOpacity = m_toplevel->scheduled.fullscreen ? 1.0F : m_ruleOpacity;
-    const float fade = m_customFade && m_fade.animating() ? 1.0F : m_fadeAlpha;
+    const float fade = fadeComposited() ? 1.0F : m_fadeAlpha;
     return std::clamp(fade * ruleOpacity * m_dragOpacity * static_cast<float>(m_focusDim.current()), 0.0F, 1.0F);
   }
 
@@ -682,7 +690,7 @@ namespace umbriel {
     m_decoration.setBorderRawColor(m_borderColorAnim.current(), effective);
     // The analytic fallback still follows the lifecycle fade. Shader-shaped
     // shadows get their opacity from captured pixels instead of this multiplier.
-    const float shadowOpacity = m_customFade && m_fade.animating() ? effective * m_fadeAlpha : effective;
+    const float shadowOpacity = fadeComposited() ? effective * m_fadeAlpha : effective;
     m_decoration.setAlpha(shadowOpacity, m_fadeAlpha);
   }
 

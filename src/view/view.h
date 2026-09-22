@@ -384,6 +384,8 @@ namespace umbriel {
     // Re-apply compositor-owned opacity to surface buffers. Fullscreen bypasses window-rule opacity, while fades,
     // drag opacity, focus dimming, and client-provided alpha remain active.
     [[nodiscard]] float effectiveOpacity() const;
+    // The lifecycle fade runs through a whole-window shader, so buffers and borders stay opaque under it.
+    [[nodiscard]] bool fadeComposited() const;
     void applyEffectiveOpacity();
     void flushPendingEffectiveOpacity();
     void watchViewSurfaceTree(wlr_surface* root, wlr_subsurface* attachment = nullptr);
