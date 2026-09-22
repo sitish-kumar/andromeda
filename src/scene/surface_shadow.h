@@ -28,7 +28,8 @@ namespace umbriel {
     // Set an opacity multiplier applied to the shadow color (for fade animations).
     void setAlpha(float alpha);
     void setAnimationSource(wlr_scene_node* source);
-    [[nodiscard]] ShadowSnapshot snapshot(wlr_scene_tree* parent, wlr_scene_node* source) const;
+    // `inPool` puts the copy under every sibling in `parent`; otherwise it sits directly below `source`, a sibling.
+    [[nodiscard]] ShadowSnapshot snapshot(wlr_scene_tree* parent, wlr_scene_node* source, bool inPool) const;
 
   private:
     wlr_scene_shadow* m_node = nullptr;

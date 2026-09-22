@@ -1423,7 +1423,6 @@ namespace umbriel {
 
     wlr_scene_node_set_enabled(&m_server->xdgTree()->node, false);
     wlr_scene_node_set_enabled(&m_server->fullscreenTree()->node, false);
-    wlr_scene_node_set_enabled(&m_server->pinnedShadowTree()->node, false);
     wlr_scene_node_set_enabled(&m_server->pinnedTree()->node, false);
     wlr_scene_node_set_enabled(&m_tree->node, true);
     // Bottom-layer surfaces are mirrored into every row, so the real ones step aside the way windows do. The
@@ -1665,7 +1664,6 @@ namespace umbriel {
     }
     wlr_scene_node_set_enabled(&m_server->xdgTree()->node, true);
     wlr_scene_node_set_enabled(&m_server->fullscreenTree()->node, true);
-    wlr_scene_node_set_enabled(&m_server->pinnedShadowTree()->node, true);
     wlr_scene_node_set_enabled(&m_server->pinnedTree()->node, true);
     wlr_scene_node_set_enabled(&m_server->shellLayerTree(ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM)->node, true);
 

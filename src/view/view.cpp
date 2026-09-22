@@ -194,11 +194,15 @@ namespace umbriel {
     m_rootSurfaceDestroy.notify = onRootSurfaceDestroy;
     wl_signal_add(&m_toplevel->base->surface->events.destroy, &m_rootSurfaceDestroy);
 
-    m_sceneTree = wlr_scene_xdg_surface_create(m_server->xdgTree(), m_toplevel->base);
+    m_sceneTree = wlr_scene_tree_create(m_server->xdgTree());
+    m_decoration.createShadow(m_sceneTree);
+    m_contentTree = wlr_scene_xdg_surface_create(m_sceneTree, m_toplevel->base);
+    // Both carry the tag: popups and constraints find the view through `base->data`, layer walks through the frame.
     m_sceneTree->node.data = sceneNodeData(this);
-    m_toplevel->base->data = m_sceneTree;
+    m_contentTree->node.data = sceneNodeData(this);
+    m_toplevel->base->data = m_contentTree;
     wlr_scene_node_set_enabled(&m_sceneTree->node, false);
-    m_presentation.createBackdrop(m_sceneTree);
+    m_presentation.createBackdrop(m_contentTree);
 
     // A scene-node capture uses the node's scene as its render source. Keep a
     // second scene containing only the client surfaces so transparency cannot
@@ -309,6 +313,11 @@ namespace umbriel {
       wlr_scene_node_destroy(&m_captureScene->tree.node);
       m_captureScene = nullptr;
     }
+    if (m_sceneTree != nullptr) {
+      m_decoration.poolShadow(m_sceneTree, nullptr, 0, 0, false);
+      wlr_scene_node_destroy(&m_sceneTree->node);
+      m_sceneTree = nullptr;
+    }
   }
 
   wlr_scene_tree* View::captureTree() const { return m_captureScene != nullptr ? &m_captureScene->tree : nullptr; }
@@ -345,12 +354,11 @@ namespace umbriel {
     if (m_workspace != nullptr) {
       m_workspace->addView(this, attachToLayout);
     } else {
-      // A pinned view normally hangs below output-owned clipping roots. Park both of its scene branches on the
-      // server-owned pinned roots before the last output is destroyed, then addView() can rehome them when an output
-      // returns. Leaving either branch under the dying output frees nodes that the live View still owns.
+      // A pinned view normally hangs below an output-owned clipping root. Park its frame on the server-owned pinned
+      // root before the last output is destroyed, then addView() can rehome it when an output returns. Leaving it under
+      // the dying output frees nodes that the live View still owns.
       if (m_pinned) {
-        wlr_scene_node_reparent(&m_sceneTree->node, m_server->pinnedTree());
-        reparentShadow(m_server->pinnedShadowTree());
+        setSceneParent(m_server->pinnedTree());
       }
       setOnActiveWorkspace(true);
     }
@@ -438,7 +446,6 @@ namespace umbriel {
   }
 
   void View::detachWorkspace() {
-    reparentShadow(nullptr);
     m_workspace = nullptr;
     m_openingScale = 1.0;
     m_openingSlide = 0;
@@ -575,17 +582,11 @@ namespace umbriel {
     if (m_sceneTree->node.parent == target) {
       return;
     }
-    wlr_scene_node_reparent(&m_sceneTree->node, target);
-    if (target != homeTree()) {
-      reparentShadow(target);
-    } else {
-      reparentShadow(m_workspace->shadowLayer());
-    }
+    setSceneParent(target);
   }
 
   void View::raiseTransientTree() {
     syncTransientSceneParent();
-    m_decoration.raiseShadowToTop();
     wlr_scene_node_raise_to_top(&m_sceneTree->node);
 
     const auto views = m_server->registry().all();
@@ -606,9 +607,21 @@ namespace umbriel {
     refreshStateRuleEffects();
   }
 
-  void View::reparentShadow(wlr_scene_tree* shadowLayer) {
-    m_decoration.reparentShadow(shadowLayer, m_sceneTree->node.x, m_sceneTree->node.y, m_sceneTree->node.enabled);
-    updateShadow();
+  void View::setSceneParent(wlr_scene_tree* parent) {
+    wlr_scene_node_reparent(&m_sceneTree->node, parent);
+    syncShadowPool();
+  }
+
+  void View::syncShadowPool() {
+    wlr_scene_tree* pool = m_workspace != nullptr && m_sceneTree->node.parent == m_workspace->viewLayer(true)
+        ? m_workspace->tileShadowLayer()
+        : nullptr;
+    m_decoration.poolShadow(m_sceneTree, pool, m_sceneTree->node.x, m_sceneTree->node.y, m_sceneTree->node.enabled);
+  }
+
+  void View::setScenePosition(int x, int y) {
+    wlr_scene_node_set_position(&m_sceneTree->node, x, y);
+    m_decoration.setShadowPosition(x, y);
   }
 
   void View::applySeatFocus(bool withKeyboard) {
@@ -688,7 +701,7 @@ namespace umbriel {
     // Overshooting curves can push this out of range; wlr_scene_buffer_set_opacity asserts opacity is in [0, 1].
     m_fadeAlpha = std::clamp(alpha, 0.0F, 1.0F);
     float effective = effectiveOpacity();
-    wlr_scene_node_for_each_buffer(&m_sceneTree->node, setCompositorOpacity, &effective);
+    wlr_scene_node_for_each_buffer(&m_contentTree->node, setCompositorOpacity, &effective);
     m_resizeCrossfade.applyOpacity(effective);
     m_decoration.setBorderRawColor(m_borderColorAnim.current(), effective);
     // The analytic fallback still follows the lifecycle fade. Shader-shaped
@@ -705,7 +718,7 @@ namespace umbriel {
     if (effective >= 1.0F) {
       return;
     }
-    wlr_scene_node_for_each_buffer(&m_sceneTree->node, setCompositorOpacity, &effective);
+    wlr_scene_node_for_each_buffer(&m_contentTree->node, setCompositorOpacity, &effective);
     m_resizeCrossfade.applyOpacity(effective);
   }
 
@@ -847,15 +860,13 @@ namespace umbriel {
     if (layoutFullscreen()) {
       const wlr_box area = fullscreenLayoutBox();
       if (area.width > 0 && area.height > 0) {
-        wlr_scene_node_set_position(&m_sceneTree->node, area.x, area.y);
-        m_decoration.setShadowPosition(area.x, area.y);
+        setScenePosition(area.x, area.y);
       }
       return;
     }
     if (m_tiled && m_workspace != nullptr && m_workspace->layout().columnOf(this) >= 0) {
       const wlr_box slot = m_workspace->presentedTiledBox(this);
-      wlr_scene_node_set_position(&m_sceneTree->node, slot.x, slot.y);
-      m_decoration.setShadowPosition(slot.x, slot.y);
+      setScenePosition(slot.x, slot.y);
     }
   }
 
@@ -906,17 +917,19 @@ namespace umbriel {
 
   void View::updateFullscreenPresentation(int width, int height) {
     m_presentation.updateFullscreen(
-        m_toplevel->current.fullscreen, width, height, toplevelSurfaceTreeNode(m_sceneTree, m_toplevel->base->surface),
-        m_toplevel->base->geometry
+        m_toplevel->current.fullscreen, width, height,
+        toplevelSurfaceTreeNode(m_contentTree, m_toplevel->base->surface), m_toplevel->base->geometry
     );
   }
 
   void View::applyPresentedCrop(const wlr_box& content, const wlr_box& surfaceClip) {
-    m_presentation.applyCrop(m_sceneTree, m_toplevel->base->surface, m_toplevel->base->geometry, content, surfaceClip);
+    m_presentation.applyCrop(
+        m_contentTree, m_toplevel->base->surface, m_toplevel->base->geometry, content, surfaceClip
+    );
   }
 
   void View::resetPresentedSurface() {
-    m_presentation.resetCrop(m_sceneTree, m_toplevel->base->surface);
+    m_presentation.resetCrop(m_contentTree, m_toplevel->base->surface);
     // Clear the subsurface clip so the next syncViewPresentation re-applies the resting clip through a real
     // reconfigure: an unchanged clip box early-outs and would leave the animated src/dst behind.
     setSurfaceTreeClip(nullptr);
@@ -1007,11 +1020,9 @@ namespace umbriel {
     setFadeAlpha(m_fadeAlpha);
     m_effectiveOpacityCommitPending = false;
     if (m_pinned) {
-      wlr_scene_node_place_above(&m_server->dragShadowTree()->node, &m_server->pinnedTree()->node);
-      wlr_scene_node_place_above(&m_server->dragTree()->node, &m_server->dragShadowTree()->node);
+      wlr_scene_node_place_above(&m_server->dragTree()->node, &m_server->pinnedTree()->node);
     }
-    wlr_scene_node_reparent(&m_sceneTree->node, m_server->dragTree());
-    reparentShadow(m_server->dragShadowTree());
+    setSceneParent(m_server->dragTree());
     setNodeEnabled(true);
     resetSurfaceClip();
     raiseToTop();
@@ -1025,7 +1036,6 @@ namespace umbriel {
     m_effectiveOpacityCommitPending = false;
     setFadeAlpha(m_fadeAlpha);
     wlr_scene_node_place_below(&m_server->dragTree()->node, &m_server->dragIconTree()->node);
-    wlr_scene_node_place_below(&m_server->dragShadowTree()->node, &m_server->dragTree()->node);
     if (ScratchpadManager* scratchpad = m_server->scratchpadManager();
         scratchpad != nullptr && scratchpad->contains(this)) {
       scratchpad->restorePresentation(this);
@@ -1039,13 +1049,11 @@ namespace umbriel {
       return;
     }
 
-    wlr_scene_node_reparent(&m_sceneTree->node, homeTree());
+    setSceneParent(homeTree());
     if (m_workspace == nullptr) {
-      reparentShadow(nullptr);
       setNodeEnabled(m_mapped && m_onActiveWorkspace);
       return;
     }
-    reparentShadow(m_workspace->shadowLayer());
     setNodeEnabled(m_mapped && m_onActiveWorkspace);
     m_workspace->restackFloatingViews();
     if (m_mapped) {
@@ -1092,8 +1100,7 @@ namespace umbriel {
     m_posX.snap(x);
     m_posY.snap(y);
     m_positioned = true;
-    wlr_scene_node_set_position(&m_sceneTree->node, x, y);
-    m_decoration.setShadowPosition(x, y);
+    setScenePosition(x, y);
   }
 
   void View::snapPosition(int x, int y) { setPosition(x, y); }
@@ -1111,8 +1118,7 @@ namespace umbriel {
 
   void View::placePresentedBox(const wlr_box& box) {
     const wlr_box presented = openingInsetBox(box);
-    wlr_scene_node_set_position(&m_sceneTree->node, presented.x, presented.y);
-    m_decoration.setShadowPosition(presented.x, presented.y);
+    setScenePosition(presented.x, presented.y);
     m_presentation.setSize(presented.width, presented.height);
   }
 
@@ -1252,10 +1258,7 @@ namespace umbriel {
     scheduleFrame();
   }
 
-  void View::setDragPosition(int x, int y) {
-    wlr_scene_node_set_position(&m_sceneTree->node, x, y);
-    m_decoration.setShadowPosition(x, y);
-  }
+  void View::setDragPosition(int x, int y) { setScenePosition(x, y); }
 
   void View::animateTo(int x, int y) {
     // First placement snaps: the node starts at the default (0,0) world origin, so animating would fly the window
@@ -1289,7 +1292,7 @@ namespace umbriel {
 
   void View::syncAnimationShaders(wlr_scene_tree* target, wlr_scene_node* border) {
     if (target == nullptr) {
-      target = m_sceneTree;
+      target = m_contentTree;
       if (m_decoration.borderTree() != nullptr) {
         border = &m_decoration.borderTree()->node;
       }
@@ -1345,8 +1348,7 @@ namespace umbriel {
     if (movedX || movedY) {
       const int cx = static_cast<int>(std::lround(m_posX.current()));
       const int cy = static_cast<int>(std::lround(m_posY.current()));
-      wlr_scene_node_set_position(&m_sceneTree->node, cx, cy);
-      m_decoration.setShadowPosition(cx, cy);
+      setScenePosition(cx, cy);
       // Clips are derived from the node's current position; refresh them as the
       // node moves or partial-visibility trims land displaced.
       syncOwnedPresentation();
@@ -2082,11 +2084,11 @@ namespace umbriel {
         radius,
         usePresentedSize ? m_presentation.width() : geometry.width,
         usePresentedSize ? m_presentation.height() : geometry.height,
-        m_sceneTree->node.x,
-        m_sceneTree->node.y,
+        m_contentTree->node.x,
+        m_contentTree->node.y,
     };
     wlr_scene_node_for_each_buffer(
-        &m_sceneTree->node,
+        &m_contentTree->node,
         [](wlr_scene_buffer* buffer, int sx, int sy, void* data) {
           auto* ctx = static_cast<Ctx*>(data);
           wlr_scene_surface* sceneSurface = wlr_scene_surface_try_from_buffer(buffer);
@@ -2125,7 +2127,7 @@ namespace umbriel {
     }
     const wlr_box nodeBox{0, 0, contentWidth, contentHeight};
     m_decoration.updateBlur(
-        m_sceneTree, m_toplevel->base->surface, nodeBox, m_toplevel->base->geometry, surfaceRadius(), nullptr,
+        m_contentTree, m_toplevel->base->surface, nodeBox, m_toplevel->base->geometry, surfaceRadius(), nullptr,
         effectiveOpacity(), m_fadeAlpha
     );
   }
@@ -2152,11 +2154,11 @@ namespace umbriel {
     m_decoration.updateShadow(
         contentWidth, contentHeight, borderTotal, decorated() ? config().appearance.cornerRadius : 0
     );
-    m_decoration.setShadowAnimationSource(&m_sceneTree->node);
+    m_decoration.setShadowAnimationSource(&m_contentTree->node);
   }
 
   void View::showDecorations(bool enabled) {
-    m_decoration.ensureBorders(m_sceneTree);
+    m_decoration.ensureBorders(m_contentTree);
     m_decoration.setBordersEnabled(enabled);
     updateBorderGeometry();
     applyCornerRadius();
@@ -2228,9 +2230,9 @@ namespace umbriel {
       int rootY;
       int buffersCopied;
     };
-    CopyCtx ctx{content, m_sceneTree->node.x, m_sceneTree->node.y, 0};
+    CopyCtx ctx{content, m_contentTree->node.x, m_contentTree->node.y, 0};
     wlr_scene_node_for_each_buffer(
-        &m_sceneTree->node,
+        &m_contentTree->node,
         [](wlr_scene_buffer* src, int sx, int sy, void* data) {
           auto* c = static_cast<CopyCtx*>(data);
           if (src->buffer == nullptr || !src->node.enabled) {
@@ -2266,11 +2268,11 @@ namespace umbriel {
       return kInvalidCloseSnapshot;
     }
 
-    wlr_scene_node_copy_animations_for_snapshot(&snap->node, &m_sceneTree->node);
+    wlr_scene_node_copy_animations_for_snapshot(&snap->node, &m_contentTree->node);
     // A close snapshot owns its windows_out lifecycle. Keep a possible interrupted windows_in effect, but do not
     // freeze windows_move into the snapshot.
     wlr_scene_node_set_animation(&snap->node, static_cast<unsigned>(AnimationEvent::WindowsMove), nullptr, nullptr);
-    const auto shadow = m_decoration.snapshotShadow(output->viewRoot(), &snap->node);
+    const auto shadow = m_decoration.snapshotShadow(output->viewRoot(), &snap->node, m_decoration.shadowPooled());
     const CloseSnapshotId id = m_server->animateCloseSnapshot(
         output, snap, content, std::move(snapBorders), m_presentedBox, std::nullopt, shadow
     );
@@ -2282,10 +2284,10 @@ namespace umbriel {
     // Clip only the toplevel subsurface tree. Calling set_clip on the xdg root also stamps that clip onto popup
     // children (wrong coords → cut-off menus), and clearing clip on border/popup trees asserts when they have no
     // subsurface tree.
-    if (wlr_scene_node* surfaceNode = toplevelSurfaceTreeNode(m_sceneTree, m_toplevel->base->surface)) {
+    if (wlr_scene_node* surfaceNode = toplevelSurfaceTreeNode(m_contentTree, m_toplevel->base->surface)) {
       wlr_scene_subsurface_tree_set_clip(surfaceNode, clip);
     } else if (clip == nullptr) {
-      wlr_scene_subsurface_tree_set_clip(&m_sceneTree->node, nullptr);
+      wlr_scene_subsurface_tree_set_clip(&m_contentTree->node, nullptr);
     }
     // A clip change runs wlroots' scene surface reconfigure, which resets the scene-buffer opacity (to the client
     // alpha, 1.0 without wp_alpha_modifier). This runs in the render path after the animation tick, so re-apply our
@@ -2916,7 +2918,7 @@ namespace umbriel {
 
             m_presentation.setSize(startW, startH);
             m_presentation.animateTo(targetW, targetH, open.durationMs, open.curve);
-            wlr_scene_node_set_position(&m_sceneTree->node, startX, startY);
+            setScenePosition(startX, startY);
             m_posX.snap(startX);
             m_posY.snap(startY);
             m_posX.retarget(targetX, open.durationMs, open.curve);
@@ -2931,7 +2933,7 @@ namespace umbriel {
           } else {
             const int targetX = m_sceneTree->node.x;
             const int targetY = m_sceneTree->node.y;
-            wlr_scene_node_set_position(&m_sceneTree->node, targetX, targetY + kOpenSlidePx);
+            setScenePosition(targetX, targetY + kOpenSlidePx);
             m_posX.snap(targetX);
             m_posY.snap(targetY + kOpenSlidePx);
             m_posY.retarget(targetY, open.durationMs, open.curve);
@@ -3005,8 +3007,7 @@ namespace umbriel {
       m_pinned = false;
       m_restoreTiledAfterUnpin = false;
       if (m_workspace != nullptr) {
-        wlr_scene_node_reparent(&m_sceneTree->node, m_workspace->viewLayer(false));
-        reparentShadow(m_workspace->shadowLayer());
+        setSceneParent(m_workspace->viewLayer(false));
         setOnActiveWorkspace(m_workspace->active());
       }
     }
@@ -3032,7 +3033,7 @@ namespace umbriel {
     }
     const CloseSnapshotId snapshot = beginCloseAnimation();
     // The closing snapshot must retain any in-flight opening shader first.
-    wlr_scene_node_clear_animations(&m_sceneTree->node);
+    wlr_scene_node_clear_animations(&m_contentTree->node);
     cancelFadeAnimation();
     // The workspace owns the snapshot's visibility and its slide translation from here.
     if (snapshot != kInvalidCloseSnapshot && m_workspace != nullptr) {
@@ -3047,7 +3048,7 @@ namespace umbriel {
     m_presentation.setBackdropEnabled(false);
     if (m_toplevel->current.fullscreen || m_toplevel->scheduled.fullscreen) {
       // Move out of the fullscreen layer back to the normal workspace/xdg tree.
-      wlr_scene_node_reparent(&m_sceneTree->node, m_workspace ? m_workspace->viewLayer(m_tiled) : m_server->xdgTree());
+      setSceneParent(m_workspace ? m_workspace->viewLayer(m_tiled) : m_server->xdgTree());
     }
     m_mapped = false;
     m_openingParentRequested = false;
@@ -3194,7 +3195,7 @@ namespace umbriel {
       return;
     }
     m_resizeCrossfade.capture(
-        m_sceneTree, toplevelSurfaceTreeNode(m_sceneTree, surface), surface, m_presentedBox.width,
+        m_contentTree, toplevelSurfaceTreeNode(m_contentTree, surface), surface, m_presentedBox.width,
         m_presentedBox.height, surfaceRadius()
     );
   }
@@ -3501,6 +3502,7 @@ namespace umbriel {
     m_setTitle.link.next = nullptr;
     m_setAppId.link.next = nullptr;
     m_sceneTree->node.data = nullptr;
+    m_contentTree->node.data = nullptr;
     m_toplevel->base->data = nullptr;
     m_server->removeView(this);
   }
@@ -3808,10 +3810,8 @@ namespace umbriel {
     }
     Output* output = currentOutput();
     // Ordering stays on the server-level trees; only the content hangs under the output's clipped roots.
-    wlr_scene_node_place_above(&m_server->pinnedShadowTree()->node, &m_server->fullscreenTree()->node);
-    wlr_scene_node_place_above(&m_server->pinnedTree()->node, &m_server->pinnedShadowTree()->node);
-    wlr_scene_node_reparent(&m_sceneTree->node, output != nullptr ? output->pinnedRoot() : m_server->pinnedTree());
-    reparentShadow(output != nullptr ? output->pinnedShadowRoot() : m_server->pinnedShadowTree());
+    wlr_scene_node_place_above(&m_server->pinnedTree()->node, &m_server->fullscreenTree()->node);
+    setSceneParent(output != nullptr ? output->pinnedRoot() : m_server->pinnedTree());
     setNodeEnabled(true);
     raiseToTop();
   }
@@ -3863,8 +3863,7 @@ namespace umbriel {
       return;
     }
     if (m_workspace != nullptr) {
-      wlr_scene_node_reparent(&m_sceneTree->node, m_workspace->viewLayer(false));
-      reparentShadow(m_workspace->shadowLayer());
+      setSceneParent(m_workspace->viewLayer(false));
       setOnActiveWorkspace(m_workspace->active());
       m_workspace->syncFloatingStack(this);
       m_workspace->syncViewPresentation(this);
@@ -3905,8 +3904,7 @@ namespace umbriel {
       m_restoreTiledAfterUnpin = false;
       m_restorePinnedAfterFullscreen = false;
       if (m_workspace != nullptr) {
-        wlr_scene_node_reparent(&m_sceneTree->node, m_workspace->viewLayer(false));
-        reparentShadow(m_workspace->shadowLayer());
+        setSceneParent(m_workspace->viewLayer(false));
         setOnActiveWorkspace(m_workspace->active());
       }
     }
@@ -3947,7 +3945,7 @@ namespace umbriel {
       m_tiled = false;
       m_presentedTiledBox = {};
       if (m_workspace != nullptr) {
-        wlr_scene_node_reparent(&m_sceneTree->node, m_workspace->viewLayer(m_tiled));
+        setSceneParent(m_workspace->viewLayer(m_tiled));
         m_workspace->syncFloatingStack(this);
       }
       const wlr_box usable = floatingUsableArea();
@@ -4036,12 +4034,12 @@ namespace umbriel {
     }
     const bool wantFullscreen = fullscreen || refullscreen;
     if (m_workspace != nullptr) {
-      wlr_scene_node_reparent(&m_sceneTree->node, homeTree());
+      setSceneParent(homeTree());
       m_workspace->syncFloatingStack(this);
     }
     wlr_xdg_toplevel_set_tiled(m_toplevel, WLR_EDGE_TOP | WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT);
     wlr_xdg_toplevel_set_maximized(m_toplevel, false);
-    m_decoration.ensureBorders(m_sceneTree);
+    m_decoration.ensureBorders(m_contentTree);
     m_decoration.setBordersEnabled(!wantFullscreen);
     updateBorderGeometry();
     if (m_workspace != nullptr && placement == TilePlacement::Layout) {
@@ -4121,8 +4119,7 @@ namespace umbriel {
         m_pinned = false;
         m_restorePinnedAfterFullscreen = true;
         if (m_workspace != nullptr) {
-          wlr_scene_node_reparent(&m_sceneTree->node, m_workspace->viewLayer(false));
-          reparentShadow(m_workspace->shadowLayer());
+          setSceneParent(m_workspace->viewLayer(false));
           setOnActiveWorkspace(m_workspace->active());
         }
       }
@@ -4141,7 +4138,7 @@ namespace umbriel {
     updateFullscreenPresentation(0, 0);
     if (fullscreen) {
       // scheduled.fullscreen is set; reparent to fullscreen layer.
-      wlr_scene_node_reparent(&m_sceneTree->node, homeTree());
+      setSceneParent(homeTree());
       raiseToTop();
       // Snap scroll to the now viewport-wide column and reflow neighbors.
       if (m_workspace != nullptr) {
@@ -4156,7 +4153,7 @@ namespace umbriel {
         applyFullscreenLayout(true);
       }
     } else {
-      wlr_scene_node_reparent(&m_sceneTree->node, homeTree());
+      setSceneParent(homeTree());
       if (!m_tiled && m_workspace != nullptr) {
         m_workspace->restackFloatingViews();
       } else {

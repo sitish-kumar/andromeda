@@ -27,7 +27,7 @@ namespace umbriel {
   class Workspace;
   class ScratchpadManager : public Animatable {
   public:
-    ScratchpadManager(Server& server, wlr_scene_tree* root, wlr_scene_tree* shadowRoot);
+    ScratchpadManager(Server& server, wlr_scene_tree* root);
     ~ScratchpadManager() override;
 
     [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
@@ -131,7 +131,6 @@ namespace umbriel {
 
     Server* m_server = nullptr;
     wlr_scene_tree* m_root = nullptr;
-    wlr_scene_tree* m_shadowRoot = nullptr;
     std::map<std::string, Scratchpad, std::less<>> m_scratchpads;
     std::vector<Entry> m_entries;
     // Views mid fade-out on hide, still enabled until tickAnimations disables the node once the fade completes.

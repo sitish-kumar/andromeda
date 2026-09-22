@@ -113,8 +113,9 @@ namespace umbriel {
     const uint32_t coords[1] = {static_cast<uint32_t>(m_index)};
     wlr_ext_workspace_handle_v1_set_coordinates(m_handle, coords, 1);
     m_tree = wlr_scene_tree_create(m_group->output()->viewRoot());
-    // Focus raises only within a layer: floating views can never fall below tiles.
-    m_shadowLayer = wlr_scene_tree_create(m_tree);
+    // Focus raises only within a layer: floating views can never fall below tiles. Tiles lend their shadows to the
+    // layer under all of them, so a tile never shadows the tile beside it; every other window keeps its own.
+    m_tileShadowLayer = wlr_scene_tree_create(m_tree);
     m_tiledLayer = wlr_scene_tree_create(m_tree);
     m_floatingLayer = wlr_scene_tree_create(m_tree);
     m_fullscreenTree = wlr_scene_tree_create(m_group->output()->fullscreenRoot());
@@ -126,16 +127,14 @@ namespace umbriel {
     for (View* view : m_views) {
       view->cancelPositionAnimation();
       const bool fs = view->toplevel()->current.fullscreen || view->toplevel()->scheduled.fullscreen;
-      wlr_scene_node_reparent(
-          &view->sceneTree()->node, fs ? m_group->server()->fullscreenTree() : m_group->server()->xdgTree()
-      );
+      view->setSceneParent(fs ? m_group->server()->fullscreenTree() : m_group->server()->xdgTree());
       view->detachWorkspace();
     }
     m_views.clear();
     if (m_tree != nullptr) {
       wlr_scene_node_destroy(&m_tree->node);
       m_tree = nullptr;
-      m_shadowLayer = nullptr;
+      m_tileShadowLayer = nullptr;
       m_tiledLayer = nullptr;
       m_floatingLayer = nullptr;
     }
@@ -242,8 +241,7 @@ namespace umbriel {
       // Cross-output moves have to rehome the pinned view onto the new output's clipped roots.
       view->restorePinnedSceneParent();
     } else {
-      wlr_scene_node_reparent(&view->sceneTree()->node, fs ? m_fullscreenTree : viewLayer(view->tiled()));
-      view->reparentShadow(m_shadowLayer);
+      view->setSceneParent(fs ? m_fullscreenTree : viewLayer(view->tiled()));
     }
     syncFloatingStack(view);
     applyVisibility();
@@ -259,10 +257,7 @@ namespace umbriel {
     }
     if (!view->pinned()) {
       const bool fs = view->toplevel()->current.fullscreen || view->toplevel()->scheduled.fullscreen;
-      wlr_scene_node_reparent(
-          &view->sceneTree()->node, fs ? m_group->server()->fullscreenTree() : m_group->server()->xdgTree()
-      );
-      view->reparentShadow(nullptr);
+      view->setSceneParent(fs ? m_group->server()->fullscreenTree() : m_group->server()->xdgTree());
     }
     View* replacement = m_focusedView == view ? focusReplacementForRemoval(view) : nullptr;
     detachFromLayout(view);

@@ -158,7 +158,6 @@ namespace umbriel {
     void updateColorPreferences();
     [[nodiscard]] wlr_scene_tree* xdgTree() const { return m_xdgTree; }
     [[nodiscard]] wlr_scene_tree* scratchpadTree() const { return m_scratchpadTree; }
-    [[nodiscard]] wlr_scene_tree* scratchpadShadowTree() const { return m_scratchpadShadowTree; }
     [[nodiscard]] ScratchpadManager* scratchpadManager() const { return m_scratchpadManager.get(); }
     // Between layer-shell background and bottom: overview wallpaper blur renders
     // before bottom-layer surfaces so they remain sharp.
@@ -170,7 +169,6 @@ namespace umbriel {
     [[nodiscard]] ConfigBanner* configBanner() const { return m_configBanner.get(); }
     [[nodiscard]] Cheatsheet* cheatsheet() const { return m_cheatsheet.get(); }
     [[nodiscard]] QuitConfirm* quitConfirm() const { return m_quitConfirm.get(); }
-    [[nodiscard]] wlr_scene_tree* dragShadowTree() const { return m_dragShadowTree; }
     // Above xdg windows, below layer-shell top/overlay (drag/drop insert hint).
     [[nodiscard]] wlr_scene_tree* dragTree() const { return m_dragTree; }
     // Parent for wl_data_device drag icons; moved to the cursor while a drag is active.
@@ -178,7 +176,6 @@ namespace umbriel {
     // Above top panels, below overlay/lock (fullscreen xdg views).
     [[nodiscard]] wlr_scene_tree* fullscreenTree() const { return m_fullscreenTree; }
     [[nodiscard]] wlr_scene_tree* pinnedTree() const { return m_pinnedTree; }
-    [[nodiscard]] wlr_scene_tree* pinnedShadowTree() const { return m_pinnedShadowTree; }
     [[nodiscard]] wlr_scene_tree* imPopupTree() const { return m_imPopupTree; }
     [[nodiscard]] wlr_scene_tree* lockTree() const { return m_lockTree; }
     [[nodiscard]] wlr_scene_tree* shellLayerTree(uint32_t layer) const;
@@ -569,15 +566,11 @@ namespace umbriel {
     wlr_scene_tree* m_shellLayerTrees[kLayerCount]{};
     wlr_scene_tree* m_xdgTree = nullptr;
     wlr_scene_tree* m_scratchpadTree = nullptr;
-    wlr_scene_tree* m_scratchpadShadowTree = nullptr;
-    wlr_scene_tree* m_scratchpadContentTree = nullptr;
     wlr_scene_tree* m_overviewBlurTree = nullptr;
     wlr_scene_tree* m_overviewTree = nullptr;
-    wlr_scene_tree* m_dragShadowTree = nullptr;
     wlr_scene_tree* m_dragTree = nullptr;
     wlr_scene_tree* m_dragIconTree = nullptr;
     wlr_scene_tree* m_fullscreenTree = nullptr;
-    wlr_scene_tree* m_pinnedShadowTree = nullptr;
     wlr_scene_tree* m_pinnedTree = nullptr;
     wlr_scene_tree* m_imPopupTree = nullptr;
     wlr_scene_tree* m_lockTree = nullptr;

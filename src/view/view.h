@@ -55,6 +55,9 @@ namespace umbriel {
     [[nodiscard]] wlr_xdg_toplevel* toplevel() const { return m_toplevel; }
     [[nodiscard]] const std::optional<std::string>& xdgTag() const { return m_xdgTag; }
     [[nodiscard]] ContentType contentType() const { return m_contentType; }
+    // The view's frame: it carries the position, parent, stacking order, and visibility of the whole window. Its
+    // content tree (surfaces, borders, backdrop, blur, and animation shaders) sits at (0, 0) inside it, above the
+    // shadow.
     [[nodiscard]] wlr_scene_tree* sceneTree() const { return m_sceneTree; }
     void syncAnimationShaders(wlr_scene_tree* target = nullptr, wlr_scene_node* border = nullptr);
     [[nodiscard]] wlr_scene_tree* captureTree() const;
@@ -279,11 +282,12 @@ namespace umbriel {
     void restorePinnedSceneParent();
     // Apply the pinned state: reparent to the global pinned layer, resync presentation, and notify the overview.
     void applyPinnedState();
-    // Enable/disable the view's scene tree and its shadow container together.
+    // Enable/disable the view's frame, and its shadow when a tile has lent it to the workspace.
     void setNodeEnabled(bool enabled);
     void raiseToTop();
-    // Create or destroy the shadow container in the given workspace shadow layer.
-    void reparentShadow(wlr_scene_tree* shadowLayer);
+    // The only way to move the frame to another tree: a tile's shadow joins the workspace's tile shadow layer, and
+    // any other window's shadow stays in the frame.
+    void setSceneParent(wlr_scene_tree* parent);
     // Advances this view's animations; returns true while any is still running.
     [[nodiscard]] AnimationPhase animationPhase() const override { return AnimationPhase::Views; }
     bool tickAnimations(uint64_t nowMsec) override;
@@ -299,6 +303,11 @@ namespace umbriel {
     friend class Popup;
     friend class Overview;
     friend class Workspace;
+
+    // Move the frame, and a lent shadow with it.
+    void setScenePosition(int x, int y);
+    // Lend the shadow to the workspace's tile shadow layer while the frame is in the tiled layer, or take it back.
+    void syncShadowPool();
 
     enum class FullscreenExitLayout {
       Immediate,
@@ -579,6 +588,7 @@ namespace umbriel {
     std::optional<std::string> m_xdgTag;
     ContentType m_contentType = ContentType::None;
     wlr_scene_tree* m_sceneTree = nullptr;
+    wlr_scene_tree* m_contentTree = nullptr;
     // A separate scene containing only client-owned surfaces. Window capture
     // must never sample the composited desktop behind translucent content.
     wlr_scene* m_captureScene = nullptr;

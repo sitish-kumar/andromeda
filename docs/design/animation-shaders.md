@@ -53,7 +53,7 @@ The renderer captures contiguous descendants from the scene's paint-ordered
 render list into an alpha framebuffer, recursively processes inner effects,
 then runs each enclosing shader once. Subsurfaces therefore share the window's
 effect rather than restarting it. Overview cards reuse the source view's
-animation state. Window shadows remain in their native separate stacking tree.
+animation state. Window shadows sit beside the animated content tree, never inside it.
 
 An animation node can carry a final-composite output clip in node-local
 coordinates. Capture, shader input, and feedback history retain the full target;
@@ -130,7 +130,8 @@ snapshots copy current window and border effect parameters, retaining an
 interrupted opening effect inside the new closing effect. Layer unmap capture runs before the
 scene helper disables its subtree.
 
-Window close snapshots own a separate shadow tree below the output's windows.
+Window close snapshots own a separate shadow tree: directly below the snapshot for
+a window that casts its own shadow, and below every window of the output for a tile.
 It follows the snapshot position, retains the source shadow settings, and is
 destroyed with the snapshot. Its source association is detached safely when
 either node is destroyed. Analytic fallback shadows follow the native lifecycle
