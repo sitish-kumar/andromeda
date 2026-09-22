@@ -2789,12 +2789,14 @@ namespace umbriel {
       const bool customShader = animationShader(m_server->renderer(), AnimationEvent::WindowsIn) != nullptr;
       m_customFade = animation.enabled && open.enabled && customShader;
       const bool animates = animation.enabled && open.enabled && (open.style != "none" || customShader);
+      const Overview* overview = m_server->overview();
+      const bool overviewActive = overview != nullptr && overview->active();
       const bool tiledMember =
           m_tiled && !layoutFullscreen() && m_workspace != nullptr && m_workspace->layout().columnOf(this) >= 0;
       if (!animates) {
         setFadeAlpha(1.0F);
         m_fade.snap(1.0);
-      } else if (tiledMember) {
+      } else if (tiledMember && !overviewActive) {
         // The admitting arrange reveals a tiled member: immediately when its slot is already settled, otherwise once
         // the windows_move reflow that makes room for it completes.
         deferTiledOpening();
@@ -2803,8 +2805,14 @@ namespace umbriel {
         m_fade.snap(0.0);
         m_fade.retarget(1.0, open.durationMs, open.curve);
 
-        // Floating and fullscreen windows tween themselves.
-        if (!m_customFade && (open.style == "popin" || open.style == "zoom")) {
+        // An overview card mirrors the live window: a tiled member there fades and scales inside its slot while the
+        // card layout follows that mirrored geometry, so it never tweens its own position.
+        if (!m_customFade && tiledMember) {
+          if (open.style == "popin" || open.style == "zoom") {
+            m_openingScale = std::clamp(open.style == "zoom" ? 0.5 : open.scale, 0.0, 1.0);
+          }
+        } else if (!m_customFade && (open.style == "popin" || open.style == "zoom")) {
+          // Floating and fullscreen windows tween themselves.
           const int targetW = m_presentation.width();
           const int targetH = m_presentation.height();
           if (targetW > 0 && targetH > 0) {

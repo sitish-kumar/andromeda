@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Closing an overview card during tiled reflow must discard the copied windows_move effect before windows_out runs.
-# The move shader paints the live blue card red. The close shader then paints its snapshot green only when it samples
-# the original blue client, or magenta when the stale move shader is still composed into the snapshot.
+# A card admitted while the overview is open fades in on windows_in at its own card, and closing a card during tiled
+# reflow must discard the copied windows_move effect before windows_out runs. The move shader paints the live blue
+# card red. The close shader then paints its snapshot green only when it samples the original blue client, or magenta
+# when the stale move shader is still composed into the snapshot.
 set -euo pipefail
 
 readonly FIRST_LOG="$UMBRIEL_RUNTIME_DIR/overview-close-first.log"
 readonly SECOND_LOG="$UMBRIEL_RUNTIME_DIR/overview-close-second.log"
 readonly MOVING="$UMBRIEL_RUNTIME_DIR/overview-close-moving.png"
 readonly DURING="$UMBRIEL_RUNTIME_DIR/overview-close-during.png"
+readonly OPENED="$UMBRIEL_RUNTIME_DIR/overview-close-opened.png"
 readonly AFTER="$UMBRIEL_RUNTIME_DIR/overview-close-after.png"
 
 cat > "$UMBRIEL_RUNTIME_DIR/overview-move.glsl" <<'GLSL'
@@ -29,7 +31,9 @@ mode = "master"
 curve = "linear"
 
 [animation.windows_in]
-enabled = false
+enabled = true
+duration_ms = 600
+style = "fade"
 
 [animation.windows_out]
 enabled = true
@@ -103,6 +107,26 @@ if ((moving_red < 1000)); then
   exit 1
 fi
 
+# The opener is mirrored into its own card straight away and fades there: neither hidden for the reflow nor instantly
+# opaque.
+moving_dim_blue=$(color_pixels "$MOVING" 'b > 0.08 && b < 0.7 && r < 0.1')
+moving_opaque_blue=$(color_pixels "$MOVING" 'b > 0.8 && r < 0.1')
+if ((moving_dim_blue < 1000)); then
+  echo "the overview opener was not visible while its windows_in ran: dim=$moving_dim_blue"
+  exit 1
+fi
+if ((moving_opaque_blue > 200)); then
+  echo "the overview opener skipped windows_in and appeared fully opaque: opaque=$moving_opaque_blue"
+  exit 1
+fi
+sleep 0.7
+grim "$OPENED"
+opened_blue=$(color_pixels "$OPENED" 'b > 0.8 && r < 0.1')
+if ((opened_blue < 1000)); then
+  echo "the overview opener never finished its windows_in: opaque=$opened_blue"
+  exit 1
+fi
+
 "$UMBRIEL" msg "window-close:$first_id" > /dev/null
 for _ in $(seq 80); do
   grep -q '^unmapped$' "$FIRST_LOG" && break
@@ -134,4 +158,4 @@ if ((after_green > 10 || after_magenta > 10)); then
   exit 1
 fi
 
-echo "overview close discarded windows_move, ran windows_out, and cleaned up its snapshot"
+echo "an overview opener faded in on windows_in, and the close discarded windows_move and cleaned up its snapshot"
