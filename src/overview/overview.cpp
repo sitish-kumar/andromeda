@@ -3004,6 +3004,9 @@ namespace umbriel {
           view->moveToWorkspace(target, /*attachToLayout=*/false);
         }
         view->setPosition(x, y);
+        view->rememberFloatingPosition();
+        // Cards are laid out from the presented box, which setPosition does not refresh.
+        target->syncViewPresentation(view);
       }
     } else if (m_dragSourceWorkspace != nullptr && view->tiled() && m_dragSourceColumn >= 0) {
       // Cancelled or dropped on nothing: put the tile back where it came from.
