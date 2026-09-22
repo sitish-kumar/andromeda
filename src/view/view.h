@@ -6,6 +6,7 @@
 #include "view/deferred_unfullscreen.h"
 #include "view/floating.h"
 #include "view/presentation.h"
+#include "view/resize_crossfade.h"
 
 #include <algorithm>
 #include <array>
@@ -319,6 +320,7 @@ namespace umbriel {
     static void onUnmap(wl_listener* listener, void* data);
     static void onRootSurfaceDestroy(wl_listener* listener, void* data);
     static void onCommit(wl_listener* listener, void* data);
+    static void onClientCommit(wl_listener* listener, void* data);
     static void onDestroy(wl_listener* listener, void* data);
     static void onRequestMove(wl_listener* listener, void* data);
     static void onRequestResize(wl_listener* listener, void* data);
@@ -341,6 +343,8 @@ namespace umbriel {
     void handleMap();
     void handleUnmap();
     void handleCommit(bool reconfigureOpeningState = false);
+    // Capture the outgoing frame when the client commits the size a layout motion requested.
+    void handleClientCommit();
     void setXdgTag(std::string_view tag);
     void syncContentType(wlr_surface* committedSurface = nullptr);
     void handleDestroy();
@@ -576,6 +580,7 @@ namespace umbriel {
     wlr_scene* m_captureScene = nullptr;
     ViewDecoration m_decoration;
     ViewPresentation m_presentation;
+    ResizeCrossfade m_resizeCrossfade;
     wlr_box m_presentedBox{};
     // Last unscaled box supplied by the workspace. A tiled popin or zoom presents an inset inside this logical box,
     // so a later layout change must animate from the logical box rather than scaling the inset a second time.
@@ -677,6 +682,7 @@ namespace umbriel {
     wl_listener m_unmap{};
     wl_listener m_rootSurfaceDestroy{};
     wl_listener m_commit{};
+    wl_listener m_clientCommit{};
     wl_listener m_destroy{};
     wl_listener m_requestMove{};
     wl_listener m_requestResize{};

@@ -215,6 +215,8 @@ namespace umbriel {
     watchViewSurfaceTree(m_toplevel->base->surface);
     m_commit.notify = onCommit;
     wl_signal_add(&m_toplevel->base->surface->events.commit, &m_commit);
+    m_clientCommit.notify = onClientCommit;
+    wl_signal_add(&m_toplevel->base->surface->events.client_commit, &m_clientCommit);
     m_destroy.notify = onDestroy;
     wl_signal_add(&m_toplevel->events.destroy, &m_destroy);
 
@@ -274,6 +276,7 @@ namespace umbriel {
       wl_list_remove(&m_map.link);
       wl_list_remove(&m_unmap.link);
       wl_list_remove(&m_commit.link);
+      wl_list_remove(&m_clientCommit.link);
       wl_list_remove(&m_destroy.link);
       wl_list_remove(&m_requestMove.link);
       wl_list_remove(&m_requestResize.link);
@@ -675,6 +678,7 @@ namespace umbriel {
     m_fadeAlpha = std::clamp(alpha, 0.0F, 1.0F);
     float effective = effectiveOpacity();
     wlr_scene_node_for_each_buffer(&m_sceneTree->node, setCompositorOpacity, &effective);
+    m_resizeCrossfade.applyOpacity(effective);
     m_decoration.setBorderRawColor(m_borderColorAnim.current(), effective);
     // The analytic fallback still follows the lifecycle fade. Shader-shaped
     // shadows get their opacity from captured pixels instead of this multiplier.
@@ -691,6 +695,7 @@ namespace umbriel {
       return;
     }
     wlr_scene_node_for_each_buffer(&m_sceneTree->node, setCompositorOpacity, &effective);
+    m_resizeCrossfade.applyOpacity(effective);
   }
 
   void View::flushPendingEffectiveOpacity() {
@@ -961,6 +966,7 @@ namespace umbriel {
     }
     m_layoutPresentationHeld = false;
     m_tiledSizeRequest.reset();
+    m_resizeCrossfade.discard();
     if (m_layoutMotion) {
       m_workspace->releaseLayoutMotion(this);
       m_layoutMotion = false;
@@ -1404,6 +1410,9 @@ namespace umbriel {
       setFadeAlpha(m_fadeAlpha);
       active = active || m_focusDim.animating();
     }
+    if (m_resizeCrossfade.tick(nowMsec)) {
+      active = true;
+    }
 
     if (m_borderColorAnim.tick(nowMsec)) {
       m_decoration.setBorderRawColor(m_borderColorAnim.current(), effectiveOpacity());
@@ -1428,7 +1437,8 @@ namespace umbriel {
         || sizeAnimating()
         || m_fade.animating()
         || m_borderColorAnim.animating()
-        || m_focusDim.animating();
+        || m_focusDim.animating()
+        || m_resizeCrossfade.active();
   }
 
   bool View::layoutFullscreen() const { return m_toplevel->scheduled.fullscreen; }
@@ -1663,6 +1673,11 @@ namespace umbriel {
   void View::onCommit(wl_listener* listener, void* /*data*/) {
     View* self = wl_container_of(listener, self, m_commit);
     self->handleCommit();
+  }
+
+  void View::onClientCommit(wl_listener* listener, void* /*data*/) {
+    View* self = wl_container_of(listener, self, m_clientCommit);
+    self->handleClientCommit();
   }
 
   void View::onViewSurfaceCommit(wl_listener* listener, void* /*data*/) {
@@ -2688,6 +2703,7 @@ namespace umbriel {
       // node positioned at the visible box origin.
       applyPresentedCrop(content, surfaceClip);
     }
+    m_resizeCrossfade.present(content.width, content.height);
     updateBorderGeometry(content.width, content.height);
     updateShadow();
     updateBlur(content.width, content.height);
@@ -2928,6 +2944,7 @@ namespace umbriel {
   }
 
   void View::handleUnmap() {
+    m_resizeCrossfade.discard();
     Workspace* closingWorkspace = m_workspace;
     Cursor* cursor = m_server->cursor();
     wlr_seat* seat = m_server->seat()->wlr();
@@ -3142,8 +3159,39 @@ namespace umbriel {
     }
   }
 
+  void View::handleClientCommit() {
+    // The scene still shows the previous state here, so this is the last moment the outgoing frame can be cloned.
+    const auto& animation = config().animation;
+    wlr_surface* surface = m_toplevel->base->surface;
+    if (!m_mapped
+        || !m_tiled
+        || !m_onActiveWorkspace
+        || !m_tiledSizeRequest
+        || !layoutPresentationOwned()
+        || m_toplevel->scheduled.fullscreen
+        || m_toplevel->current.fullscreen
+        || !animation.enabled
+        || !animation.windowsMove.enabled
+        || (surface->pending.committed & WLR_SURFACE_STATE_BUFFER) == 0
+        || surface->pending.buffer == nullptr
+        || (surface->pending.width == surface->current.width && surface->pending.height == surface->current.height)
+        || !serialSettled(m_toplevel->base->pending.configure_serial, m_tiledSizeRequest->serial)) {
+      return;
+    }
+    m_resizeCrossfade.capture(
+        m_sceneTree, toplevelSurfaceTreeNode(m_sceneTree, surface), surface, m_presentedBox.width,
+        m_presentedBox.height, surfaceRadius()
+    );
+  }
+
   void View::handleCommit(bool reconfigureOpeningState) {
     UMBRIEL_ZONE("View::handleCommit");
+    if (m_resizeCrossfade.pending()) {
+      const auto& move = config().animation.windowsMove;
+      m_resizeCrossfade.start(move.durationMs, move.curve);
+      m_resizeCrossfade.applyOpacity(effectiveOpacity());
+      scheduleFrame();
+    }
     if (m_captureScene != nullptr) {
       // Restrict the capture to the xdg window geometry. Client subsurfaces
       // remain visible, while buffer content outside the declared window is
@@ -3390,6 +3438,7 @@ namespace umbriel {
   }
 
   void View::handleDestroy() {
+    m_resizeCrossfade.discard();
     cancelFadeAnimation();
     cancelPositionAnimation();
     leaveForeignOutput();
@@ -3416,6 +3465,7 @@ namespace umbriel {
     wl_list_remove(&m_map.link);
     wl_list_remove(&m_unmap.link);
     wl_list_remove(&m_commit.link);
+    wl_list_remove(&m_clientCommit.link);
     wl_list_remove(&m_destroy.link);
     wl_list_remove(&m_requestMove.link);
     wl_list_remove(&m_requestResize.link);

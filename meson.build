@@ -569,6 +569,7 @@ core_sources = files(
   'src/view/view.cpp',
   'src/view/decoration.cpp',
   'src/view/presentation.cpp',
+  'src/view/resize_crossfade.cpp',
   'src/view/registry.cpp',
   'src/server/focus.cpp',
   'src/xwayland/supervisor.cpp',

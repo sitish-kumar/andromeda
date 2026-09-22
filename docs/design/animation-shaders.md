@@ -170,6 +170,18 @@ cached client commits. Both clocks run from the close, each with its own
 duration and curve. With movement disabled, live geometry snaps while the close
 lifecycle continues independently.
 
+A layout-sized view that redraws at its requested size crossfades into it. On
+the root surface's `client_commit`, while the scene still shows the outgoing
+state, `View::handleClientCommit` checks that the commit acks the tiled size
+request and changes the buffer size. If so, `ResizeCrossfade` clones the
+toplevel surface tree's buffers into a hidden tree directly above it. The
+applied commit then shows that frame and fades it out on its own `windows_move`
+clock, over the live buffers. Both layers are scaled into the same presented
+box on every presentation change, round against the same content box, and
+multiply the view's opacity. The clones reject input and live inside the view
+tree, so movement, clipping, and view shaders apply to them. Unmap, destroy,
+and a cancelled size animation discard the capture.
+
 When movement completes, `completeLayoutMotion` keeps the compositor-owned
 endpoint until both the configure serial and committed content dimensions
 match the tiled size request. Geometry-stable arrange passes preserve that
@@ -251,7 +263,8 @@ arrange. Check 206 covers longer, equal, and shorter `windows_out` duration
 orderings against `windows_move` and asserts that the snapshot holds its
 captured box for every sampled frame. Check 207 interrupts scrolling reflow
 with a second close and verifies independent shader phases, monotonic survivor
-motion on a single movement clock, and no summed delay or starvation. Check 208 closes
+motion on a single movement clock, and no summed delay or starvation. Check 209 redraws a reflowing neighbour in a new colour at its new size and
+observes blended pixels mid-reflow, then the redrawn frame alone. Check 208 closes
 the root leaf of a five-window dwindle tree and verifies that every changing
 survivor follows an overshooting movement curve across its full configured
 clock instead of pinning at its first endpoint crossing. The overview check
