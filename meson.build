@@ -543,6 +543,7 @@ umbriel_pure_dep = declare_dependency(
 # and the executable is just an entry point.
 core_sources = files(
   'src/core/animation.cpp',
+  'src/core/application_scope.cpp',
   'src/scene/animation_shader.cpp',
   'src/core/fdlimit.cpp',
   'src/core/log.cpp',

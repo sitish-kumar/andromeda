@@ -31,6 +31,9 @@ files = []                                      # Example: ["~/.config/umbriel/n
 # ─────────────────────────────── General ────────────────────────────────────
 # Configure startup commands, session behavior, environment variables, and
 # hardware events.
+# Managed native sessions isolate the `-s` startup command, autostarts, event
+# hooks, and `spawn:` commands in transient application scopes that stop with
+# the session.
 # Documentation: https://docs.noctalia.dev/umbriel/configuration/#general
 # ────────────────────────────────────────────────────────────────────────────
 

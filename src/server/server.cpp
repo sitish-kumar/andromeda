@@ -4,6 +4,7 @@
 #include "config/config_diag.h"
 #include "config/config_watcher.h"
 #include "config/resolve.h"
+#include "core/application_scope.h"
 #include "core/fdlimit.h"
 #include "core/log.h"
 #include "core/process.h"
@@ -37,9 +38,12 @@ extern "C" {
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cmath>
 #include <csignal>
 #include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
 #include <optional>
 #include <ranges>
 #include <stdexcept>
@@ -599,7 +603,6 @@ namespace umbriel {
     wl_list_remove(&m_padKeyboardFocusChange.link);
     m_configWatcher.reset();
     m_ipc.reset();
-
     m_insertHint.reset();
     // Each snapshot destroys its own scene tree.
     m_closeSnapshots.clear();
@@ -720,6 +723,22 @@ namespace umbriel {
     wl_event_loop* loop = wl_display_get_event_loop(m_display);
     m_signalSources[0] = wl_event_loop_add_signal(loop, SIGINT, onTerminateSignal, this);
     m_signalSources[1] = wl_event_loop_add_signal(loop, SIGTERM, onTerminateSignal, this);
+    m_applicationScopesRequired = !m_nested && isDirectSystemdService(getpid(), std::getenv("SYSTEMD_EXEC_PID"));
+    if (m_applicationScopesRequired) {
+      m_systemdRunExecutable = resolveExecutable("systemd-run");
+      const std::string ownerUnit = currentSystemdUnit();
+      if (m_systemdRunExecutable.empty()) {
+        kLog.warn("application scope isolation unavailable: systemd-run was not found on PATH");
+      } else if (ownerUnit.empty()) {
+        kLog.warn("application scope isolation unavailable: cannot identify the compositor unit");
+      } else {
+        m_applicationScopePartOfProperty = "--property=PartOf=umbriel-session.target";
+        m_applicationScopeBindsToProperty = "--property=BindsTo=" + ownerUnit;
+        m_systemdControlEnvironment = captureSystemdControlEnvironment();
+        m_applicationScopeEnvironmentArguments = applicationScopeEnvironmentArguments(config().environment.variables);
+        kLog.info("application processes will use transient scopes under app.slice");
+      }
+    }
 
     // Point new clients at us. Drop WAYLAND_SOCKET so children do not keep the
     // parent compositor connection (libwayland prefers it over WAYLAND_DISPLAY).
@@ -765,7 +784,7 @@ namespace umbriel {
     // receives the explicit configured assignments before it starts.
     if (!m_nested) {
       const std::string command = sessionEnvironmentCommand();
-      spawn(command.c_str(), "session environment synchronization");
+      spawnCommand(command.c_str(), "session environment synchronization", false, SpawnClass::SessionHelper);
     }
     applyConfiguredEnvironment();
 
@@ -903,10 +922,27 @@ namespace umbriel {
   }
 
   void Server::spawn(const char* command, const char* description, bool withActivationToken) {
+    spawnCommand(command, description, withActivationToken, SpawnClass::Application);
+  }
+
+  void
+  Server::spawnCommand(const char* command, const char* description, bool withActivationToken, SpawnClass spawnClass) {
     if (m_socketName.empty()) {
       wlr_log(WLR_ERROR, "cannot spawn before the Wayland socket exists");
       return;
     }
+
+    const bool scopeRequired = spawnClass == SpawnClass::Application && m_applicationScopesRequired;
+    if (scopeRequired
+        && (m_systemdRunExecutable.empty()
+            || m_applicationScopePartOfProperty.empty()
+            || m_applicationScopeBindsToProperty.empty())) {
+      kLog.error("cannot launch application because systemd scope isolation is unavailable");
+      return;
+    }
+    const std::string scopeUnitArgument = scopeRequired
+        ? "--unit=app-umbriel-" + std::to_string(getpid()) + "-" + std::to_string(m_nextApplicationScopeId++) + ".scope"
+        : "";
 
     wlr_xdg_activation_token_v1* launchToken = nullptr;
     std::string launchTokenName;
@@ -932,6 +968,11 @@ namespace umbriel {
     if (pid == 0) {
       resetChildSignalState();
       restoreFileDescriptorLimit();
+      if (scopeRequired) {
+        if (!closeChildFileDescriptors() || !restoreSystemdControlEnvironment(m_systemdControlEnvironment)) {
+          _exit(1);
+        }
+      }
       setenv("WAYLAND_DISPLAY", m_socketName.c_str(), 1);
       unsetenv("WAYLAND_SOCKET");
       if (m_xwayland != nullptr && !m_xwayland->display().empty()) {
@@ -947,14 +988,27 @@ namespace umbriel {
         unsetenv("XDG_ACTIVATION_TOKEN");
         unsetenv("DESKTOP_STARTUP_ID");
       }
+      if (scopeRequired) {
+        execApplicationInScope(
+            m_systemdRunExecutable.c_str(), scopeUnitArgument.c_str(), m_applicationScopePartOfProperty.c_str(),
+            m_applicationScopeBindsToProperty.c_str(), m_applicationScopeEnvironmentArguments, command
+        );
+      }
       execl("/bin/sh", "/bin/sh", "-c", command, nullptr);
       _exit(1);
     }
 
-    wlr_log(
-        WLR_INFO, "spawned '%s' on WAYLAND_DISPLAY=%s", description == nullptr ? command : description,
-        m_socketName.c_str()
-    );
+    if (scopeRequired) {
+      wlr_log(
+          WLR_INFO, "launch requested for '%s' on WAYLAND_DISPLAY=%s", description == nullptr ? command : description,
+          m_socketName.c_str()
+      );
+    } else {
+      wlr_log(
+          WLR_INFO, "spawned '%s' on WAYLAND_DISPLAY=%s", description == nullptr ? command : description,
+          m_socketName.c_str()
+      );
+    }
   }
 
   void Server::updateSeatCapabilities() { m_seat->updateCapabilities(!m_keyboards.empty(), !m_touchDevices.empty()); }

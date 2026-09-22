@@ -1,5 +1,6 @@
 #pragma once
 #include "core/animation.h"
+#include "core/application_scope.h"
 #include "core/dirty.h"
 #include "input/modifier_tap.h"
 #include "input/surface_layouts.h"
@@ -378,6 +379,8 @@ namespace umbriel {
     [[nodiscard]] bool closeSnapshotAlive(CloseSnapshotId id) const;
 
   private:
+    enum class SpawnClass { Application, SessionHelper };
+
     static void
     onProtocolMessage(void* data, wl_protocol_logger_type direction, const wl_protocol_logger_message* message);
     static void onNewOutput(wl_listener* listener, void* data);
@@ -424,6 +427,8 @@ namespace umbriel {
     static void onIpcWindowsIdle(void* data);
     static void onIpcWorkspacesIdle(void* data);
     static void onDisplacedRestoreIdle(void* data);
+
+    void spawnCommand(const char* command, const char* description, bool withActivationToken, SpawnClass spawnClass);
 
     void trackActivationToken(wlr_xdg_activation_token_v1* token, bool compositorIssued);
 
@@ -680,7 +685,14 @@ namespace umbriel {
 
     bool m_nested = false;
     bool m_stopping = false;
+    bool m_applicationScopesRequired = false;
     std::string m_socketName;
+    std::string m_systemdRunExecutable;
+    std::string m_applicationScopePartOfProperty;
+    std::string m_applicationScopeBindsToProperty;
+    SystemdControlEnvironment m_systemdControlEnvironment;
+    ApplicationScopeEnvironmentArguments m_applicationScopeEnvironmentArguments;
+    uint64_t m_nextApplicationScopeId = 1;
 
     std::unique_ptr<XwaylandSupervisor> m_xwayland;
     wl_event_source* m_backgroundFrameTimer = nullptr;
