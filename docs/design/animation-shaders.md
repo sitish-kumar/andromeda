@@ -144,6 +144,14 @@ when a later tile is admitted. Its cached unscaled layout box joins
 This separation also prevents popin and zoom from applying their scale to an
 already scaled box.
 
+A window that opens fullscreen rests in the output box its workspace assigns,
+which the arrange that follows its map owns. `popin` and `zoom` therefore do not
+tween the node: `View::fullscreenOpeningActive` keeps that box authoritative
+while the fade centres a scaled presentation inside it on every tick, and the
+layout paths record the resting origin instead of animating toward it. The
+fullscreen backdrop is the window's own letterbox and follows the presented box,
+so the opener scales with its surround rather than inside an output-wide one.
+
 A normal tiled close snapshots the complete decorated view, drops any copied
 movement effect, and is appended above every workspace tree under the output's
 view root. It is a fixed canvas: `CloseSnapshot::present(canvasX, canvasY,

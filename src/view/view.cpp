@@ -31,6 +31,8 @@ extern "C" {
 namespace umbriel {
   namespace {
     constexpr Logger kLog("view");
+    // Distance the built-in windows_in "slide" style starts an opener below its resting position.
+    constexpr int kOpenSlidePx = 60;
 
     void setCompositorOpacity(wlr_scene_buffer* buffer, int /*sx*/, int /*sy*/, void* data) {
       float opacity = *static_cast<float*>(data);
@@ -436,6 +438,7 @@ namespace umbriel {
     reparentShadow(nullptr);
     m_workspace = nullptr;
     m_openingScale = 1.0;
+    m_openingSlide = 0;
     setOnActiveWorkspace(true);
   }
 
@@ -777,6 +780,37 @@ namespace umbriel {
         && m_fade.target() > m_fade.from();
   }
 
+  bool View::fullscreenOpeningActive() const {
+    return m_mapped && !m_inScratchpad && layoutFullscreen() && m_fade.animating() && m_fade.target() > m_fade.from();
+  }
+
+  wlr_box View::openingInsetBox(const wlr_box& box) const {
+    wlr_box presented = box;
+    if (openingInsetActive()) {
+      const double progress = std::clamp(m_fade.current(), 0.0, 1.0);
+      const double scale = std::lerp(m_openingScale, 1.0, progress);
+      presented.width = static_cast<int>(std::lround(box.width * scale));
+      presented.height = static_cast<int>(std::lround(box.height * scale));
+      presented.x = box.x + (box.width - presented.width) / 2;
+      presented.y = box.y
+          + (box.height - presented.height) / 2
+          + static_cast<int>(std::lround(std::lerp(m_openingSlide, 0.0, progress)));
+    }
+    presented.width = std::max(1, presented.width);
+    presented.height = std::max(1, presented.height);
+    return presented;
+  }
+
+  wlr_box View::fullscreenLayoutBox() const {
+    if (m_workspace != nullptr) {
+      const wlr_box box = m_workspace->fullscreenTargetBox(this);
+      if (box.width > 0 && box.height > 0) {
+        return box;
+      }
+    }
+    return fullscreenArea();
+  }
+
   std::optional<wlr_box> View::openingLayoutBox() const {
     if (!tiledOpeningActive() || m_presentedTiledBox.width <= 0 || m_presentedTiledBox.height <= 0) {
       return std::nullopt;
@@ -785,16 +819,24 @@ namespace umbriel {
   }
 
   void View::dropOpeningInset() {
-    if (m_openingScale >= 1.0) {
+    if (!openingInsetPending()) {
       return;
     }
     m_openingScale = 1.0;
-    // The inset moved the node off its slot origin; the caller settles the size.
-    if (m_mapped
-        && m_tiled
-        && m_workspace != nullptr
-        && !layoutFullscreen()
-        && m_workspace->layout().columnOf(this) >= 0) {
+    m_openingSlide = 0;
+    if (!m_mapped) {
+      return;
+    }
+    // The inset moved the node off its resting origin; the caller settles the size.
+    if (layoutFullscreen()) {
+      const wlr_box area = fullscreenLayoutBox();
+      if (area.width > 0 && area.height > 0) {
+        wlr_scene_node_set_position(&m_sceneTree->node, area.x, area.y);
+        m_decoration.setShadowPosition(area.x, area.y);
+      }
+      return;
+    }
+    if (m_tiled && m_workspace != nullptr && m_workspace->layout().columnOf(this) >= 0) {
       const wlr_box slot = m_workspace->presentedTiledBox(this);
       wlr_scene_node_set_position(&m_sceneTree->node, slot.x, slot.y);
       m_decoration.setShadowPosition(slot.x, slot.y);
@@ -1047,24 +1089,23 @@ namespace umbriel {
 
   void View::presentTiledBox(const wlr_box& box) {
     m_presentedTiledBox = box;
-    if (tiledOpeningActive() && m_presentation.animating()) {
+    presentBox(box);
+  }
+
+  void View::placePresentedBox(const wlr_box& box) {
+    const wlr_box presented = openingInsetBox(box);
+    wlr_scene_node_set_position(&m_sceneTree->node, presented.x, presented.y);
+    m_decoration.setShadowPosition(presented.x, presented.y);
+    m_presentation.setSize(presented.width, presented.height);
+  }
+
+  void View::presentBox(const wlr_box& box) {
+    if ((tiledOpeningActive() || fullscreenOpeningActive()) && m_presentation.animating()) {
       // windows_in owns lifecycle composition. A resize tween started by the admitting arrange would otherwise win
       // shader selection and apply a second windows_move over the workspace-owned logical presentation.
       m_presentation.snapTo(m_presentation.width(), m_presentation.height());
     }
-    wlr_box presented = box;
-    if (openingScaleActive()) {
-      const double scale = std::lerp(m_openingScale, 1.0, std::clamp(m_fade.current(), 0.0, 1.0));
-      presented.width = static_cast<int>(std::lround(box.width * scale));
-      presented.height = static_cast<int>(std::lround(box.height * scale));
-      presented.x = box.x + (box.width - presented.width) / 2;
-      presented.y = box.y + (box.height - presented.height) / 2;
-    }
-    presented.width = std::max(1, presented.width);
-    presented.height = std::max(1, presented.height);
-    wlr_scene_node_set_position(&m_sceneTree->node, presented.x, presented.y);
-    m_decoration.setShadowPosition(presented.x, presented.y);
-    m_presentation.setSize(presented.width, presented.height);
+    placePresentedBox(box);
     applyPresentedSize();
     if (Overview* overview = m_server->overview(); overview != nullptr && overview->active()) {
       overview->onViewPresentationChanged(this);
@@ -1098,6 +1139,7 @@ namespace umbriel {
         && open.enabled
         && animationShader(m_server->renderer(), AnimationEvent::WindowsIn) != nullptr;
     m_openingScale = 1.0;
+    m_openingSlide = 0;
     if (!animation.enabled
         || !open.enabled
         || (open.style == "none" && animationShader(m_server->renderer(), AnimationEvent::WindowsIn) == nullptr)) {
@@ -1337,7 +1379,18 @@ namespace umbriel {
           && m_workspace != nullptr
           && m_workspace->layout().columnOf(this) >= 0
           && m_fade.target() > m_fade.from();
-      if (finishingTiledOpen && !m_layoutMotion) {
+      // A fullscreen opener is presented inside the output box its layout assigned, which the arrange that follows
+      // its map owns. Styles without an inset leave the node where that arrange put it.
+      const bool insetFullscreenOpen =
+          openingInsetPending() && m_mapped && !m_inScratchpad && layoutFullscreen() && m_fade.target() > m_fade.from();
+      if (insetFullscreenOpen) {
+        if (fullscreenOpeningActive()) {
+          presentBox(fullscreenLayoutBox());
+        } else {
+          dropOpeningInset();
+          finishSizeAnimation();
+        }
+      } else if (finishingTiledOpen && !m_layoutMotion) {
         if (tiledOpeningActive()) {
           presentTiledBox(m_workspace->presentedTiledBox(this));
         } else {
@@ -2574,7 +2627,12 @@ namespace umbriel {
     if (m_toplevel->scheduled.width != fullArea.width || m_toplevel->scheduled.height != fullArea.height) {
       wlr_xdg_toplevel_set_size(m_toplevel, fullArea.width, fullArea.height);
     }
-    if (animate) {
+    if (fullscreenOpeningActive()) {
+      // windows_in owns the node position and the presented size until the fade ends; the layout owns only the box
+      // they are derived from.
+      setLayoutTarget(fullArea.x, fullArea.y);
+      placePresentedBox(fullArea);
+    } else if (animate) {
       beginResizeAnimation(fullArea.width, fullArea.height, true);
       animateTo(fullArea.x, fullArea.y);
     } else if (!m_posX.animating() && !m_posY.animating()) {
@@ -2597,10 +2655,6 @@ namespace umbriel {
 
   void View::applyPresentation(const wlr_box& target) {
     updateFullscreenPresentation(target.width, target.height);
-    if (m_toplevel->current.fullscreen) {
-      // The whole tile: the output's clipped root scissors whatever hangs over the shared edge.
-      m_presentation.setBackdropBox(0, 0, target.width, target.height);
-    }
     const wlr_box& geometry = m_toplevel->base->geometry;
     // Stay inside the tile while geometry lags configure (Electron often stays wide).
     const wlr_box content{
@@ -2609,6 +2663,12 @@ namespace umbriel {
         .width = presentedWidth(target),
         .height = presentedHeight(target),
     };
+    if (m_toplevel->current.fullscreen) {
+      // The backdrop is the window's own letterbox, so it follows the presented box rather than the tile: a window
+      // scaling into or out of fullscreen carries its surround instead of sitting in an output-wide one. The output's
+      // clipped root scissors whatever hangs over a shared edge.
+      m_presentation.setBackdropBox(0, 0, content.width, content.height);
+    }
     m_presentedBox = content;
     trackPresentedSize(content.width, content.height);
 
@@ -2805,10 +2865,17 @@ namespace umbriel {
 
         // Floating and fullscreen windows tween themselves.
         if (!m_customFade && (open.style == "popin" || open.style == "zoom")) {
-          const int targetW = m_presentation.width();
-          const int targetH = m_presentation.height();
-          if (targetW > 0 && targetH > 0) {
-            const double scale = open.style == "zoom" ? 0.5 : open.scale;
+          const double scale = std::clamp(open.style == "zoom" ? 0.5 : open.scale, 0.0, 1.0);
+          if (layoutFullscreen()) {
+            // The output box this window rests in is assigned by the arrange that follows this map, so the inset is
+            // applied against that box on every fade tick instead of tweening a node it has not been placed in yet.
+            m_openingScale = scale;
+            const wlr_box area = fullscreenLayoutBox();
+            setLayoutTarget(area.x, area.y);
+            presentBox(area);
+          } else if (m_presentation.width() > 0 && m_presentation.height() > 0) {
+            const int targetW = m_presentation.width();
+            const int targetH = m_presentation.height();
             const int startW = std::max(1, static_cast<int>(targetW * scale));
             const int startH = std::max(1, static_cast<int>(targetH * scale));
             const int targetX = m_sceneTree->node.x;
@@ -2825,13 +2892,19 @@ namespace umbriel {
             m_posY.retarget(targetY, open.durationMs, open.curve);
           }
         } else if (!m_customFade && open.style == "slide") {
-          const int targetX = m_sceneTree->node.x;
-          const int targetY = m_sceneTree->node.y;
-          const int startY = targetY + 60;
-          wlr_scene_node_set_position(&m_sceneTree->node, targetX, startY);
-          m_posX.snap(targetX);
-          m_posY.snap(startY);
-          m_posY.retarget(targetY, open.durationMs, open.curve);
+          if (layoutFullscreen()) {
+            m_openingSlide = kOpenSlidePx;
+            const wlr_box area = fullscreenLayoutBox();
+            setLayoutTarget(area.x, area.y);
+            presentBox(area);
+          } else {
+            const int targetX = m_sceneTree->node.x;
+            const int targetY = m_sceneTree->node.y;
+            wlr_scene_node_set_position(&m_sceneTree->node, targetX, targetY + kOpenSlidePx);
+            m_posX.snap(targetX);
+            m_posY.snap(targetY + kOpenSlidePx);
+            m_posY.retarget(targetY, open.durationMs, open.curve);
+          }
         }
         scheduleFrame();
       }
@@ -3391,7 +3464,7 @@ namespace umbriel {
       if (maximized) {
         m_workspace->ensureFocusedVisible();
       }
-      m_workspace->markArrange(false);
+      m_workspace->markArrange(animate);
       updateForeignState();
       return;
     }

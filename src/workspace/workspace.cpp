@@ -770,7 +770,6 @@ namespace umbriel {
     if (usable.width <= 0 || usable.height <= 0) {
       usable = outputBox;
     }
-    const int viewportPrimary = scrollViewportExtent();
 
     // Fullscreen and floating views position themselves. Established tiled members share windows_move below, while an
     // opening tiled lifecycle view is presented directly at its final slot.
@@ -779,20 +778,12 @@ namespace umbriel {
         continue;
       }
       if (view->layoutFullscreen()) {
-        const int col = m_layout->columnOf(view);
-        wlr_box target = outputBox;
-        if (col >= 0) {
-          if (const ScrollingLayout* scrolling = scrollingLayout()) {
-            const int position = (scrollingVertical() ? outputBox.y : outputBox.x)
-                + scrolling->columnX(col, viewportPrimary)
-                + m_layoutConfig.edgePad
-                - static_cast<int>(std::lround(scrolling->scroll()));
-            if (scrollingVertical()) {
-              target.y = position;
-            } else {
-              target.x = position;
-            }
-          }
+        const wlr_box target = fullscreenTargetBox(view);
+        if (view->fullscreenOpeningActive()) {
+          // windows_in carries the node while the opener scales inside this box; the layout keeps only the target.
+          view->setLayoutTarget(target.x, target.y);
+          view->presentBox(target);
+          continue;
         }
         if (animate) {
           view->animateTo(target.x, target.y);
@@ -802,6 +793,7 @@ namespace umbriel {
         syncViewPresentation(view);
         continue;
       }
+
       if (m_layout->columnOf(view) < 0) {
         // Floating (non-fullscreen): clip + enable against the home output.
         view->clampFloatingPosition();
@@ -1157,6 +1149,31 @@ namespace umbriel {
     target.width = usable.width;
     target.height = usable.height;
     return target;
+  }
+
+  wlr_box Workspace::fullscreenTargetBox(const View* view) const {
+    wlr_box outputBox{};
+    if (m_group == nullptr || m_group->output() == nullptr) {
+      return outputBox;
+    }
+    wlr_output_layout_get_box(m_group->server()->outputLayout(), m_group->output()->wlr(), &outputBox);
+    const ScrollingLayout* scrolling = scrollingLayout();
+    const int column = m_layout->columnOf(view);
+    if (scrolling == nullptr || column < 0) {
+      return outputBox;
+    }
+    // A fullscreen member of the strip stays anchored to its own column, so scrolling still carries it off-screen.
+    const bool vertical = scrollingVertical();
+    const int position = (vertical ? outputBox.y : outputBox.x)
+        + scrolling->columnX(column, scrollViewportExtent())
+        + m_layoutConfig.edgePad
+        - static_cast<int>(std::lround(scrolling->scroll()));
+    if (vertical) {
+      outputBox.y = position;
+    } else {
+      outputBox.x = position;
+    }
+    return outputBox;
   }
 
   View* Workspace::focusAlongStrip(int direction) const {

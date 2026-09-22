@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # A tiled opener stays hidden while established neighbours reflow on windows_move, then runs its own windows_in in the
 # settled slot. The neighbour must be mid-reflow with no opener visible, and the opener mid-fade once it has settled.
+# An opener that takes the whole width through default_maximize reflows them on that same clock.
 set -euo pipefail
 
 readonly IMAGE="$UMBRIEL_RUNTIME_DIR/tiled-open-reflow.png"
@@ -46,6 +47,10 @@ enabled = false
 enabled = true
 duration_ms = 600
 curve = "linear"
+
+[[window_rule]]
+match.title = "^tiled-maximized-opener$"
+default_maximize = true
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
 
@@ -119,4 +124,20 @@ if ! ((mid_blue >= 40 && mid_blue <= 220 && final_blue > 220)); then
   exit 1
 fi
 
-echo "tiled opener stayed hidden through the neighbour reflow, then ran windows_in in its settled slot"
+settled=$(red_width)
+spawn tiled-maximized-opener 0xFF00FF00
+sleep 0.3
+maximized_early=$(red_width)
+sleep 1.6
+maximized_final=$(red_width)
+
+if ((settled - maximized_final < 200)); then
+  echo "the maximized opener did not take width from the survivor: ${settled} -> ${maximized_final}"
+  exit 1
+fi
+if ((maximized_early <= maximized_final + 20 || maximized_early >= settled - 20)); then
+  echo "the survivor snapped instead of reflowing under the maximized opener: ${settled} -> ${maximized_early} -> ${maximized_final}"
+  exit 1
+fi
+
+echo "tiled opener stayed hidden through the neighbour reflow, ran windows_in in its settled slot, and a maximized opener reflowed that neighbour on windows_move too"

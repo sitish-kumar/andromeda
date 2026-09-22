@@ -164,9 +164,12 @@ namespace umbriel {
     // Record the authoritative layout slot origin without moving the node. An established view's workspace motion or an
     // opening lifecycle presentation carries the scene node there.
     void setLayoutTarget(int x, int y);
-    // Per-frame presentation of a layout-assigned box. Remembers the unscaled logical box underneath an opening
-    // popin or zoom. Width and height are clamped to at least 1.
+    // Per-frame presentation of a layout-assigned tiled slot. Remembers the unscaled logical box underneath an
+    // opening popin or zoom.
     void presentTiledBox(const wlr_box& box);
+    // Present `box` carrying whatever opening inset is running: position the node, adopt the presented size, refresh
+    // the derived chrome. Width and height are clamped to at least 1.
+    void presentBox(const wlr_box& box);
     // Keep a fresh tiled opener invisible at its slot until the workspace reveals it. Resuming starts a fresh
     // windows_in there.
     void deferTiledOpening();
@@ -402,7 +405,7 @@ namespace umbriel {
     // size on the committed geometry and refresh the derived chrome.
     void finishSizeAnimation();
     [[nodiscard]] bool sizeAnimating() const {
-      return m_presentation.animating() || m_layoutMotion || tiledOpeningActive();
+      return m_presentation.animating() || m_layoutMotion || tiledOpeningActive() || fullscreenOpeningActive();
     }
     [[nodiscard]] bool layoutPresentationOwned() const { return sizeAnimating() || m_layoutPresentationHeld; }
     void requestTiledSize(int width, int height);
@@ -410,13 +413,26 @@ namespace umbriel {
     // While windows_in owns a freshly admitted tiled view, presentation follows its final layout slot rather than the
     // client's possibly stale committed geometry. A later arrange can move its cached logical box independently.
     [[nodiscard]] bool tiledOpeningActive() const;
-    // A tiled popin/zoom open scales the presented box inside its slot while the fade-in runs. A fullscreen tile is
-    // presented against the output, not its slot, so it keeps the floating-style open tweens.
-    [[nodiscard]] bool openingScaleActive() const { return m_openingScale < 1.0 && tiledOpeningActive(); }
+    // The same for a window that opens fullscreen: the layout owns the output box it rests in, windows_in owns the
+    // scaled box it is presented at until the fade ends.
+    [[nodiscard]] bool fullscreenOpeningActive() const;
+    // A built-in popin, zoom, or slide open offsets the presented box inside the box the layout assigned it, until
+    // the fade that drives it reaches rest.
+    [[nodiscard]] bool openingInsetPending() const { return m_openingScale < 1.0 || m_openingSlide != 0; }
+    [[nodiscard]] bool openingInsetActive() const {
+      return openingInsetPending() && (tiledOpeningActive() || fullscreenOpeningActive());
+    }
+    // `box` with that inset applied, else `box` itself. Both extents are at least 1.
+    [[nodiscard]] wlr_box openingInsetBox(const wlr_box& box) const;
+    // The output box a fullscreen view rests in, carrying the scrolling column offset its workspace applies.
+    [[nodiscard]] wlr_box fullscreenLayoutBox() const;
+    // Position the node at `box` with any opening inset applied and adopt that presented size, without refreshing the
+    // chrome derived from it.
+    void placePresentedBox(const wlr_box& box);
     // Unscaled logical box underneath an active tiled windows_in presentation. Once another layout change arrives, the
     // view can retain its lifecycle effect while this box participates independently in windows_move.
     [[nodiscard]] std::optional<wlr_box> openingLayoutBox() const;
-    // Drop the opening inset and put the node back on its slot origin; the caller settles the presented size.
+    // Drop the opening inset and put the node back on its resting origin; the caller settles the presented size.
     void dropOpeningInset();
     // True while the border ring exists and is showing. Fullscreen keeps the
     // tree but disables it, so the pointer alone does not answer this.
@@ -598,8 +614,10 @@ namespace umbriel {
     std::optional<TiledSizeRequest> m_tiledSizeRequest;
     float m_layoutMotionDirection = 1.0F;
     bool m_tiledOpeningDeferred = false;
-    // Inset scale a tiled popin/zoom open starts at; 1.0 = none.
+    // Inset a built-in windows_in style starts an opener at, interpolated to rest by the fade: a popin or zoom scale
+    // (1.0 = none) and a slide offset in logical pixels (0 = none).
     double m_openingScale = 1.0;
+    int m_openingSlide = 0;
     bool m_tiled = false;
     bool m_floatingMaximized = false;
     bool m_maximizedToEdges = false;
