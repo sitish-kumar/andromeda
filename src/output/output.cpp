@@ -4,6 +4,7 @@
 #include "config/resolve.h"
 #include "core/log.h"
 #include "core/tracy.h"
+#include "input/cursor.h"
 #include "input/seat.h"
 #include "layer/layer_surface.h"
 #include "output/frame_schedule.h"
@@ -1061,7 +1062,14 @@ namespace umbriel {
     // "nothing to render" path, they never commit again -> damage stays clean -> wlr_scene_output_needs_frame returns
     // false forever -> compositor parks in epoll_wait. (Reproducible with any mailbox/FIFO Vulkan game.)
     bool commitFailed = false;
-    if (wlr_scene_output_needs_frame(m_sceneOutput) || m_gammaDirty) {
+    const bool sceneChanged = wlr_scene_output_needs_frame(m_sceneOutput);
+    if (sceneChanged) {
+      // Scene motion under a stationary cursor must reach the client before its next press.
+      if (Cursor* cursor = m_server->cursor()) {
+        cursor->refreshPointerContents(this);
+      }
+    }
+    if (sceneChanged || m_gammaDirty) {
       m_inFrame = true;
       UMBRIEL_ZONE("Output::render");
 
