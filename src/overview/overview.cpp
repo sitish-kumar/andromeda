@@ -25,6 +25,7 @@ extern "C" {
 #include "view/view.h"
 // clang-format off
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <linux/input-event-codes.h>
@@ -1376,6 +1377,8 @@ namespace umbriel {
       return false;
     }
     m_server->cursor()->resetMode();
+    // An in-flight three-finger switch settles on the filmstrip instead of the hidden desktop slide.
+    const Gestures::SwitchPick switchPick = m_server->gestures()->pickSwitchForOverview();
     for (const auto& output : m_server->outputs()) {
       WorkspaceGroup* group = output->workspaceGroup();
       if (group == nullptr) {
@@ -1387,6 +1390,10 @@ namespace umbriel {
       if (Workspace* workspace = group->active()) {
         workspace->arrange(false);
       }
+    }
+    // Before buildState: reconcileDynamic must not invalidate cards mid-build.
+    if (switchPick.group != nullptr) {
+      switchPick.group->activate(switchPick.target, false);
     }
 
     buildState();
@@ -1417,6 +1424,14 @@ namespace umbriel {
             workspace->arrange(false);
           }
         }
+      }
+    }
+    if (switchPick.group != nullptr) {
+      if (OutputState* state = stateFor(switchPick.group->output())) {
+        // Read the row after activate: reconcileDynamic may have dropped the workspace the swipe left.
+        const auto row = static_cast<double>(switchPick.target->index());
+        state->rowScroll.snap(row + switchPick.offset);
+        animateRow(*state, row, switchPick.velocity);
       }
     }
     assignShortcuts();
@@ -1494,7 +1509,13 @@ namespace umbriel {
       return;
     }
     m_server->cursor()->resetWheelAccumulation();
-    cancelNavigation();
+    // A close releases any navigation mid-gesture. Input events carry monotonic milliseconds, so the release sample
+    // shares their clock and bleeds the speed of fingers that came to rest before the close.
+    const auto now = std::chrono::steady_clock::now().time_since_epoch();
+    endNavigation(
+        false, static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now).count()),
+        m_navigationSource
+    );
     if (m_dragCard != nullptr) {
       endDrag(false);
     }
