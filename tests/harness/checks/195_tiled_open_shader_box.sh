@@ -62,7 +62,7 @@ spawn() {
 }
 
 red_pixels() {
-  magick "$IMAGE" -alpha off -fx '(r > 0.8 && g < 0.1 && b < 0.1) ? 1 : 0' -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'r > 0.8 && g < 0.1 && b < 0.1'
 }
 
 sample_center() {

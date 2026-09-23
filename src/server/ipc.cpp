@@ -2,6 +2,7 @@
 
 #include "config/config.h"
 #include "core/log.h"
+#include "output/output.h"
 #include "overview/overview.h"
 #include "scene/color.h"
 #include "server/ipc_commands.h"
@@ -28,6 +29,8 @@ namespace umbriel {
     // A subscriber that stops reading must not grow the compositor's heap without bound.
     constexpr size_t kMaxOutboundBacklog = 256 * 1024;
     constexpr int kConnectionTimeoutMs = 1000;
+    // Long enough for any configured animation to finish; a compositor that never settles still answers.
+    constexpr int kSettleTimeoutMs = 30000;
 
     nlohmann::json themeEvent() {
       const auto& current = config();
@@ -251,7 +254,9 @@ namespace umbriel {
           const size_t newline = connection.input.find('\n');
           const std::string line = connection.input.substr(0, newline);
           connection.input.erase(0, newline + 1);
-          prepareResponse(connection, handleRequest(connection, line));
+          if (auto response = handleRequest(connection, line)) {
+            prepareResponse(connection, std::move(*response));
+          }
           return true;
         }
         continue;
@@ -262,7 +267,9 @@ namespace umbriel {
         }
         const std::string line = std::move(connection.input);
         connection.input.clear();
-        prepareResponse(connection, handleRequest(connection, line));
+        if (auto response = handleRequest(connection, line)) {
+          prepareResponse(connection, std::move(*response));
+        }
         return true;
       }
       if (errno == EINTR) {
@@ -307,8 +314,64 @@ namespace umbriel {
 
   int Ipc::onConnectionTimeout(void* data) {
     auto* connection = static_cast<Connection*>(data);
+    if (connection->settling) {
+      connection->owner->finishSettle(
+          *connection,
+          nlohmann::json{{"err", "not settled within " + std::to_string(kSettleTimeoutMs / 1000) + "s"}}.dump()
+      );
+      return 0;
+    }
     connection->owner->removeConnection(connection);
     return 0;
+  }
+
+  void Ipc::beginSettle(Connection& connection) {
+    connection.settling = true;
+    connection.settleOutputs.clear();
+    // Nothing more is read from a settling connection, and a client that half-closes must not end the wait.
+    wl_event_source_fd_update(connection.fdSource, 0);
+    if (connection.deadline != nullptr) {
+      wl_event_source_timer_update(connection.deadline, kSettleTimeoutMs);
+    }
+    for (const auto& output : m_server->outputs()) {
+      if (output->wlr()->enabled) {
+        connection.settleOutputs.emplace_back(output->wlr()->name);
+        // An idle output draws no frame on its own, and the reply waits for one from each.
+        wlr_output_schedule_frame(output->wlr());
+      }
+    }
+    if (connection.settleOutputs.empty() && m_server->settled()) {
+      finishSettle(connection, findIpcCommand("settle")->handle(*m_server, {}).dump());
+    }
+  }
+
+  void Ipc::finishSettle(Connection& connection, std::string response) {
+    connection.settling = false;
+    connection.settleOutputs.clear();
+    prepareResponse(connection, std::move(response));
+    // Callers may still hold the connection, so a failed update is left to the deadline to clean up.
+    static_cast<void>(wl_event_source_fd_update(connection.fdSource, WL_EVENT_WRITABLE));
+  }
+
+  void Ipc::notifyOutputFrame(const Output& output) {
+    std::vector<Connection*> ready;
+    for (const auto& connection : m_connections) {
+      if (!connection->settling) {
+        continue;
+      }
+      // Outputs destroyed during the wait never draw again.
+      std::erase_if(connection->settleOutputs, [this, &output](const std::string& name) {
+        return name == output.wlr()->name || std::ranges::none_of(m_server->outputs(), [&name](const auto& candidate) {
+                 return candidate->wlr()->enabled && name == candidate->wlr()->name;
+               });
+      });
+      if (connection->settleOutputs.empty() && m_server->settled()) {
+        ready.push_back(connection.get());
+      }
+    }
+    for (Connection* connection : ready) {
+      finishSettle(*connection, findIpcCommand("settle")->handle(*m_server, {}).dump());
+    }
   }
 
   void Ipc::removeConnection(Connection* connection) {
@@ -337,7 +400,7 @@ namespace umbriel {
     }
   }
 
-  std::string Ipc::handleRequest(Connection& connection, std::string_view line) {
+  std::optional<std::string> Ipc::handleRequest(Connection& connection, std::string_view line) {
     auto req = nlohmann::json::parse(line, nullptr, false);
     if (req.is_discarded() || !req.is_object() || !req.contains("cmd") || !req["cmd"].is_string()) {
       return R"({"err":"malformed request"})";
@@ -401,6 +464,12 @@ namespace umbriel {
       }
       return response;
     }
+#ifdef UMBRIEL_TEST_IPC
+    if (cmd == "settle") {
+      beginSettle(connection);
+      return std::nullopt;
+    }
+#endif
     const IpcCommandSpec* spec = findIpcCommand(cmd);
     if (spec == nullptr) {
       return nlohmann::json{{"err", "unknown command: " + cmd}}.dump();

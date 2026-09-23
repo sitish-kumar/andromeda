@@ -312,7 +312,17 @@ output_management_client = executable(
   dependencies: [wayland_client_dep],
 )
 
+# Harness helper that counts, bounds, and samples screenshot pixels for checks.
+pixel_probe = executable(
+  'pixel-probe',
+  ['harness/clients/pixel_probe.cpp'],
+  dependencies: [cairo_dep],
+  # Checks call it for every captured frame; a debug build of the per-pixel loop would cost more than the capture.
+  override_options: ['optimization=2'],
+)
+
 harness_client_targets = [
+  pixel_probe,
   pointer_client,
   keyboard_keymap_client,
   input_method_client,

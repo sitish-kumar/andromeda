@@ -28,13 +28,12 @@ EOF
 
 red_pixels() {
   grim "$IMAGE"
-  magick "$IMAGE" -resize 50% -fx '(r > 0.9 && g < 0.1 && b < 0.1) ? 1 : 0' \
-    -format '%[fx:round(mean*w*h)]' info:
+  "$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'r > 0.9 && g < 0.1 && b < 0.1'
 }
 assert_no_red() {
   local count
   count=$(red_pixels)
-  if (( count > 10 )); then
+  if (( count > 40 )); then
     echo "$1: stale shader color before transition or after completion ($count pixels)"
     exit 1
   fi
@@ -43,7 +42,7 @@ assert_transition() {
   local count
   sleep 0.1
   count=$(red_pixels)
-  if (( count < 30 )); then
+  if (( count < 120 )); then
     echo "$1: missing shader-only intermediate color ($count pixels)"
     exit 1
   fi

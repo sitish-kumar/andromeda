@@ -60,13 +60,14 @@ spawn() {
 
 red_width() {
   grim "$IMAGE"
-  magick "$IMAGE" -alpha off -crop '1280x8+0+356' +repage \
-    -fx '(r > 0.8 && g < 0.1 && b < 0.1) ? 1 : 0' -format '%[fx:round(w*mean)]\n' info:
+  local pixels
+  pixels=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'r > 0.8 && g < 0.1 && b < 0.1' 1280x8+0+356)
+  echo $(((pixels + 4) / 8))
 }
 
 blue_pixels() {
   grim "$IMAGE"
-  magick "$IMAGE" -alpha off -fx '(b > 0.5 && r < 0.2) ? 1 : 0' -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'b > 0.5 && r < 0.2'
 }
 
 spawn lifecycle-move-survivor 0xFFFF0000

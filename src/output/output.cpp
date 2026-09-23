@@ -16,6 +16,7 @@
 #include "scene/config_banner.h"
 #include "scene/node.h"
 #include "scene/quit_confirm.h"
+#include "server/ipc.h"
 #include "server/server.h"
 #include "server/wine_color_manager.h"
 #include "view/view.h"
@@ -1184,6 +1185,10 @@ namespace umbriel {
       break;
     case OutputFrameFollowup::None:
       break;
+    }
+
+    if (Ipc* ipc = m_server->ipc()) {
+      ipc->notifyOutputFrame(*this);
     }
 
     // Unconditional: see comment above. Never gate this on commit success.

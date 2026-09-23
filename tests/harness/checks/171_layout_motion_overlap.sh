@@ -71,12 +71,11 @@ window_id() {
 
 # Fraction of the output covered by pixels only two red layers, or a ring over red content, can produce.
 overlap_pixels() {
-  magick "$1" -alpha off -fx '(r > 0.56 && g < 0.1) || (r > 0.1 && g > 0.2) ? 1 : 0' \
-    -format '%[fx:mean]' info:
+  "$UMBRIEL_PIXEL_PROBE" "$1" count '(r > 0.56 && g < 0.1) || (r > 0.1 && g > 0.2)'
 }
 
 move_marker_pixels() {
-  magick "$1" -alpha off -fx 'b > 0.2 && r > 0.2 ? 1 : 0' -format '%[fx:round(mean*w*h)]' info:
+  "$UMBRIEL_PIXEL_PROBE" "$1" count 'b > 0.2 && r > 0.2'
 }
 
 # Fourteen frames 100 ms apart, captured first and analysed afterwards so the samples span the whole 1500 ms motion.
@@ -91,8 +90,8 @@ sample() {
   for i in $(seq 14); do
     local overlap
     overlap=$(overlap_pixels "$SHOTS/$phase-$i.png")
-    if ! awk -v value="$overlap" 'BEGIN { exit !(value < 0.00001) }'; then
-      echo "$phase: frame $i shows overlapping tiles (overlap fraction $overlap): $SHOTS/$phase-$i.png"
+    if ((overlap > 9)); then
+      echo "$phase: frame $i shows overlapping tiles ($overlap pixels): $SHOTS/$phase-$i.png"
       exit 1
     fi
     if (( $(move_marker_pixels "$SHOTS/$phase-$i.png") > 1000 )); then

@@ -86,18 +86,15 @@ wait_for_log_since() {
 
 # The marker band may sit over the moving survivor, so identify it by its green channel alone.
 green_pixels() {
-  magick "$1" -alpha off -fx '(g > 0.12 && b < 0.08) ? 1 : 0' \
-    -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$1" count 'g > 0.12 && b < 0.08'
 }
 
 red_bounds() {
-  magick "$1" -alpha off -fx '(r > 0.2 && g < 0.08 && b < 0.08) ? 1 : 0' \
-    -bordercolor black -border 1 -trim -format '%X %Y %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$1" bbox 'r > 0.2 && g < 0.08 && b < 0.08'
 }
 
 pattern_bounds() {
-  magick "$1" -alpha off -fx '((b > 0.2 || g > 0.2) && r < 0.08) ? 1 : 0' \
-    -bordercolor black -border 1 -trim -format '%X %Y %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$1" bbox '(b > 0.2 || g > 0.2) && r < 0.08'
 }
 
 bounds_match() {
@@ -136,7 +133,8 @@ verify_layout() {
   # windows_move runs for MOVE_MS from the close; windows_out keeps running past it on its own clock.
   sleep 0.15
   grim "$SHOTS/$mode-moving.png"
-  sleep 0.6
+  # After windows_out as well as windows_move, so the close snapshot no longer covers the survivor's bottom band.
+  "$UMBRIEL" settle
   grim "$SHOTS/$mode-final.png"
 
   local before_x before_y before_w before_h held_x held_y held_w held_h

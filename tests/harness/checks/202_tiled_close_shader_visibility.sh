@@ -104,12 +104,11 @@ wait_unmapped() {
 
 color_pixels() {
   local image=$1 expression=$2
-  magick "$image" -alpha off -fx "$expression ? 1 : 0" -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$image" count "$expression"
 }
 
 red_bounds() {
-  magick "$1" -alpha off -fx '(r > 0.08) ? 1 : 0' -bordercolor black -border 1 -trim \
-    -format '%X %Y %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$1" bbox 'r > 0.08'
 }
 
 bounds_match() {

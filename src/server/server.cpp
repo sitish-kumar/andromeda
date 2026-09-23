@@ -1289,6 +1289,25 @@ namespace umbriel {
     });
   }
 
+  bool Server::settled() const {
+    if (std::ranges::any_of(m_animatables, [](const Animatable* owner) { return owner->hasActiveAnimations(); })) {
+      return false;
+    }
+    for (const auto& output : m_outputs) {
+      const WorkspaceGroup* group = output->workspaceGroup();
+      if (group == nullptr) {
+        continue;
+      }
+      for (size_t index = 0; index < group->workspaceCount(); ++index) {
+        if (const Workspace* workspace = group->workspaceAt(index);
+            workspace != nullptr && workspace->arrangePending()) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   CloseSnapshotId Server::animateCloseSnapshot(
       Output* output, wlr_scene_tree* tree, wlr_scene_tree* content, std::vector<BorderSnapshot> borders,
       const wlr_box& box, std::optional<CloseSnapshotOverrides> overrides, ShadowSnapshot shadow

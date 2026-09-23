@@ -107,7 +107,9 @@ namespace umbriel {
       }
     }
 
+#ifdef UMBRIEL_TEST_IPC
     void printOutputName(const nlohmann::json& ok) { std::println("{}", ok.get<std::string>()); }
+#endif
 
     std::string fourccName(uint32_t format) {
       if (format == DRM_FORMAT_INVALID) {
@@ -615,6 +617,10 @@ namespace umbriel {
     return nlohmann::json{{"ok", nullptr}};
   }
 
+  nlohmann::json IpcCommands::settle(Server& /*server*/, std::string_view /*arg*/) {
+    return nlohmann::json{{"ok", nullptr}};
+  }
+
   static constexpr IpcCommandSpec kIpcCommands[] = {
       {"msg", "<action> [args...]", "send an action to the compositor", true, &IpcCommands::msg, nullptr},
       {"windows", "", "list windows (app id and title)", false, &IpcCommands::windows, &printWindows},
@@ -624,10 +630,14 @@ namespace umbriel {
       {"color", "", "show color-management state", false, &IpcCommands::color, &printColor},
       {"tearing", "", "show tearing-control state", false, &IpcCommands::tearing, &printTearing},
       {"keyboard-layouts", "", "list keyboard layouts", false, &IpcCommands::keyboardLayouts, &printKeyboardLayouts},
+#ifdef UMBRIEL_TEST_IPC
       {"output-create", "<name>", "create a headless output (headless sessions only)", true, &IpcCommands::outputCreate,
        &printOutputName},
       {"output-destroy", "<name>", "destroy an output (headless sessions only)", true, &IpcCommands::outputDestroy,
        nullptr},
+      {"settle", "", "wait until no layout or animation is pending and every output has drawn a frame", false,
+       &IpcCommands::settle, nullptr, 35},
+#endif
   };
 
   std::span<const IpcCommandSpec> ipcCommands() { return kIpcCommands; }

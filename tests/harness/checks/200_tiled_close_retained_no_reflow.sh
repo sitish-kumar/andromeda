@@ -107,13 +107,11 @@ capture_series() {
 }
 
 blue_pixels() {
-  magick "$1" -alpha off -fx '(b > 0.8 && r < 0.1 && g < 0.1) ? 1 : 0' \
-    -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$1" count 'b > 0.8 && r < 0.1 && g < 0.1'
 }
 
 blue_bounds() {
-  magick "$1" -alpha off -fx '(b > 0.8 && r < 0.1 && g < 0.1) ? 1 : 0' \
-    -bordercolor black -border 1 -trim -format '%X %Y %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$1" bbox 'b > 0.8 && r < 0.1 && g < 0.1'
 }
 
 bounds_match() {

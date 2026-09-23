@@ -19,6 +19,14 @@ boundaries, or regression-sensitive behavior.
 - [Scene helper ownership](scene-helper-ownership.md)
 - [DRM GPU exclusion](drm-device-policy.md)
 
+## Harness-only IPC
+
+`settle`, `output-create`, and `output-destroy` exist for `tests/harness` and
+are compiled only with the `test_ipc` option (auto: debug builds). `settle`
+replies once no animation is running, no workspace has an arrange pending, and
+every output has drawn a frame since the request; it errors after 30 seconds.
+`output-create` and `output-destroy` work only on the headless backend.
+
 ## Pointer drag completion
 
 A client data-device drag temporarily replaces normal pointer delivery with a

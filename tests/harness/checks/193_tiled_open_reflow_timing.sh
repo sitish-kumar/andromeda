@@ -71,8 +71,9 @@ spawn() {
 # IPC target geometry or the opening window's opacity.
 red_width() {
   grim "$IMAGE"
-  magick "$IMAGE" -alpha off -crop '1280x8+0+356' +repage \
-    -fx '(r > 0.8 && g < 0.1 && b < 0.1) ? 1 : 0' -format '%[fx:round(w*mean)]\n' info:
+  local pixels
+  pixels=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'r > 0.8 && g < 0.1 && b < 0.1' 1280x8+0+356)
+  echo $(((pixels + 4) / 8))
 }
 
 blue_at() {

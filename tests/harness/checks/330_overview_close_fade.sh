@@ -68,8 +68,7 @@ EOF
 
 color_pixels() {
   local image=$1 expression=$2
-  magick "$image" -alpha off -resize 50% -fx "$expression ? 1 : 0" \
-    -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$image" count "$expression"
 }
 
 FILL_COLOR=0xFF0000FF "$UMBRIEL_UNMAP_CLIENT" overview-close-first 1200 700 > "$FIRST_LOG" 2>&1 &
@@ -103,7 +102,7 @@ fi
 sleep 0.12
 grim "$MOVING"
 moving_red=$(color_pixels "$MOVING" 'r > 0.8 && g < 0.1 && b < 0.1')
-if ((moving_red < 1000)); then
+if ((moving_red < 4000)); then
   echo "setup did not put the first overview card under windows_move: red_pixels=$moving_red"
   exit 1
 fi
@@ -111,7 +110,7 @@ fi
 # The opener fades in alongside the reflow its admission caused, exactly as it would outside the overview. Only the
 # opener carries green and blue, so a partial value counts it whether it is over the red card or the black backdrop.
 opening_dim=$(color_pixels "$MOVING" 'g > 0.08 && g < 0.7 && b > 0.08 && b < 0.7')
-if ((opening_dim < 1000)); then
+if ((opening_dim < 4000)); then
   echo "the overview opener did not fade in alongside the neighbour reflow: dim=$opening_dim"
   exit 1
 fi
@@ -120,12 +119,12 @@ fi
 sleep 0.6
 grim "$OPENED"
 opened_cyan=$(color_pixels "$OPENED" 'g > 0.8 && b > 0.8 && r < 0.1')
-if ((opened_cyan < 1000)); then
+if ((opened_cyan < 4000)); then
   echo "the overview opener never finished its windows_in: opaque=$opened_cyan"
   exit 1
 fi
 opened_red=$(color_pixels "$OPENED" 'r > 0.8 && g < 0.1 && b < 0.1')
-if ((opened_red < 1000)); then
+if ((opened_red < 4000)); then
   echo "the overview opener's windows_in did not finish ahead of the neighbour reflow: red_pixels=$opened_red"
   exit 1
 fi
@@ -144,11 +143,11 @@ sleep 0.12
 grim "$DURING"
 during_green=$(color_pixels "$DURING" 'g > 0.8 && r < 0.1 && b < 0.1')
 during_magenta=$(color_pixels "$DURING" 'r > 0.8 && g < 0.1 && b > 0.8')
-if ((during_green < 1000)); then
+if ((during_green < 4000)); then
   echo "overview card did not run windows_out from its original client buffer: green=$during_green magenta=$during_magenta"
   exit 1
 fi
-if ((during_magenta > 10)); then
+if ((during_magenta > 40)); then
   echo "overview close snapshot retained its stale windows_move shader: green=$during_green magenta=$during_magenta"
   exit 1
 fi
@@ -157,7 +156,7 @@ sleep 1.05
 grim "$AFTER"
 after_green=$(color_pixels "$AFTER" 'g > 0.8 && r < 0.1 && b < 0.1')
 after_magenta=$(color_pixels "$AFTER" 'r > 0.8 && g < 0.1 && b > 0.8')
-if ((after_green > 10 || after_magenta > 10)); then
+if ((after_green > 40 || after_magenta > 40)); then
   echo "overview close snapshot remained after windows_out: green=$after_green magenta=$after_magenta"
   exit 1
 fi

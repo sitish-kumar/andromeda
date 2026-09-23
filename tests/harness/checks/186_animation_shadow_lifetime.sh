@@ -85,7 +85,7 @@ sleep 0.2
 assert_half_shadow closing
 sleep 2.1
 grim -s 1 "$IMAGE"
-green=$(magick "$IMAGE" -fx '(g > 0.05 && r < 0.01 && b < 0.01) ? 1 : 0' -format '%[fx:mean*w*h]' info:)
+green=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'g > 0.05 && r < 0.01 && b < 0.01')
 if [[ $green != 0 ]]; then
   echo "shadow survived its closing snapshot: $green pixels"; exit 1
 fi

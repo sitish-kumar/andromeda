@@ -107,27 +107,19 @@ window_id() {
 }
 
 red_bounds() {
-  magick "$1" -alpha off -fx '(r > 0.7 && b < 0.2) ? 1 : 0' -bordercolor black -border 1 -trim \
-    -format '%[fx:page.x-1] %[fx:page.y-1] %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$1" bbox 'r > 0.7 && b < 0.2'
 }
 
-# One ImageMagick process emits the move marker and all three phases for both independently coloured close snapshots.
+# One probe emits the move marker and all three phases for both independently coloured close snapshots.
 frame_markers() {
-  magick "$1" -write mpr:source +delete \
-    mpr:source -alpha off -fx 'r > 0.7 && g > 0.2 && b < 0.2 ? 1 : 0' \
-      -format '%[fx:round(mean*w*h)] ' -write info: +delete \
-    mpr:source -alpha off -fx 'b > 0.7 && r > 0.05 && r < 0.25 && g < 0.2 ? 1 : 0' \
-      -format '%[fx:round(mean*w*h)] ' -write info: +delete \
-    mpr:source -alpha off -fx 'b > 0.7 && r > 0.25 && r < 0.7 && g < 0.2 ? 1 : 0' \
-      -format '%[fx:round(mean*w*h)] ' -write info: +delete \
-    mpr:source -alpha off -fx 'b > 0.7 && r > 0.7 && g < 0.2 ? 1 : 0' \
-      -format '%[fx:round(mean*w*h)] ' -write info: +delete \
-    mpr:source -alpha off -fx 'g > 0.7 && r > 0.05 && r < 0.25 && b < 0.2 ? 1 : 0' \
-      -format '%[fx:round(mean*w*h)] ' -write info: +delete \
-    mpr:source -alpha off -fx 'g > 0.7 && r > 0.25 && r < 0.7 && b < 0.2 ? 1 : 0' \
-      -format '%[fx:round(mean*w*h)] ' -write info: +delete \
-    mpr:source -alpha off -fx 'g > 0.7 && b > 0.7 && r < 0.2 ? 1 : 0' \
-      -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$1" count \
+    'r > 0.7 && g > 0.2 && b < 0.2' \
+    'b > 0.7 && r > 0.05 && r < 0.25 && g < 0.2' \
+    'b > 0.7 && r > 0.25 && r < 0.7 && g < 0.2' \
+    'b > 0.7 && r > 0.7 && g < 0.2' \
+    'g > 0.7 && r > 0.05 && r < 0.25 && b < 0.2' \
+    'g > 0.7 && r > 0.25 && r < 0.7 && b < 0.2' \
+    'g > 0.7 && b > 0.7 && r < 0.2'
 }
 
 assert_phase_timeline() {

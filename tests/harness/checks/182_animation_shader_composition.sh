@@ -64,13 +64,13 @@ fi
 "$UMBRIEL" msg overview-open > /dev/null
 sleep 0.25
 grim -s 1 -o "$home" "$IMAGE"
-green=$(magick "$IMAGE" -fx '(g > 0.9 && r < 0.1 && b < 0.1) ? 1 : 0' -format '%[fx:round(mean*w*h)]' info:)
+green=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'g > 0.9 && r < 0.1 && b < 0.1')
 if (( green < 1000 )); then
   echo "outer shader did not sample the inner window effect: $green green pixels"
   exit 1
 fi
 grim -s 1 -o "$neighbour" "$IMAGE"
-green=$(magick "$IMAGE" -fx '(g > 0.9 && r < 0.1 && b < 0.1) ? 1 : 0' -format '%[fx:round(mean*w*h)]' info:)
+green=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'g > 0.9 && r < 0.1 && b < 0.1')
 if (( green > 10 )); then
   echo "window effect escaped to neighbouring output: $green green pixels"
   exit 1

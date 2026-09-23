@@ -60,15 +60,10 @@ wait_for_window() {
 }
 
 # Bounding box of the opener's red and green columns, which the fade leaves dim early in the timeline. The blue peer
-# never matches, and the 1px border makes -trim report a page offset even for a full-frame match.
+# never matches.
 opener_bounds() {
   grim "$IMAGE"
-  local x y w h
-  read -r x y w h < <(
-    magick "$IMAGE" -alpha off -fx '(r > 0.1 || g > 0.1) ? 1 : 0' \
-      -bordercolor black -border 1 -trim -format '%X %Y %w %h\n' info: 2> /dev/null
-  )
-  printf '%d %d %d %d\n' "$((${x#+} - 1))" "$((${y#+} - 1))" "$w" "$h"
+  "$UMBRIEL_PIXEL_PROBE" "$IMAGE" bbox 'r > 0.1 || g > 0.1'
 }
 
 peer_blue() {

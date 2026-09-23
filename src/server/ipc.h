@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -13,6 +14,7 @@ struct wl_event_source;
 
 namespace umbriel {
 
+  class Output;
   class Server;
 
   class Ipc {
@@ -47,6 +49,8 @@ namespace umbriel {
     void notifyWindowsChanged();
     void notifyWorkspacesChanged();
     void notifySubmapChanged();
+    // End of an output frame: answers settle requests once every output has drawn a frame and the server is settled.
+    void notifyOutputFrame(const Output& output);
 
   private:
     struct Connection {
@@ -59,6 +63,9 @@ namespace umbriel {
       wl_event_source* deadline = nullptr;
       bool responding = false;
       uint8_t subscribedEvents = 0;
+      // A settle request holds its reply until these outputs have each drawn a frame and the server is settled.
+      bool settling = false;
+      std::vector<std::string> settleOutputs;
     };
 
     static int onListenReadable(int fd, uint32_t mask, void* data);
@@ -72,7 +79,10 @@ namespace umbriel {
     void prepareResponse(Connection& connection, std::string response);
     void removeConnection(Connection* connection);
     static void closeConnection(Connection& connection);
-    std::string handleRequest(Connection& connection, std::string_view line);
+    // Empty when the reply is deferred, as for settle.
+    std::optional<std::string> handleRequest(Connection& connection, std::string_view line);
+    void beginSettle(Connection& connection);
+    void finishSettle(Connection& connection, std::string response);
     void broadcastEvent(uint8_t event, const nlohmann::json& payload);
 
     Server* m_server;

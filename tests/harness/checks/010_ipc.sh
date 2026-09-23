@@ -613,4 +613,27 @@ PY
 # An "ok" reply only says the request was accepted. The window must actually
 # leave the list, which is the close path itself, not tidying up after it.
 wait_for_windows 0
-echo "IPC commands return documented JSON, human-readable listings, events, and clean window lifecycle replies"
+
+# settle holds its reply while an animation runs: a close answers only after its windows_out, and the next capture no
+# longer shows the snapshot.
+printf '\n[animation.windows_out]\nduration_ms = 1500\ncurve = "linear"\n' >> "$UMBRIEL_CONFIG"
+"$UMBRIEL" msg config-reload > /dev/null
+FILL_COLOR=0xFFFF0000 "$UMBRIEL_UNMAP_CLIENT" ipc-settle 600 400 > "$UMBRIEL_RUNTIME_DIR/ipc-settle.log" 2>&1 &
+wait_for_windows 1
+"$UMBRIEL" settle
+settle_id=$("$UMBRIEL" windows --json | jq -r '.[0].id')
+"$UMBRIEL" msg "window-close:$settle_id" > /dev/null
+settle_start=${EPOCHREALTIME/[.,]/}
+"$UMBRIEL" settle
+settle_ms=$(((${EPOCHREALTIME/[.,]/} - settle_start) / 1000))
+if ((settle_ms < 1400)); then
+  echo "settle answered ${settle_ms} ms into a 1500 ms windows_out"
+  exit 1
+fi
+grim "$UMBRIEL_RUNTIME_DIR/ipc-settle.png"
+settle_red=$("$UMBRIEL_PIXEL_PROBE" "$UMBRIEL_RUNTIME_DIR/ipc-settle.png" count 'r > 0.5 && g < 0.2 && b < 0.2')
+if ((settle_red > 0)); then
+  echo "the close snapshot was still drawn after settle answered: $settle_red red pixels"
+  exit 1
+fi
+echo "IPC commands return documented JSON, human-readable listings, events, clean window lifecycle replies, and settle"

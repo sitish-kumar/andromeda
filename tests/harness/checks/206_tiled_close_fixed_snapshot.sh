@@ -170,9 +170,7 @@ run_case() {
     final_blue=$blue
     final_red=$red
     if ((green >= MARKER_PIXELS)); then
-      read -r bx by bw bh < <(magick "$SHOTS/$phase-$i.png" -alpha off \
-        -fx '(g > 0.8 && r < 0.2 && b < 0.2) ? 1 : 0' -bordercolor black -border 1 -trim \
-        -format '%X %Y %w %h\n' info: 2> /dev/null)
+      read -r bx by bw bh < <("$UMBRIEL_PIXEL_PROBE" "$SHOTS/$phase-$i.png" bbox 'g > 0.8 && r < 0.2 && b < 0.2')
       if ((close_first < 0)); then
         close_first=$i
         bounds_x=$bx

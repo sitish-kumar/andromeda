@@ -92,8 +92,8 @@ fi
 "$UMBRIEL" msg workspace-switch:2 > /dev/null
 sleep 0.2
 grim "$IMAGE"
-red=$(magick "$IMAGE" -fx '(r > 0.04 && g < 0.01 && b < 0.01) ? 1 : 0' -format '%[fx:round(mean*w*h)]' info:)
-green=$(magick "$IMAGE" -fx '(g > 0.04 && r < 0.01 && b < 0.01) ? 1 : 0' -format '%[fx:round(mean*w*h)]' info:)
+red=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'r > 0.04 && g < 0.01 && b < 0.01')
+green=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'g > 0.04 && r < 0.01 && b < 0.01')
 if ! (( red > 50 && green == 0 )); then
   echo "workspace shader did not process the shadow exactly once: red=$red green=$green"; exit 1
 fi

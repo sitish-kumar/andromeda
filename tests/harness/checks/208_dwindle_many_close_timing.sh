@@ -93,13 +93,11 @@ colour_bounds() {
     blue) expression='b > 0.75 && r < 0.48 && g < 0.48' ;;
     yellow) expression='r > 0.75 && g > 0.75 && b < 0.48' ;;
   esac
-  magick "$file" -alpha off -fx "($expression) ? 1 : 0" -bordercolor black -border 1 -trim \
-    -format '%[fx:page.x-1] %[fx:page.y-1] %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$file" bbox "$expression"
 }
 
 move_marker_pixels() {
-  magick "$1" -alpha off -fx 'r > 0.9 && g > 0.12 && g < 0.4 && b > 0.12 && b < 0.4 ? 1 : 0' \
-    -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$1" count 'r > 0.9 && g > 0.12 && g < 0.4 && b > 0.12 && b < 0.4'
 }
 
 spawn dwindle-close-root 0xFFFFFFFF

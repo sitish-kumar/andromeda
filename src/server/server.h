@@ -190,6 +190,9 @@ namespace umbriel {
     void flushPendingViewOpacities();
     [[nodiscard]] bool animationsActive() const;
     [[nodiscard]] bool animationsActiveFor(const Output* output) const;
+    // No animation is running and no workspace has an arrange waiting for the next frame.
+    [[nodiscard]] bool settled() const;
+    [[nodiscard]] Ipc* ipc() const { return m_ipc.get(); }
     // Owners register themselves for the frame tick. The registry is kept in phase order, so the three traversals above
     // never re-state which owners exist or in what order they run.
     void registerAnimatable(Animatable* animatable);

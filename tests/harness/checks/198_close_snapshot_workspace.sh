@@ -93,23 +93,19 @@ wait_unmapped() {
 }
 
 red_pixels() {
-  magick "$1" -alpha off -fx '(r > 0.7 && g < 0.2 && b < 0.2) ? 1 : 0' \
-    -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$1" count 'r > 0.7 && g < 0.2 && b < 0.2'
 }
 
 green_pixels() {
-  magick "$1" -alpha off -fx '(r < 0.2 && g > 0.7 && b < 0.2) ? 1 : 0' \
-    -format '%[fx:round(mean*w*h)]\n' info:
+  "$UMBRIEL_PIXEL_PROBE" "$1" count 'r < 0.2 && g > 0.7 && b < 0.2'
 }
 
 red_bounds() {
-  magick "$1" -alpha off -fx '(r > 0.7 && g < 0.2 && b < 0.2) ? 1 : 0' \
-    -bordercolor black -border 1 -trim -format '%X %Y %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$1" bbox 'r > 0.7 && g < 0.2 && b < 0.2'
 }
 
 green_bounds() {
-  magick "$1" -alpha off -fx '(r < 0.2 && g > 0.7 && b < 0.2) ? 1 : 0' \
-    -bordercolor black -border 1 -trim -format '%X %Y %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$1" bbox 'r < 0.2 && g > 0.7 && b < 0.2'
 }
 
 absolute() {
@@ -155,8 +151,8 @@ verify_workspace_slide() {
   sleep 0.35
   grim "$SHOTS/$phase-middle.png"
 
-  # Capture both time-sensitive frames before doing pixel analysis. ImageMagick processing between captures can
-  # otherwise consume most of the workspace transition and let the outgoing objects leave the output.
+  # Capture both time-sensitive frames before doing pixel analysis, so analysis cannot delay the second capture past
+  # the workspace transition.
   for label in early middle; do
     image="$SHOTS/$phase-$label.png"
     if (( $(red_pixels "$image") < 500 || $(green_pixels "$image") < 500 )); then

@@ -114,8 +114,7 @@ sample_blue() {
 
 blue_bounds() {
   grim "$IMAGE"
-  magick "$IMAGE" -alpha off -fx '(b > 0.3 && r < 0.2 && g < 0.2) ? 1 : 0' \
-    -bordercolor black -border 1 -trim -format '%X %Y %w %h\n' info: 2> /dev/null
+  "$UMBRIEL_PIXEL_PROBE" "$IMAGE" bbox 'b > 0.3 && r < 0.2 && g < 0.2'
 }
 
 assert_slide_brighter() {
