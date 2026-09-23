@@ -192,6 +192,16 @@ namespace umbriel {
     [[nodiscard]] bool animationsActiveFor(const Output* output) const;
     // No animation is running and no workspace has an arrange waiting for the next frame.
     [[nodiscard]] bool settled() const;
+    // Milliseconds on the clock every animation ticks from. It follows the monotonic clock unless a test build froze
+    // it.
+    [[nodiscard]] uint64_t animationClockMsec() const;
+#ifdef UMBRIEL_TEST_IPC
+    void freezeAnimationClock();
+    // Moves a frozen clock forward and schedules a frame on every output. False when the clock is not frozen.
+    bool advanceAnimationClock(uint64_t ms);
+    // Continues from the frozen time, so animation time never runs backwards.
+    void resumeAnimationClock();
+#endif
     [[nodiscard]] Ipc* ipc() const { return m_ipc.get(); }
     // Owners register themselves for the frame tick. The registry is kept in phase order, so the three traversals above
     // never re-state which owners exist or in what order they run.
@@ -672,6 +682,10 @@ namespace umbriel {
     std::unique_ptr<HintRect> m_insertHint;
     std::unique_ptr<ConfigWatcher> m_configWatcher;
     std::unique_ptr<Ipc> m_ipc;
+#ifdef UMBRIEL_TEST_IPC
+    std::optional<uint64_t> m_frozenAnimationClockMsec;
+    int64_t m_animationClockOffsetMsec = 0;
+#endif
     wlr_scene_tree* m_bannerTree = nullptr;
     std::unique_ptr<ConfigBanner> m_configBanner;
     wlr_scene_tree* m_cheatsheetTree = nullptr;

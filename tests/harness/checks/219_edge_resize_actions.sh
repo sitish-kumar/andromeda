@@ -438,19 +438,48 @@ capture_box() {
   printf '%d %d %d %d\n' "$((x - 1))" "$((y - 1))" "$width" "$height"
 }
 
+# Animation time only moves by clock-advance from here on.
+"$UMBRIEL" clock-freeze
+
+# Runs every animation to its end. A resize crossfade starts only once the client commits, which happens in real time,
+# so advance until a settle probe succeeds.
+finish() {
+  for _ in $(seq 20); do
+    "$UMBRIEL" clock-advance 2500 > /dev/null
+    if timeout 0.3 "$UMBRIEL" settle > /dev/null 2>&1; then
+      return 0
+    fi
+  done
+  echo "animations never finished: $("$UMBRIEL" windows --json)"
+  return 1
+}
+
+# Waits until the client has presented a width, so a sample after it sees the committed size.
+wait_presented() {
+  local title=$1 width=$2
+  for _ in $(seq 60); do
+    [[ $(grep '^mapped' "$UMBRIEL_RUNTIME_DIR/$title.log" | tail -n 1) == "mapped ${width}x"* ]] && return 0
+    sleep 0.05
+  done
+  echo "$title never presented width $width: $(tail -n 1 "$UMBRIEL_RUNTIME_DIR/$title.log")"
+  return 1
+}
+
 spawn_client float-anim 700 700
 wait_count 1
 "$UMBRIEL" msg window-toggle-floating > /dev/null
-"$UMBRIEL" settle
+finish
 
 read -r base_x _ base_w _ < <(capture_box anim-base)
+read -r _ _ logical_w _ < <(box float-anim)
 # 700 + 0.2 * 1280 = 956, still pinned on the right edge.
 "$UMBRIEL" msg window-modify-width-left:0.2 > /dev/null
-sleep 0.15
+wait_presented float-anim $((logical_w + OUTPUT_W / 5))
+"$UMBRIEL" clock-advance 150 > /dev/null
 read -r mid_x _ mid_w _ < <(capture_box anim-mid)
-"$UMBRIEL" settle
+finish
 read -r end_x _ end_w _ < <(box float-anim)
-sleep 0.8
+"$UMBRIEL" clock-advance 800 > /dev/null
 read -r settled_x _ settled_w _ < <(box float-anim)
 
 # The opposite edge has to hold for the whole resize: a resize that places the
@@ -477,9 +506,10 @@ fi
 # right edge even though both actions move only the left edge.
 repeat_right=$((settled_x + settled_w))
 "$UMBRIEL" msg window-modify-width-left:0.1 > /dev/null
-sleep 0.25
+wait_presented float-anim $((settled_w + OUTPUT_W / 10))
+"$UMBRIEL" clock-advance 250 > /dev/null
 "$UMBRIEL" msg window-modify-width-left:0.1 > /dev/null
-"$UMBRIEL" settle
+finish
 read -r repeated_x _ repeated_w _ < <(box float-anim)
 if (( repeated_w != settled_w + OUTPUT_W / 5 || repeated_x + repeated_w != repeat_right )); then
   echo "repeated width-left drifted its pinned edge: ${settled_x}+${settled_w} -> ${repeated_x}+${repeated_w}"

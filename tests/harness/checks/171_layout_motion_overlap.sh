@@ -48,6 +48,8 @@ vec4 animation(vec2 uv) {
 }
 GLSL
 "$UMBRIEL" msg config-reload > /dev/null
+# Animation time only moves by clock-advance.
+"$UMBRIEL" clock-freeze
 
 spawn() {
   FILL_COLOR=0x80800000 "$CLIENT" "$1" 1200 700 > "$SHOTS/$1.log" 2>&1 &
@@ -69,6 +71,19 @@ window_id() {
   "$UMBRIEL" windows --json | jq -r --arg title "$1" '.[] | select(.title == $title) | .id'
 }
 
+# Runs every animation to its end. A crossfade starts only once its client commits the resized buffer, which happens in
+# real time, so advance until a settle probe succeeds.
+finish() {
+  for _ in $(seq 20); do
+    "$UMBRIEL" clock-advance 2000 > /dev/null
+    if timeout 0.3 "$UMBRIEL" settle > /dev/null 2>&1; then
+      return 0
+    fi
+  done
+  echo "animations never finished: $("$UMBRIEL" windows --json)"
+  return 1
+}
+
 # Fraction of the output covered by pixels only two red layers, or a ring over red content, can produce.
 overlap_pixels() {
   "$UMBRIEL_PIXEL_PROBE" "$1" count '(r > 0.56 && g < 0.1) || (r > 0.1 && g > 0.2)'
@@ -78,14 +93,14 @@ move_marker_pixels() {
   "$UMBRIEL_PIXEL_PROBE" "$1" count 'b > 0.2 && r > 0.2'
 }
 
-# Fourteen frames 100 ms apart, captured first and analysed afterwards so the samples span the whole 1500 ms motion.
+# Fourteen frames 100 ms of animation time apart, from the trigger on, so the samples span the whole 1500 ms motion.
 sample() {
   local phase=$1
   local i
   local saw_marker=0
   for i in $(seq 14); do
     grim "$SHOTS/$phase-$i.png"
-    sleep 0.1
+    "$UMBRIEL" clock-advance 100 > /dev/null
   done
   for i in $(seq 14); do
     local overlap
@@ -117,30 +132,30 @@ run_mode() {
   local tag="$mode-$extent"
   sed -i -e "s/^mode = \"[a-z]*\"$/mode = \"$mode\"/" -e "s/^default_extent_fraction = .*$/default_extent_fraction = $extent/" "$UMBRIEL_CONFIG"
   "$UMBRIEL" msg config-reload > /dev/null
-  "$UMBRIEL" settle
+  finish
 
   spawn "motion-$tag-a"
   wait_for_windows 1
-  "$UMBRIEL" settle
+  finish
 
   spawn "motion-$tag-b"
   wait_for_windows 2
-  "$UMBRIEL" settle
+  finish
 
   spawn "motion-$tag-c"
   wait_for_windows 3
-  "$UMBRIEL" settle
+  finish
 
   "$UMBRIEL" msg "window-focus:$(window_id "motion-$tag-a")" > /dev/null
   "$UMBRIEL" msg window-toggle-maximize > /dev/null
-  sleep 0.3
+  "$UMBRIEL" clock-advance 300 > /dev/null
   "$UMBRIEL" msg window-toggle-maximize > /dev/null
   sample "$tag-maximize-interrupt"
-  "$UMBRIEL" settle
+  finish
 
   close_all
   wait_for_windows 0
-  "$UMBRIEL" settle
+  finish
 }
 
 run_mode scrolling 0.5

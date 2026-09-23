@@ -82,6 +82,8 @@ match.title = "^scratch-high$"
 default_position = { x = 760, y = 380, anchor = "top_left" }
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
+# Animation time only moves by clock-advance, so every sample sees an exact instant.
+"$UMBRIEL" clock-freeze
 
 window_of() { "$UMBRIEL" windows --json | jq -c --arg title "$1" '.[] | select(.title == $title)'; }
 
@@ -104,10 +106,9 @@ box_of() {
 
 id_of() { window_of "$1" | jq -r .id; }
 
-# Focus changes start long animations that leave the sampled pixels alone, so sample shortly after instead of waiting
-# for them to end.
+# Samples after every animation started so far has finished.
 capture() {
-  sleep 0.3
+  "$UMBRIEL" clock-advance 4000
   grim "$IMAGE"
 }
 
@@ -177,10 +178,10 @@ clean "lowered floating window" "$((ux - 8))" "$((uy + 20))" "$((fx + 20))" "$((
 "$UMBRIEL" msg "window-focus:$(id_of upper)" > /dev/null
 capture
 "$UMBRIEL" msg "window-close:$(id_of upper)" > /dev/null
-sleep 0.2
+"$UMBRIEL" clock-advance 200
 grim "$IMAGE"
 shadowed "closing floating window" "$((ux - 8))" "$((uy + 20))" "$((fx + 20))" "$((fy + 20))"
-"$UMBRIEL" settle
+"$UMBRIEL" clock-advance 4000
 
 # Pinned windows shadow each other.
 spawn pin-low 300 200

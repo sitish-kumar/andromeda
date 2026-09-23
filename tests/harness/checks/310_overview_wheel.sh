@@ -49,11 +49,16 @@ expect_notch() {
   fi
 }
 
+# The pointer client returns after a roundtrip, so the compositor has already handled the notch, and a workspace
+# switch it makes is immediate. The settle covers the frame and any animation it would start.
 expect_inert_notch() {
-  local dir=$1 command=$2 reason=$3 got
-  got=$(notch_activates "$dir" "$command")
-  if [[ $got != none ]]; then
-    echo "$reason ($command $dir activated workspace '$got')"
+  local dir=$1 command=$2 reason=$3 before after
+  before=$("$WORKSPACE")
+  pointer "$command" "$dir"
+  "$UMBRIEL" settle
+  after=$("$WORKSPACE")
+  if [[ $after != "$before" ]]; then
+    echo "$reason ($command $dir activated workspace '$after')"
     return 1
   fi
 }
@@ -85,10 +90,7 @@ expect_notch -1 1 # and back up
 
 # At the top row there is nowhere further up: the step is refused rather than wrapping or running off the end of the group. This asserts the behaviour, not the
 # bounds check that implements it: deleting that check still passes here, because workspaceAt() then returns null and select(null) is already a no-op.
-if [[ $(notch_activates -1) != "none" ]]; then
-  echo "a notch past the first workspace was not clamped"
-  exit 1
-fi
+expect_inert_notch -1 notch "a notch past the first workspace was not clamped"
 
 # A successful source change with no overview-invalidating runtime effect is
 # equally inert. back_and_forth is read directly when switching workspaces.

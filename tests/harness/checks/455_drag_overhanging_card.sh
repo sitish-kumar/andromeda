@@ -25,9 +25,9 @@ spawn_client() {
 }
 
 wait_for_count() {
-  for _ in $(seq 60); do
+  for _ in $(seq 300); do
     [[ $("$UMBRIEL" windows --json | jq 'length') -eq $1 ]] && return 0
-    sleep 0.25
+    sleep 0.05
   done
   echo "timed out waiting for $1 window(s)"
   return 1
@@ -52,17 +52,32 @@ zoom = 0.5
 workspace_axis = "vertical"
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
+# Animation time only moves by clock-advance.
+"$UMBRIEL" clock-freeze
+
+# Runs every animation to its end. A resize crossfade starts only once its client commits, which happens in real time,
+# so advance until a settle probe succeeds.
+finish() {
+  for _ in $(seq 20); do
+    "$UMBRIEL" clock-advance 2000 > /dev/null
+    if timeout 0.3 "$UMBRIEL" settle > /dev/null 2>&1; then
+      return 0
+    fi
+  done
+  echo "animations never finished: $("$UMBRIEL" windows --json)"
+  return 1
+}
 
 for id in $(seq 1 7); do
   spawn_client "$id"
   wait_for_count "$id"
 done
-"$UMBRIEL" settle
+finish
 
 # Keep the source column alive after detaching the dragged view so the strip's
 # scroll range and the target card's projection remain stable.
 "$UMBRIEL" msg window-consume-left > /dev/null
-"$UMBRIEL" settle
+finish
 
 windows=$("$UMBRIEL" windows --json)
 source_column_x=$(jq -r '.[] | select(.title == "overhang-7") | .x' <<< "$windows")
@@ -94,10 +109,12 @@ if (( sample_w < 40 )); then
 fi
 
 "$UMBRIEL" msg overview-open > /dev/null
-"$UMBRIEL" settle
+finish
 pointer move "$start_x" "$start_y" press "$BTN_LEFT" move "$drop_x" "$drop_y" pause 1500 release "$BTN_LEFT" &
 pointer_pid=$!
+# The pointer helper moves in real time; once it reaches the drop point, animation time brings in the hint.
 sleep 0.5
+"$UMBRIEL" clock-advance 500 > /dev/null
 
 screenshot="$UMBRIEL_RUNTIME_DIR/drag-overhanging-card.png"
 grim "$screenshot"
@@ -112,9 +129,9 @@ if (( red < green + 35 )); then
   exit 1
 fi
 
-"$UMBRIEL" settle
+finish
 "$UMBRIEL" msg overview-close > /dev/null
-"$UMBRIEL" settle
+finish
 
 windows=$("$UMBRIEL" windows --json)
 read -r source_x source_y source_w < <(
@@ -179,10 +196,11 @@ if ((press_y <= OVERVIEW_Y + 5 || press_y >= 535)); then
 fi
 
 "$UMBRIEL" msg overview-open > /dev/null
-"$UMBRIEL" settle
+finish
 pointer move "$press_x" "$press_y" press "$BTN_LEFT" move "$drop_x" "$drop_y" pause 1500 release "$BTN_LEFT" &
 pointer_pid=$!
 sleep 0.5
+"$UMBRIEL" clock-advance 500 > /dev/null
 
 # The stack hint for the first row is a bar along the column's leading cross edge, projected into the overhanging
 # part of the preview. The dragged card trails to the right of the pointer, so it cannot cover that bar.
@@ -198,9 +216,9 @@ if ((vertical_red < vertical_green + 35)); then
   exit 1
 fi
 
-"$UMBRIEL" settle
+finish
 "$UMBRIEL" msg overview-close > /dev/null
-"$UMBRIEL" settle
+finish
 
 windows=$("$UMBRIEL" windows --json)
 read -r moved_x moved_y moved_h < <(
