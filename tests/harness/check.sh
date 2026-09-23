@@ -171,6 +171,7 @@ export UMBRIEL_SECURITY_CONTEXT_CLIENT="$CLIENT_DIR/security-context-client"
 export UMBRIEL_SEAT_LOG_CLIENT="$CLIENT_DIR/seat-log-client"
 export UMBRIEL_OUTPUT_MANAGEMENT_CLIENT="$CLIENT_DIR/output-management-client"
 export UMBRIEL_PIXEL_PROBE="$CLIENT_DIR/pixel-probe"
+export UMBRIEL_HARNESS_LIB="$HARNESS_DIR/lib.sh"
 export UMBRIEL=$BINARY
 
 # Live instance state. The EXIT trap reaches for these, so they stay declared

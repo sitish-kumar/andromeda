@@ -2,6 +2,7 @@
 # The last scrolling column's append hint must remain outside the card when the
 # pointer reaches the centered preview boundary.
 set -euo pipefail
+source "$UMBRIEL_HARNESS_LIB"
 
 readonly BTN_LEFT=272
 readonly OUTPUT_W=1280
@@ -10,11 +11,6 @@ readonly OVERVIEW_ZOOM=0.5
 readonly OVERVIEW_X=320
 readonly OVERVIEW_Y=180
 readonly OVERVIEW_RIGHT=959
-readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/tests/pointer-client}"
-
-pointer() {
-  "$POINTER" "$OUTPUT_W" "$OUTPUT_H" "$@"
-}
 
 spawn_client() {
   foot --config=/dev/null --override=colors.background=000000 \
@@ -64,11 +60,12 @@ start_y=$(jq -r --argjson origin "$OVERVIEW_Y" --argjson zoom "$OVERVIEW_ZOOM" \
 
 "$UMBRIEL" msg overview-open > /dev/null
 "$UMBRIEL" settle
+# Animation time only moves by clock-advance while the drag is sampled.
+"$UMBRIEL" clock-freeze
 inside_x=$((OVERVIEW_RIGHT - 29))
-pointer move "$start_x" "$start_y" press "$BTN_LEFT" \
-  move "$OVERVIEW_RIGHT" 360 pause 1200 move "$inside_x" 360 pause 1200 release "$BTN_LEFT" &
-pointer_pid=$!
-sleep 0.5 # real time: sample during the pointer client's first pause
+pointer_hold "$OUTPUT_W" "$OUTPUT_H" move "$start_x" "$start_y" press "$BTN_LEFT" move "$OVERVIEW_RIGHT" 360 \
+  -- move "$inside_x" 360 mark inside hold release "$BTN_LEFT"
+"$UMBRIEL" clock-advance 500 > /dev/null
 
 outside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-right-outside-hint.png"
 grim "$outside_screenshot"
@@ -81,7 +78,8 @@ if (( outside_red < outside_green + 35 )); then
   exit 1
 fi
 
-sleep 1.2 # real time: sample during the pointer client's second pause
+pointer_step inside
+"$UMBRIEL" clock-advance 500 > /dev/null
 inside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-right-inside-hint.png"
 grim "$inside_screenshot"
 inside_red=$(magick "$inside_screenshot" -crop 100x50+700+195 -colorspace RGB \
@@ -93,7 +91,8 @@ if (( inside_red < inside_green + 35 )); then
   exit 1
 fi
 
-wait "$pointer_pid"
+pointer_release
+"$UMBRIEL" clock-resume
 "$UMBRIEL" settle
 "$UMBRIEL" msg overview-close > /dev/null
 "$UMBRIEL" settle

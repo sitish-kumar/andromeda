@@ -64,6 +64,7 @@ Tests live in three places, and which one a change belongs in follows from what 
 tests/unit/             C++ unit tests, one binary per test, run by `just test`
 tests/meson.build       the unit test table and the harness client targets
 tests/harness/check.sh  the headless compositor harness, run by `just check`
+tests/harness/lib.sh    helpers a check sources with `source "$UMBRIEL_HARNESS_LIB"`
 tests/harness/checks/   one script per behaviour it asserts
 tests/harness/clients/  Wayland helper clients the checks drive
 ```
@@ -106,7 +107,10 @@ follow:
   output has drawn a frame. Sample mid-animation on the animation clock: `umbriel clock-freeze` stops animation time,
   `umbriel clock-advance <ms>` moves it and replies once every output has drawn that instant, and an animation started
   while frozen counts from the frozen instant, so long configured durations cost nothing
-  (`191_builtin_window_styles` is the reference). Poll a client's log or IPC state for anything a client does.
+  (`191_builtin_window_styles` is the reference). Poll a client's log or IPC state for anything a client does. The
+  pointer helper's `mark <label>` prints once every earlier command has been processed, and `hold` keeps buttons and
+  modifiers pressed until a line arrives on its stdin; `pointer_hold`, `pointer_step`, and `pointer_release` in
+  `lib.sh` wrap both, so a drag stays held across screenshots without a timed `pause` (`455_drag_overhanging_card`).
   `check.sh` refuses a fixed `sleep` of 0.2s or more outside a polling loop unless the line ends with
   `# real time: <reason>`, which is for compositor timers, helper-client pauses, and proofs that nothing reacts
   within a window. `windows --json` reports layout targets, not what is on screen, so it is not proof that motion

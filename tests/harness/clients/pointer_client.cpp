@@ -9,6 +9,9 @@
 // pause <ms> keep the pointer connection and current input state. Commands run in order, each followed by a frame and
 // a roundtrip so the compositor has processed one before the next is sent.
 // axis <horizontal|vertical> <delta> sends smooth finger input; axis-stop <horizontal|vertical> ends it.
+// mark <label> prints the label on its own stdout line once every earlier command has been processed, so a check polls
+// for it instead of sleeping. hold keeps the current input state until a line or end of input arrives on stdin, so a
+// check can hold a drag across its screenshots and release it by writing to the client's stdin.
 
 #include "virtual-keyboard-unstable-v1-client-protocol.h"
 #include "wlr-virtual-pointer-unstable-v1-client-protocol.h"
@@ -276,6 +279,15 @@ int main(int argc, char** argv) {
       }
       if (command != "key-press") {
         zwp_virtual_keyboard_v1_key(keyboard.protocol, nextTime(), key, WL_KEYBOARD_KEY_STATE_RELEASED);
+      }
+    } else if (command == "mark") {
+      needs(1);
+      std::println("{}", args[i + 1]);
+      std::fflush(stdout);
+      i += 1;
+    } else if (command == "hold") {
+      int c = 0;
+      while ((c = std::getchar()) != EOF && c != '\n') {
       }
     } else if (command == "pause") {
       needs(1);

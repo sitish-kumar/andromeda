@@ -4,6 +4,7 @@
 # its client. The compositor must resize through the requested layout edge,
 # finish on the raw release, and restore ordinary input for the next surface.
 set -euo pipefail
+source "$UMBRIEL_HARNESS_LIB"
 
 readonly BTN_LEFT=272
 readonly OUTPUT_W=1280
@@ -152,14 +153,11 @@ impure_pixels() {
     tail -n +2 | grep -c -E -v '#(0000FF|00FF00) ' || true
 }
 
-"$POINTER" "$OUTPUT_W" "$OUTPUT_H" \
-  move "$resize_start_x" "$resize_y" mod logo press 273 \
-  move "$((resize_start_x - 160))" "$resize_y" pause 1500 \
-  release 273 mod none > "$POINTER_LOG" 2>&1 &
-pointer_pid=$!
-sleep 0.4 # real time: sample while the pointer client holds the resize
+pointer_hold "$OUTPUT_W" "$OUTPUT_H" \
+  move "$resize_start_x" "$resize_y" mod logo press 273 move "$((resize_start_x - 160))" "$resize_y" \
+  -- release 273 mod none
 grim -o HEADLESS-1 "$HELD"
-wait "$pointer_pid"
+pointer_release
 "$UMBRIEL" settle
 grim -o HEADLESS-1 "$RELEASED"
 read -r target_x target_y target_w target_h < <(window_box "$TARGET")

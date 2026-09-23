@@ -5,17 +5,13 @@
 # until the drop, so the client's ack of the new size arrives while it is still
 # tiled and must not be mistaken for an interactive resize tracking the pointer.
 set -euo pipefail
+source "$UMBRIEL_HARNESS_LIB"
 
 readonly TITLE=drag-toggle-animation
 readonly BTN_LEFT=272
 readonly BTN_RIGHT=273
 readonly OUTPUT_W=1280
 readonly OUTPUT_H=720
-readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/tests/pointer-client}"
-
-pointer() {
-  "$POINTER" "$OUTPUT_W" "$OUTPUT_H" "$@"
-}
 
 wait_for_box() {
   local expected=$1 actual=
@@ -83,9 +79,8 @@ fi
 
 # Hold the drag open while the animation runs, and sample it twice on the way. The retarget starts once the pointer
 # client's right click reaches the compositor.
-pointer move 640 360 mod logo press "$BTN_LEFT" move 640 400 \
-  press "$BTN_RIGHT" release "$BTN_RIGHT" pause 1500 move 641 400 release "$BTN_LEFT" mod none &
-drag_pid=$!
+pointer_hold "$OUTPUT_W" "$OUTPUT_H" move 640 360 mod logo press "$BTN_LEFT" move 640 400 \
+  press "$BTN_RIGHT" release "$BTN_RIGHT" -- move 641 400 release "$BTN_LEFT" mod none
 wait_for_box 320x216
 "$UMBRIEL" clock-advance 350
 early=$(capture_width early)
@@ -93,11 +88,7 @@ early=$(capture_width early)
 late=$(capture_width late)
 "$UMBRIEL" clock-advance 3000
 settled=$(capture_width settled)
-if ! kill -0 "$drag_pid" 2> /dev/null; then
-  echo "the drag was released before the settled sample; the pointer pause is too short"
-  exit 1
-fi
-wait "$drag_pid"
+pointer_release
 "$UMBRIEL" clock-advance 3000
 
 if ((early <= late || late <= settled)); then

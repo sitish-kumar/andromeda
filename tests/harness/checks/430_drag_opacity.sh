@@ -2,16 +2,16 @@
 # Opaque cards fade during an overview drag. Client transparency composes with
 # the drag multiplier instead of bypassing the compositor-owned opacity.
 set -euo pipefail
+source "$UMBRIEL_HARNESS_LIB"
 
 readonly BTN_LEFT=272
 readonly OUTPUT_W=1280
 readonly OUTPUT_H=720
-readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/tests/pointer-client}"
 
 measure_drag_green() {
   local alpha=$1 title=$2
   local screenshot="$UMBRIEL_RUNTIME_DIR/$title.png"
-  local client_pid pointer_pid
+  local client_pid
   foot --config=/dev/null --override=colors.background=000000 --override="colors.alpha=$alpha" \
     --title="$title" sh -c 'sleep 120' > /dev/null 2>&1 &
   client_pid=$!
@@ -26,12 +26,11 @@ measure_drag_green() {
 
   "$UMBRIEL" msg overview-open > /dev/null
   "$UMBRIEL" settle
-  # The single card is centered at (640, 360). Move it right while holding the
-  # button, then keep the connection alive so the compositor retains the grab.
-  "$POINTER" "$OUTPUT_W" "$OUTPUT_H" \
-    move 640 360 press "$BTN_LEFT" move 740 360 pause 1200 release "$BTN_LEFT" &
-  pointer_pid=$!
-  sleep 0.5 # real time: the pointer helper presses and drags the card
+  # The single card is centered at (640, 360). Move it right and hold the button so the compositor retains the grab.
+  # Animation time only moves by clock-advance while the drag is sampled.
+  "$UMBRIEL" clock-freeze > /dev/null
+  pointer_hold "$OUTPUT_W" "$OUTPUT_H" move 640 360 press "$BTN_LEFT" move 740 360 -- release "$BTN_LEFT" >&2
+  "$UMBRIEL" clock-advance 500 > /dev/null
   grim "$screenshot"
 
   local green
@@ -41,7 +40,8 @@ measure_drag_green() {
   # The sibling checks linearize harmlessly: they sample saturated colors, where both encodings agree, or compare two
   # crops against each other, where any monotone transform cancels.
   green=$(magick "$screenshot" -crop 40x40+680+430 -format '%[fx:round(255*mean.g)]' info:)
-  wait "$pointer_pid"
+  pointer_release >&2
+  "$UMBRIEL" clock-resume > /dev/null
   "$UMBRIEL" msg overview-close > /dev/null
   # Both measurements share one compositor instance, so the card from this scenario has to be gone before the next one
   # opens the overview on a single card again.

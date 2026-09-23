@@ -2,6 +2,7 @@
 # The first scrolling column's prepend hint must remain outside the card when
 # the pointer crosses the centered preview boundary into the overview margin.
 set -euo pipefail
+source "$UMBRIEL_HARNESS_LIB"
 
 readonly BTN_LEFT=272
 readonly OUTPUT_W=1280
@@ -9,7 +10,6 @@ readonly OUTPUT_H=720
 readonly OVERVIEW_ZOOM=0.5
 readonly OVERVIEW_X=320
 readonly OVERVIEW_Y=180
-readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/tests/pointer-client}"
 
 spawn_client() {
   foot --config=/dev/null --override=colors.background=000000 \
@@ -63,11 +63,11 @@ inside_x=$((OVERVIEW_X + 30))
 
 "$UMBRIEL" msg overview-open > /dev/null
 "$UMBRIEL" settle
-"$POINTER" "$OUTPUT_W" "$OUTPUT_H" \
-  move "$start_x" "$start_y" press "$BTN_LEFT" \
-  move "$touch_x" 360 pause 1200 move "$inside_x" 360 pause 1200 release "$BTN_LEFT" &
-POINTER_PID=$!
-sleep 0.5 # real time: sample during the pointer client's first pause
+# Animation time only moves by clock-advance while the drag is sampled.
+"$UMBRIEL" clock-freeze
+pointer_hold "$OUTPUT_W" "$OUTPUT_H" move "$start_x" "$start_y" press "$BTN_LEFT" move "$touch_x" 360 \
+  -- move "$inside_x" 360 mark inside hold release "$BTN_LEFT"
+"$UMBRIEL" clock-advance 500 > /dev/null
 
 outside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-left-outside-hint.png"
 grim "$outside_screenshot"
@@ -81,7 +81,8 @@ if (( outside_red < outside_green + 35 )); then
   exit 1
 fi
 
-sleep 1.2 # real time: sample during the pointer client's second pause
+pointer_step inside
+"$UMBRIEL" clock-advance 500 > /dev/null
 inside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-left-inside-hint.png"
 grim "$inside_screenshot"
 
@@ -94,7 +95,8 @@ if (( inside_red < inside_green + 35 )); then
   exit 1
 fi
 
-wait "$POINTER_PID"
+pointer_release
+"$UMBRIEL" clock-resume
 "$UMBRIEL" settle
 "$UMBRIEL" msg overview-close > /dev/null
 "$UMBRIEL" settle
