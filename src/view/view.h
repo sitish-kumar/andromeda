@@ -106,6 +106,12 @@ namespace umbriel {
     // position and size transitions cannot diverge between the two render paths.
     [[nodiscard]] const wlr_box& presentedBox() const { return m_presentedBox; }
     [[nodiscard]] float presentedOpacity() const { return effectiveOpacity(); }
+    // The drop shadow the scene draws for this view, and whether it sits in the workspace's tile shadow layer rather
+    // than under the view's own frame. Overview cards mirror it so they match the window they swap with.
+    [[nodiscard]] const wlr_scene_shadow* shadowNode() const { return m_decoration.shadowNode(); }
+    [[nodiscard]] bool shadowPooled() const { return m_decoration.shadowPooled(); }
+    // Opacity multiplier the overview applies to windows it leaves on screen (pinned ones) while it opens and closes.
+    void setOverviewOpacity(float opacity);
     [[nodiscard]] wlr_scene_tree* homeTree() const;
     // The toplevel view owning `surface` after walking xdg popup parents, or
     // nullptr when the surface is not under a view (layer surfaces, cursors).
@@ -678,6 +684,7 @@ namespace umbriel {
     bool m_initialRulesSettled = false;
     float m_ruleOpacity = 1.0F;
     float m_dragOpacity = 1.0F;
+    float m_overviewOpacity = 1.0F;
     // wlroots restores a committed scene buffer to the client-provided alpha. Root and subsurface watches set this so
     // compositor-managed opacity is restored on the frame after every scene helper commit listener has run.
     bool m_effectiveOpacityCommitPending = false;

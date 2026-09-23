@@ -73,6 +73,7 @@ namespace umbriel {
     [[nodiscard]] ShadowSnapshot snapshotShadow(wlr_scene_tree* parent, wlr_scene_node* source, bool inPool) const {
       return m_shadow.snapshot(parent, source, inPool);
     }
+    [[nodiscard]] const wlr_scene_shadow* shadowNode() const { return m_shadow.node(); }
 
     // Shadows follow the full view opacity. Blur follows only transition
     // opacity, otherwise a window rule attenuates the backdrop twice.

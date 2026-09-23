@@ -692,7 +692,9 @@ namespace umbriel {
     const float ruleOpacity =
         m_toplevel->scheduled.fullscreen && config().appearance.opaqueFullscreen ? 1.0F : m_ruleOpacity;
     const float fade = fadeComposited() ? 1.0F : m_fadeAlpha;
-    return std::clamp(fade * ruleOpacity * m_dragOpacity * static_cast<float>(m_focusDim.current()), 0.0F, 1.0F);
+    return std::clamp(
+        fade * ruleOpacity * m_dragOpacity * m_overviewOpacity * static_cast<float>(m_focusDim.current()), 0.0F, 1.0F
+    );
   }
 
   bool View::fullscreenOpaque() const { return config().appearance.opaqueFullscreen || m_ruleOpacity >= 1.0F; }
@@ -707,7 +709,16 @@ namespace umbriel {
     // The analytic fallback still follows the lifecycle fade. Shader-shaped
     // shadows get their opacity from captured pixels instead of this multiplier.
     const float shadowOpacity = fadeComposited() ? effective * m_fadeAlpha : effective;
-    m_decoration.setAlpha(shadowOpacity, m_fadeAlpha);
+    m_decoration.setAlpha(shadowOpacity, m_fadeAlpha * m_overviewOpacity);
+  }
+
+  void View::setOverviewOpacity(float opacity) {
+    const float clamped = std::clamp(opacity, 0.0F, 1.0F);
+    if (clamped == m_overviewOpacity) {
+      return;
+    }
+    m_overviewOpacity = clamped;
+    setFadeAlpha(m_fadeAlpha);
   }
 
   void View::applyEffectiveOpacity() {
