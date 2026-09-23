@@ -100,8 +100,9 @@ red_bounds() {
   "$UMBRIEL_PIXEL_PROBE" "$1" bbox 'r > 0.2 && g < 0.08 && b < 0.08'
 }
 
+# The stale survivor's pure blue and green columns, but not the half-alpha marker band of a running windows_out.
 pattern_bounds() {
-  "$UMBRIEL_PIXEL_PROBE" "$1" bbox '(b > 0.2 || g > 0.2) && r < 0.08'
+  "$UMBRIEL_PIXEL_PROBE" "$1" bbox '(b > 0.6 || g > 0.6) && r < 0.08'
 }
 
 bounds_match() {

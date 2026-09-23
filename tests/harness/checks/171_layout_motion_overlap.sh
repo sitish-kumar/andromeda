@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Established tiled peers share one windows_move transition and remain disjoint through interrupted geometry changes.
 # Lifecycle actors are deliberately outside this contract, so opens and closes settle before sampling. Every window is
-# 50% red over black with a green border ring. Two content layers raise red above 0.5, while a border crossing content
-# mixes red with green. A blue tint supplied only by windows_move also proves the sampled transition really ran.
+# translucent red over black with a green border ring. Two content layers raise red above 0.56, while a border crossing
+# content mixes red with green. The windows_move shader writes the source alpha into blue, which proves the sampled
+# transition really ran. The maximized window is drawn at a lower alpha than its peers, because its resize crossfade
+# carries the windows_move shader too: only blue at the peers' alpha proves the peers themselves moved.
 set -euo pipefail
 
 readonly CLIENT="${UMBRIEL_UNMAP_CLIENT:-./build-debug/tests/unmap-client}"
@@ -52,7 +54,9 @@ GLSL
 "$UMBRIEL" clock-freeze
 
 spawn() {
-  FILL_COLOR=0x80800000 "$CLIENT" "$1" 1200 700 > "$SHOTS/$1.log" 2>&1 &
+  local fill=0x80800000
+  [[ $1 == *-a ]] && fill=0x60600000
+  FILL_COLOR=$fill "$CLIENT" "$1" 1200 700 > "$SHOTS/$1.log" 2>&1 &
 }
 
 wait_for_windows() {
@@ -89,8 +93,9 @@ overlap_pixels() {
   "$UMBRIEL_PIXEL_PROBE" "$1" count '(r > 0.56 && g < 0.1) || (r > 0.1 && g > 0.2)'
 }
 
+# Peers are drawn at alpha 0.5 and the maximized window at 0.375, so the marker blue tells them apart.
 move_marker_pixels() {
-  "$UMBRIEL_PIXEL_PROBE" "$1" count 'b > 0.2 && r > 0.2'
+  "$UMBRIEL_PIXEL_PROBE" "$1" count 'b > 0.44 && r > 0.2'
 }
 
 # Fourteen frames 100 ms of animation time apart, from the trigger on, so the samples span the whole 1500 ms motion.
@@ -114,7 +119,7 @@ sample() {
     fi
   done
   if ((!saw_marker)); then
-    echo "$phase: no windows_move shader marker appeared during the established-peer transition"
+    echo "$phase: the established peers never carried the windows_move shader during the transition"
     exit 1
   fi
 }
