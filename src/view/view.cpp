@@ -2048,6 +2048,16 @@ namespace umbriel {
     }
   }
 
+  void View::settleFocusChrome() {
+    if (!m_borderColorAnim.animating() && !m_focusDim.animating()) {
+      return;
+    }
+    m_borderColorAnim.snap(m_borderColorAnim.target());
+    m_focusDim.snap(m_focusDim.target());
+    setFadeAlpha(m_fadeAlpha);
+    syncAnimationShaders();
+  }
+
   void View::setUrgent(bool urgent) {
     if (m_urgent == urgent) {
       return;

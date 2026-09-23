@@ -1465,6 +1465,7 @@ namespace umbriel {
         scratchpad->hideAll();
       }
       m_closing = false;
+      m_server->notifyOverviewChanged();
       m_pendingFocus = nullptr;
       if (m_progress < 1.0 || m_targetProgress < 1.0) {
         startAnimation(1.0, false);
@@ -1546,11 +1547,12 @@ namespace umbriel {
     }
     m_pendingFocus = nullptr;
     teardown();
-    m_server->refocus();
+    restoreFocus(nullptr);
   }
 
   void Overview::startAnimation(double target, bool closing) {
     m_closing = closing;
+    m_server->notifyOverviewChanged();
     m_targetProgress = target;
     m_progressFrom = m_progress;
     const auto& animation = config().animation;
@@ -1648,10 +1650,19 @@ namespace umbriel {
         }
       }
     }
+    restoreFocus(focus);
+  }
+
+  void Overview::restoreFocus(View* focus) {
     if (focus != nullptr && focus->mapped()) {
       m_server->focusView(focus, FocusReason::PointerPress);
     } else {
       m_server->refocus();
+    }
+    // Focus chrome changed while the windows were hidden (the open cleared it, focus returned during the close or
+    // just now), so they reappear with the settled result.
+    for (const auto& view : m_server->registry().all()) {
+      view->settleFocusChrome();
     }
   }
 
@@ -1723,6 +1734,7 @@ namespace umbriel {
       state->rowScroll.snap(state->rowScroll.current());
     }
     m_closing = false;
+    m_server->notifyOverviewChanged();
     m_progress = progress;
     m_targetProgress = progress;
     applyProgress();

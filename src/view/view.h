@@ -123,6 +123,9 @@ namespace umbriel {
     // Focus ring only. Public alongside setForeignActivated because both are
     // activation chrome the focus manager drives from outside.
     void setBorderFocused(bool focused);
+    // Jump the focus border color and unfocused dim to their targets. For views revealed after focus changed while
+    // they were hidden, so the reveal does not replay the transition.
+    void settleFocusChrome();
     void setWorkspace(Workspace* workspace, bool attachToLayout = true);
     // A move the user asked for: the view belongs where it lands, and any displaced home is dropped.
     void moveToWorkspace(Workspace* workspace, bool attachToLayout = true);
