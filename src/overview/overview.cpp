@@ -434,22 +434,22 @@ namespace umbriel {
     wlr_scene_shadow_set_color(card.shadow, color);
     const clipped_region& hole = source->clipped_region;
     wlr_scene_shadow_set_clipped_region(
-        card.shadow, clipped_region{
-                         .area =
-                             {
-                                 .x = scaled(hole.area.x),
-                                 .y = scaled(hole.area.y),
-                                 .width = scaled(hole.area.width),
-                                 .height = scaled(hole.area.height),
-                             },
-                         .corners =
-                             {
-                                 .top_left = scaledCorner(hole.corners.top_left),
-                                 .top_right = scaledCorner(hole.corners.top_right),
-                                 .bottom_right = scaledCorner(hole.corners.bottom_right),
-                                 .bottom_left = scaledCorner(hole.corners.bottom_left),
-                             },
-                     }
+        card.shadow,
+        clipped_region{
+            .area =
+                {
+                    .x = scaled(hole.area.x),
+                    .y = scaled(hole.area.y),
+                    .width = scaled(hole.area.width),
+                    .height = scaled(hole.area.height),
+                },
+            .corners = {
+                .top_left = scaledCorner(hole.corners.top_left),
+                .top_right = scaledCorner(hole.corners.top_right),
+                .bottom_right = scaledCorner(hole.corners.bottom_right),
+                .bottom_left = scaledCorner(hole.corners.bottom_left),
+            },
+        }
     );
   }
 
