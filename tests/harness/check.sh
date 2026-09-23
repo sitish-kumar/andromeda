@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# How to write a check (waits, the animation clock, pixel analysis, stress runs) is in CONTRIBUTING.md, "Tests".
 # Boots one contained headless Umbriel per check in checks/, runs the check, kills everything it spawned, and asserts
 # that instance exited cleanly. One instance per check is what makes a failure local: a check starts from the default
 # config with no windows, no overview, and workspace 1 focused, so it asserts behaviour instead of maintaining hygiene
