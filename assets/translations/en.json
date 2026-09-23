@@ -1482,6 +1482,16 @@
         "overlay": "Overlay",
         "top": "Top"
       },
+      "lockscreen": {
+        "transition": {
+          "disc": "Disc",
+          "fade": "Fade",
+          "honeycomb": "Honeycomb",
+          "stripes": "Stripes",
+          "wipe": "Wipe",
+          "zoom": "Zoom"
+        }
+      },
       "notification-urgency": {
         "critical": "Critical",
         "low": "Low",
@@ -2306,6 +2316,10 @@
           "description": "Use a snapshot of the desktop as the lock screen background",
           "label": "Desktop Capture"
         },
+        "edge-smoothness": {
+          "description": "Feathering of the lock screen transition edges",
+          "label": "Transition Edge Smoothness"
+        },
         "enabled": {
           "description": "Enable session lock, logind integration, and lock actions",
           "label": "Lock Screen"
@@ -2325,6 +2339,14 @@
         "tint-intensity": {
           "description": "Surface-color tint over the lock screen background",
           "label": "Tint Intensity"
+        },
+        "transition-duration": {
+          "description": "Length of the lock and unlock animations in milliseconds",
+          "label": "Transition Duration"
+        },
+        "transitions": {
+          "description": "Effects available when locking and unlocking (one is picked at random)",
+          "label": "Transition Effects"
         },
         "wallpaper": {
           "description": "Custom image for the lock screen background; leave empty to use the desktop wallpaper",

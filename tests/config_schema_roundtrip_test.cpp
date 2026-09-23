@@ -349,6 +349,9 @@ location = "https://example.invalid/bad"
     c.lockscreen = LockscreenConfig{
         .lockBeforeSuspend = false,
         .blurredDesktop = true,
+        .transitions = {LockscreenTransition::Disc, LockscreenTransition::Zoom},
+        .transitionDurationMs = 900.0F,
+        .edgeSmoothness = 0.7F,
         .blurIntensity = 0.6F,
         .tintIntensity = 0.25F,
         .monitors = {"DP-1"}
@@ -611,6 +614,40 @@ location = "https://example.invalid/bad"
       readInto(t, b, barFieldsSchema(), "bar", d);
       if (b.fontScale != *kBarFontScaleRange.min) {
         fail("bar.font_scale clamp: expected 0.2");
+      }
+    }
+    // Lockscreen transitions own their duration range and retain an empty effect
+    // pool as the explicit way to disable animation.
+    {
+      auto t = toml::parse("transition = []\ntransition_duration = 25\nedge_smoothness = 2.0");
+      LockscreenConfig lockscreen{};
+      Diagnostics d;
+      readInto(t, lockscreen, lockscreenSchema(), "lockscreen", d);
+      if (!lockscreen.transitions.empty()) {
+        fail("lockscreen.transition: empty pool did not disable transitions");
+      }
+      if (lockscreen.transitionDurationMs != *kLockscreenTransitionDurationRange.min) {
+        fail("lockscreen.transition_duration clamp: expected 100");
+      }
+      if (lockscreen.edgeSmoothness != 1.0F) {
+        fail("lockscreen.edge_smoothness clamp: expected 1.0");
+      }
+    }
+    // Invalid transition values are surfaced instead of silently changing the
+    // configured effect pool.
+    {
+      auto t = toml::parse(R"(transition = ["fade", "unknown", 3])");
+      LockscreenConfig lockscreen{};
+      Diagnostics d;
+      readInto(t, lockscreen, lockscreenSchema(), "lockscreen", d);
+      if (lockscreen.transitions != std::vector{LockscreenTransition::Fade}) {
+        fail("lockscreen.transition: valid values were not retained");
+      }
+      const auto warnings = std::ranges::count_if(d.entries, [](const Diagnostics::Entry& entry) {
+        return entry.severity == Diagnostics::Severity::Warning && entry.path.starts_with("lockscreen.transition[");
+      });
+      if (warnings != 2) {
+        fail("lockscreen.transition: invalid entries were not reported");
       }
     }
     // Clipboard history count accepts large text-heavy histories but still has

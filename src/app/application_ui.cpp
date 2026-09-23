@@ -768,22 +768,27 @@ void Application::initNotificationAndOsd() {
           std::function<void()> onFadeComplete
       ) {
         (void)behaviorName;
-        // Snapshot the clean desktop before the overlay fades in
-        if (willLockSession && m_configService.isLockScreenEnabled()) {
+        (void)willLockSession;
+        const std::uint64_t generation = ++m_idleGraceOverlayGeneration;
+        // Snapshot before the overlay fades in. A lock behavior can join an
+        // already-active grace period after this callback has run.
+        if (m_configService.isLockScreenEnabled()) {
           m_lockScreen.primeDesktopCaptures();
         }
-        DeferredCall::callLater([this, fadeIn, done = std::move(onFadeComplete)]() mutable {
+        DeferredCall::callLater([this, generation, fadeIn, done = std::move(onFadeComplete)]() mutable {
+          if (generation != m_idleGraceOverlayGeneration) {
+            return;
+          }
           m_idleGraceOverlay.show(fadeIn, std::move(done));
         });
       },
       [this](bool userCancelled, bool willLockSession) {
+        ++m_idleGraceOverlayGeneration;
         // Keep the overlay only when handing off to Noctalia's lock screen (avoids a flash).
         // External lockers never take ownership; deferred hide also races with suspend.
         const bool handoffToLockScreen = !userCancelled && willLockSession && m_configService.isLockScreenEnabled();
         if (!handoffToLockScreen) {
           m_idleGraceOverlay.hide();
-        }
-        if (userCancelled) {
           m_lockScreen.clearPrimedDesktopCaptures();
         }
       }

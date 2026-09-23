@@ -1624,6 +1624,43 @@ namespace settings {
       );
       e.visibleWhen = lockscreenOn;
       entries.push_back(std::move(e));
+
+      MultiSelectSetting transitions;
+      transitions.options.reserve(std::size(kLockscreenTransitions));
+      for (const auto& opt : kLockscreenTransitions) {
+        transitions.options.push_back(SelectOption{std::string(opt.key), tr(opt.labelKey)});
+      }
+      transitions.selectedValues.reserve(cfg.lockscreen.transitions.size());
+      for (const auto& transition : cfg.lockscreen.transitions) {
+        transitions.selectedValues.emplace_back(enumToKey(kLockscreenTransitions, transition));
+      }
+      auto transitionEffects = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.transitions.label"),
+          tr("settings.schema.lockscreen.transitions.description"), {"lockscreen", "transition"},
+          std::move(transitions), "lock screen effects animation pool"
+      );
+      transitionEffects.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(transitionEffects));
+
+      auto transitionDuration = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.transition-duration.label"),
+          tr("settings.schema.lockscreen.transition-duration.description"), {"lockscreen", "transition_duration"},
+          sliderFor(
+              cfg.lockscreen.transitionDurationMs, noctalia::config::schema::kLockscreenTransitionDurationRange, true
+          ),
+          "lock screen transition animation duration"
+      );
+      transitionDuration.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(transitionDuration));
+
+      auto edgeSmoothness = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.edge-smoothness.label"),
+          tr("settings.schema.lockscreen.edge-smoothness.description"), {"lockscreen", "edge_smoothness"},
+          sliderFor(cfg.lockscreen.edgeSmoothness, noctalia::config::schema::kUnitRange, false),
+          "lock screen transition feathering", true
+      );
+      edgeSmoothness.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(edgeSmoothness));
     }
     {
       const SettingVisibility lockscreenWallpaperOn = [](const Config& c) {

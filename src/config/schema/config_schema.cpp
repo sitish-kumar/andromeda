@@ -19,6 +19,14 @@
 
 namespace noctalia::config::schema {
 
+  namespace {
+    template <typename Struct, typename Enum, std::size_t N>
+    Field<Struct> enumArrayField(
+        std::vector<Enum> Struct::* member, std::string_view key, const EnumOption<Enum> (&options)[N],
+        std::optional<Enum> fallbackIfEmpty
+    );
+  }
+
   const Schema<AudioConfig>& audioSchema() {
     static const Schema<AudioConfig> s = {
         field(&AudioConfig::enableOverdrive, "enable_overdrive"),
@@ -93,6 +101,11 @@ namespace noctalia::config::schema {
         field(&LockscreenConfig::fingerprint, "fingerprint"),
         field(&LockscreenConfig::allowEmptyPassword, "allow_empty_password"),
         field(&LockscreenConfig::blurredDesktop, "blurred_desktop"),
+        enumArrayField(
+            &LockscreenConfig::transitions, "transition", kLockscreenTransitions, std::optional<LockscreenTransition>{}
+        ),
+        field(&LockscreenConfig::transitionDurationMs, "transition_duration", kLockscreenTransitionDurationRange),
+        field(&LockscreenConfig::edgeSmoothness, "edge_smoothness", kUnitRange),
         field(&LockscreenConfig::blurIntensity, "blur_intensity", kUnitRange),
         field(&LockscreenConfig::tintIntensity, "tint_intensity", kUnitRange),
         pathStringField(&LockscreenConfig::wallpaper, "wallpaper"),
@@ -753,18 +766,32 @@ namespace noctalia::config::schema {
       const EnumOption<Enum>* opts = options;
       return custom<Struct>(
           key,
-          [member, key, opts, fallbackIfEmpty](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+          [member, key, opts,
+           fallbackIfEmpty](const toml::table& tbl, Struct& out, std::string_view parentPath, Diagnostics& diag) {
+            if (!tbl.contains(key)) {
+              return;
+            }
             const auto* arr = tbl[key].as_array();
             if (arr == nullptr) {
+              diag.warn(joinPath(parentPath, key), "expected an array of strings");
               return;
             }
             (out.*member).clear();
+            std::size_t index = 0;
             for (const auto& item : *arr) {
               if (auto s = item.value<std::string>()) {
-                if (auto e = enumLookup(opts, N, *s)) {
+                const std::string trimmed = StringUtils::trim(*s);
+                if (auto e = enumLookup(opts, N, trimmed)) {
                   (out.*member).push_back(*e);
+                } else {
+                  diag.warn(
+                      joinPath(parentPath, key) + '[' + std::to_string(index) + ']', "unknown value \"" + *s + "\""
+                  );
                 }
+              } else {
+                diag.warn(joinPath(parentPath, key) + '[' + std::to_string(index) + ']', "expected a string");
               }
+              ++index;
             }
             if ((out.*member).empty() && fallbackIfEmpty) {
               (out.*member).push_back(*fallbackIfEmpty);

@@ -267,6 +267,7 @@ private:
   IdleInhibitor m_idleInhibitor;
   IdleManager m_idleManager;
   IdleGraceOverlay m_idleGraceOverlay;
+  std::uint64_t m_idleGraceOverlayGeneration = 0;
   HookManager m_hookManager;
   DependencyService m_dependencyService;
   GammaService m_gammaService;
