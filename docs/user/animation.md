@@ -45,7 +45,7 @@ fullscreen = false
 
 [animation.border]
 enabled = true
-curve = "spring:1,600"
+curve = "spring:1,900"
 
 [animation.dim_unfocused]
 enabled = false
