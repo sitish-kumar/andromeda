@@ -213,6 +213,7 @@ if build_tests
     'shared-output-transform-transition',
     'shared-sdr-capture-lock',
     'shared-sdr-capture-storage-change',
+    'capture-read-format',
   ]
     test(
       'color-' + case_name,
