@@ -50,11 +50,11 @@ EOF
 spawn_client "transition-first"
 wait_for_count 1
 "$UMBRIEL" msg workspace-switch:2 > /dev/null
-sleep 0.1
+"$UMBRIEL" settle
 spawn_client "transition-second"
 wait_for_count 2
 "$UMBRIEL" msg workspace-switch:1 > /dev/null
-sleep 0.1
+"$UMBRIEL" settle
 
 # Slow only the transition under test. The setup switches stay fast so this check does not spend twenty seconds waiting
 # for animations that are unrelated to the assertion.
@@ -138,7 +138,7 @@ settle_to() {
   fast_animations
   "$UMBRIEL" msg "workspace-switch:$via" > /dev/null
   "$UMBRIEL" msg "workspace-switch:$target" > /dev/null
-  sleep 0.4
+  "$UMBRIEL" settle
 }
 
 cat >> "$UMBRIEL_CONFIG" <<'EOF'
@@ -173,7 +173,7 @@ EOF
 # This reload lands while the vertical slide above is still running: an axis change settles it and keeps the workspace
 # the switch already committed to.
 fast_animations
-sleep 0.4
+"$UMBRIEL" settle
 if [[ $(active_workspace) != 2 ]]; then
   echo "the axis reload dropped the committed workspace: $("$UMBRIEL" workspaces --json)"
   exit 1
@@ -184,7 +184,7 @@ fi
 "$UMBRIEL" msg workspace-switch:3 > /dev/null
 spawn_sized axis-tiled 600 300
 wait_for_count 3
-sleep 0.5
+"$UMBRIEL" settle
 read -r tiled_x tiled_y tiled_w tiled_h <<< "$(box_of axis-tiled)"
 if ((tiled_y < 60 || tiled_w < 200 || tiled_h < 100)); then
   echo "the vertical strip did not leave room around its tile: $(box_of axis-tiled)"
@@ -239,10 +239,10 @@ spawn_sized axis-float 200 200
 wait_for_count 4
 spawn_sized axis-pinned 200 200
 wait_for_count 5
-sleep 0.5
+"$UMBRIEL" settle
 "$UMBRIEL" msg "window-focus-warp:$(id_of axis-pinned)" > /dev/null
 "$UMBRIEL" msg window-toggle-pinned > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 read -r float_x float_y float_w float_h <<< "$(box_of axis-float)"
 read -r pin_x pin_y pin_w _ <<< "$(box_of axis-pinned)"
 float_inside_y=$((float_y + 60))
@@ -289,10 +289,10 @@ fi
 settle_to 3
 spawn_sized axis-fullscreen "$OUTPUT_W" "$OUTPUT_H"
 wait_for_count 6
-sleep 0.5
+"$UMBRIEL" settle
 "$UMBRIEL" msg "window-focus-warp:$(id_of axis-fullscreen)" > /dev/null
 "$UMBRIEL" msg window-toggle-fullscreen > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 grim "$SHOT"
 rest_full=$(sample_blue 1240 400)
 if ((rest_full < 100)); then
@@ -316,7 +316,7 @@ fi
 settle_to 3
 "$UMBRIEL" msg "window-focus-warp:$(id_of axis-fullscreen)" > /dev/null
 "$UMBRIEL" msg window-toggle-fullscreen > /dev/null
-sleep 0.4
+"$UMBRIEL" settle
 
 # Reloading the axis mid-transition: the committed workspace stays, both offsets are settled to zero, and the next
 # switch travels on the new axis.

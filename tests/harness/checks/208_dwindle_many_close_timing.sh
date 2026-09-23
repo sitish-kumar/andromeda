@@ -105,7 +105,7 @@ spawn dwindle-survivor-red 0xFFFF0000
 spawn dwindle-survivor-green 0xFF00FF00
 spawn dwindle-survivor-blue 0xFF0000FF
 spawn dwindle-survivor-yellow 0xFFFFFF00
-sleep 1.4
+"$UMBRIEL" settle
 
 grim "$SHOTS/before.png"
 readonly CLOSE_ID=$(window_id dwindle-close-root)

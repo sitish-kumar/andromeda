@@ -83,7 +83,7 @@ assert_half_shadow reloaded
 "$UMBRIEL" msg "window-close:$id" > /dev/null
 sleep 0.2
 assert_half_shadow closing
-sleep 2.1
+"$UMBRIEL" settle
 grim -s 1 "$IMAGE"
 green=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'g > 0.05 && r < 0.01 && b < 0.01')
 if [[ $green != 0 ]]; then

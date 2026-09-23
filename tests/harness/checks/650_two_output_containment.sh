@@ -12,9 +12,8 @@ rc=0
 shot() { grim -o "$1" "$2"; }
 
 # Animations (overview zoom, card motion) mean a single grab can catch a moving frame and make comparisons flaky. Grab
-# until two consecutive frames 0.25s apart match, so every baseline and result below is a settled frame. That gap is
-# wider than the 200ms default animation, so this loop is the barrier: callers need only a short primer to guarantee the
-# animation has started, never a wait sized to the animation itself.
+# until two consecutive frames 0.25s apart match, so every baseline and result below is a settled frame. Callers settle
+# the compositor first; this loop also covers client redraws that settle does not wait for.
 shot_settled() {
   local output=$1 dest=$2 previous=$UMBRIEL_RUNTIME_DIR/.settle.png
   shot "$output" "$previous"
@@ -66,7 +65,7 @@ if [[ $home == HEADLESS-1 ]]; then neighbour=HEADLESS-2; else neighbour=HEADLESS
 home_x=$(output_x "$home")
 echo "windows land on $home (x=$home_x), watching $neighbour (x=$(output_x "$neighbour"))"
 
-sleep 0.3
+"$UMBRIEL" settle
 shot_settled "$neighbour" "$UMBRIEL_RUNTIME_DIR/neighbour-base.png"
 shot_settled "$home" "$UMBRIEL_RUNTIME_DIR/home-base.png"
 # The rightmost on-strip column ends just short of the shared edge, so this crop is window content when the strip is
@@ -77,7 +76,7 @@ home_base_edge=$(region_mean "$UMBRIEL_RUNTIME_DIR/home-base.png" "$edge_crop")
 # Overview baseline while the home output holds a single card: its filmstrip cannot overhang the shared edge yet, so
 # this is the neighbour showing nothing but its own filmstrip.
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 shot_settled "$neighbour" "$UMBRIEL_RUNTIME_DIR/neighbour-ov-base.png"
 "$UMBRIEL" msg overview-close > /dev/null
 
@@ -85,8 +84,7 @@ shot_settled "$neighbour" "$UMBRIEL_RUNTIME_DIR/neighbour-ov-base.png"
 # RIGHT edge, which in a side-by-side layout is exactly where the neighbouring output lives.
 for i in 2 3 4 5; do spawn "bleed-$i"; done
 wait_windows 5
-for _ in $(seq 6); do "$UMBRIEL" msg window-focus-left > /dev/null; sleep 0.2; done
-sleep 0.3
+for _ in $(seq 6); do "$UMBRIEL" msg window-focus-left > /dev/null; "$UMBRIEL" settle; done
 
 edge=$((home_x + 1280))
 "$UMBRIEL" windows --json | jq -c '[.[] | {title, x, w}] | sort_by(.x)'
@@ -132,7 +130,7 @@ check "no bleed onto $neighbour across transitions" "$transition_drift" 0
 # Same output, now with a populated and scrolled strip: cards for off-strip columns land past the shared edge. The
 # neighbour must look exactly as it did with one card next door.
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 shot_settled "$neighbour" "$UMBRIEL_RUNTIME_DIR/neighbour-ov-full.png"
 overview_same=$(cmp -s "$UMBRIEL_RUNTIME_DIR/neighbour-ov-base.png" "$UMBRIEL_RUNTIME_DIR/neighbour-ov-full.png" && echo same || echo changed)
 "$UMBRIEL" msg overview-close > /dev/null

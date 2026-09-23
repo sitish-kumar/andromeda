@@ -139,7 +139,7 @@ HOLD_SIZE=1 "$PATTERN" "$SOURCE" 1200 700 > "$SOURCE_LOG" 2>&1 &
 await_windows 1
 HOLD_SIZE=1 "$PATTERN" "$TARGET" 1200 700 > "$TARGET_LOG" 2>&1 &
 await_windows 2
-sleep 0.2
+"$UMBRIEL" settle
 read -r source_x source_y source_w source_h < <(window_box "$SOURCE")
 read -r target_x target_y target_w target_h < <(window_box "$TARGET")
 resize_start_x=$((target_x - 30))
@@ -160,7 +160,7 @@ pointer_pid=$!
 sleep 0.4
 grim -o HEADLESS-1 "$HELD"
 wait "$pointer_pid"
-sleep 0.1
+"$UMBRIEL" settle
 grim -o HEADLESS-1 "$RELEASED"
 read -r target_x target_y target_w target_h < <(window_box "$TARGET")
 for sample_x in "$((source_x + 40))" "$((target_x + 40))"; do

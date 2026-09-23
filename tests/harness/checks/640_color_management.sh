@@ -141,11 +141,11 @@ sample_rgb() {
 }
 
 # Both samples must come from settled windows: let the opening animation finish first.
-sleep 0.8
+"$UMBRIEL" settle
 grim "$normal_shot"
 "$UMBRIEL" msg overview-open > /dev/null
 # The sample point assumes the settled half-scale card, so wait out the overview and card motion.
-sleep 0.8
+"$UMBRIEL" settle
 wine_scrgb_id=$("$UMBRIEL" windows --json | jq -r '.[] | select(.title == "wine-scrgb") | .id')
 "$UMBRIEL" msg "window-close:$wine_scrgb_id" > /dev/null
 for _ in $(seq 40); do
@@ -156,7 +156,7 @@ if ! grep -q '^redrawn$' "$CLIENT_LOG"; then
   echo "Wine scRGB client did not redraw inside overview: $(cat "$CLIENT_LOG")"
   exit 1
 fi
-sleep 0.3
+"$UMBRIEL" settle
 grim "$overview_shot"
 read -r normal_r normal_g normal_b < <(sample_rgb "$normal_shot" "$normal_x" "$normal_y")
 read -r overview_r overview_g overview_b < <(sample_rgb "$overview_shot" "$overview_x" "$overview_y")

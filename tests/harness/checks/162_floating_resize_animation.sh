@@ -94,7 +94,7 @@ if ! (( first_x == 0 && second_x == 0
   exit 1
 fi
 
-sleep 1.00
+"$UMBRIEL" settle
 wait_for_box 256x300+-192+200
 read -r after_x after_y after_w after_h < <(capture_box after)
 if (( after_x != 0 || after_y != 200 || after_w != 64 || after_h != 300 )); then

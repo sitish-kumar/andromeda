@@ -57,7 +57,7 @@ if [[ $before == "$during" ]]; then
 fi
 
 wait "$mod_pid"
-sleep 0.3
+"$UMBRIEL" settle
 grim -c "$AFTER"
 after=$(magick "$AFTER" -crop "$crop" +repage rgba:- | sha256sum | cut -d' ' -f1)
 if [[ $before != "$after" ]]; then

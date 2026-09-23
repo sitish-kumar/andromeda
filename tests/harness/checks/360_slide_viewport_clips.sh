@@ -59,7 +59,7 @@ EOF
 # content outside the viewport it slides with.
 spawn_client slide-overhang
 wait_for_count 1
-sleep 0.5
+"$UMBRIEL" settle
 
 # Only the slide itself is slow: the window is already resting at its overhang.
 sed -i 's/^duration_ms = 200$/duration_ms = 10000/' "$UMBRIEL_CONFIG"

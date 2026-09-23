@@ -54,9 +54,9 @@ if ! grep -q '^ready$' "$CLIENT_LOG"; then
 fi
 
 "$UMBRIEL" msg window-move-to-scratchpad > /dev/null
-sleep 2.1
+"$UMBRIEL" settle
 "$UMBRIEL" msg scratchpad-toggle > /dev/null
-sleep 2.1
+"$UMBRIEL" settle
 grim "$BEFORE"
 before_blue=$(sample_blue "$BEFORE")
 if (( before_blue < 80 )); then
@@ -93,7 +93,7 @@ if (( during_blue < 40 )); then
   exit 1
 fi
 
-sleep 1.9
+"$UMBRIEL" settle
 grim "$AFTER"
 after_blue=$(sample_blue "$AFTER")
 if (( after_blue > 10 )); then

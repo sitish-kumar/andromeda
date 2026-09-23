@@ -76,7 +76,7 @@ if (( green > 10 )); then
   exit 1
 fi
 "$UMBRIEL" msg overview-close > /dev/null
-sleep 4.2
+"$UMBRIEL" settle
 
 # An invalid program must produce a labelled compiler error and leave the
 # compositor able to map another client through its built-in animation.

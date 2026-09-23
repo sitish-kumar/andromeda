@@ -58,7 +58,7 @@ wait_for_count 2
 
 # Show both scratchpad windows: the backdrop dims.
 "$UMBRIEL" msg scratchpad-toggle > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 grim "$BEFORE"
 before=$(sample_corner "$BEFORE")
 if (( before > 200 )); then
@@ -80,7 +80,7 @@ fi
 "$UMBRIEL" msg scratchpad-focus-next > /dev/null
 sleep 0.1
 "$UMBRIEL" msg window-toggle-scratchpad > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 
 grim "$AFTER"
 after=$(sample_corner "$AFTER")

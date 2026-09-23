@@ -81,7 +81,7 @@ exec {dim_fd}<>"$DIM_FIFO"
 env APP_ID=dim-blank-title NO_TITLE=1 TITLE_AFTER_MAP= \
   "$CLIENT" dim-blank-title 800 600 <&"$dim_fd" > "$DIM_LOG" 2>&1 &
 await_window 'length == 1 and .[0].app_id == "dim-blank-title"' "titleless window did not map" || exit 1
-sleep 0.1
+"$UMBRIEL" settle
 grim "$BEFORE_SHOT"
 before_green=$(window_green "$BEFORE_SHOT")
 

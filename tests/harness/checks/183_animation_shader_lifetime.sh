@@ -62,7 +62,7 @@ if ! (( blue > 130 && red > 50 && red < 120 )); then
   echo "reveal example did not expose the center as progress advanced: $red $green $blue"
   exit 1
 fi
-sleep 1
+"$UMBRIEL" settle
 
 cat > "$SOURCE" <<'EOF'
 vec4 animation(vec2 uv) { return vec4(1.0, 0.0, 1.0, 1.0); }
@@ -92,7 +92,7 @@ if ! (( red < 30 && green > 220 && blue < 30 )); then
   echo "closing shader did not sample the frozen opening effect: $red $green $blue"
   exit 1
 fi
-sleep 2.4
+"$UMBRIEL" settle
 spawn shader-new-program
 sleep 0.12
 sample
@@ -115,7 +115,7 @@ if ! (( red > 0 && green < blue && blue < 3 * red )); then
   echo "disabling animations did not remove the cyan shader: $red $green $blue"
   exit 1
 fi
-sleep 2.4
+"$UMBRIEL" settle
 sample
 if ! (( blue > 130 && red > 50 && red < 120 && green < 180 )); then
   echo "disabling animations did not restore ordinary client pixels: $red $green $blue"

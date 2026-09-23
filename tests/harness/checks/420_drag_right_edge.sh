@@ -48,7 +48,7 @@ for id in $(seq 1 6); do
     sleep 0.25
   done
 done
-sleep 0.5
+"$UMBRIEL" settle
 
 windows=$("$UMBRIEL" windows --json)
 source_title=right-edge-5
@@ -63,7 +63,7 @@ start_y=$(jq -r --argjson origin "$OVERVIEW_Y" --argjson zoom "$OVERVIEW_ZOOM" \
   '.[] | select(.title == "right-edge-5") | ($origin + ((.y + .h / 2) * $zoom) | round)' <<< "$windows")
 
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 inside_x=$((OVERVIEW_RIGHT - 29))
 pointer move "$start_x" "$start_y" press "$BTN_LEFT" \
   move "$OVERVIEW_RIGHT" 360 pause 1200 move "$inside_x" 360 pause 1200 release "$BTN_LEFT" &
@@ -94,9 +94,9 @@ if (( inside_red < inside_green + 35 )); then
 fi
 
 wait "$pointer_pid"
-sleep 0.2
+"$UMBRIEL" settle
 "$UMBRIEL" msg overview-close > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 
 windows=$("$UMBRIEL" windows --json)
 read -r source_x source_y source_w < <(

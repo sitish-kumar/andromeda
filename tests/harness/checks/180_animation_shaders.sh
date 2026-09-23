@@ -62,7 +62,7 @@ if ! (( red > 220 && green > 220 && blue < 30 )); then
   echo "shader progress did not transition red to yellow: $red $green $blue"
   exit 1
 fi
-sleep 1
+"$UMBRIEL" settle
 sample
 if ! (( blue > 80 && red < 200 )); then
   echo "opening shader did not release its target at completion: $red $green $blue"
@@ -76,7 +76,7 @@ if ! (( green > 220 && red < 30 && blue < 30 )); then
   echo "closing snapshot did not run its shader: $red $green $blue"
   exit 1
 fi
-sleep 1.6
+"$UMBRIEL" settle
 
 # Do not explicitly reload: the imported file must be a watcher dependency.
 mark=$(wc -l < "$UMBRIEL_LOG")

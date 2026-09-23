@@ -89,7 +89,7 @@ sample_center() {
 }
 
 spawn tiled-shader-first
-sleep 1.1
+"$UMBRIEL" settle
 
 spawn tiled-shader-second
 second=$window
@@ -97,7 +97,7 @@ sleep 0.15
 sample_center "second tiled opener" "$second"
 sleep 0.45
 sample_center "second tiled opener" "$second"
-sleep 1.0
+"$UMBRIEL" settle
 
 spawn tiled-shader-third
 third=$window

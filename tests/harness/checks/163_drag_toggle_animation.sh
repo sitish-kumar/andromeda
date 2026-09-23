@@ -72,7 +72,7 @@ wait_for_box 320x216
 "$UMBRIEL" msg window-toggle-floating > /dev/null
 wait_for_box 1264x704
 # The re-tile animates too; sample only once it has settled.
-sleep 2.5
+"$UMBRIEL" settle
 tiled_width=$(capture_width tiled)
 if ((tiled_width < 1264)); then
   echo "setup did not fill the output with the tiled window: $tiled_width"
@@ -82,13 +82,15 @@ fi
 # Hold the drag open while the animation runs, and sample it twice on the way.
 pointer move 640 360 mod logo press "$BTN_LEFT" move 640 400 \
   press "$BTN_RIGHT" release "$BTN_RIGHT" pause 4000 move 641 400 release "$BTN_LEFT" mod none &
+drag_pid=$!
 sleep 0.45
 early=$(capture_width early)
 sleep 0.8
 late=$(capture_width late)
-sleep 1.6
+"$UMBRIEL" settle
 settled=$(capture_width settled)
-sleep 2.0
+wait "$drag_pid"
+"$UMBRIEL" settle
 
 if ((early <= late || late <= settled)); then
   echo "the retarget did not animate: widths ${early} -> ${late} -> ${settled} (expected a shrinking presented size)"

@@ -55,7 +55,7 @@ write_config() {
     fi
   } > "$UMBRIEL_CONFIG"
   "$UMBRIEL" msg config-reload > /dev/null
-  sleep 0.3
+  "$UMBRIEL" settle
 }
 
 "$CLIENT" shortcut-first 1200 700 > "$FIRST_LOG" 2>&1 &
@@ -65,7 +65,7 @@ wait_for_count 2
 "$CLIENT" shortcut-third 1200 700 > "$THIRD_LOG" 2>&1 &
 wait_for_count 3
 focus_title shortcut-first
-sleep 0.2
+"$UMBRIEL" settle
 
 write_config
 pointer pause 500 tap 4 pause 500 tap 30 &
@@ -96,9 +96,9 @@ fi
 
 write_config 'shortcut_keys = "12"'
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 pointer tap 3 tap 2
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(focused_title) != shortcut-second ]]; then
   echo "multi-key shortcut 21 did not focus the second card: $("$UMBRIEL" windows --json)"
   exit 1
@@ -106,9 +106,9 @@ fi
 
 write_config 'shortcuts = false'
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 pointer tap 2
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(focused_title) != shortcut-second ]]; then
   echo "disabled overview shortcuts changed focus: $("$UMBRIEL" windows --json)"
   exit 1
@@ -121,14 +121,14 @@ fi
 
 write_config
 "$UMBRIEL" msg workspace-switch:2 > /dev/null
-sleep 0.2
+"$UMBRIEL" settle
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 "$CLIENT" shortcut-fourth 1200 700 > "$FOURTH_LOG" 2>&1 &
 wait_for_count 4
-sleep 0.5
+"$UMBRIEL" settle
 pointer tap 5
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(active_title) != shortcut-fourth ]]; then
   echo "a new window stole an existing badge instead of receiving shortcut 4: $("$UMBRIEL" windows --json)"
   exit 1
@@ -136,15 +136,14 @@ fi
 
 write_config
 focus_title shortcut-first
-sleep 0.2
+"$UMBRIEL" settle
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 pointer move 620 360 press "$BTN_LEFT" move 760 360 release "$BTN_LEFT"
 focus_title shortcut-second
-sleep 0.2
-sleep 0.5
+"$UMBRIEL" settle
 pointer tap 2
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(active_title) != shortcut-first ]]; then
   echo "the dragged card lost its shortcut badge after drop: $("$UMBRIEL" windows --json)"
   exit 1

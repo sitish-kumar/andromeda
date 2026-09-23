@@ -57,12 +57,12 @@ for id in $(seq 1 7); do
   spawn_client "$id"
   wait_for_count "$id"
 done
-sleep 0.5
+"$UMBRIEL" settle
 
 # Keep the source column alive after detaching the dragged view so the strip's
 # scroll range and the target card's projection remain stable.
 "$UMBRIEL" msg window-consume-left > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 
 windows=$("$UMBRIEL" windows --json)
 source_column_x=$(jq -r '.[] | select(.title == "overhang-7") | .x' <<< "$windows")
@@ -94,7 +94,7 @@ if (( sample_w < 40 )); then
 fi
 
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 pointer move "$start_x" "$start_y" press "$BTN_LEFT" move "$drop_x" "$drop_y" pause 1500 release "$BTN_LEFT" &
 pointer_pid=$!
 sleep 0.5
@@ -112,9 +112,9 @@ if (( red < green + 35 )); then
   exit 1
 fi
 
-sleep 0.2
+"$UMBRIEL" settle
 "$UMBRIEL" msg overview-close > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 
 windows=$("$UMBRIEL" windows --json)
 read -r source_x source_y source_w < <(
@@ -179,7 +179,7 @@ if ((press_y <= OVERVIEW_Y + 5 || press_y >= 535)); then
 fi
 
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 pointer move "$press_x" "$press_y" press "$BTN_LEFT" move "$drop_x" "$drop_y" pause 1500 release "$BTN_LEFT" &
 pointer_pid=$!
 sleep 0.5
@@ -198,9 +198,9 @@ if ((vertical_red < vertical_green + 35)); then
   exit 1
 fi
 
-sleep 0.2
+"$UMBRIEL" settle
 "$UMBRIEL" msg overview-close > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 
 windows=$("$UMBRIEL" windows --json)
 read -r moved_x moved_y moved_h < <(

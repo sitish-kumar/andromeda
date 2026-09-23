@@ -79,7 +79,7 @@ done
 if (( changes < 10 )); then
   echo "silhouette blur has stepped bands: only $changes shades across 12 pixels"; exit 1
 fi
-sleep 2.1
+"$UMBRIEL" settle
 grim "$IMAGE"
 pixel "$((x+3*w/4))" "$((y+h+6))"
 if ! (( g > 25 && r < 5 && b < 5 )); then
@@ -88,7 +88,7 @@ fi
 "$UMBRIEL" msg "window-close:$id" > /dev/null
 sleep 0.2
 assert_half_shadow closing
-sleep 2.1
+"$UMBRIEL" settle
 grim "$IMAGE"
 green=$("$UMBRIEL_PIXEL_PROBE" "$IMAGE" count 'g > 0.05 && r < 0.01 && b < 0.01')
 if [[ $green != 0 ]]; then

@@ -61,7 +61,7 @@ expect_inert_notch() {
 # A layout-changing reload closes the overview, so every axis phase reopens it.
 open_overview() {
   "$UMBRIEL" msg overview-open > /dev/null
-  sleep 0.6
+  "$UMBRIEL" settle
 }
 
 # One window, so the group holds workspace 1 (occupied) and a dynamic 2.
@@ -78,7 +78,7 @@ fi
 # Park the cursor over the output so the notch resolves to this group.
 pointer move $((OUTPUT_W / 2)) $((OUTPUT_H / 2))
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 
 expect_notch 1 2  # down the filmstrip
 expect_notch -1 1 # and back up

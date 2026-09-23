@@ -173,11 +173,11 @@ assert_phase_timeline() {
 }
 
 spawn repeated-survivor 0xFFFF0000
-sleep 1.0
+"$UMBRIEL" settle
 spawn repeated-second-close 0xFF00FF00
-sleep 1.0
+"$UMBRIEL" settle
 spawn repeated-first-close 0xFF0000FF
-sleep 1.0
+"$UMBRIEL" settle
 
 readonly SECOND_ID=$(window_id repeated-second-close)
 readonly FIRST_ID=$(window_id repeated-first-close)

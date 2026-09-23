@@ -85,7 +85,7 @@ first_id=$(jq -r .id <<< "$first")
 sleep 0.2
 
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 1.1
+"$UMBRIEL" settle
 
 # Mapping the second tile starts a long windows_move transition on the established first tile and its overview card.
 FILL_COLOR=0xFF00FFFF "$UMBRIEL_UNMAP_CLIENT" overview-close-second 1200 700 > "$SECOND_LOG" 2>&1 &
@@ -128,7 +128,7 @@ if ((opened_red < 4000)); then
   echo "the overview opener's windows_in did not finish ahead of the neighbour reflow: red_pixels=$opened_red"
   exit 1
 fi
-sleep 1.7
+"$UMBRIEL" settle
 
 "$UMBRIEL" msg "window-close:$first_id" > /dev/null
 for _ in $(seq 80); do
@@ -152,7 +152,7 @@ if ((during_magenta > 40)); then
   exit 1
 fi
 
-sleep 1.05
+"$UMBRIEL" settle
 grim "$AFTER"
 after_green=$(color_pixels "$AFTER" 'g > 0.8 && r < 0.1 && b < 0.1')
 after_magenta=$(color_pixels "$AFTER" 'r > 0.8 && g < 0.1 && b > 0.8')

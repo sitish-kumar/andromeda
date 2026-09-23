@@ -89,7 +89,7 @@ window=$("$UMBRIEL" windows --json | jq -c '.[] | select(.title == "focus-border
 b_id=$(jq -r .id <<< "$window")
 
 "$UMBRIEL" msg "window-focus:$a_id" > /dev/null
-sleep 1.1
+"$UMBRIEL" settle
 grim "$IMAGE"
 assert_color focus-border-a red
 assert_color focus-border-b blue
@@ -103,11 +103,11 @@ assert_color focus-border-b mixed
 # Opening the overview clears focus on the hidden windows and closing restores it; the reveal must show the settled
 # result instead of the transition.
 overview_round_trip() {
-  sleep 1.1
+  "$UMBRIEL" settle
   "$UMBRIEL" msg overview-open > /dev/null
   sleep 0.6
   "$UMBRIEL" msg overview-close > /dev/null
-  sleep 0.6
+  "$UMBRIEL" settle
   grim "$IMAGE"
   assert_color focus-border-a blue
   assert_color focus-border-b red

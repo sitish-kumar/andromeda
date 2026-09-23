@@ -84,7 +84,7 @@ blue_at() {
 }
 
 spawn tiled-open-survivor 0xFFFF0000
-sleep 1.7
+"$UMBRIEL" settle
 before=$(red_width)
 
 spawn tiled-opener 0xFF0000FF
@@ -101,7 +101,7 @@ sleep 0.6
 mid=$(red_width)
 mid_blue=$(blue_at "$opener_x" "$opener_y")
 
-sleep 1.1
+"$UMBRIEL" settle
 final=$(red_width)
 final_blue=$(blue_at "$opener_x" "$opener_y")
 
@@ -130,7 +130,7 @@ settled=$(red_width)
 spawn tiled-maximized-opener 0xFF00FF00
 sleep 0.3
 maximized_early=$(red_width)
-sleep 1.6
+"$UMBRIEL" settle
 maximized_final=$(red_width)
 
 if ((settled - maximized_final < 200)); then

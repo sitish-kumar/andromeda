@@ -143,7 +143,7 @@ read -r top_id top_title bottom_id bottom_title <<< "$("$UMBRIEL" windows --json
    | "\(.[0].id) \(.[0].title) \(.[1].id) \(.[1].title)"')"
 "$UMBRIEL" msg "window-focus:$top_id" > /dev/null
 wait_for_focus "$top_title"
-sleep 0.1
+"$UMBRIEL" settle
 
 read -r top_x top_y bottom_y <<< "$("$UMBRIEL" windows --json | jq -r --arg top "$top_id" --arg bottom "$bottom_id" \
   '(.[] | select(.id == $top)) as $top_view | (.[] | select(.id == $bottom)) as $bottom_view
@@ -153,7 +153,7 @@ read -r top_x top_y bottom_y <<< "$("$UMBRIEL" windows --json | jq -r --arg top 
 pointer move "$((top_x + 100))" "$(((top_y + bottom_y) / 2))"
 
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.55
+"$UMBRIEL" settle
 
 # Vim-style custom bindings and the built-in arrow fallback share horizontal card navigation.
 chord 38 # L
@@ -185,14 +185,14 @@ fi
 # Overview focus updates its card selection without applying the normal follows_focus cursor warp. Close the overview,
 # focus the top window without a warp, then click without moving: the pointer must still be over that top window.
 "$UMBRIEL" msg overview-close > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 "$UMBRIEL" msg "window-focus:$top_id" > /dev/null
 wait_for_focus "$top_title"
 pointer click "$BTN_LEFT"
 wait_for_focus "$top_title"
 
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.55
+"$UMBRIEL" settle
 
 # A normal action operates on the selected overview card and leaves the overview interactive.
 chord 38 # L
@@ -301,7 +301,7 @@ fi
 "$UMBRIEL" msg "window-focus:$left_id" > /dev/null
 wait_for_focus "$left_title"
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.55
+"$UMBRIEL" settle
 
 # Along the workspace axis: the stacked neighbour first, the next workspace only once the lane has no card that way.
 pointer tap 106 # Right

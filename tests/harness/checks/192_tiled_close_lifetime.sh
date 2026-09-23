@@ -91,7 +91,7 @@ if ! ((green > 220 && red < 30 && blue < 30)); then
 fi
 
 # The snapshot remains owned by windows_out and must disappear when that timeline actually finishes.
-sleep 1.45
+"$UMBRIEL" settle
 read -r red green blue < <(sample)
 if ! ((green < 30 && red < 30 && blue < 30)); then
   echo "tiled close snapshot remained after windows_out: sampled $red $green $blue"
@@ -138,7 +138,7 @@ if ! ((green > 220 && red < 30 && blue < 30)); then
   exit 1
 fi
 
-sleep 1
+"$UMBRIEL" settle
 grim "$IMAGE"
 read -r red green blue < <(magick "$IMAGE" \
   -format '%[fx:round(255*maxima.r)] %[fx:round(255*maxima.g)] %[fx:round(255*maxima.b)]\n' info:)

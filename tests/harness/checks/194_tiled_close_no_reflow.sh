@@ -76,10 +76,10 @@ is_black() {
 }
 
 spawn tiled-close-survivor 0xFFFF0000
-sleep 0.25
+"$UMBRIEL" settle
 spawn tiled-close-static 0xFF0000FF
 closing=$window
-sleep 0.25
+"$UMBRIEL" settle
 
 id=$(jq -r .id <<< "$closing")
 x=$(jq -r .x <<< "$closing")
@@ -123,7 +123,7 @@ if ! is_blue "$far_red" "$far_green" "$far_blue"; then
   exit 1
 fi
 
-sleep 1.3
+"$UMBRIEL" settle
 grim "$IMAGE"
 read -r near_red near_green near_blue < <(sample "$near_x" "$mid_y")
 read -r far_red far_green far_blue < <(sample "$far_x" "$mid_y")
@@ -178,7 +178,7 @@ if ! is_red "$near_red" "$near_green" "$near_blue" \
   exit 1
 fi
 
-sleep 1.3
+"$UMBRIEL" settle
 grim "$IMAGE"
 read -r near_red near_green near_blue < <(sample "$near_x" "$mid_y")
 read -r far_red far_green far_blue < <(sample "$far_x" "$mid_y")

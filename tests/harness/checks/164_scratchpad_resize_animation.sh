@@ -94,7 +94,7 @@ if ! ((first_x == 100 && second_x == 100
   exit 1
 fi
 
-sleep 1.00
+"$UMBRIEL" settle
 wait_for_box 256x300+100+200
 read -r after_x after_y after_w after_h < <(capture_box after)
 if ((after_x != 100 || after_y != 200 || after_w != 256 || after_h != 300)); then
@@ -116,7 +116,7 @@ if ! ((100 > max_first_x && max_first_x > max_second_x && max_second_x > 0
   exit 1
 fi
 
-sleep 1.00
+"$UMBRIEL" settle
 wait_for_box 1280x720+0+0
 read -r max_after_x max_after_y max_after_w max_after_h < <(capture_box maximize-after)
 if ((max_after_x != 0 || max_after_y != 0 || max_after_w != 1280 || max_after_h != 720)); then

@@ -71,14 +71,14 @@ blue_pixels() {
 }
 
 spawn lifecycle-move-survivor 0xFFFF0000
-sleep 1.7
+"$UMBRIEL" settle
 
 # A transparent opener leaves the survivor fully observable even if broken code keeps it wide underneath the new slot.
 spawn lifecycle-move-opener 0x00000000
 opener_id=$(jq -r .id <<< "$window")
 sleep 0.35
 open_early=$(red_width)
-sleep 1.4
+"$UMBRIEL" settle
 open_final=$(red_width)
 if ((open_early < open_final - 20 || open_early > open_final + 20)); then
   echo "opening reflow followed windows_in instead of windows_move: early=$open_early final=$open_final"
@@ -94,7 +94,7 @@ for _ in $(seq 80); do
 done
 sleep 0.35
 close_early=$(red_width)
-sleep 1.4
+"$UMBRIEL" settle
 close_final=$(red_width)
 if ((close_early < close_final - 20 || close_early > close_final + 20)); then
   echo "closing reflow followed windows_out instead of windows_move: early=$close_early final=$close_final"
@@ -103,14 +103,14 @@ fi
 
 # Re-tiling is not an admission: the returning window keeps what it shows while its neighbour reflows.
 spawn lifecycle-move-peer 0xFF0000FF
-sleep 1.9
+"$UMBRIEL" settle
 tiled_blue=$(blue_pixels)
 if ((tiled_blue < 20000)); then
   echo "peer never settled as a visible tile: $tiled_blue"
   exit 1
 fi
 "$UMBRIEL" msg window-toggle-floating > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 "$UMBRIEL" msg window-toggle-floating > /dev/null
 sleep 0.15
 retiled_early=$(blue_pixels)

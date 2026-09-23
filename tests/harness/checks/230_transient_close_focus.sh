@@ -121,7 +121,7 @@ if ! kill -0 "$client_pid" 2>/dev/null; then
 fi
 
 wait_for_focus "$parent_id"
-sleep 0.1
+"$UMBRIEL" settle
 windows=$("$UMBRIEL" windows --json)
 if [[ $(jq -r --arg id "$unrelated_id" '.[] | select(.id == $id) | .focused' <<< "$windows") != false ]]; then
   echo "unrelated view received focus after the transient closed: $windows"

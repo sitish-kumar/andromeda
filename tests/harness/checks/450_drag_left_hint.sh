@@ -43,12 +43,12 @@ for id in $(seq 1 6); do
     sleep 0.25
   done
 done
-sleep 0.5
+"$UMBRIEL" settle
 
 for _ in $(seq 1 5); do
   "$UMBRIEL" msg window-focus-left > /dev/null
 done
-sleep 0.5
+"$UMBRIEL" settle
 
 windows=$("$UMBRIEL" windows --json)
 start_x=$(jq -r --argjson origin "$OVERVIEW_X" --argjson zoom "$OVERVIEW_ZOOM" \
@@ -62,7 +62,7 @@ touch_x=$((OVERVIEW_X - 13))
 inside_x=$((OVERVIEW_X + 30))
 
 "$UMBRIEL" msg overview-open > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 "$POINTER" "$OUTPUT_W" "$OUTPUT_H" \
   move "$start_x" "$start_y" press "$BTN_LEFT" \
   move "$touch_x" 360 pause 1200 move "$inside_x" 360 pause 1200 release "$BTN_LEFT" &
@@ -97,7 +97,7 @@ fi
 wait "$POINTER_PID"
 sleep 0.2
 "$UMBRIEL" msg overview-close > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 
 windows=$("$UMBRIEL" windows --json)
 read -r source_x source_y source_w < <(

@@ -269,31 +269,31 @@ readonly SURVIVOR_COLOR=0x80800000
 readonly CLOSER_COLOR=0x80000080
 
 spawn shader-visible-master-survivor "$SURVIVOR_COLOR"
-sleep 1.4
+"$UMBRIEL" settle
 spawn shader-visible-master-close "$CLOSER_COLOR"
-sleep 1.4
+"$UMBRIEL" settle
 verify_close ordinary shader-visible-master-close animated 0 0 1280 720
 
 "$UMBRIEL" msg workspace-switch:2 > /dev/null
 sed -i 's/^mode = "master"$/mode = "scrolling"/' "$UMBRIEL_CONFIG"
 "$UMBRIEL" msg config-reload > /dev/null
-sleep 0.2
+"$UMBRIEL" settle
 spawn shader-visible-consume-survivor "$SURVIVOR_COLOR"
-sleep 1.4
+"$UMBRIEL" settle
 spawn shader-visible-consume-close "$CLOSER_COLOR"
-sleep 1.4
+"$UMBRIEL" settle
 "$UMBRIEL" msg window-consume-left > /dev/null
 sleep 0.28
 verify_close consume shader-visible-consume-close animated 0 0 640 720
 
 "$UMBRIEL" msg workspace-switch:3 > /dev/null
-sleep 0.2
+"$UMBRIEL" settle
 spawn shader-visible-expel-survivor "$SURVIVOR_COLOR"
-sleep 1.4
+"$UMBRIEL" settle
 spawn shader-visible-expel-close "$CLOSER_COLOR"
-sleep 1.4
+"$UMBRIEL" settle
 "$UMBRIEL" msg window-consume-left > /dev/null
-sleep 1.4
+"$UMBRIEL" settle
 "$UMBRIEL" msg window-consume-or-expel-right > /dev/null
 sleep 0.08
 verify_close expel shader-visible-expel-close animated 0 0 640 720
@@ -302,11 +302,11 @@ verify_close expel shader-visible-expel-close animated 0 0 640 720
 sed -i 's/^mode = "scrolling"$/mode = "master"/' "$UMBRIEL_CONFIG"
 sed -i '/\[animation.windows_move\]/,/^$/s/^enabled = true$/enabled = false/' "$UMBRIEL_CONFIG"
 "$UMBRIEL" msg config-reload > /dev/null
-sleep 0.2
+"$UMBRIEL" settle
 spawn shader-visible-disabled-survivor "$SURVIVOR_COLOR"
-sleep 0.2
+"$UMBRIEL" settle
 spawn shader-visible-disabled-close "$CLOSER_COLOR"
-sleep 0.2
+"$UMBRIEL" settle
 verify_close disabled shader-visible-disabled-close disabled 0 0 1280 720
 
 echo "tiled closes preserved natural windows_out phases while animated reflow overlapped and disabled movement snapped"

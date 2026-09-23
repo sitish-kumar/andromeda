@@ -132,7 +132,7 @@ assert_slide_brighter() {
 spawn style-fade
 sleep 2.35
 fade_open=$(sample_blue 280 280)
-sleep 2.85
+"$UMBRIEL" settle
 
 sed -i 's/^style = "fade" # OPEN_STYLE$/style = "slide" # OPEN_STYLE/' "$UMBRIEL_CONFIG"
 "$UMBRIEL" msg config-reload > /dev/null
@@ -140,12 +140,12 @@ spawn style-slide
 sleep 2.35
 slide_open=$(sample_blue 940 310)
 assert_slide_brighter opening "$fade_open" "$slide_open"
-sleep 2.85
+"$UMBRIEL" settle
 
 "$UMBRIEL" msg "window-close:$(window_id style-fade)" > /dev/null
 sleep 2.35
 fade_close=$(sample_blue 280 280)
-sleep 2.85
+"$UMBRIEL" settle
 
 sed -i 's/^style = "fade" # CLOSE_STYLE$/style = "slide" # CLOSE_STYLE/' "$UMBRIEL_CONFIG"
 "$UMBRIEL" msg config-reload > /dev/null
@@ -153,12 +153,12 @@ sed -i 's/^style = "fade" # CLOSE_STYLE$/style = "slide" # CLOSE_STYLE/' "$UMBRI
 sleep 2.35
 slide_close=$(sample_blue 940 310)
 assert_slide_brighter closing "$fade_close" "$slide_close"
-sleep 2.85
+"$UMBRIEL" settle
 
 sed -i 's/^style = "slide" # CLOSE_STYLE$/style = "popin" # CLOSE_STYLE/' "$UMBRIEL_CONFIG"
 "$UMBRIEL" msg config-reload > /dev/null
 spawn style-popin
-sleep 5.2
+"$UMBRIEL" settle
 read -r popin_x popin_y popin_w popin_h <<< "$(blue_bounds)"
 if ((popin_x < 98 || popin_x > 102 || popin_y < 438 || popin_y > 442 \
     || popin_w < 398 || popin_w > 402 || popin_h < 238 || popin_h > 242)); then
@@ -180,7 +180,7 @@ if ((mid_cx < 594 || mid_cx > 606 || mid_cy < 1114 || mid_cy > 1126)); then
   exit 1
 fi
 
-sleep 2.85
+"$UMBRIEL" settle
 
 sed -i 's/^style = "slide" # OPEN_STYLE$/style = "fade" # OPEN_STYLE/' "$UMBRIEL_CONFIG"
 sed -i 's/^style = "popin" # CLOSE_STYLE$/style = "fade" # CLOSE_STYLE/' "$UMBRIEL_CONFIG"
@@ -191,7 +191,7 @@ wait_for_window style-group
 sleep 2.35
 read -r group_open_red group_open_blue <<< "$(sample_rgb 940 540)"
 assert_group_fade opening "$group_open_red" "$group_open_blue"
-sleep 2.85
+"$UMBRIEL" settle
 kill "$group_pid"
 sleep 2.35
 read -r group_close_red group_close_blue <<< "$(sample_rgb 940 540)"

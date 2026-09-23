@@ -56,7 +56,7 @@ for title in border-a border-b; do
   done
   [[ -n $window ]]
 done
-sleep 2.1
+"$UMBRIEL" settle
 window=$("$UMBRIEL" windows --json | jq -c '.[] | select(.title == "border-a")')
 id=$(jq -r .id <<< "$window")
 x=$(jq -r '.x + (.w / 2 | floor)' <<< "$window")

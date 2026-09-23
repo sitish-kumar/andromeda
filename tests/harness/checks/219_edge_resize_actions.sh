@@ -38,7 +38,7 @@ box() {
 
 focus() {
   "$UMBRIEL" msg "window-focus:$("$UMBRIEL" windows --json | jq -r --arg t "$1" '.[] | select(.title == $t) | .id')" > /dev/null
-  sleep 0.2
+  "$UMBRIEL" settle
 }
 
 wait_count() {
@@ -78,7 +78,7 @@ autostart = []
 EOF
   cat >> "$UMBRIEL_CONFIG"
   "$UMBRIEL" msg config-reload > /dev/null
-  sleep 0.2
+  "$UMBRIEL" settle
 }
 
 until_true() {
@@ -108,11 +108,11 @@ wait_count 1
 spawn_client col-b
 wait_count 2
 "$UMBRIEL" msg window-consume-left > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 spawn_client col-c
 wait_count 3
 "$UMBRIEL" msg window-consume-left > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 
 # The column has split its extent once the stacked heights differ.
 for _ in $(seq 60); do
@@ -194,16 +194,16 @@ fi
 # window's maximize-to-edges state, since unmaximizing here would move it.
 focus "$left"
 "$UMBRIEL" msg window-toggle-maximize-to-edges > /dev/null
-sleep 0.4
+"$UMBRIEL" settle
 before=$(box "$left")
 "$UMBRIEL" msg window-modify-width-left:0.1 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(box "$left") != "$before" ]]; then
   echo "width-left changed the geometry of a screen-facing edge: $before -> $(box "$left")"
   exit 1
 fi
 "$UMBRIEL" msg window-toggle-maximize-to-edges > /dev/null
-sleep 0.4
+"$UMBRIEL" settle
 
 # The split it owns still resizes, pinning that screen edge.
 read -r before_x _ before_w _ < <(box "$left")
@@ -219,7 +219,7 @@ until_true "width-right to resize the dwindle split with the left screen edge pi
 focus "$right"
 before=$(box "$right")
 "$UMBRIEL" msg window-modify-width-right:0.1 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(box "$right") != "$before" ]]; then
   echo "width-right changed the geometry of a screen-facing edge: $before -> $(box "$right")"
   exit 1
@@ -247,7 +247,7 @@ EOF
 spawn_client float-a 700 700
 wait_count 1
 "$UMBRIEL" msg window-toggle-floating > /dev/null
-sleep 0.4
+"$UMBRIEL" settle
 
 # A fullscreen view owns its size: refuse rather than send a resize configure. The
 # harness client reports every presentation it makes, so a configure that the
@@ -268,7 +268,7 @@ if (( $(grep -c '^mapped' "$UMBRIEL_RUNTIME_DIR/float-a.log" || true) != present
   exit 1
 fi
 "$UMBRIEL" msg window-toggle-fullscreen > /dev/null
-sleep 0.4
+"$UMBRIEL" settle
 
 # The 0.1 fraction floor, not the one-pixel minimum clampXdgWidth alone leaves a
 # hint-less client with: the delta lands on the fraction, so from the 700px box
@@ -276,7 +276,7 @@ sleep 0.4
 floor=$(box float-a)
 read -r floor_x _ floor_w _ <<< "$floor"
 "$UMBRIEL" msg window-modify-width-left:-0.9 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 shrunk=$(box float-a)
 read -r shrunk_x _ shrunk_w _ <<< "$shrunk"
 if (( shrunk_w != OUTPUT_W / 10 )); then
@@ -293,7 +293,7 @@ fi
 # missing 1.0 clamp here, so this asserts the outcome and the opposite edge, not
 # the arithmetic behind it).
 "$UMBRIEL" msg window-modify-width-left:0.9 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 grown=$(box float-a)
 read -r grown_x _ grown_w _ <<< "$grown"
 if (( grown_w != OUTPUT_W )); then
@@ -308,7 +308,7 @@ fi
 # The fraction is saturated now, so a second identical press has nothing left to
 # do: it must not walk the float any further off the output.
 "$UMBRIEL" msg window-modify-width-left:0.9 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(box float-a) != "$grown" ]]; then
   echo "a second width-left:0.9 moved a saturated float: $grown -> $(box float-a)"
   exit 1
@@ -319,16 +319,16 @@ fi
 # left the flag set, toggling would restore the pre-maximize box instead of
 # maximizing again.
 "$UMBRIEL" msg window-toggle-maximize-to-edges > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 maximized=$(box float-a)
 "$UMBRIEL" msg window-modify-width-left:-0.2 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(box float-a) == "$maximized" ]]; then
   echo "width-left:-0.2 left a maximized float at $maximized"
   exit 1
 fi
 "$UMBRIEL" msg window-toggle-maximize-to-edges > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(box float-a) != "$maximized" ]]; then
   echo "the resize kept the maximize state: toggling landed on $(box float-a), not $maximized"
   exit 1
@@ -350,11 +350,11 @@ EOF
 spawn_client vert-a 700 700
 wait_count 1
 "$UMBRIEL" msg window-toggle-floating > /dev/null
-sleep 0.4
+"$UMBRIEL" settle
 read -r _ v_y _ v_h < <(box vert-a)
 
 "$UMBRIEL" msg window-modify-height-down:-0.2 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 read -r _ d_y _ d_h < <(box vert-a)
 if (( d_y != v_y || d_h >= v_h )); then
   echo "height-down:-0.2 did not hold the top edge: y=$v_y h=$v_h -> y=$d_y h=$d_h"
@@ -362,7 +362,7 @@ if (( d_y != v_y || d_h >= v_h )); then
 fi
 
 "$UMBRIEL" msg window-modify-height-down:0.2 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 read -r _ e_y _ e_h < <(box vert-a)
 if (( e_y != d_y || e_h <= d_h )); then
   echo "height-down:0.2 did not grow downward from the held top edge: y=$d_y h=$d_h -> y=$e_y h=$e_h"
@@ -370,7 +370,7 @@ if (( e_y != d_y || e_h <= d_h )); then
 fi
 
 "$UMBRIEL" msg window-modify-height-up:0.2 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 read -r _ u_y _ u_h < <(box vert-a)
 if (( u_y >= e_y || u_h <= e_h || u_y + u_h != e_y + e_h )); then
   echo "height-up:0.2 did not grow upward from the held bottom edge: y=$e_y h=$e_h -> y=$u_y h=$u_h"
@@ -392,7 +392,7 @@ HOLD_SIZE=1 "$CLIENT" hold-a 700 700 > "$UMBRIEL_RUNTIME_DIR/hold-a.log" 2>&1 &
 pids+=("$!")
 wait_count 1
 "$UMBRIEL" msg window-toggle-floating > /dev/null
-sleep 0.4
+"$UMBRIEL" settle
 read -r h_x _ h_w _ < <(box hold-a)
 "$UMBRIEL" msg window-modify-width-left:0.2 > /dev/null
 sleep 0.6
@@ -441,14 +441,14 @@ capture_box() {
 spawn_client float-anim 700 700
 wait_count 1
 "$UMBRIEL" msg window-toggle-floating > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 
 read -r base_x _ base_w _ < <(capture_box anim-base)
 # 700 + 0.2 * 1280 = 956, still pinned on the right edge.
 "$UMBRIEL" msg window-modify-width-left:0.2 > /dev/null
 sleep 0.15
 read -r mid_x _ mid_w _ < <(capture_box anim-mid)
-sleep 1.5
+"$UMBRIEL" settle
 read -r end_x _ end_w _ < <(box float-anim)
 sleep 0.8
 read -r settled_x _ settled_w _ < <(box float-anim)
@@ -479,7 +479,7 @@ repeat_right=$((settled_x + settled_w))
 "$UMBRIEL" msg window-modify-width-left:0.1 > /dev/null
 sleep 0.25
 "$UMBRIEL" msg window-modify-width-left:0.1 > /dev/null
-sleep 2.2
+"$UMBRIEL" settle
 read -r repeated_x _ repeated_w _ < <(box float-anim)
 if (( repeated_w != settled_w + OUTPUT_W / 5 || repeated_x + repeated_w != repeat_right )); then
   echo "repeated width-left drifted its pinned edge: ${settled_x}+${settled_w} -> ${repeated_x}+${repeated_w}"

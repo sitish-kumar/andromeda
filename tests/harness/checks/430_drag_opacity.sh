@@ -25,7 +25,7 @@ measure_drag_green() {
   fi
 
   "$UMBRIEL" msg overview-open > /dev/null
-  sleep 0.6
+  "$UMBRIEL" settle
   # The single card is centered at (640, 360). Move it right while holding the
   # button, then keep the connection alive so the compositor retains the grab.
   "$POINTER" "$OUTPUT_W" "$OUTPUT_H" \

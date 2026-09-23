@@ -108,7 +108,7 @@ if [[ $(grep -c '^unmapped$' "$CLIENT_LOG" || true) -ne 1 ]]; then
   exit 1
 fi
 
-sleep 0.9
+"$UMBRIEL" settle
 printf r >&"$control_fd"
 wait_for_map 2
 sleep 0.15

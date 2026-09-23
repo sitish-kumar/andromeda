@@ -193,9 +193,9 @@ verify_workspace_slide() {
 }
 
 spawn ownership-tiled-close 0xFF0000FF
-sleep 0.2
+"$UMBRIEL" settle
 spawn ownership-tiled-anchor 0xFFFF0000
-sleep 0.2
+"$UMBRIEL" settle
 verify_workspace_slide tiled ownership-tiled-close ownership-tiled-anchor 2
 
 spawn ownership-floating-close 0xFF0000FF 600 360

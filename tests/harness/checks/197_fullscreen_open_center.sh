@@ -111,7 +111,7 @@ if ((late_w < early_w + 120)); then
   exit 1
 fi
 
-sleep 2.2
+"$UMBRIEL" settle
 read -r final_x final_y final_w final_h < <(opener_bounds)
 # One edge column of the client's own pattern may fall outside the colour match, so allow a pixel either way.
 if ((final_x > 1 || final_y > 1 || final_w < 1278 || final_h < 718)); then

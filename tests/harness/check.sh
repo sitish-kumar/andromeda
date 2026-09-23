@@ -57,6 +57,9 @@ if ((JOBS == 0)); then
 fi
 
 HARNESS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# CHECK_DIR substitutes another directory of checks. Checks find repository files relative to their own location, so
+# it must sit beside checks/.
+CHECKS_DIR=${CHECK_DIR:-$HARNESS_DIR/checks}
 
 # A check that never returns would otherwise hang the suite with no output. The
 # cap is per check and generous: the slowest checks drive two-second animations.
@@ -81,7 +84,7 @@ COLUMNS_MAX=${COLUMNS:-100}
 
 all_checks() {
   local check
-  for check in "$HARNESS_DIR"/checks/*.sh; do
+  for check in "$CHECKS_DIR"/*.sh; do
     basename "$check" .sh
   done
 }
@@ -317,7 +320,7 @@ EOF
 # monitors to come and go uses `umbriel output-create` and `umbriel output-destroy` on top of what it declares here.
 check_outputs() {
   local declared
-  declared=$(sed -n '2,12p' "$HARNESS_DIR/checks/$1.sh" |
+  declared=$(sed -n '2,12p' "$CHECKS_DIR/$1.sh" |
     sed -n 's/^# harness: outputs=\([0-9][0-9]*\).*/\1/p' | head -1)
   [[ -z $declared ]] && declared=1
   echo "$declared"
@@ -464,7 +467,7 @@ run_check_body() {
     XDG_RUNTIME_DIR="$RUNTIME_DIR" \
     WAYLAND_DISPLAY=wayland-0 \
     bash -c 'echo $$ > "$1"; shift; exec "$@"' _ "$pgid_file" \
-    timeout -k 5 "$CHECK_TIMEOUT" bash "$HARNESS_DIR/checks/$name.sh" > "$output_file" 2>&1 &
+    timeout -k 5 "$CHECK_TIMEOUT" bash "$CHECKS_DIR/$name.sh" > "$output_file" 2>&1 &
   local body_pid=$!
   CHECK_PGID=$(child_pgid "$pgid_file" "$body_pid")
   local status=0
@@ -601,7 +604,7 @@ REPORTED=0
 
 # Seconds per check from earlier runs, one "name seconds" line each. Checks this run did not select keep their entry;
 # checks that no longer exist lose it.
-DURATIONS_FILE=$BINARY_DIR/tests/check-durations
+DURATIONS_FILE=${CHECK_DURATIONS_FILE:-$BINARY_DIR/tests/check-durations}
 declare -A DURATION=()
 if [[ -r $DURATIONS_FILE ]]; then
   while read -r name seconds; do
@@ -618,7 +621,7 @@ mapfile -t DISPATCH_ORDER < <(
 save_durations() {
   local name
   for name in "${!DURATION[@]}"; do
-    [[ -f $HARNESS_DIR/checks/$name.sh ]] && printf '%s %s\n' "$name" "${DURATION[$name]}"
+    [[ -f $CHECKS_DIR/$name.sh ]] && printf '%s %s\n' "$name" "${DURATION[$name]}"
   done | sort > "$DURATIONS_FILE.tmp" 2>/dev/null && mv "$DURATIONS_FILE.tmp" "$DURATIONS_FILE" 2>/dev/null || true
 }
 

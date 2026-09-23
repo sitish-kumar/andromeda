@@ -104,14 +104,6 @@ sample() {
   fi
 }
 
-settle_motion() {
-  sleep 0.3
-}
-
-settle_lifecycle() {
-  sleep 1.7
-}
-
 close_all() {
   local id
   for id in $("$UMBRIEL" windows --json | jq -r '.[].id'); do
@@ -125,30 +117,30 @@ run_mode() {
   local tag="$mode-$extent"
   sed -i -e "s/^mode = \"[a-z]*\"$/mode = \"$mode\"/" -e "s/^default_extent_fraction = .*$/default_extent_fraction = $extent/" "$UMBRIEL_CONFIG"
   "$UMBRIEL" msg config-reload > /dev/null
-  sleep 0.2
+  "$UMBRIEL" settle
 
   spawn "motion-$tag-a"
   wait_for_windows 1
-  settle_lifecycle
+  "$UMBRIEL" settle
 
   spawn "motion-$tag-b"
   wait_for_windows 2
-  settle_lifecycle
+  "$UMBRIEL" settle
 
   spawn "motion-$tag-c"
   wait_for_windows 3
-  settle_lifecycle
+  "$UMBRIEL" settle
 
   "$UMBRIEL" msg "window-focus:$(window_id "motion-$tag-a")" > /dev/null
   "$UMBRIEL" msg window-toggle-maximize > /dev/null
   sleep 0.3
   "$UMBRIEL" msg window-toggle-maximize > /dev/null
   sample "$tag-maximize-interrupt"
-  settle_motion
+  "$UMBRIEL" settle
 
   close_all
   wait_for_windows 0
-  sleep 1.8
+  "$UMBRIEL" settle
 }
 
 run_mode scrolling 0.5

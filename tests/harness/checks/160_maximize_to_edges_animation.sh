@@ -42,7 +42,7 @@ if ! grep -q '^mapped$' "$CLIENT_LOG"; then
   exit 1
 fi
 
-sleep 2.1
+"$UMBRIEL" settle
 grim "$BEFORE"
 before_width=$(presented_width "$BEFORE")
 
@@ -51,7 +51,7 @@ sleep 0.25
 grim "$DURING"
 during_width=$(presented_width "$DURING")
 
-sleep 2.1
+"$UMBRIEL" settle
 grim "$AFTER"
 after_width=$(presented_width "$AFTER")
 

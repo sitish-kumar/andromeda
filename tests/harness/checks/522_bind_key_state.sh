@@ -51,7 +51,7 @@ await_windows 2
 # harness has no keyboard until a virtual one appears, so focus is read from the
 # compositor rather than from a keyboard enter.
 "$UMBRIEL" msg window-focus-left > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 if [[ $(focused_title) != 'bind-key-left' ]]; then
   echo "expected the left window focused, got '$(focused_title)'"
   exit 1

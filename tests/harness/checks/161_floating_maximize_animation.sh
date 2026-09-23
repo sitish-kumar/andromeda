@@ -92,7 +92,7 @@ if ! (( 173 > max_x1 && max_x1 > max_x2 && max_x2 > 0
   exit 1
 fi
 
-sleep 1.75
+"$UMBRIEL" settle
 read -r maximized_x maximized_y maximized_w maximized_h < <(capture_box maximized)
 assert_exact_box maximized "$maximized_x" "$maximized_y" "$maximized_w" "$maximized_h" 0 0 1280 720
 
@@ -110,7 +110,7 @@ if ! (( 0 < restore_x1 && restore_x1 < restore_x2 && restore_x2 < 173
   exit 1
 fi
 
-sleep 1.75
+"$UMBRIEL" settle
 read -r restored_x restored_y restored_w restored_h < <(capture_box restored)
 assert_exact_box restored "$restored_x" "$restored_y" "$restored_w" "$restored_h" 173 109 480 300
 

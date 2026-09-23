@@ -57,7 +57,7 @@ for edge in "$top" "$bottom"; do
     exit 1
   fi
 done
-sleep 1.6
+"$UMBRIEL" settle
 grim "$IMAGE"
 if (( $(blue_at "$top") < 130 || $(blue_at "$bottom") < 130 || $(blue_at "$middle") < 130 )); then
   echo "squash did not restore edge and center pixels at x=$x y=$top,$middle,$bottom"
