@@ -11,19 +11,10 @@ rc=0
 
 shot() { grim -o "$1" "$2"; }
 
-# Callers finish every animation first. Grab until two consecutive frames 0.25s apart match, which covers client
-# redraws that the animation clock does not control.
+# Callers finish every animation first; settle then also waits for clients to commit their latest configure.
 shot_settled() {
-  local output=$1 dest=$2 previous=$UMBRIEL_RUNTIME_DIR/.settle.png
-  shot "$output" "$previous"
-  for _ in $(seq 24); do
-    sleep 0.25
-    shot "$output" "$dest"
-    cmp -s "$previous" "$dest" && return 0
-    mv "$dest" "$previous"
-  done
-  echo "  $output never settled"
-  return 1
+  "$UMBRIEL" settle
+  shot "$1" "$2"
 }
 
 spawn() {

@@ -157,7 +157,7 @@ impure_pixels() {
   move "$((resize_start_x - 160))" "$resize_y" pause 1500 \
   release 273 mod none > "$POINTER_LOG" 2>&1 &
 pointer_pid=$!
-sleep 0.4
+sleep 0.4 # real time: sample while the pointer client holds the resize
 grim -o HEADLESS-1 "$HELD"
 wait "$pointer_pid"
 "$UMBRIEL" settle

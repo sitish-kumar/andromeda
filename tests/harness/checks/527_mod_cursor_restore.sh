@@ -42,13 +42,13 @@ crop="48x48+$x+$y"
 
 # Park the pointer inside the window so the client sets its own cursor.
 "$POINTER" "$OUTPUT_W" "$OUTPUT_H" move "$x" "$y"
-sleep 0.3
+sleep 0.3 # real time: the client sets its cursor asynchronously after pointer enter
 grim -c "$BEFORE"
 before=$(magick "$BEFORE" -crop "$crop" +repage rgba:- | sha256sum | cut -d' ' -f1)
 
 "$POINTER" "$OUTPUT_W" "$OUTPUT_H" mod logo pause 2000 mod none > /dev/null 2>&1 &
 mod_pid=$!
-sleep 0.5
+sleep 0.5 # real time: sample while the pointer client holds mod
 grim -c "$DURING"
 during=$(magick "$DURING" -crop "$crop" +repage rgba:- | sha256sum | cut -d' ' -f1)
 if [[ $before == "$during" ]]; then

@@ -40,7 +40,7 @@ before=$(first_x)
 # Keep one virtual keyboard/pointer alive for the two half-factor notches.
 "$UMBRIEL_POINTER_CLIENT" 1280 720 move 640 360 mod shift notch 1 pause 400 notch 1 pause 400 mod none &
 pointer_pid=$!
-sleep 0.2
+sleep 0.2 # real time: sample during the pointer client's first pause
 [[ $(first_x) == "$before" ]] || { echo 'half-factor wheel moved on its first notch'; exit 1; }
 [[ $(selected_title) == shift-wheel-1 ]] || { echo "half-factor first notch: $(selected_title)"; exit 1; }
 wait "$pointer_pid"

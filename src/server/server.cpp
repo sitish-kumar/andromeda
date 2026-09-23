@@ -1349,6 +1349,17 @@ namespace umbriel {
     if (std::ranges::any_of(m_animatables, [](const Animatable* owner) { return owner->hasActiveAnimations(); })) {
       return false;
     }
+    // A window whose latest configure is still queued, or not yet acknowledged and committed, has not drawn the state
+    // the compositor asked for.
+    for (const auto& view : m_registry.all()) {
+      if (!view->mapped() || view->xwayland() || view->toplevel() == nullptr) {
+        continue;
+      }
+      const wlr_xdg_surface* surface = view->toplevel()->base;
+      if (surface->configure_idle != nullptr || surface->current.configure_serial != surface->scheduled_serial) {
+        return false;
+      }
+    }
     for (const auto& output : m_outputs) {
       const WorkspaceGroup* group = output->workspaceGroup();
       if (group == nullptr) {

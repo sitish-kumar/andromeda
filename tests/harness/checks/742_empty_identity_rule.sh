@@ -51,7 +51,7 @@ EOF
 "$UMBRIEL" msg config-reload > /dev/null
 # The inotify watcher reloads this append 150ms later. Its generation bump invalidates the per-identity rule cache, so
 # let it land before the clients: an assertion here must observe the title change, not a reload.
-sleep 0.3
+sleep 0.3 # real time: inotify reload timer
 
 await_window() {
   local filter=$1 message=$2 windows=

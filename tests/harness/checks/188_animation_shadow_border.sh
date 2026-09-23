@@ -47,6 +47,8 @@ default_floating = true
 default_position = { x = 800, y = 120, anchor = "top_left" }
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
+# Animation time only moves by clock-advance: samples land 200 ms into each 2000 ms timeline.
+"$UMBRIEL" clock-freeze
 for title in border-a border-b; do
   "$UMBRIEL_UNMAP_CLIENT" "$title" 300 300 > "$UMBRIEL_RUNTIME_DIR/$title.log" 2>&1 &
   for _ in $(seq 80); do
@@ -56,6 +58,7 @@ for title in border-a border-b; do
   done
   [[ -n $window ]]
 done
+"$UMBRIEL" clock-advance 2000
 "$UMBRIEL" settle
 window=$("$UMBRIEL" windows --json | jq -c '.[] | select(.title == "border-a")')
 id=$(jq -r .id <<< "$window")
@@ -70,9 +73,9 @@ assert_shadow() {
   fi
 }
 "$UMBRIEL" msg "window-focus:$id" > /dev/null
-sleep 0.2
+"$UMBRIEL" clock-advance 200
 assert_shadow focus
 "$UMBRIEL" msg "window-close:$id" > /dev/null
-sleep 0.2
+"$UMBRIEL" clock-advance 200
 assert_shadow closing
 echo "descendant-only border silhouette and its closing snapshot shadow verified"

@@ -69,7 +69,7 @@ fi
 # Restore the first (currently scratchpad-focused) window. One scratchpad window remains, so the
 # dim must stay.
 "$UMBRIEL" msg window-toggle-scratchpad > /dev/null
-sleep 0.3
+"$UMBRIEL" settle
 if ! wait_for_count 2; then
   echo "restoring the first window changed the window count unexpectedly"
   exit 1

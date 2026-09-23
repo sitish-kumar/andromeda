@@ -2045,8 +2045,9 @@ namespace umbriel {
         ? (focused ? config().colors.border.scratchpadFocused : config().colors.border.scratchpadUnfocused)
         : (focused ? config().colors.border.focused : config().colors.border.unfocused);
 
+    // A window without a drawn border has nothing to fade, and an invisible transition would still keep frames coming.
     const auto& border = animation.border;
-    if (m_mapped && focusChanged && animation.enabled && border.enabled) {
+    if (m_mapped && focusChanged && animation.enabled && border.enabled && borderInset() > 0) {
       m_borderColorAnim.retarget(targetBase, border.durationMs, border.curve);
       scheduleFrame();
     } else {

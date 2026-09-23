@@ -359,6 +359,7 @@ namespace umbriel {
 
   void Ipc::notifyOutputFrame(const Output& output) {
     std::vector<Connection*> ready;
+    std::vector<Connection*> stuck;
     for (const auto& connection : m_connections) {
       if (connection->frameWait == FrameWait::None) {
         continue;
@@ -369,12 +370,26 @@ namespace umbriel {
                  return candidate->wlr()->enabled && name == candidate->wlr()->name;
                });
       });
+#ifdef UMBRIEL_TEST_IPC
+      // A frozen animation never ends, so the wait would only time out.
+      if (connection->frameWait == FrameWait::Settled
+          && m_server->animationClockFrozen()
+          && m_server->animationsActive()) {
+        stuck.push_back(connection.get());
+        continue;
+      }
+#endif
       if (connection->waitOutputs.empty() && (connection->frameWait == FrameWait::Drawn || m_server->settled())) {
         ready.push_back(connection.get());
       }
     }
     for (Connection* connection : ready) {
       finishFrameWait(*connection, std::move(connection->waitReply));
+    }
+    for (Connection* connection : stuck) {
+      finishFrameWait(
+          *connection, R"({"err":"an animation is running on the frozen animation clock; clock-advance past it first"})"
+      );
     }
   }
 

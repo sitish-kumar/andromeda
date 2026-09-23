@@ -67,7 +67,7 @@ inside_x=$((OVERVIEW_X + 30))
   move "$start_x" "$start_y" press "$BTN_LEFT" \
   move "$touch_x" 360 pause 1200 move "$inside_x" 360 pause 1200 release "$BTN_LEFT" &
 POINTER_PID=$!
-sleep 0.5
+sleep 0.5 # real time: sample during the pointer client's first pause
 
 outside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-left-outside-hint.png"
 grim "$outside_screenshot"
@@ -81,7 +81,7 @@ if (( outside_red < outside_green + 35 )); then
   exit 1
 fi
 
-sleep 1.2
+sleep 1.2 # real time: sample during the pointer client's second pause
 inside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-left-inside-hint.png"
 grim "$inside_screenshot"
 
@@ -95,7 +95,7 @@ if (( inside_red < inside_green + 35 )); then
 fi
 
 wait "$POINTER_PID"
-sleep 0.2
+"$UMBRIEL" settle
 "$UMBRIEL" msg overview-close > /dev/null
 "$UMBRIEL" settle
 

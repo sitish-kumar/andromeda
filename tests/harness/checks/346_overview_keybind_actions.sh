@@ -104,7 +104,7 @@ done
 # Clients bind their keyboard while the seat has one, and the headless seat only has a virtual one. Keep it alive for
 # the whole check so every window can receive the keyboard enter that marks a finished close.
 pointer mod none pause 60000 > /dev/null 2>&1 &
-sleep 0.2
+sleep 0.2 # real time: the keyboard holder connects before the clients bind
 
 "$CLIENT" overview-vim-first 1200 700 > "$UMBRIEL_RUNTIME_DIR/overview-vim-first.log" 2>&1 &
 wait_for_count 1
@@ -225,16 +225,23 @@ wait_for_focus "$top_title"
 wait_for_workspace 1
 
 # Enter closes toward the selected card. Configured binds remain effective
-# during that close, and row retargeting must not restart the zoom timeline.
+# during that close, and row retargeting must not restart the zoom timeline: on a frozen clock the 500 ms zoom has
+# landed 550 ms after Enter, while a restart at either bind would still be running.
 entered_before=$(keyboard_enters overview-vim-row)
+"$UMBRIEL" clock-freeze
 pointer tap 28 # Enter
-sleep 0.15
+"$UMBRIEL" clock-advance 150
 chord 49 # N, focus the lower card
 wait_for_focus "$bottom_title"
-sleep 0.15
+"$UMBRIEL" clock-advance 150
 chord 49 # N, switch to workspace 2
 wait_for_workspace 2
-sleep 0.3
+"$UMBRIEL" clock-advance 250
+for _ in $(seq 20); do
+  (( $(keyboard_enters overview-vim-row) > entered_before )) && break
+  sleep 0.05
+done
+"$UMBRIEL" clock-resume
 if (( $(keyboard_enters overview-vim-row) <= entered_before )); then
   echo "workspace binds extended the overview closing timeline"
   exit 1
@@ -322,7 +329,7 @@ pointer tap "$toward"
 wait_for_focus overview-vim-lane
 wait_for_workspace 1
 pointer tap "$toward"
-sleep 0.2
+"$UMBRIEL" settle
 wait_for_focus overview-vim-lane
 wait_for_workspace 1
 pointer tap "$back"
@@ -334,18 +341,25 @@ chord 38 # L
 wait_for_focus "$right_title"
 wait_for_workspace 1
 chord 38 # L again, with nothing to the right
-sleep 0.2
+"$UMBRIEL" settle
 wait_for_focus "$right_title"
 wait_for_workspace 1
 
-# Retargeting the close with a configured bind must land the focus without revealing the overview a second time.
+# Retargeting the close with a configured bind must land the focus without revealing the overview a second time. The
+# 500 ms zoom has landed 550 ms after Enter on a frozen clock, while a restart at the bind would still be running.
 entered_before=$(keyboard_enters "$left_title")
 opened_before=$(overview_open_count)
+"$UMBRIEL" clock-freeze
 pointer tap 28 # Enter
-sleep 0.15
+"$UMBRIEL" clock-advance 150
 chord 35 # H, focus the card to the left during the closing zoom
 wait_for_focus "$left_title"
-sleep 0.6
+"$UMBRIEL" clock-advance 400
+for _ in $(seq 20); do
+  (( $(keyboard_enters "$left_title") > entered_before )) && break
+  sleep 0.05
+done
+"$UMBRIEL" clock-resume
 if (( $(keyboard_enters "$left_title") <= entered_before )); then
   echo "the closing zoom never finished on horizontally arranged workspaces"
   exit 1

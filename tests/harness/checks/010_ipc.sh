@@ -646,13 +646,18 @@ printf '\n[animation.windows_in]\nduration_ms = 1000\ncurve = "linear"\nstyle = 
 grim "$UMBRIEL_RUNTIME_DIR/ipc-clock.png"
 FILL_COLOR=0xFFFF0000 "$UMBRIEL_UNMAP_CLIENT" ipc-clock 600 400 > "$UMBRIEL_RUNTIME_DIR/ipc-clock.log" 2>&1 &
 wait_for_windows 1
-sleep 0.3
+sleep 0.3 # real time: frozen animation time must hold while real time passes
 clock_red() {
   grim "$UMBRIEL_RUNTIME_DIR/ipc-clock.png"
   "$UMBRIEL_PIXEL_PROBE" "$UMBRIEL_RUNTIME_DIR/ipc-clock.png" mean 20x20+630+350 | cut -d' ' -f1
 }
 if (($(clock_red) != 0)); then
   echo "the opening fade advanced while the animation clock was frozen"
+  exit 1
+fi
+# settle refuses at once rather than waiting for an animation that cannot end.
+if frozen_settle=$(timeout 5 "$UMBRIEL" settle 2>&1) || [[ $frozen_settle != *"frozen animation clock"* ]]; then
+  echo "settle did not refuse a running animation on the frozen clock: ${frozen_settle:-no output}"
   exit 1
 fi
 "$UMBRIEL" clock-advance 500

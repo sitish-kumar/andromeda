@@ -57,6 +57,10 @@ window_drag_toggle = "floating"
 
 [layout.scrolling]
 default_extent_fraction = 0.5
+
+# The check asserts drop outcomes, not motion; settle still waits for each client to commit its new size.
+[animation]
+enabled = false
 EOF
 "$UMBRIEL" msg config-reload > /dev/null
 

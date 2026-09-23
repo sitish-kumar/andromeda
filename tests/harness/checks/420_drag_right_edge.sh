@@ -68,7 +68,7 @@ inside_x=$((OVERVIEW_RIGHT - 29))
 pointer move "$start_x" "$start_y" press "$BTN_LEFT" \
   move "$OVERVIEW_RIGHT" 360 pause 1200 move "$inside_x" 360 pause 1200 release "$BTN_LEFT" &
 pointer_pid=$!
-sleep 0.5
+sleep 0.5 # real time: sample during the pointer client's first pause
 
 outside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-right-outside-hint.png"
 grim "$outside_screenshot"
@@ -81,7 +81,7 @@ if (( outside_red < outside_green + 35 )); then
   exit 1
 fi
 
-sleep 1.2
+sleep 1.2 # real time: sample during the pointer client's second pause
 inside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-right-inside-hint.png"
 grim "$inside_screenshot"
 inside_red=$(magick "$inside_screenshot" -crop 100x50+700+195 -colorspace RGB \

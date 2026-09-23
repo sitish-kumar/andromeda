@@ -63,7 +63,12 @@ fi
 # this client keeps its virtual one alive.
 "$POINTER" "$OUTPUT_W" "$OUTPUT_H" \
   mod logo pause 300 tap "$KEY_L" mod none pause 300 tap "$KEY_L"
-sleep 0.3
+# Wait until the control's press and its later release reach the right window.
+for _ in $(seq 50); do
+  awk -v p="keyboard-key code=$KEY_L state=pressed" -v r="keyboard-key code=$KEY_L state=released" \
+    'index($0, p) { seen = 1 } seen && index($0, r) { done = 1 } END { exit !done }' "$RIGHT_LOG" && break
+  sleep 0.02
+done
 if [[ $(focused_title) != 'bind-key-right' ]]; then
   echo "the bind did not move focus to the right window, got '$(focused_title)'"
   exit 1

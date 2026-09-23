@@ -47,7 +47,7 @@ wait_for "the client's keyboard focus" 'grep -q "^keyboard-enter" "$CLIENT_LOG"'
 
 # The ordinary bind is suppressed and both key event halves reach the client.
 "$POINTER" "$OUTPUT_W" "$OUTPUT_H" mod logo tap "$KEY_1" mod none
-sleep 0.2
+sleep 0.2 # real time: the inhibited bind never fires
 if [[ $(focused_layout) != scrolling ]]; then
   echo "an inhibited ordinary binding changed the layout to $(focused_layout)"
   exit 1

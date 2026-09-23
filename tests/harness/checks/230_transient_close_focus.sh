@@ -93,7 +93,7 @@ if [[ $(jq -r --arg id "$child_id" '.[] | select(.id == $id) | .title' <<< "$win
   echo "transient title did not settle after map: $windows"
   exit 1
 fi
-sleep 0.2
+"$UMBRIEL" settle
 if grep -q '^configured-maximized$' "$CLIENT_LOG"; then
   echo "late default_maximize reached a parented transient: $(< "$CLIENT_LOG")"
   exit 1

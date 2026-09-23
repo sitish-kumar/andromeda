@@ -190,7 +190,8 @@ namespace umbriel {
     void flushPendingViewOpacities();
     [[nodiscard]] bool animationsActive() const;
     [[nodiscard]] bool animationsActiveFor(const Output* output) const;
-    // No animation is running and no workspace has an arrange waiting for the next frame.
+    // No animation is running, no workspace has an arrange waiting for the next frame, and every mapped window has
+    // committed its latest configure.
     [[nodiscard]] bool settled() const;
     // Milliseconds on the clock every animation ticks from. It follows the monotonic clock unless a test build froze
     // it.
@@ -201,6 +202,7 @@ namespace umbriel {
     bool advanceAnimationClock(uint64_t ms);
     // Continues from the frozen time, so animation time never runs backwards.
     void resumeAnimationClock();
+    [[nodiscard]] bool animationClockFrozen() const { return m_frozenAnimationClockMsec.has_value(); }
 #endif
     [[nodiscard]] Ipc* ipc() const { return m_ipc.get(); }
     // Owners register themselves for the frame tick. The registry is kept in phase order, so the three traversals above

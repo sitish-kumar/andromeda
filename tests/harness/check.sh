@@ -119,6 +119,20 @@ if ((${#SELECTED[@]} == 0)); then
   exit 1
 fi
 
+# A fixed sleep ties a check to machine load. Animation timing belongs on `umbriel clock-freeze`/`clock-advance`, end
+# states on `umbriel settle`, and client state on a poll; a sleep that is genuinely about real time says why.
+sleep_violations=$(
+  for name in "${SELECTED[@]}"; do
+    printf '%s\n' "$CHECKS_DIR/$name.sh"
+  done | xargs awk -f "$HARNESS_DIR/sleep-lint.awk"
+)
+if [[ -n $sleep_violations ]]; then
+  echo "check: fixed sleeps outside polling loops; use the animation clock, settle, or a poll, or end the line with" >&2
+  echo "check: '# real time: <reason>':" >&2
+  printf '%s\n' "$sleep_violations" | sed 's/^/  /' >&2
+  exit 1
+fi
+
 if [[ ! -x $BINARY ]]; then
   echo "check: '$BINARY' is not executable" >&2
   exit 1
@@ -625,6 +639,21 @@ save_durations() {
   done | sort > "$DURATIONS_FILE.tmp" 2>/dev/null && mv "$DURATIONS_FILE.tmp" "$DURATIONS_FILE" 2>/dev/null || true
 }
 
+# Seconds a check may take before the summary names it. A check over it is a candidate for the animation clock or a
+# split, not a failure.
+CHECK_BUDGET=${CHECK_BUDGET:-8}
+
+print_over_budget() {
+  local line
+  line=$(
+    for name in "${SELECTED[@]}"; do
+      printf '%s %s\n' "${DURATION[$name]:-0}" "$name"
+    done | sort -k1,1gr | awk -v budget="$CHECK_BUDGET" '$1 > budget { printf "%s%s %ss", (n++ ? " · " : ""), $2, $1 }'
+  )
+  [[ -z $line ]] && return 0
+  printf '%s\n' "  ${C_RUN}over the ${CHECK_BUDGET}s budget: ${line}${C_OFF}"
+}
+
 # The slowest checks of this run, so growth shows up when it happens.
 print_slowest() {
   ((${#SELECTED[@]} < 10)) && return 0
@@ -674,6 +703,7 @@ total_time=$(elapsed "$suite_start")
 save_durations
 printf '\n'
 print_slowest
+print_over_budget
 if ((failed > 0)); then
   printf '%s\n' "  ${C_FAIL}${C_BOLD}${failed} failed${C_OFF} ${C_DIM}·${C_OFF} $passed passed ${C_DIM}·${C_OFF} ${C_DIM}${total_time}${C_OFF}"
   for index in "${!FAILED_NAMES[@]}"; do

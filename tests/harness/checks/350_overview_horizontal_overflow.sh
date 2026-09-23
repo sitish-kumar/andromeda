@@ -98,13 +98,12 @@ EOF
 # A client on the neighbouring workspace makes its preview identifiable by colour: the shared black workspace
 # background cannot be told apart from the backdrop.
 "$UMBRIEL" msg workspace-switch:2 > /dev/null
-sleep 0.3
 spawn_client horizontal-overflow-neighbour
 wait_for_count 4
-sleep 0.3
+"$UMBRIEL" settle
 "$UMBRIEL" msg workspace-switch:1 > /dev/null
-sleep 0.3
 "$UMBRIEL" msg column-focus-first > /dev/null
+"$UMBRIEL" settle
 
 strip_windows() {
   "$UMBRIEL" windows --json |

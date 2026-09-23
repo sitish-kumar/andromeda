@@ -254,11 +254,11 @@ wait_count 1
 # compositor then corrects still shows up as another `mapped` line, which the
 # geometry comparison alone would miss.
 "$UMBRIEL" msg window-toggle-fullscreen > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 before=$(box float-a)
 presents=$(grep -c '^mapped' "$UMBRIEL_RUNTIME_DIR/float-a.log" || true)
 "$UMBRIEL" msg window-modify-width-right:0.3 > /dev/null
-sleep 0.5
+"$UMBRIEL" settle
 if [[ $(box float-a) != "$before" ]]; then
   echo "a fullscreen float was resized: $before -> $(box float-a)"
   exit 1
@@ -395,7 +395,7 @@ wait_count 1
 "$UMBRIEL" settle
 read -r h_x _ h_w _ < <(box hold-a)
 "$UMBRIEL" msg window-modify-width-left:0.2 > /dev/null
-sleep 0.6
+"$UMBRIEL" settle
 read -r i_x _ i_w _ < <(box hold-a)
 if (( i_w != h_w )); then
   echo "the holding client changed size after all: w=$h_w -> $i_w"

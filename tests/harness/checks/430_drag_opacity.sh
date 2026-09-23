@@ -31,7 +31,7 @@ measure_drag_green() {
   "$POINTER" "$OUTPUT_W" "$OUTPUT_H" \
     move 640 360 press "$BTN_LEFT" move 740 360 pause 1200 release "$BTN_LEFT" &
   pointer_pid=$!
-  sleep 0.5
+  sleep 0.5 # real time: the pointer helper presses and drags the card
   grim "$screenshot"
 
   local green

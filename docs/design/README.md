@@ -24,8 +24,9 @@ boundaries, or regression-sensitive behavior.
 `settle`, `clock-freeze`, `clock-advance`, `clock-resume`, `output-create`,
 and `output-destroy` exist for `tests/harness` and are compiled only with the
 `test_ipc` option (auto: debug builds). `settle` replies once no animation is
-running, no workspace has an arrange pending, and every output has drawn a frame
-since the request; it errors after 30 seconds.
+running, no workspace has an arrange pending, every mapped window has
+acknowledged and committed its latest configure, and every output has drawn a
+frame since the request; it errors after 30 seconds.
 
 Every animation ticks from `Server::animationClockMsec`. `clock-freeze` stops it,
 `clock-advance <ms>` moves it forward and replies once every output has drawn a

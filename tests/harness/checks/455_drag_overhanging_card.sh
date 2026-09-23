@@ -113,7 +113,7 @@ finish
 pointer move "$start_x" "$start_y" press "$BTN_LEFT" move "$drop_x" "$drop_y" pause 1500 release "$BTN_LEFT" &
 pointer_pid=$!
 # The pointer helper moves in real time; once it reaches the drop point, animation time brings in the hint.
-sleep 0.5
+sleep 0.5 # real time: the pointer helper reaches the drop point
 "$UMBRIEL" clock-advance 500 > /dev/null
 
 screenshot="$UMBRIEL_RUNTIME_DIR/drag-overhanging-card.png"
@@ -199,7 +199,7 @@ fi
 finish
 pointer move "$press_x" "$press_y" press "$BTN_LEFT" move "$drop_x" "$drop_y" pause 1500 release "$BTN_LEFT" &
 pointer_pid=$!
-sleep 0.5
+sleep 0.5 # real time: the pointer helper reaches the drop point
 "$UMBRIEL" clock-advance 500 > /dev/null
 
 # The stack hint for the first row is a bar along the column's leading cross edge, projected into the overhanging

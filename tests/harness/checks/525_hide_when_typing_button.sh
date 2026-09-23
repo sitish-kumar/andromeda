@@ -53,7 +53,7 @@ crop="48x48+$pointer_x+$pointer_y"
   > "$POINTER_LOG" 2>&1 &
 pointer_pid=$!
 
-sleep 0.5
+sleep 0.5 # real time: the pointer helper moves and presses
 grim -c "$BEFORE"
 before_colors=$(magick "$BEFORE" -crop "$crop" +repage -format '%k' info:)
 if ((before_colors < 2)); then

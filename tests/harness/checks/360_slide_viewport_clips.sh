@@ -69,8 +69,9 @@ sed -i 's/^duration_ms = 200$/duration_ms = 10000/' "$UMBRIEL_CONFIG"
 # workspace while the uncovered right edge belongs to the empty incoming one. The
 # visible slice of the window stays 280 logical pixels wide at any progress, so
 # neither sample depends on where the eased slide has reached.
+"$UMBRIEL" clock-freeze
 "$UMBRIEL" msg workspace-switch:2 > /dev/null
-sleep 1
+"$UMBRIEL" clock-advance 1000
 grim "$TRANSITION_SHOT"
 onscreen=$(frame_blue "$TRANSITION_SHOT")
 uncovered=$(sample_blue "$TRANSITION_SHOT" 1250 200)
