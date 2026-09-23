@@ -181,6 +181,7 @@ SERVER_PID=
 INSTANCE_PGID=
 CHECK_PGID=
 IPC_CLIENT_PID=
+KEYBOARD_PID=
 KEPT_DIRS=()
 
 now_us() {
@@ -244,6 +245,7 @@ kill_check_group() {
 # instance's process group rather than the check's, and reaping that group is
 # the only way they do not outlive the run.
 kill_instance() {
+  stop_keyboard
   if [[ -n $IPC_CLIENT_PID ]] && kill -0 "$IPC_CLIENT_PID" 2>/dev/null; then
     kill -KILL "$IPC_CLIENT_PID" 2>/dev/null || true
     wait "$IPC_CLIENT_PID" 2>/dev/null || true
@@ -334,6 +336,42 @@ EOF
 # A check that needs a second monitor declares it in its header and the harness boots that instance accordingly.
 # Everything else gets one output, which is what most geometry assertions are written against. A check that needs
 # monitors to come and go uses `umbriel output-create` and `umbriel output-destroy` on top of what it declares here.
+# A real session has a keyboard from the start, and a headless one has none until a virtual keyboard arrives; without
+# one the seat's keyboard capability also drops between helper runs, so clients bind wl_keyboard late and miss keys.
+# Each instance therefore gets a keyboard-only helper before its check runs, which stays connected through teardown. A
+# check about keyboard arrival itself opts out with `# harness: keyboard=none` in its header.
+check_keyboard() {
+  if sed -n '2,12p' "$CHECKS_DIR/$1.sh" | grep -q '^# harness: keyboard=none'; then
+    echo none
+  else
+    echo virtual
+  fi
+}
+
+start_keyboard() {
+  local log=$RUNTIME_DIR/keyboard.log
+  XDG_RUNTIME_DIR="$RUNTIME_DIR" WAYLAND_DISPLAY=wayland-0 \
+    "$UMBRIEL_POINTER_CLIENT" 1 1 keyboard-only mod none mark ready pause 86400000 > "$log" 2>&1 &
+  KEYBOARD_PID=$!
+  local waited=0
+  until grep -q '^ready$' "$log" 2>/dev/null; do
+    if ! kill -0 "$KEYBOARD_PID" 2>/dev/null || ((waited >= 400)); then
+      BOOT_ERROR="the harness keyboard never attached"$'\n'"$(< "$log")"
+      return 1
+    fi
+    sleep 0.005
+    waited=$((waited + 1))
+  done
+}
+
+stop_keyboard() {
+  if [[ -n $KEYBOARD_PID ]] && kill -0 "$KEYBOARD_PID" 2>/dev/null; then
+    kill -KILL "$KEYBOARD_PID" 2>/dev/null || true
+    wait "$KEYBOARD_PID" 2>/dev/null || true
+  fi
+  KEYBOARD_PID=
+}
+
 check_outputs() {
   local declared
   declared=$(sed -n '2,12p' "$CHECKS_DIR/$1.sh" |
@@ -455,6 +493,7 @@ stop_instance() {
     wait "$IPC_CLIENT_PID" 2>/dev/null || true
   fi
   IPC_CLIENT_PID=
+  stop_keyboard
   reap_instance_group
 
   if [[ $status -ne 0 ]]; then
@@ -509,6 +548,10 @@ run_one() {
 
   BOOT_ERROR=
   if ! start_instance "$(check_outputs "$name")"; then
+    publish "$prefix" 1 "$check_start" "$BOOT_ERROR"
+    return 0
+  fi
+  if [[ $(check_keyboard "$name") == virtual ]] && ! start_keyboard; then
     publish "$prefix" 1 "$check_start" "$BOOT_ERROR"
     return 0
   fi

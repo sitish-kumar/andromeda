@@ -40,10 +40,6 @@ INHIBIT_SHORTCUTS=1 "$OBSERVER" shortcuts-inhibit > "$CLIENT_LOG" 2>&1 &
 inhibitor_pid=$!
 wait_for "the test window" '[[ $("$UMBRIEL" windows --json | jq length) == 1 ]]'
 wait_for "the inhibitor to activate" 'grep -q "shortcuts-inhibitor active" "$CLIENT_LOG"'
-# Each pointer-client run brings its own virtual keyboard, and without another one the seat's keyboard capability would
-# drop between runs; the client then rebinds wl_keyboard late and misses the first keys. Hold one open throughout.
-"$POINTER" "$OUTPUT_W" "$OUTPUT_H" mod none pause 60000 > "$UMBRIEL_RUNTIME_DIR/keyboard-holder.log" 2>&1 &
-wait_for "the client's keyboard focus" 'grep -q "^keyboard-enter" "$CLIENT_LOG"'
 
 # The ordinary bind is suppressed and both key event halves reach the client.
 "$POINTER" "$OUTPUT_W" "$OUTPUT_H" mod logo tap "$KEY_1" mod none

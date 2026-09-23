@@ -142,10 +142,11 @@ An instance has one output unless the check asks for more with a `# harness: out
 starts, so it cannot be a runtime config change. Single-output instances are what `610_output_actions` relies on to
 assert that directional output actions are rejected when there is nowhere to move.
 
-A headless session starts with no keyboard. Each pointer-client run that sends keys brings its own virtual keyboard,
-and the seat's keyboard capability drops between runs, so a client rebinds `wl_keyboard` late and misses the first
-keys. A check that asserts delivered keys holds one open first (`pointer-client ... mod none pause 60000 &`) and waits
-for the client's keyboard enter, as `523_shortcuts_inhibit` does.
+A headless session starts with no keyboard, so the harness connects a keyboard-only helper to each instance before
+its check runs and keeps it through teardown, the way a real session always has one. Without it the seat's keyboard
+capability would come and go with each pointer-client run, and clients would bind `wl_keyboard` too late for the first
+keys. A check about how keyboards themselves arrive opts out with `# harness: keyboard=none` in its header, as
+`520_input_method_wheel` and `521_keyboard_keymap` do.
 
 A check that stops making progress is killed after 120 seconds, so the suite reports instead of hanging. Set
 `CHECK_TIMEOUT` to change the cap, and `CHECK_VERBOSE=1` (or `-v`) to keep the full output of passing checks.
