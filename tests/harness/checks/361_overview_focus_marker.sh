@@ -19,7 +19,7 @@ output_x() {
 
 # The workspace row is the output box scaled by `zoom` and centered, so 1280x800 at 0.5 puts it at 640x400+320+200.
 row_green() {
-  magick "$1" -crop 640x400+320+200 +repage -colorspace RGB -format '%[fx:round(255*mean.g)]' info:
+  magick "$1" -crop 640x400+320+200 +repage -format '%[fx:round(255*mean.g)]' info:
 }
 
 assert_markers() {
@@ -32,7 +32,7 @@ assert_markers() {
     echo "$label: $landing_name lost its landing marker entirely: green=$landing"
     return 1
   fi
-  if ((landing * 2 > live)); then
+  if ((landing * 5 > live * 4)); then
     echo "$label: $landing_name is marked as strongly as the live target: live=$live landing=$landing"
     return 1
   fi

@@ -136,7 +136,7 @@ overview_x=$((320 + normal_x / 2))
 overview_y=$((180 + normal_y / 2))
 
 sample_rgb() {
-  magick "$1" -alpha off -crop "20x20+$(($2 - 10))+$(($3 - 10))" +repage -colorspace RGB \
+  magick "$1" -alpha off -crop "20x20+$(($2 - 10))+$(($3 - 10))" +repage \
     -format '%[fx:round(255*mean.r)] %[fx:round(255*mean.g)] %[fx:round(255*mean.b)]\n' info:
 }
 

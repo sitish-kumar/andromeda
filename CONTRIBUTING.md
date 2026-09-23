@@ -116,7 +116,9 @@ follow:
   within a window. `windows --json` reports layout targets, not what is on screen, so it is not proof that motion
   has been drawn.
 - Analyse screenshots with `$UMBRIEL_PIXEL_PROBE` (`count`, `bbox`, `mean`, `max`, `pixel`, `size`; its source
-  documents the predicate syntax), not ImageMagick, and pass a new or materially changed check through
+  documents the predicate syntax) rather than ImageMagick. Read pixels as `grim` encodes them, which is what the
+  compositor blended and shows: a colourspace conversion such as `magick -colorspace RGB` only moves blended values
+  and makes thresholds harder to reason about. Pass a new or materially changed check through
   `just check-stress <name>` before relying on it.
 - Never depend on a machine-wide resource a sibling check could be using at the same time: a fixed port, a shared
   path outside `$UMBRIEL_RUNTIME_DIR`, a named process matched with `pkill`, or the wall-clock cost of a neighbour.

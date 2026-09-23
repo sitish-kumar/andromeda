@@ -118,9 +118,9 @@ pointer_hold "$OUTPUT_W" "$OUTPUT_H" move "$start_x" "$start_y" press "$BTN_LEFT
 
 screenshot="$UMBRIEL_RUNTIME_DIR/drag-overhanging-card.png"
 grim "$screenshot"
-red=$(magick "$screenshot" -crop "${sample_w}x50+${sample_x}+195" -colorspace RGB \
+red=$(magick "$screenshot" -crop "${sample_w}x50+${sample_x}+195" \
   -format '%[fx:round(255*mean.r)]' info:)
-green=$(magick "$screenshot" -crop "${sample_w}x50+${sample_x}+195" -colorspace RGB \
+green=$(magick "$screenshot" -crop "${sample_w}x50+${sample_x}+195" \
   -format '%[fx:round(255*mean.g)]' info:)
 pointer_release
 
@@ -206,8 +206,8 @@ pointer_hold "$OUTPUT_W" "$OUTPUT_H" move "$press_x" "$press_y" press "$BTN_LEFT
 vertical_shot="$UMBRIEL_RUNTIME_DIR/drag-overhanging-card-vertical.png"
 grim "$vertical_shot"
 hint_sample="45x30+$((OVERVIEW_X + target_x / 2 + 8))+$((target_top + 15))"
-vertical_red=$(magick "$vertical_shot" -crop "$hint_sample" -colorspace RGB -format '%[fx:round(255*mean.r)]' info:)
-vertical_green=$(magick "$vertical_shot" -crop "$hint_sample" -colorspace RGB -format '%[fx:round(255*mean.g)]' info:)
+vertical_red=$(magick "$vertical_shot" -crop "$hint_sample" -format '%[fx:round(255*mean.r)]' info:)
+vertical_green=$(magick "$vertical_shot" -crop "$hint_sample" -format '%[fx:round(255*mean.g)]' info:)
 pointer_release
 
 if ((vertical_red < vertical_green + 35)); then

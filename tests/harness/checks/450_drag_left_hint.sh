@@ -72,9 +72,9 @@ pointer_hold "$OUTPUT_W" "$OUTPUT_H" move "$start_x" "$start_y" press "$BTN_LEFT
 outside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-left-outside-hint.png"
 grim "$outside_screenshot"
 
-outside_red=$(magick "$outside_screenshot" -crop 100x240+190+240 -colorspace RGB \
+outside_red=$(magick "$outside_screenshot" -crop 100x240+190+240 \
   -format '%[fx:round(255*mean.r)]' info:)
-outside_green=$(magick "$outside_screenshot" -crop 100x240+190+240 -colorspace RGB \
+outside_green=$(magick "$outside_screenshot" -crop 100x240+190+240 \
   -format '%[fx:round(255*mean.g)]' info:)
 if (( outside_red < outside_green + 35 )); then
   echo "leading gap hint overlapped the first card instead of staying in the overview margin: red=$outside_red green=$outside_green"
@@ -86,9 +86,9 @@ pointer_step inside
 inside_screenshot="$UMBRIEL_RUNTIME_DIR/drag-left-inside-hint.png"
 grim "$inside_screenshot"
 
-inside_red=$(magick "$inside_screenshot" -crop 100x50+400+195 -colorspace RGB \
+inside_red=$(magick "$inside_screenshot" -crop 100x50+400+195 \
   -format '%[fx:round(255*mean.r)]' info:)
-inside_green=$(magick "$inside_screenshot" -crop 100x50+400+195 -colorspace RGB \
+inside_green=$(magick "$inside_screenshot" -crop 100x50+400+195 \
   -format '%[fx:round(255*mean.g)]' info:)
 if (( inside_red < inside_green + 35 )); then
   echo "the first card's outer side remained a duplicate prepend target: red=$inside_red green=$inside_green"

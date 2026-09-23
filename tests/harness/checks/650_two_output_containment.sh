@@ -36,7 +36,7 @@ output_x() {
 
 # Mean of a crop, as a stable fingerprint of one screen region.
 region_mean() {
-  magick "$1" -crop "$2" -colorspace RGB -format '%[fx:mean]' info:
+  magick "$1" -crop "$2" -format '%[fx:mean]' info:
 }
 
 check() {
