@@ -1862,7 +1862,7 @@ namespace umbriel {
     if (m_tiled) {
       return;
     }
-    m_floating.rememberPositionFraction({m_sceneTree->node.x, m_sceneTree->node.y}, floatingUsableArea());
+    m_floating.rememberPositionFraction({layoutTargetX(), layoutTargetY()}, floatingUsableArea());
   }
 
   void View::restoreFloatingPosition(bool rememberRestored) {

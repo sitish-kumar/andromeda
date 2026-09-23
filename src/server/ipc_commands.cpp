@@ -366,6 +366,8 @@ namespace umbriel {
       // their own position. Ordering a listing by these positions then matches the strip (scrolling) or tile tree
       // (dwindle) regardless of visibility or in-flight animations.
       if (Workspace* workspace = v->workspace(); workspace != nullptr && workspace->layout().columnOf(v.get()) >= 0) {
+        // A window that mapped in this dispatch has its arrange still pending, so its slot is missing or stale.
+        workspace->flushArrange();
         const wlr_box box = workspace->layout().targetBox(v.get());
         entry["x"] = box.x;
         entry["y"] = box.y;
