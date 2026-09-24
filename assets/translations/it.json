@@ -1295,7 +1295,6 @@
         "borders": "Bordi",
         "brightness": "Luminosità",
         "built-in": "Integrato",
-        "calendar": "Calendario",
         "capsules": "Capsule",
         "clipboard": "Appunti",
         "community": "Community",
@@ -2785,6 +2784,11 @@
         "shell-sounds": {
           "description": "Riproduci effetti sonori per gli eventi della shell",
           "label": "Suoni shell"
+        },
+        "sound-theme": {
+          "default": "Default",
+          "description": "Tema sonoro utilizzato per gli effetti sonori della shell",
+          "label": "Tema sonoro"
         },
         "sound-volume": {
           "description": "Volume per gli effetti sonori della shell",
@@ -4592,7 +4596,6 @@
         "plugin-store": "Il catalogo dei plugin remoti e le richieste di download non funzioneranno.",
         "plugins": "Le richieste HTTP dei plugin non funzioneranno. Le origini Git possono ancora essere aggiornate.",
         "security": "La ricerca dell'IP esterno e la telemetria non funzioneranno.",
-        "services": "La sincronizzazione dell'account del calendario non funzionerà.",
         "template-store": "I download dei template della community non funzioneranno.",
         "templates": "I download e gli aggiornamenti dei template della community non funzioneranno.",
         "title": "Modalità offline"

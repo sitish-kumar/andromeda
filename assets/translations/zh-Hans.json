@@ -1295,7 +1295,6 @@
         "borders": "边框",
         "brightness": "亮度",
         "built-in": "内置",
-        "calendar": "日历",
         "capsules": "胶囊",
         "clipboard": "剪贴板",
         "community": "社区",
@@ -2785,6 +2784,11 @@
         "shell-sounds": {
           "description": "为 Shell 事件播放音效",
           "label": "Shell 音效"
+        },
+        "sound-theme": {
+          "default": "默认",
+          "description": "用于 Shell 音效的声音主题",
+          "label": "声音主题"
         },
         "sound-volume": {
           "description": "Shell 音效的音量",
@@ -4592,7 +4596,6 @@
         "plugin-store": "无法访问远程插件目录和下载插件。",
         "plugins": "无法发起插件 HTTP 请求。Git 源仍可更新。",
         "security": "无法查询外部 IP 或发送遥测数据。",
-        "services": "无法同步日历账户。",
         "template-store": "无法下载社区模板。",
         "templates": "无法下载和更新社区模板。",
         "title": "离线模式"
