@@ -86,7 +86,7 @@ namespace settings {
       return defaultKeybindSet(action);
     }
 
-    constexpr std::array<SettingsSectionDescriptor, 23> kSettingsSections{{
+    constexpr std::array<SettingsSectionDescriptor, 24> kSettingsSections{{
         {SettingsSection::Appearance, "appearance", "adjustments-horizontal"},
         {SettingsSection::Wallpaper, "wallpaper", "paint"},
         {SettingsSection::Templates, "templates", "color-swatch"},
@@ -104,6 +104,7 @@ namespace settings {
         {SettingsSection::System, "system", "activity-heartbeat"},
         {SettingsSection::Services, "services", "stack-2"},
         {SettingsSection::Location, "location", "map-pin"},
+        {SettingsSection::Calendar, "calendar", "calendar"},
         {SettingsSection::Power, "power", "bolt"},
         {SettingsSection::Hooks, "hooks", "link"},
         {SettingsSection::Niri, "niri", "niri"},
@@ -2689,13 +2690,13 @@ namespace settings {
 
     const SettingVisibility calendarOn = [](const Config& c) { return c.calendar.enabled; };
     entries.push_back(makeEntry(
-        SettingsSection::Services, "calendar", tr("settings.schema.services.calendar.label"),
+        SettingsSection::Calendar, "general", tr("settings.schema.services.calendar.label"),
         tr("settings.schema.services.calendar.description"), {"calendar", "enabled"},
         ToggleSetting{cfg.calendar.enabled}, "calendar events caldav google"
     ));
     {
       auto e = makeEntry(
-          SettingsSection::Services, "calendar", tr("settings.schema.services.calendar-event-date-format.label"),
+          SettingsSection::Calendar, "general", tr("settings.schema.services.calendar-event-date-format.label"),
           tr("settings.schema.services.calendar-event-date-format.description"), {"calendar", "event_date_format"},
           TextSetting{.value = cfg.calendar.eventDateFormat, .placeholder = "%A %e %B", .browseFileExtensions = {}},
           "calendar date format strftime chrono"
@@ -2705,7 +2706,7 @@ namespace settings {
     }
     {
       auto e = makeEntry(
-          SettingsSection::Services, "calendar", tr("settings.schema.services.calendar-event-time-format.label"),
+          SettingsSection::Calendar, "general", tr("settings.schema.services.calendar-event-time-format.label"),
           tr("settings.schema.services.calendar-event-time-format.description"), {"calendar", "event_time_format"},
           TextSetting{.value = cfg.calendar.eventTimeFormat, .placeholder = "%H:%M", .browseFileExtensions = {}},
           "calendar time format strftime chrono"
@@ -2715,14 +2716,14 @@ namespace settings {
     }
     // Week numbers are a grid decoration, so they stay available when event syncing is off.
     entries.push_back(makeEntry(
-        SettingsSection::Services, "calendar", tr("settings.schema.services.calendar-week-numbers.label"),
+        SettingsSection::Calendar, "general", tr("settings.schema.services.calendar-week-numbers.label"),
         tr("settings.schema.services.calendar-week-numbers.description"),
         {"control_center", "calendar", "show_week_numbers"},
         ToggleSetting{cfg.controlCenter.calendarTab.showWeekNumbers}, "calendar week numbers iso"
     ));
     {
       auto e = makeEntry(
-          SettingsSection::Services, "calendar-reminders", tr("settings.schema.services.calendar-reminders.label"),
+          SettingsSection::Calendar, "calendar-reminders", tr("settings.schema.services.calendar-reminders.label"),
           tr("settings.schema.services.calendar-reminders.description"), {"calendar", "reminders", "enabled"},
           ToggleSetting{cfg.calendar.reminders.enabled}, "calendar reminder notification alarm upcoming"
       );
@@ -2734,7 +2735,7 @@ namespace settings {
     };
     {
       auto e = makeEntry(
-          SettingsSection::Services, "calendar-reminders",
+          SettingsSection::Calendar, "calendar-reminders",
           tr("settings.schema.services.calendar-reminder-use-event.label"),
           tr("settings.schema.services.calendar-reminder-use-event.description"),
           {"calendar", "reminders", "use_event_reminders"}, ToggleSetting{cfg.calendar.reminders.useEventReminders},
@@ -2745,7 +2746,7 @@ namespace settings {
     }
     {
       auto e = makeEntry(
-          SettingsSection::Services, "calendar-reminders", tr("settings.schema.services.calendar-reminder-lead.label"),
+          SettingsSection::Calendar, "calendar-reminders", tr("settings.schema.services.calendar-reminder-lead.label"),
           tr("settings.schema.services.calendar-reminder-lead.description"),
           {"calendar", "reminders", "default_lead_minutes"},
           sliderFor(
@@ -2758,7 +2759,7 @@ namespace settings {
     }
     {
       auto e = makeEntry(
-          SettingsSection::Services, "calendar-reminders", tr("settings.schema.services.calendar-digest-time.label"),
+          SettingsSection::Calendar, "calendar-reminders", tr("settings.schema.services.calendar-digest-time.label"),
           tr("settings.schema.services.calendar-digest-time.description"),
           {"calendar", "reminders", "all_day_digest_time"},
           TextSetting{
@@ -2772,7 +2773,7 @@ namespace settings {
     // Sync cadence belongs with the accounts it drives; the account rows are injected right after it.
     {
       auto e = makeEntry(
-          SettingsSection::Services, "calendar-accounts",
+          SettingsSection::Calendar, "calendar-accounts",
           tr("settings.schema.services.calendar-refresh-interval.label"),
           tr("settings.schema.services.calendar-refresh-interval.description"), {"calendar", "refresh_minutes"},
           sliderFor(cfg.calendar.refreshMinutes, noctalia::config::schema::kRefreshMinutesRange, true), "calendar sync"
