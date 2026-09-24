@@ -1,5 +1,6 @@
 project('noctalia', ['c', 'cpp'],
-  version: '5.1.0',
+  version: files('VERSION'),
+  meson_version: '>=1.1',
   default_options: [
     'cpp_std=c++23',
     'cpp_extensions=false',
