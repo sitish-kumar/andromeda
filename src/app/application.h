@@ -170,6 +170,7 @@ private:
   void initAuxServicesAndHooks();
   void initSystemBusServices();
   void initBrightnessAndPipewire();
+  void initEarlySessionBusAndTray();
   void initSessionBusServices();
   void initUi();
   // Sub-phases of initUi(), called in order.
@@ -256,6 +257,9 @@ private:
   CalendarService m_calendarService;
   CalendarReminderMonitor m_calendarReminderMonitor{m_configService, m_notificationManager};
   std::unique_ptr<SessionBus> m_bus;
+  // Set when the early session bus connection fails. Reported once i18n has been
+  // initialized in initStyleThemeAndWayland().
+  std::optional<std::string> m_earlySessionBusError;
   std::unique_ptr<SystemBus> m_systemBus;
   std::unique_ptr<LogindService> m_logindService;
   // Set on PrepareForSleep(true); cleared when the session lock engages (or the lock aborts).
@@ -391,7 +395,6 @@ private:
   WeatherPollSource m_weatherPollSource{m_weatherService};
   CalendarPollSource m_calendarPollSource{m_calendarService};
   CalendarReminderPollSource m_calendarReminderPollSource{m_calendarReminderMonitor};
-  Timer m_trayInitTimer;
   Timer m_polkitInitTimer;
   Timer m_polkitIdleCloseTimer;
   Timer m_greeterSyncTimeoutTimer;

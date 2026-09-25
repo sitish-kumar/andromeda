@@ -538,6 +538,14 @@ void Application::initServices() {
   );
   m_secretStore.retryAvailabilityCheck();
   initStyleThemeAndWayland();
+  // initStyleThemeAndWayland() initialized i18n, so the early session bus failure
+  // can now be reported with a translated message.
+  if (m_earlySessionBusError.has_value()) {
+    m_notificationManager.addInternal(
+        "Noctalia", i18n::tr("notifications.internal.session-bus-unavailable"), *m_earlySessionBusError, Urgency::Low
+    );
+    m_earlySessionBusError.reset();
+  }
   initWaylandCallbacks();
   initAuxServicesAndHooks();
   initSystemBusServices();
@@ -1514,18 +1522,34 @@ void Application::initBrightnessAndPipewire() {
   });
 }
 
-void Application::initSessionBusServices() {
-  auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
-
+void Application::initEarlySessionBusAndTray() {
   try {
     m_bus = std::make_unique<SessionBus>();
     kLog.info("connected to session bus");
   } catch (const std::exception& e) {
+    // i18n is initialized later, in initStyleThemeAndWayland(), so hold the reason
+    // and report it once translations are available.
     kLog.warn("dbus disabled: {}", e.what());
-    m_notificationManager.addInternal(
-        "Noctalia", i18n::tr("notifications.internal.session-bus-unavailable"), e.what(), Urgency::Low
-    );
+    m_earlySessionBusError = std::string(e.what());
+    return;
   }
+
+  m_trayService = std::make_unique<TrayService>(*m_bus);
+  m_trayService->setChangeCallback([this]() {
+    m_bar.refresh();
+    m_trayMenu.onTrayChanged();
+    m_keyboardLayoutOsd.onTrayChanged(
+        *m_trayService, m_configService.config(), m_configService.config().osd.kinds.keyboardLayout
+    );
+  });
+  m_trayService->setMenuToggleCallback([this](const std::string& itemId, float contentScale) {
+    m_trayMenu.toggleForItem(itemId, contentScale);
+  });
+  startTrayService();
+}
+
+void Application::initSessionBusServices() {
+  auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
 
   if (m_bus != nullptr) {
     try {
@@ -1575,18 +1599,6 @@ void Application::initSessionBusServices() {
     installSecretServiceCollectionWatch();
 
     m_compositorPlatform.startKdeActiveWindow(*m_bus);
-
-    m_trayService = std::make_unique<TrayService>(*m_bus);
-    m_trayService->setChangeCallback([this]() {
-      m_bar.refresh();
-      m_trayMenu.onTrayChanged();
-      m_keyboardLayoutOsd.onTrayChanged(
-          *m_trayService, m_configService.config(), m_configService.config().osd.kinds.keyboardLayout
-      );
-    });
-    m_trayService->setMenuToggleCallback([this](const std::string& itemId, float contentScale) {
-      m_trayMenu.toggleForItem(itemId, contentScale);
-    });
   }
 
   m_locationService.initialize();
