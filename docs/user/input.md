@@ -111,7 +111,8 @@ settings are reported in the log.
 | Key | Description |
 | --- | --- |
 | `tap` | Enable tap-to-click. |
-| `natural_scroll` | Reverse scrolling and three-finger gesture direction. |
+| `natural_scroll` | Reverse scrolling, and three-finger gesture direction unless `natural_swipe` is set. |
+| `natural_swipe` | Three-finger gesture direction on its own. Unset follows `natural_scroll`. |
 | `left_handed` | Swap the primary and secondary buttons. |
 | `accel_profile` | Use `"flat"`, `"adaptive"`, or a custom acceleration curve. |
 | `sensitivity` | Pointer speed from -1.0 to 1.0. |
