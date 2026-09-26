@@ -1547,10 +1547,6 @@
           "soft": "Soft",
           "solid": "Solid"
         },
-        "window-switcher-style": {
-          "carousel": "Carousel",
-          "compact": "Compact"
-        },
         "password-style": {
           "filled-circles": "Filled Circles",
           "random-icons": "Random Icons"
@@ -1565,6 +1561,10 @@
           "up": "Up",
           "up-left": "Up Left",
           "up-right": "Up Right"
+        },
+        "window-switcher-style": {
+          "carousel": "Carousel",
+          "compact": "Compact"
         }
       },
       "theme": {
@@ -3290,10 +3290,6 @@
           "description": "Order windows in the switcher by most recently used rather than workspace and screen layout",
           "label": "Most Recently Used Order"
         },
-        "window-switcher-style": {
-          "description": "Choose the freestanding depth carousel or the boxed compact strip",
-          "label": "Switcher Style"
-        },
         "window-switcher-show-all-outputs": {
           "description": "List windows from every monitor; turn off to list only windows on the monitor showing the switcher",
           "label": "Show All Monitors"
@@ -3309,6 +3305,10 @@
         "window-switcher-show-count": {
           "description": "Show the current position and total window count above the previews",
           "label": "Show Window Count"
+        },
+        "window-switcher-style": {
+          "description": "Choose the freestanding depth carousel or the boxed compact strip",
+          "label": "Switcher Style"
         }
       },
       "system": {

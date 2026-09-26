@@ -843,6 +843,8 @@
       "calendar": "日历",
       "calendar-credential-locked-body": "请解锁 Secret Service 使用的密钥环，然后在“设置”中重试。使用 GNOME Keyring 时，需要将可自动解锁的密钥环（如 Login）设为默认。",
       "calendar-credential-locked-title": "日历密钥环已锁定",
+      "calendar-digest-more": "+{count} 项",
+      "calendar-digest-title": "全天日程",
       "calendar-google-connect-browser-failed": "无法启动用于 Google 授权的浏览器。请检查默认浏览器或 xdg-open 设置。",
       "calendar-google-connect-credential-store-failed": "授权已完成，但无法保存刷新令牌。请解锁或启动 Secret Service，然后重新连接。",
       "calendar-google-connect-expired": "Google 授权在登录完成前已过期。请重新发起连接。",
@@ -853,6 +855,13 @@
       "calendar-google-connect-start-failed": "无法启动 Google 授权。请检查网络连接并重试。",
       "calendar-google-connect-start-http": "无法启动 Google 授权。OAuth 代理返回了 HTTP {status}。",
       "calendar-google-connect-timeout": "Google 授权超时。准备好登录时，请重新发起连接。",
+      "calendar-reminder-catchup-body": "另有 {count} 个日程即将开始",
+      "calendar-reminder-catchup-title": "更多即将开始的日程",
+      "calendar-reminder-in": "{minutes} 分钟后开始 · {time}",
+      "calendar-reminder-now": "现在开始 · {time}",
+      "calendar-reminder-open": "打开",
+      "calendar-reminder-untitled": "无标题日程",
+      "calendar-reminder-with-location": "{when}\n{location}",
       "config-migration-body": "请在源配置文件中更新 {path}。Noctalia 仅在内存中临时兼容。执行 noctalia config validate 命令查看所有必需的更改。",
       "config-migration-title": "需要更新配置",
       "dbus-disabled": "DBus 通知已禁用",
@@ -1295,6 +1304,8 @@
         "borders": "边框",
         "brightness": "亮度",
         "built-in": "内置",
+        "calendar-accounts": "账户",
+        "calendar-reminders": "提醒",
         "capsules": "胶囊",
         "clipboard": "剪贴板",
         "community": "社区",
@@ -1365,6 +1376,7 @@
         "appearance": "外观",
         "backdrop": "Backdrop",
         "bar": "状态栏",
+        "calendar": "日历",
         "control-center": "控制中心",
         "desktop": "桌面",
         "dock": "Dock",
@@ -1405,7 +1417,7 @@
         },
         "flags-label": "匹配时",
         "match-content-label": "内容正则",
-        "match-content-placeholder": "用于匹配通知标题或正文的正则表达式…",
+        "match-content-placeholder": "匹配通知标题或正文的正则表达式…",
         "match-label": "应用",
         "match-placeholder": "应用名称、桌面项或类别…",
         "override-duration": "自定义持续时间",
@@ -1481,6 +1493,16 @@
         "overlay": "Overlay",
         "top": "Top"
       },
+      "lockscreen": {
+        "transition": {
+          "disc": "圆盘",
+          "fade": "淡入淡出",
+          "honeycomb": "蜂巢",
+          "stripes": "条纹",
+          "wipe": "擦除",
+          "zoom": "缩放"
+        }
+      },
       "notification-urgency": {
         "critical": "重要",
         "low": "低",
@@ -1527,7 +1549,7 @@
         },
         "password-style": {
           "filled-circles": "实心圆点",
-          "random-icons": "随机图标"
+          "random-icons": "随机图案"
         },
         "shadow-direction": {
           "center": "居中",
@@ -1539,6 +1561,10 @@
           "up": "向上",
           "up-left": "左上",
           "up-right": "右上"
+        },
+        "window-switcher-style": {
+          "carousel": "轮播",
+          "compact": "紧凑"
         }
       },
       "theme": {
@@ -2305,6 +2331,10 @@
           "description": "截取桌面快照作为锁屏背景",
           "label": "桌面快照"
         },
+        "edge-smoothness": {
+          "description": "锁屏过渡边缘的羽化程度",
+          "label": "过渡边缘平滑度"
+        },
         "enabled": {
           "description": "启用会话锁定、logind 集成和锁定操作",
           "label": "锁屏"
@@ -2324,6 +2354,14 @@
         "tint-intensity": {
           "description": "在锁屏背景上叠加 surface 色调",
           "label": "着色强度"
+        },
+        "transition-duration": {
+          "description": "锁定和解锁动画的持续时间（毫秒）",
+          "label": "过渡时长"
+        },
+        "transitions": {
+          "description": "锁定和解锁时可用的效果（随机选择一种）",
+          "label": "过渡效果"
         },
         "wallpaper": {
           "description": "锁屏背景的自定义图片；留空时使用桌面壁纸",
@@ -2495,7 +2533,7 @@
           "label": "全局搜索中的表情符号"
         },
         "launcher-global-panels": {
-          "description": "在无前缀搜索中也显示面板",
+          "description": "在无前缀搜索中显示面板",
           "label": "全局搜索中的面板"
         },
         "launcher-global-session": {
@@ -2511,7 +2549,7 @@
           "label": "全局搜索中的窗口"
         },
         "launcher-ignored-panels": {
-          "description": "面板搜索源永不列出的面板（例如身份验证提示、设置向导）",
+          "description": "面板搜索源不会列出的面板（例如身份验证提示、设置向导）",
           "label": "忽略的面板"
         },
         "launcher-pinned-apps": {
@@ -2689,6 +2727,10 @@
           "description-unavailable": "当前会话中没有可用的 Secret Service 提供程序",
           "label": "日历凭据存储"
         },
+        "calendar-digest-time": {
+          "description": "每天发送全天日程汇总通知的时间；留空时禁用",
+          "label": "全天日程汇总时间"
+        },
         "calendar-edit": {
           "button": "编辑",
           "button-reconnect": "重新连接",
@@ -2698,16 +2740,28 @@
           "description-reconnect": "未找到 Google 授权信息；请重新连接此账户"
         },
         "calendar-event-date-format": {
-          "description": "日历视图中日程列表上方显示的日期格式",
+          "description": "日历视图中日程列表上方的日期格式",
           "label": "日程日期格式"
         },
         "calendar-event-time-format": {
-          "description": "日历视图中日程的时间显示格式",
+          "description": "日历视图中日程的时间格式",
           "label": "日程时间格式"
         },
         "calendar-refresh-interval": {
           "description": "同步日程的频率（分钟）",
           "label": "刷新间隔"
+        },
+        "calendar-reminder-lead": {
+          "description": "未设置提醒的日程默认提前通知的时间（分钟）",
+          "label": "默认提前提醒时间"
+        },
+        "calendar-reminder-use-event": {
+          "description": "遵循各日程设置的提醒。关闭后，所有日程均使用默认提前提醒时间",
+          "label": "使用日程提醒"
+        },
+        "calendar-reminders": {
+          "description": "在日程开始前发送提醒",
+          "label": "日程提醒"
         },
         "calendar-storage": {
           "button": "重试",
@@ -2777,7 +2831,7 @@
           "label": "夜间色温"
         },
         "notification-sound": {
-          "description": "用于通知反馈的音效文件",
+          "description": "通知反馈的音效文件",
           "label": "通知音效",
           "placeholder": "/path/to/sound.wav"
         },
@@ -2787,7 +2841,7 @@
         },
         "sound-theme": {
           "default": "默认",
-          "description": "用于 Shell 音效的声音主题",
+          "description": "Shell 音效的声音主题",
           "label": "声音主题"
         },
         "sound-volume": {
@@ -2852,7 +2906,7 @@
           }
         },
         "volume-change-sound": {
-          "description": "用于音量反馈的音效文件",
+          "description": "音量反馈的音效文件",
           "label": "音量变化音效",
           "placeholder": "/path/to/sound.wav"
         },
@@ -3114,7 +3168,7 @@
           "label": "缩放"
         },
         "password-style": {
-          "description": "密码输入掩码的视觉样式",
+          "description": "密码输入时的显示样式",
           "label": "密码样式"
         },
         "polkit-agent": {
@@ -3122,15 +3176,15 @@
           "label": "Polkit 代理"
         },
         "privacy-cam-filter-regex": {
-          "description": "用于匹配并忽略隐私指示器和 OSD 弹窗中特定摄像头应用的正则表达式",
+          "description": "匹配并忽略隐私指示器和 OSD 弹窗中特定摄像头应用的正则表达式",
           "label": "摄像头过滤正则"
         },
         "privacy-mic-filter-regex": {
-          "description": "用于匹配并忽略隐私指示器和 OSD 弹窗中特定麦克风应用的正则表达式",
+          "description": "匹配并忽略隐私指示器和 OSD 弹窗中特定麦克风应用的正则表达式",
           "label": "麦克风过滤正则"
         },
         "privacy-screen-filter-regex": {
-          "description": "用于匹配并忽略隐私指示器和 OSD 弹窗中特定屏幕共享应用的正则表达式",
+          "description": "匹配并忽略隐私指示器和 OSD 弹窗中特定屏幕共享应用的正则表达式",
           "label": "屏幕共享过滤正则"
         },
         "screen-time-enabled": {
@@ -3200,7 +3254,7 @@
           "label": "显示鼠标指针"
         },
         "screenshot-skip-annotate-on-copy-save": {
-          "description": "在截图界面中按复制或保存会立即输出；Enter 和 Space 仍会打开编辑器",
+          "description": "在区域选择界面中直接复制或保存；按下 Enter 或 Space 键仍会打开编辑器",
           "label": "复制或保存时跳过编辑器"
         },
         "settings-window-translucent": {
@@ -3231,6 +3285,22 @@
         "window-switcher-mru": {
           "description": "按最近使用顺序排列窗口，而非按工作区和屏幕布局排列",
           "label": "最近使用顺序"
+        },
+        "window-switcher-show-app-icon": {
+          "description": "在各窗口预览上显示对应的应用图标",
+          "label": "显示应用图标"
+        },
+        "window-switcher-show-caption": {
+          "description": "在窗口预览下方显示窗口标题和应用名称",
+          "label": "显示标题"
+        },
+        "window-switcher-show-count": {
+          "description": "在窗口预览上方显示当前位置和窗口总数",
+          "label": "显示窗口计数"
+        },
+        "window-switcher-style": {
+          "description": "选择独立的立体轮播或带边框的紧凑排列",
+          "label": "切换器样式"
         }
       },
       "system": {
@@ -3296,7 +3366,7 @@
           "placeholder": "~/Pictures/Wallpapers"
         },
         "edge-smoothness": {
-          "description": "壁纸之间过渡边缘的羽化程度",
+          "description": "壁纸间过渡边缘的羽化程度",
           "label": "边缘柔化"
         },
         "enabled": {
@@ -3339,7 +3409,7 @@
           "label": "启动时播放动画"
         },
         "transitions": {
-          "description": "切换壁纸时可用的效果（每次切换随机选择一种）",
+          "description": "切换壁纸时可用的效果（随机选择一种）",
           "label": "过渡效果"
         }
       }
@@ -3993,7 +4063,7 @@
           "label": "频段"
         },
         "cam-filter-regex": {
-          "description": "用于匹配并忽略特定摄像头应用名称的正则表达式",
+          "description": "匹配并忽略特定摄像头应用名称的正则表达式",
           "label": "摄像头过滤正则"
         },
         "capsule": {
@@ -4056,7 +4126,7 @@
           "label": "自定义图片着色"
         },
         "custom-label": {
-          "description": "显示在图标或自定义图片旁边的自定义文本；禁用“显示图标”时仍会保留显示",
+          "description": "显示在图标或自定义图片旁的文本；关闭“显示图标”时仍会显示",
           "label": "自定义标签"
         },
         "detached-panel": {
@@ -4133,7 +4203,7 @@
           "volume-description": "自定义图标；留空时使用内置的动态图标"
         },
         "glyph-position": {
-          "description": "设置图标或自定义图片及自定义标签相对于数值或可视化的排列顺序",
+          "description": "图标、自定义图片或自定义标签相对于数值或图表的排列顺序",
           "label": "图标位置"
         },
         "group-by-workspace": {
@@ -4305,7 +4375,7 @@
           "label": "最大长度"
         },
         "mic-filter-regex": {
-          "description": "用于匹配并忽略特定麦克风应用名称的正则表达式",
+          "description": "匹配并忽略特定麦克风应用名称的正则表达式",
           "label": "麦克风过滤正则"
         },
         "min-length": {
@@ -4589,6 +4659,7 @@
       "no-results-hint": "请尝试使用其他设置名称或配置键。",
       "offline-mode-notice": {
         "appearance": "无法下载社区配色方案。",
+        "calendar": "日历账户将无法同步。",
         "calendar-account": "无法自动发现或同步日历。",
         "disable-hint": "可以在“安全”设置中禁用“离线模式”。",
         "launcher": "无法获取货币汇率。",
@@ -4789,6 +4860,8 @@
     }
   },
   "window-switcher": {
+    "count": "{count} 个窗口",
+    "count-plural": "{count} 个窗口",
     "empty": "没有打开的窗口",
     "hint": "Tab · Shift+Tab · 方向键 · 松开 Alt 切换 · Esc 取消",
     "title": "窗口"

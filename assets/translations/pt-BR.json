@@ -843,6 +843,8 @@
       "calendar": "Calendário",
       "calendar-credential-locked-body": "Desbloqueie o chaveiro usado pelo Serviço Secreto e, em seguida, tente novamente em “Configurações”. No GNOME Keyring, defina como padrão um chaveiro que seja desbloqueado automaticamente, como o “Login”.",
       "calendar-credential-locked-title": "Keyring do calendário está bloqueado",
+      "calendar-digest-more": "mais +{count}",
+      "calendar-digest-title": "Dia todo hoje",
       "calendar-google-connect-browser-failed": "Não foi possível abrir nenhum navegador com a autorização do Google. Verifique seu navegador padrão ou a configuração do xdg-open.",
       "calendar-google-connect-credential-store-failed": "A autorização foi concluída, mas não foi possível salvar o token de atualização. Desbloqueie ou inicie o Secret Service e, em seguida, conecte-se novamente.",
       "calendar-google-connect-expired": "A autorização do Google expirou antes da conclusão do login. Inicie a conexão novamente.",
@@ -853,6 +855,13 @@
       "calendar-google-connect-start-failed": "Não foi possível iniciar a autorização do Google. Verifique sua conexão de rede e tente novamente.",
       "calendar-google-connect-start-http": "Não foi possível iniciar a autorização do Google. O agente OAuth retornou HTTP {status}.",
       "calendar-google-connect-timeout": "A autorização do Google expirou. Reinicie a conexão quando estiver pronto para fazer login.",
+      "calendar-reminder-catchup-body": "mais {count} eventos iniciarão em breve.",
+      "calendar-reminder-catchup-title": "Mais eventos por vir",
+      "calendar-reminder-in": "Inicia em {minutes} min · {time}",
+      "calendar-reminder-now": "Inicia agora · {time}",
+      "calendar-reminder-open": "Abrir",
+      "calendar-reminder-untitled": "Evento sem título",
+      "calendar-reminder-with-location": "{when}\n{location}",
       "config-migration-body": "Atualize {path} no arquivo fonte. Noctalia está aplicando está substituição só temporariamente. Execute nocatlia config validade para listar cada mudança necessária.",
       "config-migration-title": "Atualiação de configuração necessária",
       "dbus-disabled": "Notificações DBus desabilitadas",
@@ -1295,6 +1304,8 @@
         "borders": "Bordas",
         "brightness": "Brilho",
         "built-in": "Integrado",
+        "calendar-accounts": "Contas",
+        "calendar-reminders": "Lembretes",
         "capsules": "Cápsulas",
         "clipboard": "Área de Transferência",
         "community": "Comunidade",
@@ -1365,6 +1376,7 @@
         "appearance": "Aparência",
         "backdrop": "Camada de Fundo",
         "bar": "Barra",
+        "calendar": "Calendário",
         "control-center": "Central de Controle",
         "desktop": "Área de Trabalho",
         "dock": "Dock",
@@ -1549,6 +1561,10 @@
           "up": "Acima",
           "up-left": "Acima à Esquerda",
           "up-right": "Acima à Direita"
+        },
+        "window-switcher-style": {
+          "carousel": "Carrossel ",
+          "compact": "Compacto"
         }
       },
       "theme": {
@@ -2711,6 +2727,10 @@
           "description-unavailable": "Nenhum provedor de Secret Service disponível nesta sessão",
           "label": "Armazenamento de Credenciais de Calendário"
         },
+        "calendar-digest-time": {
+          "description": "Horário do dia para uma única notificação listando todos os eventos do dia. Deixe em branco para desabilitar.",
+          "label": "Resumo para o Dia Inteiro"
+        },
         "calendar-edit": {
           "button": "Editar",
           "button-reconnect": "Reconectar",
@@ -2730,6 +2750,18 @@
         "calendar-refresh-interval": {
           "description": "Com que frequência sincronizar eventos do calendário (minutos)",
           "label": "Intervalo de Atualização"
+        },
+        "calendar-reminder-lead": {
+          "description": "Com quanta antecedência notificar de eventos que não definem seus próprios lembretes.",
+          "label": "Definição Padrão de Lembrete"
+        },
+        "calendar-reminder-use-event": {
+          "description": "Honrar o lembrete definido em cada evento. Quando desligado, cada evento utiliza Definição Padrão de Lembrete",
+          "label": "Usar Lembretes de Evento"
+        },
+        "calendar-reminders": {
+          "description": "Notificar antes de um evento começar.",
+          "label": "Lembretes de Calendário"
         },
         "calendar-storage": {
           "button": "Tentar Novamente",
@@ -3253,6 +3285,22 @@
         "window-switcher-mru": {
           "description": "Organizar janelas no alternador por mais recentemente usadas ao invés de espaço de trabalho e layout de tela",
           "label": "Ordem Mais Recentemente Usada"
+        },
+        "window-switcher-show-app-icon": {
+          "description": "Mostrar ícone de cada aplicação sobre sua janela de pré-visualização",
+          "label": "Mostrar Ícone de Aplicação"
+        },
+        "window-switcher-show-caption": {
+          "description": "Mostrar títulos de janelas e nomes de aplicações abaixo de suas pré-visualização",
+          "label": "Mostrar Legenda"
+        },
+        "window-switcher-show-count": {
+          "description": "Mostrar a posição atual e contagem total de janelas acima das pré-visualizações",
+          "label": "Mostrar Contagem de Janelas"
+        },
+        "window-switcher-style": {
+          "description": "Escolher o carrossel independente de profundidade ou a faixa compacta em caixa",
+          "label": "Estilo do Alternador"
         }
       },
       "system": {
@@ -4611,6 +4659,7 @@
       "no-results-hint": "Tente um nome diferente de configuração ou uma tecla de config.",
       "offline-mode-notice": {
         "appearance": "O download de paletas da comunidade não funcionará.",
+        "calendar": "Sincronização de conta de calendário não funcionará.",
         "calendar-account": "A descoberta e sincronização do calendário não funcionarão.",
         "disable-hint": "Desabilite o Modo Off-line na seção Segurança.",
         "launcher": "A busca de taxas de câmbio não funcionará.",
@@ -4811,6 +4860,8 @@
     }
   },
   "window-switcher": {
+    "count": "{count} janela",
+    "count-plural": "{count} janelas",
     "empty": "Sem janelas abertas",
     "hint": "Tab · Shift+Tab · Setas · Solte o Alt para alterar · Esc para cancelar",
     "title": "Janelas"
