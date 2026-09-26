@@ -3,8 +3,8 @@
 One Wayland protocol, `desktop-unstable-v1`, served by the Umbriel fork and used by the Noctalia fork. It carries only
 what no standard protocol covers. Output modes, positions, scale, and VRR stay on `zwlr_output_manager_v1`.
 
-The XML lands in `protocols/desktop-unstable-v1.xml` in both forks when the first interface is implemented. Interfaces
-are added one at a time, with the module that needs them.
+The XML is `protocols/desktop-unstable-v1.xml` in both forks. `dsk_output_manager_v1` is implemented; the others are
+added with the module that needs them.
 
 ## Access
 
@@ -46,6 +46,7 @@ Mirroring. Everything else about outputs uses `zwlr_output_manager_v1`.
 | `set_mirror` | request | `string target`, `string source` | `target` shows `source`'s contents, scaled to fit with letterboxing. Connector names as in `zwlr_output_head_v1.name` |
 | `clear_mirror` | request | `string target` | `target` returns to extended mode |
 | `mirror` | event | `string target`, `string source` | Current state, sent on bind and on every change. Empty `source` means not mirrored |
+| `done` | event | | End of the state batch sent on bind |
 | `failed` | event | `string target`, `string reason` | Request rejected (unknown connector, mirror chain, disabled source) |
 
 Hotplug profiles need no protocol: the compositor keys each saved arrangement on the set of connected
