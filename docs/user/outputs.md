@@ -52,6 +52,7 @@ and positions when the output becomes available again.
 | `min_workspaces` | int | `1` | Minimum count for a dynamic output. |
 | `cyclic_workspaces` | bool | `false` | Wrap a workspace step around the ends of the inventory. |
 | `workspace_axis` | string | `"vertical"` | Workspace arrangement axis. |
+| `mirror` | string | unset | Show another output instead of joining the desktop. Takes the other output's connector or descriptor. |
 | `layout.scrolling.default_extent_fraction` | float | inherited | Initial scrolling-column extent on this output. |
 
 Umbriel tries an unadvertised resolution as a custom mode. If it cannot apply
@@ -216,6 +217,21 @@ enabled = false
 The output leaves the desktop, but its workspaces and windows are retained and
 return when it is enabled again. Output-management tools can temporarily
 override this state until a later configuration reload reapplies the file.
+
+## Mirroring
+
+```toml
+[output.HDMI-A-1]
+mirror = "eDP-1"
+```
+
+A mirroring output stays powered but leaves the desktop: it has no workspaces,
+the pointer cannot enter it, and clients no longer see it as a `wl_output`. It
+shows every frame of the source scaled to fit, centred on black, with both
+outputs' rotation applied. The source switches to a software cursor while it is
+mirrored, so the pointer appears on both. Windows on the mirroring output move
+to the source and return when mirroring stops. A source that is itself a mirror
+is ignored.
 
 ## Display power management
 
