@@ -61,8 +61,22 @@ first.
 
 ## Order of work
 
-1. Monorepo layout (`standards.md`), protocol in one place, session units. (0.6, 0.8)
-2. Baseline on battery per `power.md`.
-3. Tier 0 efficiency fixes, each with a bench row: 0.1, 0.2, 0.3, 0.4, 0.5.
-4. Tier 0 structure: 0.7, 0.9, 0.10, 0.11, 0.12.
-5. Tier 1, in the order the user hits the gaps.
+Done: monorepo and session units (0.6, 0.8), battery baseline, 0.1, 0.2, 0.5, 0.7, 0.9, 0.12, lock keys (0.3),
+logout crash, AC/battery power profiles.
+
+In progress (agent branches, merged after review):
+- `feat/settings-pages`: Input page (1.5) done; Date & Time, Language & Region (1.6), Default apps (1.7).
+- `feat/system-integration`: Settings portal from the shell (0.10, 1.11), hibernate (1.2), fc-list/xdg-open (1.13),
+  one owner for output settings (0.11), spawn/thread audit.
+
+Next, in this order (each lands with an E2E or harness proof and, for power items, a bench row):
+1. Bar per-second redraw on vertical bars with sysmon gauges (0.3a follow-up), then the minute-aligned tick where
+   every consumer on screen allows it (0.3 remainder), measured before deciding.
+2. Session behaviour: lid owned by logind with the shell's lock-before-sleep inhibitor (1.1), idle chain defaults
+   with MPRIS inhibit (1.3), a PAM service of our own for the lock screen (1.4).
+3. Drives: UDisks2 automount and notifications (1.8).
+4. Radios: airplane mode across rfkill types, hotspot through NetworkManager (1.10).
+5. Screen recording through our ScreenCast portal with VA-API encode (1.9).
+6. Portal: Inhibit and GlobalShortcuts backends mapped onto idle inhibit and keybinds (1.11 rest).
+7. Session diet and identity: our own `XDG_CURRENT_DESKTOP`, portals.conf, and a daemon audit (1.12).
+8. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
