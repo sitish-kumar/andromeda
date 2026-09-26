@@ -1027,6 +1027,10 @@ void SettingsWindow::rebuildSettingsContent() {
   if (selectedBar != nullptr && !m_selectedMonitorOverride.empty()) {
     selectedMonitorOverride = settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride);
   }
+  if (cfg.shell.settingsExpandAllGroups != m_expandedSettingGroupsSeededExpandAll) {
+    m_expandedSettingGroups.clear();
+    m_expandedSettingGroupsSeededExpandAll = cfg.shell.settingsExpandAllGroups;
+  }
 
   m_contentContainer->setDirection(FlexDirection::Vertical);
   m_contentContainer->setAlign(FlexAlign::Stretch);
@@ -1101,6 +1105,7 @@ void SettingsWindow::rebuildSettingsContent() {
                   }
                 },
             .expandedGroupsByPage = m_expandedSettingGroups,
+            .expandAllGroups = cfg.shell.settingsExpandAllGroups,
             .pluginsLoading = m_pluginListDirty || m_pluginListRefreshInFlight,
             .setEnabled =
                 [this](std::string id, bool enable) {
