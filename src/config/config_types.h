@@ -1528,7 +1528,7 @@ constexpr EnumOption<ShellThemeMode> kShellThemeModes[] = {
 
 struct WallpaperFavorite {
   std::string path;
-  ThemeMode themeMode = ThemeMode::Auto;
+  std::optional<ThemeMode> themeMode;
   std::optional<PaletteSource> paletteSource;
   std::string builtinPalette;
   std::string communityPalette;
