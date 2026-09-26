@@ -34,7 +34,7 @@ first.
 | 1.5 | Input settings: compositor side on `wip/input-settings`; shell client, XKB catalog, page missing | C S X | Shell `InputControl` client bound while the page is open, XKB catalog from `/usr/share/X11/xkb/rules/evdev.xml` (libxml2), the page; rebase against 0.11 (both touch `display_store.cpp`); move `[input.*]` out of `config.toml` into `input.toml` |
 | 1.6 | Date and time, language pages | S | `timedate1`, `locale1` (signatures in `native-apis.md`) |
 | 1.7 | Default apps page | S | `mimeapps.list` + inotify; desktop entries already indexed |
-| 1.8 | Drives: no UDisks2, no automount | S | `org.freedesktop.UDisks2` ObjectManager, `Filesystem.Mount`, notifications on insert |
+| 1.8 | Drives: no UDisks2, no automount | S | **Done**: `dbus/udisks/udisks_service.cpp` automounts hotplugged filesystems with HintAuto (not HintSystem/HintIgnore) over UDisks2 signals; a notification opens the drive on click and offers Eject (Unmount + Drive.PowerOff). `[shell] automount_drives`. E2E `drives.sh` |
 | 1.9 | Screen recording | S P | PipeWire stream from our ScreenCast portal, VA-API encode, region select reused from screenshots |
 | 1.10 | Airplane mode (all radios), hotspot | S | `/dev/rfkill` for all types (writer exists for Wi-Fi); NM `AddAndActivateConnection` with `mode=ap` |
 | 1.11 | Portal covers only ScreenCast and Screenshot; everything else falls to GTK | P | Implement Settings (0.10), Inhibit (maps to idle inhibit), GlobalShortcuts (maps to keybinds); FileChooser stays GTK |
