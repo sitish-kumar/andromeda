@@ -78,8 +78,8 @@ browser. Needs `turbostat` (`pacman -S turbostat`). Root is used only by this me
    wake the GPU for composition.
 6. **Power policy owned by the desktop, no third-party daemon.**
    - On AC change (UPower `OnBattery` signal), the shell sets the profile through `power-profiles-daemon`
-     (`net.hadess.PowerProfiles`), and the compositor drops expensive effects (blur recompute, shadows) through the
-     private protocol.
+     (`[battery] profile_on_ac` / `profile_on_battery`; done, E2E `power_profile.sh`). The compositor dropping
+     expensive effects on battery through the private protocol is still open.
    - Static kernel policy (ASPM, runtime PM, audio power save, USB autosuspend) ships as `tmpfiles.d` and `udev`
      rules in the `desktop` package. No TLP, auto-cpufreq, or powertop auto-tune: they fight each other and us.
 7. **Quality of service, the macOS trick.** Arrow Lake-H has 2 LP-E cores on the SoC tile. Put background work
