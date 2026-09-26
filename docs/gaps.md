@@ -39,7 +39,7 @@ first.
 | 1.10 | Airplane mode (all radios), hotspot | S | **Airplane done**: one `RFKILL_OP_CHANGE_ALL` / `RFKILL_TYPE_ALL` write, control-center toggle and `airplane-toggle`/`airplane-status` IPC; E2E `airplane.sh` (file stand-in for /dev/rfkill). Hotspot remains |
 | 1.11 | Portal covers only ScreenCast and Screenshot; everything else falls to GTK | P | Implement Settings (0.10), Inhibit (maps to idle inhibit), GlobalShortcuts (maps to keybinds); FileChooser stays GTK |
 | 1.12 | Third-party session daemons (`kded6`, `kdeconnect`, `gvfs-*`) | N | Keep only what a daily app needs; the rest leaves the session |
-| 1.13 | `fc-list` and `xdg-open` spawns | S | fontconfig API; OpenURI portal. **`xdg-open` fixed** 2026-09-27: `net/url_open.cpp` calls `g_app_info_launch_default_for_uri` (GIO) directly. **`fc-list` attempted and reverted** same day: an `FcFontList`-based rewrite of `font_family_catalog.cpp` reproduces the same class of runaway as 0.10 (unbounded RSS growth, ~95% CPU, starting within a few hundred ms of the settings window's first build). `font_family_catalog.cpp` is unchanged, still spawns `fc-list`. Do not retry until 0.10's investigation finds the root cause; the two may share it |
+| 1.13 | `fc-list` and `xdg-open` spawns | S | **Fixed**: URLs open through GIO (E2E `native_spawns.sh`); the font catalog uses `FcFontList` in-process (E2E `font_catalog.sh`: 724 vs 731 families, no spawn, flat memory) |
 
 ## Tier 2: platform depth
 
