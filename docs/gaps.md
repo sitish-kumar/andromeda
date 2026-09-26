@@ -27,10 +27,10 @@ first.
 
 | # | Gap | Owner | Fix |
 |---|---|---|---|
-| 1.1 | Lid: compositor runs user commands, shell ignores `LidIsClosed`, logind also acts | N S | One owner: logind handles the lid; shell holds the sleep-delay inhibitor and locks before sleep (`PrepareForSleep`) |
+| 1.1 | Lid ownership | N S | **Verified 2026-09-27**: logind is the only owner (`HandleLidSwitch=suspend`), the shell holds the "Lock before sleep" delay inhibitor, the compositor config has no lid command |
 | 1.2 | Hibernate and suspend-then-hibernate missing from the session menu | S | logind `Hibernate`, `SuspendThenHibernate`, gated on `CanHibernate` |
-| 1.3 | Idle chain is off by default and has no media inhibit | S | Defaults on: dim, lock, output power off, suspend; MPRIS `Playing` inhibits |
-| 1.4 | Lock screen PAM service hard-coded to `login` | S | Own `/etc/pam.d/<name>-lock` shipped in `session/` |
+| 1.3 | Idle chain defaults and media inhibit | S | **Decided**: behaviours stay user-enabled (an unasked auto-suspend is worse than none); no MPRIS inhibit, because players that must keep the screen on use idle-inhibit, which the compositor honours for visible surfaces |
+| 1.4 | Lock screen PAM service is `login` | S | **Deferred**: `login` authenticates correctly; a dedicated stack only matters once fingerprint/2FA policy differs from TTY login |
 | 1.5 | Input settings: compositor side on `wip/input-settings`; shell client, XKB catalog, page missing | C S X | Shell `InputControl` client bound while the page is open, XKB catalog from `/usr/share/X11/xkb/rules/evdev.xml` (libxml2), the page; rebase against 0.11 (both touch `display_store.cpp`); move `[input.*]` out of `config.toml` into `input.toml` |
 | 1.6 | Date and time, language pages | S | `timedate1`, `locale1` (signatures in `native-apis.md`) |
 | 1.7 | Default apps page | S | `mimeapps.list` + inotify; desktop entries already indexed |
