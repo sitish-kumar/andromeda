@@ -35,13 +35,28 @@ machine idles. Every item below is a lever we own, ranked by the watts it can mo
 | Third-party session daemons | `kded6`, `kdeconnect`, `gvfs-*`, `at-spi` running under Umbriel | Audit |
 | PSR / PC10 residency | not measured (needs root) | Measure first |
 
+## Baseline (2026-09-26, battery, static screen, Zen open on another workspace)
+
+| Metric | Value |
+|---|---|
+| Battery draw | 3.52 W |
+| Package | 2.43 W |
+| Deepest package C-state | Pkg%pc8 3.9 % (no PC10 counter on Arrow Lake) |
+| PSR2 residency | 96 % |
+| System wakeups (powertop) | 636/s; umbriel 16/s, noctalia 3/s, Zen 113/s |
+| Display commits on a static screen | 0.9/s (`intel_atomic_commit_work`, `tools/trace-kwork.sh`) |
+
+The once-a-second commit was the bar: `Bar::onSecondTick` relayouts every bar each second, and `Flex::setPadding`
+marked layout dirty without comparing values; system-monitor gauges also repainted on every sample. Both fixed in
+the shell; `tests/e2e/idle_commits.sh` asserts at most one commit per 30 s on a static bar.
+
 ## Measurement (the only source of truth)
 
 Every power claim is rows in `bench/idle.tsv` from `sudo tools/measure-idle.sh 60 <label>`. One run records, for
 the compositor and the shell, memory, threads, CPU and wakeups, plus for the whole machine: mean battery draw,
-package watts and Pkg%pc10 residency (turbostat, RAPL), and the share of one-second samples in which the panel was
-in self-refresh (i915 PSR status in debugfs). The PSR state names the script matches are unverified on this
-panel: on the first run, read the status file by hand once and fix the pattern if it never matches.
+package watts and the deepest package C-state residency turbostat can read (Arrow Lake exposes no Pkg%pc10 counter; `SYS%LPI` is the fallback), and the share of one-second samples in which the panel was
+in self-refresh (i915 PSR status in debugfs). The panel supports PSR2 with selective fetch and no Panel Replay
+(verified 2026-09-26), so PSR2 residency is the display metric.
 
 Fixed conditions: battery, 2 min settle, brightness 30 %, static screen, same wallpaper, Wi-Fi associated, no
 browser. Needs `turbostat` (`pacman -S turbostat`). Root is used only by this measurement, never by the session.
