@@ -5,6 +5,7 @@
 #include "ipc/ipc_arg_parse.h"
 #include "ipc/ipc_service.h"
 #include "pipewire/audio_route_selection.h"
+#include "pipewire/pipewire_error.h"
 #include "pipewire/wireplumber_mixer.h"
 #include "util/string_utils.h"
 
@@ -854,6 +855,9 @@ bool PipeWireService::connectRemote(bool waitForSync) {
         break;
       }
       const int result = pw_loop_iterate(m_loop, static_cast<int>(remaining.count()));
+      if (result == -EINTR) {
+        continue;
+      }
       if (result < 0) {
         kLog.warn("initial daemon sync failed: {}", spa_strerror(result));
         m_connectionLossPending = true;
@@ -1016,28 +1020,20 @@ void PipeWireService::announceConnection() {
 }
 
 void PipeWireService::onCoreError(std::uint32_t id, int sequence, int result, const char* message) {
-  if (id == PW_ID_CORE) {
-    kLog.warn(
-        "core connection error seq={} result={} ({}): {}", sequence, result, spa_strerror(result),
-        message != nullptr ? message : "unknown"
-    );
+  const char* const detail = message != nullptr ? message : "unknown";
+  switch (noctalia::pipewire::classifyError(id, result)) {
+  case noctalia::pipewire::ErrorDisposition::Reconnect:
+    kLog.warn("core connection error seq={} result={} ({}): {}", sequence, result, spa_strerror(result), detail);
     m_connectionLossPending = true;
     return;
-  }
-
-  // A global can disappear between an enum request and the server handling it during startup or
-  // profile churn. The proxy-scoped ENOENT does not affect the core connection.
-  if (result == -ENOENT) {
-    kLog.debug(
-        "object {} request seq={} no longer available: {}", id, sequence, message != nullptr ? message : "unknown"
-    );
+  case noctalia::pipewire::ErrorDisposition::StaleObject:
+    kLog.debug("request target {} seq={} no longer available: {}", id, sequence, detail);
     return;
+  case noctalia::pipewire::ErrorDisposition::Report:
+    break;
   }
 
-  kLog.warn(
-      "object error id={} seq={} result={} ({}): {}", id, sequence, result, spa_strerror(result),
-      message != nullptr ? message : "unknown"
-  );
+  kLog.warn("PipeWire error id={} seq={} result={} ({}): {}", id, sequence, result, spa_strerror(result), detail);
 }
 
 int PipeWireService::fd() const noexcept {
@@ -1078,7 +1074,7 @@ void PipeWireService::dispatch() {
   do {
     result = pw_loop_iterate(m_loop, 0);
   } while (result > 0 && !m_connectionLossPending);
-  if (result < 0) {
+  if (result < 0 && result != -EINTR) {
     kLog.warn("PipeWire dispatch failed: {}", spa_strerror(result));
     m_connectionLossPending = true;
   }
@@ -1093,7 +1089,7 @@ void PipeWireService::dispatch() {
     do {
       result = pw_loop_iterate(m_loop, 0);
     } while (result > 0 && !m_connectionLossPending);
-    if (result < 0) {
+    if (result < 0 && result != -EINTR) {
       kLog.warn("PipeWire parameter dispatch failed: {}", spa_strerror(result));
       m_connectionLossPending = true;
     }
