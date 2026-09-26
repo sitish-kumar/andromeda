@@ -17,8 +17,8 @@ Noctalia) is stricter, upstream wins.
    no change notification, and the reason goes in a one-line comment.
 5. **Mechanism and policy stay separate** (Umbriel's rule). The code that applies a mode is not the code that decides
    which mode to apply.
-6. **No new threads.** Both event loops stay single-threaded. Blocking work is asynchronous D-Bus calls or fd polling
-   through the existing main loop.
+6. **No new threads.** The fork adds none. Blocking work is asynchronous D-Bus calls or fd polling through the
+   existing main loop. The shell's upstream worker threads start on first use and stop when idle.
 7. **Allocate on change, not per frame.** Nothing on the frame path allocates.
 8. **Fail at the boundary.** Validate data where it enters (D-Bus replies, protocol events, config files). Inside, trust
    the types.
