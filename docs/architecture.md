@@ -24,7 +24,8 @@ window, and it applies each change by calling the owner of that setting directly
 | State | Owner (applies it) | Persisted in | Shell reaches it through |
 |---|---|---|---|
 | Output modes, position, scale, VRR | Umbriel | Umbriel config | `zwlr_output_manager_v1` (standard) |
-| Mirroring, hotplug profiles | Umbriel | Umbriel config | private protocol, `output` interface |
+| Mirroring, hotplug profiles | Umbriel | `displays.toml` (`mirror` key) | private protocol, `output` interface |
+| Casting to wireless displays (Miracast, Chromecast) | Casting service (planned) | none | PipeWire stream from xdg-desktop-portal ScreenCast; see below |
 | Input devices, keyboard layout | Umbriel | Umbriel config | private protocol, `input` interface |
 | Surface motion (shell animations) | Umbriel | nothing (runtime) | private protocol, `motion` interface |
 | Layout per workspace | Umbriel | Umbriel config | Umbriel IPC (existing) |
@@ -78,6 +79,30 @@ Details and budgets are in [performance.md](performance.md). Work the fork adds 
    `tools/measure-idle.sh` on this machine before a default is chosen.
 3. Scale effects to the power source: on battery, blur uses its cached result and skips re-blurring unchanged
    regions.
+
+## Mirroring (built)
+
+A mirroring output leaves the desktop and the `wl_output` globals (wlroots removes the global with the layout entry,
+and it asserts if a client asks for `xdg_output` of an output outside the layout), stays powered, and draws each
+committed source frame letterboxed with both transforms applied. It costs one texture draw per source frame and
+nothing at idle. The source switches to a software cursor while mirrored so the pointer shows on both.
+
+## Casting (planned)
+
+Wireless displays behave like a mirror whose target is a network sink instead of a connector:
+
+1. Capture: the compositor's ScreenCast portal already produces a PipeWire stream of an output
+   (`xdg-desktop-portal-umbriel`).
+2. Encode: VA-API H.264 through GStreamer (`vah264enc`), hardware encoded on the Intel GPU.
+3. Transport, one per sink family:
+   - Miracast: Wi-Fi P2P through `wpa_supplicant`'s P2P D-Bus interface (`fi.w1.wpa_supplicant1.Interface.P2PDevice`),
+     then RTSP (WFD) plus RTP/MPEG-TS.
+   - Chromecast: mDNS discovery (`_googlecast._tcp` via Avahi), the Cast v2 protocol over TLS, and a WebRTC or
+     mirroring session.
+4. UI: sinks appear in the Super+P switcher next to wired displays.
+
+Every step is a native API listed in [native-apis.md](native-apis.md) before it is built. GNOME Network Displays
+implements the same pipeline; reading its failure modes on this machine comes first.
 
 ## Fork strategy
 
