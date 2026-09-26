@@ -19,7 +19,7 @@ redrawing.
 ## Baseline
 
 Measured on this machine (Intel Arrow Lake-P, eDP 2880x1800 at 120 Hz, scale 1.5) on 2026-09-26, Hyprland 0.56.2
-and Noctalia 5.1.0, on AC, with a terminal streaming output (so not a true idle). Raw rows: `bench/baseline.tsv`.
+and Noctalia 5.1.0, on AC, with a terminal streaming output (so not a true idle). Raw rows: `bench/hyprland-2026-09-26.tsv`.
 
 | Process | RSS | Anon | Threads | CPU ‰ | Wakeups/s |
 |---|---|---|---|---|---|
@@ -29,9 +29,9 @@ and Noctalia 5.1.0, on AC, with a terminal streaming output (so not a true idle)
 ## Method
 
 1. Run from a TTY or an idle session with nothing on screen changing. Close the terminal that started the run
-   (`systemd-run --user --collect tools/measure-idle.sh …` keeps it alive), because a streaming terminal makes both
+   (`systemd-run --collect tools/measure-idle.sh …` as root keeps it alive), because a streaming terminal makes both
    processes redraw.
-2. Measure each process for 60 s: `tools/measure-idle.sh <process> 60 <label> >> bench/<topic>.tsv`.
+2. Measure for 60 s: `sudo tools/measure-idle.sh 60 <label> >> bench/idle.tsv` (compositor and shell by default).
 3. For battery numbers, unplug AC, wait 2 minutes for the power reading to settle, then measure.
 4. Compare before and after on the same machine, same outputs, same brightness. Commit the TSV rows with the change.
 

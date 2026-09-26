@@ -37,16 +37,14 @@ machine idles. Every item below is a lever we own, ranked by the watts it can mo
 
 ## Measurement (the only source of truth)
 
-Every power claim is one row in `bench/*.tsv` from `tools/measure-idle.sh`, extended to record, per run:
-
-- `turbostat --quiet --interval 60 --show PkgWatt,CorWatt,GFXWatt,Pkg%pc2,Pkg%pc6,Pkg%pc8,Pkg%pc10` (RAPL + residency)
-- `/sys/kernel/debug/dri/0/i915_edp_psr_status` sampled before and after (PSR state and exit count)
-- `/sys/kernel/debug/pmc_core/slp_s0_residency_usec` delta (whole-SoC low-power residency)
-- `BAT0/power_now` mean on battery (the number the user feels)
-- per-process wakeups for umbriel, noctalia, and every other process with more than 1 wakeup/s (`powertop --csv`)
+Every power claim is rows in `bench/idle.tsv` from `sudo tools/measure-idle.sh 60 <label>`. One run records, for
+the compositor and the shell, memory, threads, CPU and wakeups, plus for the whole machine: mean battery draw,
+package watts and Pkg%pc10 residency (turbostat, RAPL), and the share of one-second samples in which the panel was
+in self-refresh (i915 PSR status in debugfs). The PSR state names the script matches are unverified on this
+panel: on the first run, read the status file by hand once and fix the pattern if it never matches.
 
 Fixed conditions: battery, 2 min settle, brightness 30 %, static screen, same wallpaper, Wi-Fi associated, no
-browser. Root reads go through one `sudo` wrapper in `tools/`; nothing root runs in the session.
+browser. Needs `turbostat` (`pacman -S turbostat`). Root is used only by this measurement, never by the session.
 
 ## Program, in order
 
