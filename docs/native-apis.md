@@ -156,7 +156,7 @@ wlroots 0.20.2 headers. **Verified** unless marked.
 | `wlr_output_layer_state.accepted` | Set by the backend after test or commit; a rejected layer falls back to composition |
 | `wlr_output_layer.events.feedback` (`wlr_output_layer_feedback_event`: `target_device`, `formats`) | Tell the client which formats would fit a plane, through linux-dmabuf feedback |
 | Disable all layers during capture | Required by the header: capture needs one composited buffer |
-| `wlr_output_state_set_adaptive_sync_enabled(state, bool)` | VRR (KMS `VRR_ENABLED`) (**unverified** name in 0.20) |
+| `wlr_output_state_set_adaptive_sync_enabled(state, bool)` | VRR (KMS `VRR_ENABLED`). **Verified** on this machine: i915 rejects turning it off on the eDP panel outside a modeset (`EINVAL`), so the commit must carry the current mode as a fallback |
 | `/sys/kernel/debug/dri/<n>/i915_edp_psr_status` | Read PSR state while measuring (root, debugfs) |
 | `/sys/class/power_supply/AC0/online`, `BAT0/power_now` | Power source for effect policy, and power draw for measurement. Change events come from UPower, which Noctalia already watches |
 
