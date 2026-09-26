@@ -18,7 +18,7 @@ first.
 | 0.6 | Protocol XML duplicated in both forks, synced by hand | X | `protocols/desktop-unstable-v1.xml` in both | Monorepo `protocol/` as the only copy (`standards.md`) |
 | 0.7 | Keybinds spawn a `noctalia msg` process per keypress | C S X | `~/.config/umbriel/config.toml` binds | `shell_action` event |
 | 0.8 | Shell started by compositor autostart; no restart on crash | N | `general.autostart = ["noctalia"]` | `noctalia.service` under `umbriel-session.target` |
-| 0.9 | Power actions spawn `systemctl`, falling back to `sudo -n sh -c "echo mem > /sys/power/state"` | S | `shell/session/session_action_runner.cpp:69-100` | logind `Manager` methods over the existing sdbus connection; drop the fallbacks |
+| 0.9 | Power actions spawned `systemctl`, falling back through eleven commands down to `sudo -n sh -c "echo mem > /sys/power/state"` | S | `shell/session/session_action_runner.cpp` | **Fixed**: logind `Manager.Suspend/Reboot/PowerOff` on a per-action system-bus connection; a configured override command still wins. E2E `power_actions.sh` with a mock logind |
 | 0.10 | Dark mode pushed by spawning `gsettings`; no Settings portal | S P | `app/application_services.cpp:127-141` | Shell serves `org.freedesktop.impl.portal.Settings` (`color-scheme`, `accent-color`, `contrast`); our portals.conf routes it |
 | 0.11 | Output settings persisted in two places (`config.toml` rules and `displays.toml`) | C | `output/display_store.cpp` | One owner, lock error on conflict, like `input.toml` |
 | 0.12 | Umbriel lacks `wlr-output-power-management`; shell idle-off uses IPC | C U | no global in `server.cpp` | Add the global; shell uses it for screen-off |
