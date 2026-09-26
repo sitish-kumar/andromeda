@@ -233,10 +233,23 @@ affected.
 
 ## Live reconfiguration
 
-Tools such as `wlr-randr`, `kanshi`, and `wdisplays` can change enabled state,
-mode, position, scale, transform, and adaptive sync while Umbriel is running.
-Those changes last until another tool request or an output-related config
-reload replaces them.
+Tools such as `wlr-randr`, `kanshi`, `wdisplays`, and Noctalia's Displays page
+can change enabled state, mode, position, scale, transform, and adaptive sync
+while Umbriel is running.
+
+Each successful change is also written to `displays.toml` beside the config
+file, one `[output]` table per display, named by its descriptor when the
+display reports EDID and by its connector otherwise. Displays that are not
+connected keep their saved tables. Include the file to start every session
+with the last applied arrangement:
+
+```toml
+[include.optional]
+files = ["displays.toml"]
+```
+
+`[output]` tables in the including file still win, so remove hand-written
+output tables for any display you manage from a settings app.
 
 ## Multi-monitor example
 
