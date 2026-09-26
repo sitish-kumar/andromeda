@@ -21,7 +21,7 @@ first.
 | 0.9 | Power actions spawned `systemctl`, falling back through eleven commands down to `sudo -n sh -c "echo mem > /sys/power/state"` | S | `shell/session/session_action_runner.cpp` | **Fixed**: logind `Manager.Suspend/Reboot/PowerOff` on a per-action system-bus connection; a configured override command still wins. E2E `power_actions.sh` with a mock logind |
 | 0.10 | Dark mode pushed by spawning `gsettings`; no Settings portal | S P | `app/application_services.cpp:127-141` | Shell serves `org.freedesktop.impl.portal.Settings` (`color-scheme`, `accent-color`, `contrast`); our portals.conf routes it |
 | 0.11 | Output settings persisted in two places (`config.toml` rules and `displays.toml`) | C | `output/display_store.cpp` | One owner, lock error on conflict, like `input.toml` |
-| 0.12 | Umbriel lacks `wlr-output-power-management`; shell idle-off uses IPC | C U | no global in `server.cpp` | Add the global; shell uses it for screen-off |
+| 0.12 | Umbriel lacked `wlr-output-power-management`; shell idle-off used IPC (and `wlr-randr` on generic compositors) | C S | `server_events.cpp`, `wayland_connection.cpp` | **Fixed**: compositor serves the protocol (check 638); shell powers outputs through it on Umbriel and generic compositors, falling back to the old paths only when absent (E2E `screen_power.sh`) |
 
 ## Tier 1: a complete session
 
