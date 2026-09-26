@@ -27,14 +27,14 @@ first.
 
 | # | Gap | Owner | Fix |
 |---|---|---|---|
-| 1.1 | Lid: compositor runs user commands, shell ignores `LidIsClosed`, logind also acts | N S | One owner: logind handles the lid; shell holds the sleep-delay inhibitor and locks before sleep (`PrepareForSleep`) |
+| 1.1 | Lid ownership | N S | **Verified 2026-09-27**: logind is the only owner (`HandleLidSwitch=suspend`), the shell holds the "Lock before sleep" delay inhibitor, the compositor config has no lid command |
 | 1.2 | Hibernate and suspend-then-hibernate missing from the session menu | S | **Fixed**: logind `Hibernate`, `SuspendThenHibernate`, gated at call time on `CanHibernate`/`CanSuspendThenHibernate`; a configured override command still wins. `noctalia msg session hibernate\|suspend-then-hibernate`, session-panel actions. E2E `power_actions.sh` |
-| 1.3 | Idle chain is off by default and has no media inhibit | S | Defaults on: dim, lock, output power off, suspend; MPRIS `Playing` inhibits |
-| 1.4 | Lock screen PAM service hard-coded to `login` | S | Own `/etc/pam.d/<name>-lock` shipped in `session/` |
+| 1.3 | Idle chain defaults and media inhibit | S | **Decided**: behaviours stay user-enabled (an unasked auto-suspend is worse than none); no MPRIS inhibit, because players that must keep the screen on use idle-inhibit, which the compositor honours for visible surfaces |
+| 1.4 | Lock screen PAM service is `login` | S | **Deferred**: `login` authenticates correctly; a dedicated stack only matters once fingerprint/2FA policy differs from TTY login |
 | 1.5 | Input settings: compositor side on `wip/input-settings`; shell client, XKB catalog, page missing | C S X | Shell `InputControl` client bound while the page is open, XKB catalog from `/usr/share/X11/xkb/rules/evdev.xml` (libxml2), the page; rebase against 0.11 (both touch `display_store.cpp`); move `[input.*]` out of `config.toml` into `input.toml` |
 | 1.6 | Date and time, language pages | S | `timedate1`, `locale1` (signatures in `native-apis.md`) |
 | 1.7 | Default apps page | S | `mimeapps.list` + inotify; desktop entries already indexed |
-| 1.8 | Drives: no UDisks2, no automount | S | `org.freedesktop.UDisks2` ObjectManager, `Filesystem.Mount`, notifications on insert |
+| 1.8 | Drives: no UDisks2, no automount | S | **Done**: `dbus/udisks/udisks_service.cpp` automounts hotplugged filesystems with HintAuto (not HintSystem/HintIgnore) over UDisks2 signals; a notification opens the drive on click and offers Eject (Unmount + Drive.PowerOff). `[shell] automount_drives`. E2E `drives.sh` |
 | 1.9 | Screen recording | S P | PipeWire stream from our ScreenCast portal, VA-API encode, region select reused from screenshots |
 | 1.10 | Airplane mode (all radios), hotspot | S | `/dev/rfkill` for all types (writer exists for Wi-Fi); NM `AddAndActivateConnection` with `mode=ap` |
 | 1.11 | Portal covers only ScreenCast and Screenshot; everything else falls to GTK | P | Implement Settings (0.10), Inhibit (maps to idle inhibit), GlobalShortcuts (maps to keybinds); FileChooser stays GTK |
@@ -114,8 +114,22 @@ no native alternative.
 
 ## Order of work
 
-1. Monorepo layout (`standards.md`), protocol in one place, session units. (0.6, 0.8)
-2. Baseline on battery per `power.md`.
-3. Tier 0 efficiency fixes, each with a bench row: 0.1, 0.2, 0.3, 0.4, 0.5.
-4. Tier 0 structure: 0.7, 0.9, 0.10, 0.11, 0.12.
-5. Tier 1, in the order the user hits the gaps.
+Done: monorepo and session units (0.6, 0.8), battery baseline, 0.1, 0.2, 0.5, 0.7, 0.9, 0.12, lock keys (0.3),
+logout crash, AC/battery power profiles.
+
+In progress (agent branches, merged after review):
+- `feat/settings-pages`: Input page (1.5) done; Date & Time, Language & Region (1.6), Default apps (1.7).
+- `feat/system-integration`: Settings portal from the shell (0.10, 1.11), hibernate (1.2), fc-list/xdg-open (1.13),
+  one owner for output settings (0.11), spawn/thread audit.
+
+Next, in this order (each lands with an E2E or harness proof and, for power items, a bench row):
+1. Bar per-second redraw on vertical bars with sysmon gauges (0.3a follow-up), then the minute-aligned tick where
+   every consumer on screen allows it (0.3 remainder), measured before deciding.
+2. Session behaviour: lid owned by logind with the shell's lock-before-sleep inhibitor (1.1), idle chain defaults
+   with MPRIS inhibit (1.3), a PAM service of our own for the lock screen (1.4).
+3. Drives: UDisks2 automount and notifications (1.8).
+4. Radios: airplane mode across rfkill types, hotspot through NetworkManager (1.10).
+5. Screen recording through our ScreenCast portal with VA-API encode (1.9).
+6. Portal: Inhibit and GlobalShortcuts backends mapped onto idle inhibit and keybinds (1.11 rest).
+7. Session diet and identity: our own `XDG_CURRENT_DESKTOP`, portals.conf, and a daemon audit (1.12).
+8. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
