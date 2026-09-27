@@ -28,9 +28,9 @@ machine idles. Every item below is a lever we own, ranked by the watts it can mo
 | Wi-Fi power save | on | Good |
 | Audio | SOF (`sof-audio-pci-intel-mtl`); suspend of idle PipeWire nodes unverified | Measure |
 | Platform profile / EPP | `quiet` / `power` (power-saver even on AC) | Policy missing: nothing switches on AC change |
-| Compositor idle wakeups | `m_backgroundFrameTimer` fires at 10 Hz forever (`umbriel src/server/server.cpp:754`) | **Bug** |
-| Apps on hidden workspaces | receive `wl_surface.frame` at 10 Hz from that timer, so they keep rendering | **Bug** |
-| xdg-shell `suspended` state (v6) | not offered, xdg-shell capped at v3 | Gap |
+| Compositor idle wakeups | `m_backgroundFrameTimer` armed only while a hidden view wants frames (game content type or a `background_frames` rule) or has a configure pending | **Fixed** (harness check 637) |
+| Apps out of sight | suspended and sent no frames on a hidden workspace, behind the lock screen, and on a powered-off output | **Fixed** (harness checks 637, 642) |
+| xdg-shell `suspended` state (v6) | offered | **Fixed** |
 | Overlay planes (`wlr_output_layer`) | absent: video is always GPU-composited | Gap |
 | Third-party session daemons | `kded6`, `kdeconnect`, `gvfs-*`, `at-spi` running under Umbriel | Audit |
 | PSR / PC10 residency | not measured (needs root) | Measure first |
@@ -68,6 +68,8 @@ browser. Needs `turbostat` (`pacman -S turbostat`). Root is used only by this me
    - Compositor: arm the background frame timer only while a hidden view exists and a rule opts it in; default off.
    - Offer xdg-shell v6 and send `suspended` to toplevels on hidden workspaces, so apps stop drawing on their own.
      This is what GNOME and KDE do, and it is upstream material.
+   - Done for the compositor: the timer and v6 (checks 637), and `suspended` also behind the lock screen and on a
+     powered-off output, where a game keeps its slow tick (check 642).
    - Shell: find the 25 wakeups/s Noctalia does at idle; every periodic timer must justify itself or become an event.
    - Clock ticks once per minute, aligned to the minute, unless seconds are shown.
 3. **Keep PSR on.** Assert zero commits over 60 s of a static screen in a harness check (frame counter via IPC) and
