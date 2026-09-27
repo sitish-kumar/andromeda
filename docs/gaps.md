@@ -47,7 +47,7 @@ first.
 |---|---|---|
 | 2.1 | KMS overlay planes (`wlr_output_layer`) for video and cursor | C U |
 | 2.2 | Missing protocols apps use: xdg-dialog, xdg-toplevel-drag, single-pixel-buffer, alpha-modifier (consumer code exists, no global), fifo, commit-timing, xdg-toplevel-icon, xdg-system-bell | C U |
-| 2.3 | Accessibility: AT-SPI, screen zoom (compositor), screen reader path | C S |
+| 2.3 | Accessibility: AT-SPI, screen zoom (compositor), screen reader path | C S: **screen zoom done**: `zoom-in`/`zoom-out`/`zoom-reset` actions (Mod+Alt+=/-) magnify the output under the pointer in 1.25x steps up to 16x, following the pointer and pushed in at the edges; the scene frame is scaled up in a second pass into its own swapchain, the cursor is drawn in software while zoomed, direct scanout is off; `umbriel zoom` reports factor and view. Harness check 760. Normal-transform outputs only. AT-SPI and the screen reader path remain |
 | 2.4 | Location from `api.noctalia.dev` HTTP (privacy, network wakeups); external IP lookup on the same host | S: geoclue D-Bus, IP lookup off by default |
 | 2.5 | Luau plugins unsandboxed with shell-wide file and process access | S: plugins off by default; sandbox before enabling any store |
 | 2.6 | Printers | S: CUPS via libcups/IPP once cupsd is installed |
