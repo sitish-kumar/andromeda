@@ -259,6 +259,32 @@ Failure modes:
 3. `Ring` on D-Bus without a live session: `NotConnected`.
 4. A `ringing` report that does not match what the receiver asked: shown as reported; the report is the truth.
 
+### Calls
+
+```
+phone                                              desktop
+  call {state, number?, name?}                 ->  D-Bus Call; the shell's incoming-call notification
+                                               <-  call-action {action}   ("mute" or "decline")
+```
+
+- `state` is `ringing`, `active`, or `idle`, as Android's call state says; the phone sends each change. `number` is
+  at most 64 bytes and only sent when Android gives the app the number (`READ_CALL_LOG`); `name` is at most 128
+  bytes and only sent when the number is in the contacts and the app may read them (`READ_CONTACTS`).
+- `mute` silences the ringer until the call ends; `decline` ends a ringing call (`TelecomManager.endCall`, which
+  needs `ANSWER_PHONE_CALLS`).
+- While any phone's call is ringing or active, the daemon pauses the desktop's playing MPRIS players, and resumes
+  those it paused when every call is idle.
+- Unacknowledged, at most once.
+
+Failure modes:
+
+1. A `call` sent to the phone or a `call-action` sent to the desktop: close 5.
+2. An unknown state or action, or a number or name over its limit: close 5.
+3. `call-action` with no ringing call, or `decline` without the permission: the phone ignores it.
+4. The session ends during a call: the daemon treats the call as idle and resumes the paused players, since it will
+   not hear the end.
+5. `CallAction` on D-Bus without a live session: `NotConnected`; an unknown action: `Rejected`.
+
 ### Discovery
 
 - The desktop advertises `_umbriel-link._udp.local.` only while it has a paired device or an open window, so an
