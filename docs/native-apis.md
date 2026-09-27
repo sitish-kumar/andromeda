@@ -178,3 +178,15 @@ Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` 
 | mDNS/DNS-SD (`mdns-sd` 0.21), `_umbriel-link._udp.local.` | Advertised only while a device is paired or a pairing window is open |
 | `getifaddrs` via netlink (`if-addrs` 0.15) | Addresses for the pairing QR code and the desktop's `hello` |
 | `$STATE_DIRECTORY` (systemd `StateDirectory=umbriel-link`) | `identity.pk8` (0600) and `devices.json` |
+
+## Link in the shell
+
+The control center's Devices tab and the `link-*` IPC verbs (`src/dbus/link/`, `src/shell/control_center/tabs/`).
+**Verified** against `protocol/link-v1/org.umbriel.Link1.xml`, `/usr/include/qrencode.h` (qrencode 4.1.1), and a run
+against `umbriel-linkd` (`tests/e2e/link_devices.sh`).
+
+| API | Use |
+|---|---|
+| `org.umbriel.Link1` (session bus, client) | `Properties.GetAll` and `PropertiesChanged` for `Devices` and `Pairing`; async `StartPairing`, `CancelPairing`, `Unpair`; signals `PairingFinished`, `PairingFailed` |
+| `org.freedesktop.DBus` `NameHasOwner(s) → b`, signal `NameOwnerChanged(s, s, s)` | The tab exists only while `umbriel-linkd` owns its name; it appears and disappears with the daemon. `NameHasOwner` instead of a first `GetAll`, so the shell never D-Bus-activates the daemon |
+| `QRcode_encodeString(s, 0, QR_ECLEVEL_M, QR_MODE_8, 1)`, `QRcode_free` (libqrencode) | The pairing URI as a QR symbol; bit 0 of each `data` byte is a dark module, drawn into an RGBA texture with a 4-module quiet zone |
