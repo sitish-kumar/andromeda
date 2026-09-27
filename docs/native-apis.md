@@ -170,7 +170,7 @@ Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` 
 
 | API | Use |
 |---|---|
-| `org.umbriel.Link1` (served, session bus) | `StartPairing() → (s, s)`, `CancelPairing()`, `Unpair(s)`, `Share(s, s, s)` (errors `org.umbriel.Link1.Error.NotConnected`, `.Rejected`, `.Failed`), properties `Devices a(ssb)` and `Pairing b` with `PropertiesChanged`, signals `PairingFinished(s, s)`, `PairingFailed(s)`, `Received(s, s, s)`. Contract: `protocol/link-v1/org.umbriel.Link1.xml` |
+| `org.umbriel.Link1` (served, session bus) | `StartPairing() → (s, s)`, `CancelPairing()`, `Unpair(s)`, `Share(s, s, s)` (errors `org.umbriel.Link1.Error.NotConnected`, `.Rejected`, `.Failed`), `NotificationAction(s, s, s, s)`, `NotificationDismiss(s, s)`, properties `Devices a(ssb)` and `Pairing b` with `PropertiesChanged`, signals `PairingFinished(s, s)`, `PairingFailed(s)`, `Received(s, s, s)`, `NotificationPosted(s, s, s, s, s, ay, a(ssb))`, `NotificationRemoved(s, s)`. Contract: `protocol/link-v1/org.umbriel.Link1.xml` |
 | `org.freedesktop.hostname1` property `PrettyHostname` (system bus) | The name phones see; the kernel hostname (`/proc/sys/kernel/hostname`) when hostnamed is absent |
 | QUIC (`quinn` 0.11) over UDP, ALPN `umbriel-link/1` | The Link transport; one dual-stack socket on 4717/udp (a random port if taken), kept in `devices.json`. The phone sets `TransportConfig::keep_alive_interval` (10 s) only while present |
 | TLS 1.3 raw public keys (`rustls` 0.23 `AlwaysResolves{Server,Client}RawPublicKeys`, `verify_tls13_signature_with_raw_key`) | Both sides authenticated by Ed25519 SPKI; the phone's pin rides in the TLS server name so one client config (and its session cache) serves every desktop |
@@ -178,6 +178,18 @@ Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` 
 | mDNS/DNS-SD (`mdns-sd` 0.21), `_umbriel-link._udp.local.` | Advertised only while a device is paired or a pairing window is open |
 | `getifaddrs` via netlink (`if-addrs` 0.15) | Addresses for the pairing QR code and the desktop's `hello` |
 | `$STATE_DIRECTORY` (systemd `StateDirectory=umbriel-link`) | `identity.pk8` (0600) and `devices.json` |
+
+## Link on Android
+
+The phone app, `link/android/`. **Verified** against the API 36 SDK stubs and runs on the api35 emulator
+(`tests/e2e/link_android_features.sh`).
+
+| API | Use |
+|---|---|
+| `NotificationListenerService` (`onNotificationPosted`, `onNotificationRemoved`, `getActiveNotifications`, `getCurrentRanking`, `cancelNotification`) | Mirrors notifications while the user grants notification access; `Ranking.getImportance` and `getLockscreenVisibilityOverride` decide what is mirrored; a desktop dismissal cancels |
+| `Notification.Action.actionIntent` with `RemoteInput.addResultsToIntent` and `setResultsSource(SOURCE_FREE_FORM_INPUT)`, sent with `ActivityOptions.setPendingIntentBackgroundActivityStartMode` on API 34+ | Runs a desktop's action or reply through the notification's own `PendingIntent`, so every messaging app replies the way it does from the shade |
+| `Notification.extras["android.appInfo"]` with `PackageManager.getApplicationLabel/getApplicationIcon` | The posting app's name and icon without package visibility; the icon drawn at 64 px and sent as PNG |
+| `Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS` | Where the user grants notification access |
 
 ## Link in the shell
 
@@ -187,6 +199,6 @@ against `umbriel-linkd` (`tests/e2e/link_devices.sh`).
 
 | API | Use |
 |---|---|
-| `org.umbriel.Link1` (session bus, client) | `Properties.GetAll` and `PropertiesChanged` for `Devices` and `Pairing`; async `StartPairing`, `CancelPairing`, `Unpair`, `Share`; signals `PairingFinished`, `PairingFailed`, `Received` (posted as an internal notification through `NotificationManager::addOrReplace`; its action copies through `ClipboardService::copyText` or opens through `net::openInBrowser`) |
+| `org.umbriel.Link1` (session bus, client) | `Properties.GetAll` and `PropertiesChanged` for `Devices` and `Pairing`; async `StartPairing`, `CancelPairing`, `Unpair`, `Share`; signals `PairingFinished`, `PairingFailed`, `Received` (posted as an internal notification through `NotificationManager::addOrReplace`; its action copies through `ClipboardService::copyText` or opens through `net::openInBrowser`); `NotificationPosted` and `NotificationRemoved` (a phone notification through `NotificationManager::addOrReplace` and `close`, its PNG icon checked in its IHDR header and decoded with `decodeRasterImage`; its buttons and inline reply run through `NotificationAction`, and `NotificationManager::addCloseObserver` turns a user dismissal into `NotificationDismiss`) |
 | `org.freedesktop.DBus` `NameHasOwner(s) → b`, signal `NameOwnerChanged(s, s, s)` | The tab exists only while `umbriel-linkd` owns its name; it appears and disappears with the daemon. `NameHasOwner` instead of a first `GetAll`, so the shell never D-Bus-activates the daemon |
 | `QRcode_encodeString(s, 0, QR_ECLEVEL_M, QR_MODE_8, 1)`, `QRcode_free` (libqrencode) | The pairing URI as a QR symbol; bit 0 of each `data` byte is a dark module, drawn into an RGBA texture with a 4-module quiet zone |

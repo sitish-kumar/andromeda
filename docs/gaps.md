@@ -125,7 +125,8 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
    per connection on both sides, text and link shares both ways (D-Bus `Share` and `Received`, shell notifications
    with Open and Copy, `link-share` IPC, Send clipboard in the Devices tab, the Android share target and
    notifications), and 4717/udp by default with a ufw profile. E2E `link_share.sh`, `link_share_shell.sh`,
-   `link_android.sh`. Remaining in phase 1: battery and network status, files over bulk streams (resumable, hashed),
+   `link_android.sh`. **Slice C**: phone notifications on the desktop with actions, inline reply, and dismissal both
+   ways (E2E `link_notifications.sh`, `link_android_features.sh`). Remaining in phase 1: battery and network status, files over bulk streams (resumable, hashed),
    clipboard offers, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
    indicator and share sheet, Quick Share, the KDE Connect baseline, and redial on an Android network change instead
    of the next backoff step.

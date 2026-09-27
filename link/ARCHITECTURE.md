@@ -150,6 +150,46 @@ Failure modes, each of which delivers nothing where it says so:
 9. A black hole longer than 30 s: both ends time out, the desktop shows the device disconnected, and the phone
    redials with backoff until the path returns.
 
+### Notifications
+
+```
+phone                                                          desktop
+  notification-posted {id, app, title, text, icon?, actions} ->  D-Bus NotificationPosted; the shell shows it
+  notification-removed {id}                                  ->  D-Bus NotificationRemoved; the shell closes it
+                                                             <-  notification-action {id, action, reply_text?}
+                                                             <-  notification-dismiss {id}
+```
+
+- `id` is the phone's notification key, 1 to 256 bytes; a post with an id the desktop shows replaces it. `app` is
+  1 to 128 bytes, `title` at most 512, `text` at most 4096 (the phone truncates at a character boundary). `icon` is
+  the app icon as a PNG of 1 to 16384 bytes (the phone draws it at 64 px). At most 3 `actions`, each an `id` and a
+  `label` of 1 to 64 bytes and `reply`, whether it takes RemoteInput text. `reply_text` is 1 to 4096 bytes. A post
+  is at most about 22 KiB, well inside one frame.
+- The phone sends posts and removals, the desktop actions and dismissals; neither is acknowledged, so each is
+  delivered at most once. After every connect the phone posts every notification it mirrors and removes the ones it
+  mirrored earlier that are gone; the daemon keeps each device's live notifications in memory across sessions and
+  drops a re-post identical to the one it holds, so a reconnect shows nothing new.
+- The daemon holds at most 64 live notifications per device; a post of a new id beyond that removes the oldest
+  first. Unpairing removes all of the device's notifications.
+- The phone mirrors only what the user would see: no ongoing, low-importance, or group-summary notifications, none
+  of its own, and while the phone is locked none whose lock-screen visibility (the app's, or the user's override
+  for its channel) is secret, and a private one as its public version when it has one. The user can exclude apps.
+
+Failure modes:
+
+1. A `notification-posted` or `-removed` sent to the phone, or an `-action` or `-dismiss` sent to the desktop: close 5.
+2. A post with an empty or oversized field, more than 3 actions, or an icon over 16 KiB; a `reply_text` empty or
+   over 4096 bytes: close 5, nothing delivered.
+3. An icon that is not a decodable PNG of at most 256 by 256 pixels (checked in its header before decoding, so a
+   small file cannot inflate into a huge bitmap): the shell shows the notification with the phone glyph.
+4. A removal, action, or dismissal for an id the receiver does not hold: ignored, since either side may have lost it
+   to a reconnect or an expiry.
+5. An action id the notification no longer has, or `reply_text` for an action that takes none: the phone ignores it.
+6. A 65th live notification from one device: the oldest is removed on the desktop before the new one shows.
+7. `NotificationAction` or `NotificationDismiss` on D-Bus without a live session: `NotConnected`; an empty id or
+   action, or a reply over 4096 bytes: `Rejected`.
+8. A post lost with its connection: it shows at the next connect's re-post.
+
 ### Discovery
 
 - The desktop advertises `_umbriel-link._udp.local.` only while it has a paired device or an open window, so an
