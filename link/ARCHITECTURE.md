@@ -251,6 +251,22 @@ Failure modes:
 4. A pull not answered within 10 s: the paste fails; the session stays.
 5. A `clip-offer` from a device without the clipboard grant: dropped, and logged.
 
+### Status and limits
+
+- `status {battery, charging, network}` goes from the phone to the desktop when a session starts and when the value
+  changes, at most every 10 s (a change inside that window goes out when it ends). `network` is `wifi`, `cellular`,
+  `ethernet`, `none`, or `other`. The desktop keeps it only while the session lives.
+- The desktop limits what one phone connection sends, per feature, with a token bucket: 10 shares then one per 2 s,
+  5 file offers then one per 6 s, 20 clipboard offers then one per second, 3 statuses then one per 10 s.
+
+Failure modes:
+
+1. A `status` with a battery over 100 or an unknown network: close 5 while decoding. A `status` sent to the phone:
+   close 5.
+2. A share over its limit: dropped without an ack, so the sender's send times out; nothing reaches D-Bus.
+3. A file offer over its limit: answered `busy`; nothing reaches D-Bus.
+4. A clipboard offer or a status over its limit: dropped.
+
 ### Discovery
 
 - The desktop advertises `_umbriel-link._udp.local.` only while it has a paired device or an open window, so an
@@ -286,6 +302,7 @@ client is written against it.
 | method `PullClipboard` | `(s device_id, t id, s mime, h sink) → t bytes` | Writes a device's offered clip into the paste target's pipe |
 | property `AutoAccept` | `as` | Devices whose offers are accepted without asking |
 | property `Grants` | `a{sas}` | Device id to the features it holds |
+| property `DeviceStatus` | `a{s(ubs)}` | Connected device id to `(battery, charging, network)` |
 | property `Pairing` | `b` | Whether a window is open |
 | signal `PairingFinished` | `(s device_id, s name)` | A device was paired |
 | signal `PairingFailed` | `(s reason)` | The window's attempt failed |
@@ -324,6 +341,8 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   copies while hashing, and clears `IS_PENDING` only when the copy's SHA-256 is the one the core verified.
   `TransferService`, a `dataSync` foreground service, runs while a transfer is open, since Android freezes a cached
   process and its sockets.
+- Status: `StatusReporter` follows the sticky `ACTION_BATTERY_CHANGED` broadcast and the default network callback
+  and hands every change to the core, which rate-limits what it sends.
 - Clipboard (`clipboard` package): `ClipboardSync` sets a desktop's text at once and other types as a URI of
   `ClipProvider`, whose `openFile` pulls the type into a pipe; it clears the clip after 2 minutes unless the clipboard
   changed. `ClipboardWatcher` runs while `PresenceService` does and `READ_LOGS` is granted: it follows
