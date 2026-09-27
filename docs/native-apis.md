@@ -170,9 +170,9 @@ Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` 
 
 | API | Use |
 |---|---|
-| `org.umbriel.Link1` (served, session bus) | `StartPairing() → (s, s)`, `CancelPairing()`, `Unpair(s)`, properties `Devices a(ssb)` and `Pairing b` with `PropertiesChanged`, signals `PairingFinished(s, s)` and `PairingFailed(s)`. Contract: `protocol/link-v1/org.umbriel.Link1.xml` |
+| `org.umbriel.Link1` (served, session bus) | `StartPairing() → (s, s)`, `CancelPairing()`, `Unpair(s)`, `Share(s, s, s)` (errors `org.umbriel.Link1.Error.NotConnected`, `.Rejected`, `.Failed`), properties `Devices a(ssb)` and `Pairing b` with `PropertiesChanged`, signals `PairingFinished(s, s)`, `PairingFailed(s)`, `Received(s, s, s)`. Contract: `protocol/link-v1/org.umbriel.Link1.xml` |
 | `org.freedesktop.hostname1` property `PrettyHostname` (system bus) | The name phones see; the kernel hostname (`/proc/sys/kernel/hostname`) when hostnamed is absent |
-| QUIC (`quinn` 0.11) over UDP, ALPN `umbriel-link/1` | The Link transport; one dual-stack socket on a port kept in `devices.json` |
+| QUIC (`quinn` 0.11) over UDP, ALPN `umbriel-link/1` | The Link transport; one dual-stack socket on 4717/udp (a random port if taken), kept in `devices.json`. The phone sets `TransportConfig::keep_alive_interval` (10 s) only while present |
 | TLS 1.3 raw public keys (`rustls` 0.23 `AlwaysResolves{Server,Client}RawPublicKeys`, `verify_tls13_signature_with_raw_key`) | Both sides authenticated by Ed25519 SPKI; the phone's pin rides in the TLS server name so one client config (and its session cache) serves every desktop |
 | TLS exporter (`quinn::Connection::export_keying_material`, label `EXPORTER-umbriel-link-pair`) | Binds SPAKE2 to the TLS session |
 | mDNS/DNS-SD (`mdns-sd` 0.21), `_umbriel-link._udp.local.` | Advertised only while a device is paired or a pairing window is open |
@@ -187,6 +187,6 @@ against `umbriel-linkd` (`tests/e2e/link_devices.sh`).
 
 | API | Use |
 |---|---|
-| `org.umbriel.Link1` (session bus, client) | `Properties.GetAll` and `PropertiesChanged` for `Devices` and `Pairing`; async `StartPairing`, `CancelPairing`, `Unpair`; signals `PairingFinished`, `PairingFailed` |
+| `org.umbriel.Link1` (session bus, client) | `Properties.GetAll` and `PropertiesChanged` for `Devices` and `Pairing`; async `StartPairing`, `CancelPairing`, `Unpair`, `Share`; signals `PairingFinished`, `PairingFailed`, `Received` (posted as an internal notification through `NotificationManager::addOrReplace`; its action copies through `ClipboardService::copyText` or opens through `net::openInBrowser`) |
 | `org.freedesktop.DBus` `NameHasOwner(s) → b`, signal `NameOwnerChanged(s, s, s)` | The tab exists only while `umbriel-linkd` owns its name; it appears and disappears with the daemon. `NameHasOwner` instead of a first `GetAll`, so the shell never D-Bus-activates the daemon |
 | `QRcode_encodeString(s, 0, QR_ECLEVEL_M, QR_MODE_8, 1)`, `QRcode_free` (libqrencode) | The pairing URI as a QR symbol; bit 0 of each `data` byte is a dark module, drawn into an RGBA texture with a 4-module quiet zone |
