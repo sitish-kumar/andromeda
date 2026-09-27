@@ -133,7 +133,12 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
    button in the Devices tab; Android share target for any file, consent notifications, Downloads through
    MediaStore once verified, and a `dataSync` foreground service while a transfer runs. E2E `link_files.sh` (1 GiB
    at 5% loss and 50 ms, through a daemon kill and an address change), `link_files_shell.sh`, `link_android.sh`.
-   Remaining in phase 1: battery and network status, clipboard offers, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
+   **Clipboard done**: automatic both ways for devices with the clipboard grant (per-device grants for clipboard,
+   files, and notifications in the store, on D-Bus, and as toggles in the Devices tab); text inline, other types
+   pulled on paste through a shell-owned Wayland source and an Android content provider; no echoes (hash of the last
+   applied clip on both sides, a marker type on the shell's own source); phone to desktop automatic through
+   KDE Connect's `READ_LOGS` approach in the sideload build, and one tap (tile, text-selection action, share target)
+   otherwise. E2E `link_clipboard.sh`, `link_android.sh`. Remaining in phase 1: battery and network status, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
    indicator and share sheet, Quick Share, the KDE Connect baseline, and redial on an Android network change instead
    of the next backoff step.
 2. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).

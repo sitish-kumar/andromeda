@@ -212,6 +212,45 @@ Failure modes:
 13. No consent within 120 s: declined. The session ending before the answer: the offer is withdrawn on both sides.
 14. `SendFiles` with a descriptor that is not a regular file, or for a device without a live session: fails at once.
 
+### Clipboard
+
+Automatic both ways, for devices holding the clipboard grant. Content moves only when it is used, except text sent
+inline so the other side can set it at once.
+
+```
+either side                                     other side
+  clip-offer {id, mimes, size, text?}      ->   desktop: a Wayland selection owned by the shell, served on paste
+                                                phone: text set at once; other types as a content:// URI
+on paste or read:
+                                           <-   clip-pull {id, mime}
+  a unidirectional stream: clip-data       ->   the bytes, then FIN
+  {id, mime}, then at most `size` bytes
+```
+
+- `id` counts up per sender; a new offer replaces the sender's previous one, and only the latest can be pulled.
+  `mimes` (1 to 16, each at most 255 bytes) is in the sender's order of preference; `size` (at most 64 MiB) is the
+  length of the first. `text` (at most 61440 bytes) is allowed only when a `text/plain` type is offered, and a pull
+  of that type is answered from it without a stream. The desktop inlines text it offers; the headless phone never
+  does, so the E2E can prove a lazy pull; the Android app inlines text, since its process may be frozen by the time
+  a desktop app pastes.
+- Echoes: each side keeps the SHA-256 of the last clip it applied from the other and offers nothing with that hash.
+  The shell also marks the selection it serves for a phone (`application/x-umbriel-link-remote`), so reading its own
+  selection never pulls it.
+- Grants: `clipboard` (on after pairing), `files` (on), `notifications` (off), per device in the store. The desktop
+  sends no clip-offer to a device without the clipboard grant and drops one from it; an offer from a device without
+  the files grant is declined.
+
+Failure modes:
+
+1. A `clip-offer` with no types or more than 16, a type longer than 255 bytes, a size over 64 MiB, or `text` without
+   a `text/plain` type: close 5 while decoding.
+2. A `clip-pull` for an id that is not the latest offer, or a type it did not offer: the offerer answers with a
+   `clip-data` stream it resets at once, so the paste fails and nothing is sent.
+3. A `clip-data` stream nobody pulled, or bytes past the offered size: the stream is stopped with 5 and the paste
+   fails.
+4. A pull not answered within 10 s: the paste fails; the session stays.
+5. A `clip-offer` from a device without the clipboard grant: dropped, and logged.
+
 ### Discovery
 
 - The desktop advertises `_umbriel-link._udp.local.` only while it has a paired device or an open window, so an
@@ -242,11 +281,16 @@ client is written against it.
 | method `CancelTransfer` | `(s transfer_id)` | Either direction; the device is told, partials are deleted |
 | method `SetAutoAccept` | `(s device_id, b enabled)` | Accept that device's offers without asking; off after pairing |
 | property `Devices` | `a(ssb)` | `(device_id, name, connected)`, with `PropertiesChanged` |
+| method `SetGrant` | `(s device_id, s feature, b granted)` | `clipboard`, `files`, or `notifications` |
+| method `OfferClipboard` | `(as mimes, h data)` | The desktop's clipboard changed; `data` is the first type's bytes. Offered to connected devices with the clipboard grant, text inline |
+| method `PullClipboard` | `(s device_id, t id, s mime, h sink) → t bytes` | Writes a device's offered clip into the paste target's pipe |
 | property `AutoAccept` | `as` | Devices whose offers are accepted without asking |
+| property `Grants` | `a{sas}` | Device id to the features it holds |
 | property `Pairing` | `b` | Whether a window is open |
 | signal `PairingFinished` | `(s device_id, s name)` | A device was paired |
 | signal `PairingFailed` | `(s reason)` | The window's attempt failed |
 | signal `Received` | `(s device_id, s kind, s text)` | A device shared text or a link (`kind` is `text` or `link`), already checked |
+| signal `ClipboardOffered` | `(s device_id, t id, as mimes, t size)` | A device's clipboard changed; served as a selection, pulled on paste |
 | signal `TransferOffered` | `(s transfer_id, s device_id, a(st) files)` | A device offers files `(sanitized name, size)`; not sent for auto-accept devices |
 | signal `TransferProgress` | `(s transfer_id, t bytes, t total)` | Either direction, at most 4 Hz per transfer |
 | signal `TransferFinished` | `(s transfer_id, s status, as paths)` | `done`, `failed`, `declined`, `no-space`, `too-large`, `busy`, or `cancelled`; `paths` are the verified files an incoming transfer published |
@@ -280,5 +324,12 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   copies while hashing, and clears `IS_PENDING` only when the copy's SHA-256 is the one the core verified.
   `TransferService`, a `dataSync` foreground service, runs while a transfer is open, since Android freezes a cached
   process and its sockets.
+- Clipboard (`clipboard` package): `ClipboardSync` sets a desktop's text at once and other types as a URI of
+  `ClipProvider`, whose `openFile` pulls the type into a pipe; it clears the clip after 2 minutes unless the clipboard
+  changed. `ClipboardWatcher` runs while `PresenceService` does and `READ_LOGS` is granted: it follows
+  `logcat -T 1 ClipboardService:E` for the denial Android logs for this app on every copy elsewhere (it holds a
+  clipboard listener for that reason) and starts `ClipboardReadActivity`, transparent, which reads the clipboard once
+  focused, offers it unless its hash is the last desktop clip, and finishes. The same activity serves the
+  quick-settings tile (`ClipboardTileService`) and "Send to desktop" in the text-selection menu (`PROCESS_TEXT`).
 - E2E: `tests/e2e/link_android.sh` drives the Maestro flows under `link/android/maestro/` on an emulator against a
   private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`.
