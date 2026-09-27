@@ -35,10 +35,10 @@ first.
 | 1.6 | Date and time, language pages | S | **Done**: `timedate1`, `locale1`; E2E `date_time_settings.sh`, `language_settings.sh` |
 | 1.7 | Default apps page | S | **Done**: `mimeapps.list`, refreshed on an inotify watch while the page shows; E2E `default_apps.sh`, `default_apps_watch.sh` |
 | 1.8 | Drives: no UDisks2, no automount | S | **Done**: `dbus/udisks/udisks_service.cpp` automounts hotplugged filesystems with HintAuto (not HintSystem/HintIgnore) over UDisks2 signals; a notification opens the drive on click and offers Eject (Unmount + Drive.PowerOff). `[shell] automount_drives`. E2E `drives.sh` |
-| 1.9 | Screen recording | S P | PipeWire stream from our ScreenCast portal, VA-API encode, region select reused from screenshots |
+| 1.9 | Screen recording | S P | **Done** (video only): `capture/screen_recorder.cpp` takes a ScreenCast portal stream (our picker on first use per shell session) through GStreamer `pipewiresrc ! vapostproc ! vah264enc ! mp4mux` to `~/Videos`, dmabuf to the GPU encoder with no CPU copy; control-center toggle, `screen-record-toggle`/`screen-record-status` IPC. E2E `screen_record.sh` (test source, real VA-API encode); portal path checked live at 2880×1800. Audio and region selection remain |
 | 1.10 | Airplane mode (all radios), hotspot | S | **Airplane done**: one `RFKILL_OP_CHANGE_ALL` / `RFKILL_TYPE_ALL` write, control-center toggle and `airplane-toggle`/`airplane-status` IPC; E2E `airplane.sh` (file stand-in for /dev/rfkill). **Hotspot done**: `dbus/network/nm_hotspot.cpp` activates the first AP-mode NetworkManager profile or adds one (shared IPv4, random WPA2 key); control-center toggle, `hotspot-toggle`/`hotspot-status` IPC; E2E `hotspot.sh` with a mock NetworkManager |
 | 1.11 | Portal covers only ScreenCast and Screenshot; everything else falls to GTK | P | **Done**: Settings, Inhibit (logind `idle`/`sleep` block inhibitors per request; E2E `inhibit_portal.sh`), and GlobalShortcuts (apps register ids, the user binds keys with `shell:global-shortcut <app-id> <id>`; no app grabs a key; Activated and Deactivated fire together, so hold-to-talk is not supported; E2E `global_shortcuts.sh`). FileChooser stays GTK |
-| 1.12 | Third-party session daemons (`kded6`, `kdeconnect`, `gvfs-*`) | N | **Audited 2026-09-27**: identity is ours (`XDG_CURRENT_DESKTOP=umbriel`, `umbriel-portals.conf`). Every daemon running is activated by an app that uses it (kded6 by Dolphin, gvfs by GIO apps, at-spi by toolkits, dconf by the GTK 3 colour-scheme key, portal-gtk for FileChooser) except `kdeconnectd`, an XDG autostart entry; whether it stays is the user's call |
+| 1.12 | Third-party session daemons (`kded6`, `kdeconnect`, `gvfs-*`) | N | **Audited 2026-09-27**: identity is ours (`XDG_CURRENT_DESKTOP=umbriel`, `umbriel-portals.conf`). Every daemon running is activated by an app that uses it (kded6 by Dolphin, gvfs by GIO apps, at-spi by toolkits, dconf by the GTK 3 colour-scheme key, portal-gtk for FileChooser) except `kdeconnectd`, an XDG autostart entry; its autostart is hidden in the user's config (`~/.config/autostart/org.kde.kdeconnect.daemon.desktop`, `Hidden=true`) |
 | 1.13 | `fc-list` and `xdg-open` spawns | S | **Fixed**: URLs open through GIO (E2E `native_spawns.sh`); the font catalog uses `FcFontList` in-process (E2E `font_catalog.sh`: 724 vs 731 families, no spawn, flat memory) |
 
 ## Tier 2: platform depth
@@ -117,6 +117,6 @@ Done: monorepo and session units (0.6, 0.8), battery baseline, 0.1, 0.2, 0.5, 0.
 mode (1.10), 1.13.
 
 Next, in this order (each lands with an E2E or harness proof and, for power items, a bench row):
-1. Screen recording (1.9): pending a choice of encoder path (GStreamer in-process, libavcodec, or gpu-screen-recorder).
+1. Screen recording follow-ups (1.9): audio (a PipeWire source into the same mux), region selection.
 2. Remaining threads (0.4): Luau script pools only with a plugin enabled, calendar workers.
 3. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
