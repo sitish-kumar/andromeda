@@ -27,9 +27,10 @@ has since added mDNS next to broadcast, and connecting by IP; the rows below are
 ```
  phone app ──QUIC/TLS 1.3──┐                         ┌── shell (all UI)
  (Android: Kotlin + core)  │   umbriel-linkd         │   notifications, clipboard, control center,
-                           ├── (session service) ────┤   bar indicator, share sheet, settings page
- BLE presence + L2CAP ─────┘   D-Bus org.umbriel.Link1│
-                                                     └── (via the shell) compositor: phone as touchpad
+ BLE presence + L2CAP ─────┼── (session service) ────┤   bar indicator, share sheet, settings page
+ stock Quick Share ────────┘   D-Bus org.umbriel.Link1│
+ (Android, Windows, ChromeOS)  ▲                      └── (via the shell) compositor: phone as touchpad
+   via umbriel-quickshared ────┘ private socket
 ```
 
 - **`umbriel-linkd` is a fourth process**, by the same reasoning as the three in `standards.md`: it parses
@@ -43,6 +44,28 @@ has since added mDNS next to broadcast, and connecting by IP; the rows below are
 - **The shell draws everything.** The daemon has no UI. The shell consumes `org.umbriel.Link1` the way it consumes
   UPower or NetworkManager today, and maps each feature onto a surface it already has.
 - **The protocol lives in `protocol/link-v1/`**, the only copy, next to `desktop-unstable-v1.xml`.
+
+## One system, many transports
+
+The user picks a device and an action, never a transport. Link and Quick Share are two backends of one system,
+and nothing in the shell names either of them.
+
+- **One device list.** `umbriel-linkd` owns every device: paired Link devices and nearby Quick Share endpoints.
+  `umbriel-quickshared` (the C++ `google/nearby` process) reports to it over a private socket and has no D-Bus
+  name of its own, so the shell sees exactly one API, `org.umbriel.Link1`. A phone that is both Link-paired and
+  visible to Quick Share is one entry: while it is present over Link, a Quick Share endpoint with the same device
+  name folds into it.
+- **One send.** "Send to <device>" from the share sheet, the bar drop target, or `umbriel-link send` goes to the
+  daemon, which picks the transport: Link when the device is paired and reachable (no visibility toggle, resumable,
+  works over the phone hotspot), Quick Share otherwise. The user never sees the choice unless it fails.
+- **One receive.** An incoming Link or Quick Share transfer produces the same accept/decline notification, the
+  same progress, the same Downloads destination, and the same "open" action.
+- **Never show an action that cannot work.** Each device advertises what it can do right now, and the shell shows
+  only those actions. A phone without the app shows "Send files" and nothing else; its card offers the app once
+  ("Get notifications, clipboard, and more"), then stays quiet. Nothing is greyed out with a caveat.
+- **Failures explain themselves in one line, with the fix as a button.** Example: a phone whose Quick Share
+  visibility is "Contacts" cannot be seen by any non-Google device. The card says so and offers the one-tap
+  "Everyone for 10 minutes" hint, or pairing with the app, which removes the dependency on visibility entirely.
 
 ## Protocol
 
@@ -115,7 +138,7 @@ Each row lands only with an E2E proof (see Testing). "Surface" is where it appea
 | Presence and status | Continuity devices | Battery, signal, network of the phone | Bar indicator, control-center Devices tab |
 | Clipboard | Universal Clipboard | See Clipboard below | `ClipboardService`: remote offers appear as a normal clipboard source |
 | Send files, links, text | AirDrop | Send from the share sheet, drag onto the device in the bar, or `umbriel-link send`. The receiver accepts or declines; resumable QUIC stream; files land in Downloads with a notification that opens them | Share sheet, bar drop target, notification |
-| Receive from stock Quick Share | AirDrop from any Android | Any Android phone sends files with no app installed. Built on Google's own Nearby code (`google/nearby`, Apache-2.0) and its Linux platform layer, which is in open upstream PRs (BlueZ plus NetworkManager); we contribute there rather than ship a reverse-engineered clone. A separate optional process, since the library is C++. Limit: "Everyone" visibility only, because "Contacts" and "Your devices" need Google-account certificates a third party cannot obtain | Notification, Downloads |
+| Quick Share, both ways | AirDrop with any Android, Windows, or ChromeOS device | Send to and receive from stock Quick Share with no app installed, over BLE, LAN, Wi-Fi Direct, or hotspot. Built on Google's own Nearby code (`google/nearby`, Apache-2.0) and its Linux platform layer, which is in open upstream PRs (BlueZ plus NetworkManager); we contribute there rather than ship a reverse-engineered clone. Runs as `umbriel-quickshared`, a backend of `umbriel-linkd` (see One system, many transports). Limit: the other device must have "Everyone" visibility, because "Contacts" and "Your devices" need Google-account certificates a third party cannot obtain; a Link-paired phone needs neither | Same send and receive surfaces as Link |
 | Notifications | iPhone notifications on Mac | Phone notifications appear as native desktop notifications, with actions and inline reply; dismissing on one side dismisses on both | `NotificationManager` (app icon, grouping, DND respected) |
 | Messages (Android) | Messages | Replies through each notification's `RemoteInput`, which works for every messaging app, RCS included. RCS threads are not readable by any third-party app (Google keeps its API on an allowlist). SMS history and new-message compose need `READ_SMS`/`SEND_SMS`, which Play grants only to the default SMS app, so they exist only in a non-Play build | Notifications; messages panel (non-Play build) |
 | Calls (Android) | Continuity calls | Incoming-call notification with decline/mute; desktop media pauses while a call is active. Audio routing to the desktop is a later phase | Notification, media widget |
@@ -204,18 +227,31 @@ In the repo's existing style: E2E only, each producing an artifact.
   and an address change mid-transfer; the transfer must resume and the hash must match.
 - **Artifacts**: transcripts of every message (schema-validated), screenshots of each shell surface, transfer
   hashes.
+- **Baseline first**: before phase 1 ships, KDE Connect is measured on the same bench and the same phones:
+  time to discover, reconnect success after a Wi-Fi switch and after a night asleep, transfer resume under loss,
+  and phone battery per day. Each phase's proof must beat those numbers; "better than KDE Connect" is a
+  measurement, not a claim.
+- **Real phones, not one**: a Pixel, a Samsung, and a Xiaomi (the aggressive background killers), each on a
+  current and an older Android. Phase 2 onward passes only on all of them. The headless phone proves the protocol;
+  the matrix proves the lifecycle, which is where KDE Connect actually fails.
+- **Bluetooth as its own milestone**, with a list of tested laptop adapters. The IP-only path must stand alone
+  and be at least as good as KDE Connect; Bluetooth only adds to it.
 
 ## Phases
 
 | Phase | Delivers | Proof |
 |---|---|---|
 | 0 | Protocol core, `umbriel-linkd`, headless phone CLI, mDNS plus last-known addresses, QR/code pairing with SPAKE2 bound to the TLS session, connect on demand with 0-RTT | Pair and reconnect across a blocked-multicast namespace; a relayed pairing fails |
-| 1 | Presence, battery, send files/links/text, clipboard, shell surfaces (bar, Devices tab, share sheet, Settings); receive from stock Quick Share | Resumed 1 GB transfer under loss; clipboard pull on paste; a stock-Android Quick Share send lands |
+| 1 | Presence, battery, send files/links/text, clipboard, shell surfaces (bar, Devices tab, share sheet, Settings); Quick Share both ways behind the same surfaces; KDE Connect baseline measured | Resumed 1 GB transfer under loss; clipboard pull on paste; stock-Android Quick Share send and receive through the same share sheet and notification as Link |
 | 2 | Android app: pairing with the BLE bond, share target, CompanionDeviceManager presence, BLE L2CAP control, clipboard entry points, notification mirroring with reply | Real phone on the bench; mirrored notification with reply; a notification arrives over L2CAP with IP blocked |
 | 3 | Media, find my phone, message replies (SMS in the non-Play build), calls | E2E per feature with the headless phone |
 | 4 | Handoff (files and links, then a browser extension), touchpad and keyboard | Handoff card round trip |
 | 5 | Phone camera as a PipeWire source, LocalOnlyHotspot transfers, iPhone (ANCS/AMS, foreground share) | Camera visible to a stock app; transfer with no shared network |
 | 6 | Unlock with phone, after its threat model | Reviewed model plus E2E |
+
+Phases 0-3 are the product: what people use KDE Connect for (notifications with reply, sending files,
+clipboard, media, find my phone), done reliably. Phases 4-6 start only after 0-3 beat the baseline on the whole
+phone matrix.
 
 ## Decided: Rust core, native shells
 
