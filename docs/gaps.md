@@ -119,4 +119,5 @@ mode (1.10), 1.13.
 Next, in this order (each lands with an E2E or harness proof and, for power items, a bench row):
 1. Screen recording follow-ups (1.9): audio (a PipeWire source into the same mux), region selection.
 2. Remaining threads (0.4): Luau script pools only with a plugin enabled, calendar workers.
-3. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
+3. Continuity with a phone: our own protocol, `umbriel-linkd`, and a phone app, designed in `continuity.md`.
+4. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
