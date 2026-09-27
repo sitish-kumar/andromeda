@@ -125,8 +125,15 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
    per connection on both sides, text and link shares both ways (D-Bus `Share` and `Received`, shell notifications
    with Open and Copy, `link-share` IPC, Send clipboard in the Devices tab, the Android share target and
    notifications), and 4717/udp by default with a ufw profile. E2E `link_share.sh`, `link_share_shell.sh`,
-   `link_android.sh`. Remaining in phase 1: battery and network status, files over bulk streams (resumable, hashed),
-   clipboard offers, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
+   `link_android.sh`. **Phase 1, slice B, files done**: LocalSend-style offer and consent over the control stream,
+   one QUIC stream per file (four at once, BBR congestion control), part files synced every 8 MiB and published by
+   hard link once the SHA-256 matches, resume by durable offset across reconnects, address changes, and a receiver
+   restart, sanitized names, enforced sizes; D-Bus `SendFiles` with descriptors, consent, progress, and results;
+   shell notifications (Accept, Decline, progress with Cancel, Open, Show in folder), `link-send-file`, and a Send
+   button in the Devices tab; Android share target for any file, consent notifications, Downloads through
+   MediaStore once verified, and a `dataSync` foreground service while a transfer runs. E2E `link_files.sh` (1 GiB
+   at 5% loss and 50 ms, through a daemon kill and an address change), `link_files_shell.sh`, `link_android.sh`.
+   Remaining in phase 1: battery and network status, clipboard offers, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
    indicator and share sheet, Quick Share, the KDE Connect baseline, and redial on an Android network change instead
    of the next backoff step.
 2. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).

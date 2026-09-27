@@ -136,6 +136,11 @@ and nothing in the shell names either of them.
 - **Bulk data** (files, clipboard images, attachments) opens its own stream: resumable by byte offset, a size
   announced up front and enforced, content hashed (SHA-256 through `ring`, the one crypto provider) and verified
   before the file is revealed.
+- **Files** follow LocalSend v2's offer and accept: the sender offers names, sizes, types, and hashes; the receiver's
+  user accepts (or the device is set to auto-accept); each file then streams on its own QUIC stream, four at once.
+  The receiver writes a hidden part file in Downloads, syncs every 8 MiB, and publishes it under a name that never
+  overwrites once the hash matches. After any reconnect, or a receiver restart, the sender asks where to resume and
+  continues from the durable offset. Names are reduced to a safe basename. Details: `link/ARCHITECTURE.md` (Files).
 - **Shares** of text and links are control messages, 1 to 61440 bytes, acknowledged by the receiver; a link must
   be http or https, so opening one can never run or read anything local.
 

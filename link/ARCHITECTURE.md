@@ -25,7 +25,8 @@ crate of ours; `core` never knows which binary runs it.
 |---|---|---|
 | `quinn` | core | QUIC: streams, 0-RTT, client migration. The protocol's transport |
 | `rustls` (ring) | core | TLS 1.3 inside QUIC; RFC 7250 raw public keys |
-| `ring` | proto, core | Ed25519 keys, SHA-256, HKDF, HMAC; the only crypto provider |
+| `ring` | proto, core, phone | Ed25519 keys, SHA-256, HKDF, HMAC; the only crypto provider |
+| `rustix` (`fs`) | core | `statvfs` for the free space an offer needs and `O_NOFOLLOW` on part files; std has neither, and it is already in the tree |
 | `spake2` | proto | The PAKE for code and QR pairing (RustCrypto) |
 | `ciborium`, `serde`, `serde_bytes` | proto | CBOR wire encoding |
 | `mdns-sd` | core | mDNS responder and browser; no Avahi dependency (see continuity.md) |
@@ -39,13 +40,17 @@ crate of ours; `core` never knows which binary runs it.
 ## Threads
 
 `umbriel-linkd` runs one tokio current-thread runtime (QUIC, D-Bus, timers, the store) plus `mdns-sd`'s responder
-thread while it advertises. Nothing else.
+thread while it advertises. Nothing else. File I/O runs on the runtime thread too: page-cache writes, an fdatasync per
+8 MiB, and hashing that yields between 256 KiB chunks.
 
 ## Wire format (link-v1)
 
 - QUIC, ALPN `umbriel-link/1`, TLS 1.3 with raw public keys (Ed25519 SPKI) on both sides.
 - The phone is always the QUIC client, the desktop the server. The phone's first bidirectional stream is the control
-  stream; later streams carry bulk data (phase 1).
+  stream; unidirectional streams, opened by either side, carry bulk data (at most 8 at once per side).
+- Congestion control is BBR: loss-based control collapses under the random loss of Wi-Fi. quinn's BBR keeps the
+  lowest RTT a connection ever saw, so a path whose delay grows under a live connection runs near its minimum
+  window until the next connection.
 - A frame is a big-endian `u32` length then one CBOR envelope `{type: tstr, id: uint, body: map}`; control frames are
   at most 64 KiB. Schema: `protocol/link-v1/messages.cddl`.
 - Close codes (QUIC application error): 0 done, 1 not-paired, 2 unpaired, 3 unsupported-version, 4 pairing-failed,
@@ -146,6 +151,67 @@ Failure modes, each of which delivers nothing where it says so:
 9. A black hole longer than 30 s: both ends time out, the desktop shows the device disconnected, and the phone
    redials with backoff until the path returns.
 
+### Files
+
+LocalSend v2's offer and accept, plus resume by byte offset, a streaming SHA-256, and an enforced size.
+
+```
+sender                                               receiver
+  offer {transfer, files: [{id, name, size,      ->  consent: a notification, or the device's auto-accept
+         mime, sha256}]}
+                                                 <-  offer-reply {transfer, accepted, reason?}
+  one unidirectional stream per file, at most 4
+  at once: file-data {transfer, file, offset}    ->  write .<name>.linkpart, hash, fsync every 8 MiB
+  then the bytes from offset to size
+                                                 <-  file-done {transfer, file, ok}   (after verify and publish)
+after a reconnect:
+  resume {transfer}                              ->
+                                                 <-  file-done for each finished file, then
+                                                     resume-at {transfer, offsets: [{file, offset}]}
+either side, any time:
+  cancel {transfer}                              ->  both drop the transfer; the receiver deletes its partials
+```
+
+- `transfer` is 16 random bytes (32 hex characters on D-Bus); file ids are unique within an offer. An offer must fit
+  one control frame. `reason` is `declined`, `no-space` (the files exceed statvfs' free space), `too-large` (they
+  exceed the whole filesystem), or `busy` (8 transfers from that device are already open).
+- A stream's first frame is a `file-data` envelope in the control framing; the raw bytes follow it.
+- The receiver writes `Downloads/.<name>.linkpart`, created `O_EXCL` (a taken name gets ` (1)`, ` (2)`, ...), hashes
+  as it writes (`ring::digest::Context`), and records the durably written offset in its state file, fsyncing every
+  8 MiB and when a stream stops early. When the size is reached and the hash matches, it hard-links the part to a
+  free final name (`name (1).ext` when `name.ext` exists), never overwriting, and unlinks the part. Android denies
+  apps hard links, so there it renames with `RENAME_NOREPLACE` instead.
+- A resumed file is truncated to its durable offset and re-hashed from disk, since a digest context cannot be saved.
+- The receiver keeps its state on disk (`transfers/<id>.json` in the state directory) and drops transfers older than
+  24 h with their partials. The sender keeps its sources open in memory for 24 h: a transfer resumes across
+  reconnects and across a receiver restart, not across a sender restart.
+- Names are sanitized on receipt: the basename after the last `/` or `\`, NUL and control characters removed,
+  leading dots stripped, at most 255 bytes cut on a UTF-8 boundary; an empty or all-dots result is `file`.
+- The desktop's sandbox cannot read the user's files, so the shell opens them and passes the descriptors (`SendFiles`,
+  `a(hs)`). The daemon accepts only regular files.
+
+Failure modes:
+
+1. An offer with no files, duplicate file ids, an empty name or mime, or a wrong-length id or hash; an `offer-reply`
+   whose `accepted` and `reason` disagree; a `resume-at` with duplicate files: close 5 while decoding.
+2. An offer reusing a transfer id the receiver holds: close 5.
+3. An `offer-reply` for a transfer not offered to that peer, or already answered: close 5.
+4. A `file-data` on the control stream, or any other message as a stream's first frame: close 5.
+5. A stream for an unknown or unaccepted transfer, an unknown or finished file, a file that already has a stream, or
+   an offset other than the receiver's: the stream is stopped with 5 and nothing is written.
+6. A byte past the announced size, or a stream finished before it: the stream is stopped with 5, the partial deleted,
+   and the file reported `file-done {ok: false}`.
+7. A stream reset or a connection lost mid-file: the partial and its durable offset stay for a resume.
+8. A hash mismatch: the partial is deleted, nothing is published, and the file is reported failed.
+9. A `resume` for a transfer the receiver does not hold (finished, cancelled, expired): answered with `cancel`.
+10. A `resume-at` for a transfer that was not resumed, naming a file the transfer lacks or already finished, or an
+    offset past a file's size: close 5.
+11. A `file-done` for a transfer or file the sender does not have, or contradicting an earlier one: close 5. The same
+    result again (after a resume) is accepted.
+12. A `cancel` for an unknown transfer: ignored, since it may have crossed the end.
+13. No consent within 120 s: declined. The session ending before the answer: the offer is withdrawn on both sides.
+14. `SendFiles` with a descriptor that is not a regular file, or for a device without a live session: fails at once.
+
 ### Discovery
 
 - The desktop advertises `_umbriel-link._udp.local.` only while it has a paired device or an open window, so an
@@ -171,18 +237,30 @@ client is written against it.
 | method `CancelPairing` | `()` | Closes the window |
 | method `Unpair` | `(s device_id)` | Forgets the device; it is told at next contact |
 | method `Share` | `(s device_id, s kind, s text)` | Sends `text` or `link` to a connected device and returns once it acknowledged; `org.umbriel.Link1.Error.NotConnected` without a live session, `org.umbriel.Link1.Error.Rejected` for a share that breaks the rules above, `org.umbriel.Link1.Error.Failed` when the device did not acknowledge it |
+| method `SendFiles` | `(s device_id, a(hs) files) → s transfer_id` | Offers the files behind the descriptors (regular files only, each with the name the device sees); returns at once, the signals below report the rest. `NotConnected`, `Rejected`, `Failed` as for `Share` |
+| method `AcceptTransfer`, `DeclineTransfer` | `(s transfer_id)` | Consent for a `TransferOffered`; `Rejected` once it no longer waits |
+| method `CancelTransfer` | `(s transfer_id)` | Either direction; the device is told, partials are deleted |
+| method `SetAutoAccept` | `(s device_id, b enabled)` | Accept that device's offers without asking; off after pairing |
 | property `Devices` | `a(ssb)` | `(device_id, name, connected)`, with `PropertiesChanged` |
+| property `AutoAccept` | `as` | Devices whose offers are accepted without asking |
 | property `Pairing` | `b` | Whether a window is open |
 | signal `PairingFinished` | `(s device_id, s name)` | A device was paired |
 | signal `PairingFailed` | `(s reason)` | The window's attempt failed |
 | signal `Received` | `(s device_id, s kind, s text)` | A device shared text or a link (`kind` is `text` or `link`), already checked |
+| signal `TransferOffered` | `(s transfer_id, s device_id, a(st) files)` | A device offers files `(sanitized name, size)`; not sent for auto-accept devices |
+| signal `TransferProgress` | `(s transfer_id, t bytes, t total)` | Either direction, at most 4 Hz per transfer |
+| signal `TransferFinished` | `(s transfer_id, s status, as paths)` | `done`, `failed`, `declined`, `no-space`, `too-large`, `busy`, or `cancelled`; `paths` are the verified files an incoming transfer published |
+
+Transfers and consent are backend-neutral in the daemon: the transfer actor (`link_core::transfer`) owns every
+transfer and reports offers to the hub, which answers from the device's auto-accept setting or forwards the offer to
+the shell, so a second backend (Quick Share, LocalSend) plugs into the same signals and notifications.
 
 ## Android app
 
 Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
 - Modules: `app` (Compose UI and Android services), `core` (domain and data over `link-ffi`). Dependency direction
   Presentation → Domain → Data; the domain layer imports neither.
-- Feature-first packages under `app`: `pairing`, `devices`, `presence`, `share`, `notifications` (`clipboard` when
+- Feature-first packages under `app`: `pairing`, `devices`, `presence`, `share`, `transfer`, `notifications` (`clipboard` when
   its entry points land).
 - One `ViewModel` per screen exposing `StateFlow`; UI actions return `Result`, never throw into the UI. Coroutines
   only, no callbacks above the data layer. Manual constructor injection from one `AppContainer`, no DI framework.
@@ -195,5 +273,12 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   lock is held while present, for the mDNS half of a redial.
 - The share target (`ACTION_SEND`, `text/plain`) sends to the only paired desktop, or asks which; a single http or
   https URL goes as a link.
+- Files: the share target also takes `ACTION_SEND` and `ACTION_SEND_MULTIPLE` of any type; each content URI is
+  opened as a descriptor the core takes over (`detachFd`), so a provider that hands out a pipe is refused. Offers
+  from the desktop become a notification with Accept and Decline (`TransferNotifier`, `TransferReceiver`). The core
+  writes received files to app storage; `Downloads` then inserts a `MediaStore.Downloads` entry with `IS_PENDING=1`,
+  copies while hashing, and clears `IS_PENDING` only when the copy's SHA-256 is the one the core verified.
+  `TransferService`, a `dataSync` foreground service, runs while a transfer is open, since Android freezes a cached
+  process and its sockets.
 - E2E: `tests/e2e/link_android.sh` drives the Maestro flows under `link/android/maestro/` on an emulator against a
   private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`.
