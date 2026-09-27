@@ -32,10 +32,12 @@ crate of ours; `core` never knows which binary runs it.
 | `mdns-sd` | core | mDNS responder and browser; no Avahi dependency (see continuity.md) |
 | `tokio` | core, daemon, phone | Runtime, current-thread only |
 | `zbus` | daemon | D-Bus service on the tokio runtime, no extra thread |
-| `serde_json` | core | The on-disk device store |
 | `thiserror` | proto, core | Library error enums |
 | `anyhow`, `clap`, `env_logger`, `log` | binaries (`log` everywhere) | CLI and logging |
 | `cddl` | phone | Validates E2E transcripts against `protocol/link-v1/messages.cddl` |
+| `httparse` | daemon | LocalSend's HTTP/1.1 request and response heads: a small, allocation-free parser for untrusted input; bodies and routing are ours, since a full HTTP stack would be far larger |
+| `tokio-rustls` | daemon | LocalSend's TLS over tokio TCP streams, on the rustls and ring already in the tree |
+| `serde_json` | core, daemon | The on-disk device store; LocalSend's JSON bodies |
 
 ## Threads
 
@@ -267,6 +269,37 @@ Failure modes:
 3. A file offer over its limit: answered `busy`; nothing reaches D-Bus.
 4. A clipboard offer or a status over its limit: dropped.
 
+### LocalSend
+
+A second transfer backend in `umbriel-linkd`, off until "Visible to LocalSend" is turned on, so any LocalSend app
+(protocol v2) can send to the desktop without Link, and the desktop can send to LocalSend devices on the LAN.
+
+- While on: UDP 53317 joined to 224.0.0.167 for announcements (ours: `announce: true` when turned on; theirs are
+  answered with an HTTPS `POST /api/localsend/v2/register` to the announcer), and HTTPS on TCP 53317.
+- TLS 1.3 with a self-signed ECDSA P-256 certificate made once and kept in the state directory (`localsend.pk8`,
+  `localsend.der`, mode 0600); its SHA-256, lowercase hex, is the LocalSend fingerprint. As a client the daemon
+  accepts any certificate whose SHA-256 is the fingerprint the peer announced, and nothing else.
+- Receive: `prepare-upload` becomes the same `TransferOffered` as a Link offer and waits for the answer (120 s);
+  accepted, it returns a session id and one token per file; `upload?sessionId&fileId&token` streams a file into the
+  same part files as Link (sanitized names, O_EXCL, size enforced, published by hard link), verified against
+  `sha256` when the sender gave one; `cancel` drops the session and its partials. Device ids are
+  `localsend:<fingerprint>`.
+- Send: `SendFiles` to a `localsend:<fingerprint>` id discovered on the LAN (the `Nearby` property) posts
+  `prepare-upload` with each file's SHA-256, then uploads each accepted file.
+- HTTP/1.1 is parsed with `httparse` (request and response heads); bodies are `Content-Length` or chunked, JSON
+  bodies at most 1 MiB. One session at a time: a second `prepare-upload` while one is open is answered 409.
+
+Failure modes:
+
+1. A body over 1 MiB, malformed JSON, a head over 16 KiB, or an unknown path: 400 or 404, connection closed.
+2. `prepare-upload` declined or unanswered for 120 s: 403. A file set larger than the free space: 403 and a
+   `no-space` result; another session open: 409.
+3. `upload` with an unknown session, file, or token, or a file already uploaded: 403; a body longer or shorter than
+   the file's size: 400 and the partial deleted; a SHA-256 that does not match the sender's: 422, nothing published.
+4. `cancel` for an unknown session: 200, nothing changes.
+5. As a sender: a peer whose certificate is not the announced fingerprint fails the handshake; 403 is `declined`,
+   409 and 429 are `busy`, anything else `failed`.
+
 ### Discovery
 
 - The desktop advertises `_umbriel-link._udp.local.` only while it has a paired device or an open window, so an
@@ -297,6 +330,9 @@ client is written against it.
 | method `CancelTransfer` | `(s transfer_id)` | Either direction; the device is told, partials are deleted |
 | method `SetAutoAccept` | `(s device_id, b enabled)` | Accept that device's offers without asking; off after pairing |
 | property `Devices` | `a(ssb)` | `(device_id, name, connected)`, with `PropertiesChanged` |
+| method `SetLocalSendVisible` | `(b visible)` | "Visible to LocalSend"; kept in the store |
+| property `LocalSendVisible` | `b` | Whether the LocalSend backend listens |
+| property `Nearby` | `a(ss)` | LocalSend devices on the LAN, `(localsend:<fingerprint>, alias)`; `SendFiles` takes these ids |
 | method `SetGrant` | `(s device_id, s feature, b granted)` | `clipboard`, `files`, or `notifications` |
 | method `OfferClipboard` | `(as mimes, h data)` | The desktop's clipboard changed; `data` is the first type's bytes. Offered to connected devices with the clipboard grant, text inline |
 | method `PullClipboard` | `(s device_id, t id, s mime, h sink) → t bytes` | Writes a device's offered clip into the paste target's pipe |

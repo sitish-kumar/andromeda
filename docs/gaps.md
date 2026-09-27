@@ -141,8 +141,12 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
    otherwise. E2E `link_clipboard.sh`, `link_android.sh`. **Status and limits done**: the phone reports battery,
    charging, and network on connect and on change (at most every 10 s); D-Bus `DeviceStatus`; the Devices tab and a
    bar phone indicator that exists only while a phone is connected; per-feature token buckets on shares, file offers,
-   clipboard offers, and statuses. E2E `link_status.sh`, `link_status_shell.sh`, `link_android.sh`. Remaining in
-   phase 1: per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
+   clipboard offers, and statuses. E2E `link_status.sh`, `link_status_shell.sh`, `link_android.sh`. **LocalSend
+   done**: a second backend in `umbriel-linkd` behind "Visible to LocalSend" (off by default): multicast discovery
+   and register, HTTPS on 53317 with a self-signed certificate whose SHA-256 is the fingerprint, prepare-upload
+   through the same consent notification, uploads into the same part files with sizes and hashes enforced, and
+   sending to `localsend:<fingerprint>` peers with the certificate pinned; ufw profile `Umbriel Link LocalSend`. E2E
+   `link_localsend.sh` against curl and a peer written from the spec. Remaining in phase 1: per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
    indicator and share sheet, Quick Share, the KDE Connect baseline, and redial on an Android network change instead
    of the next backoff step.
 2. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).

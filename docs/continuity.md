@@ -60,6 +60,9 @@ and nothing in the shell names either of them.
   works over the phone hotspot), Quick Share otherwise. The user never sees the choice unless it fails.
 - **One receive.** An incoming Link or Quick Share transfer produces the same accept/decline notification, the
   same progress, the same Downloads destination, and the same "open" action.
+- **LocalSend too.** With "Visible to LocalSend" on (off by default), any LocalSend app (Android, iOS, Windows,
+  macOS) can send to the desktop and receive from it without installing anything, through the same consent
+  notification and Downloads; `sudo ufw allow "Umbriel Link LocalSend"` opens 53317/tcp and /udp for it.
 - **Never show an action that cannot work.** Each device advertises what it can do right now, and the shell shows
   only those actions. A phone without the app shows "Send files" and nothing else; its card offers the app once
   ("Get notifications, clipboard, and more"), then stays quiet. Nothing is greyed out with a caveat.
