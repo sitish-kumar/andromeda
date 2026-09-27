@@ -26,6 +26,13 @@ and Noctalia 5.1.0, on AC, with a terminal streaming output (so not a true idle)
 | Hyprland | 254 MB | 88 MB | 16 | 4 | 8 |
 | noctalia | 178 MB | 59 MB | 30 | 8 | 25 |
 
+## Findings
+
+- **Settings memory after close (2026-09-28)**: with `MALLOC_CONF=dirty_decay_ms:0,muzzy_decay_ms:0`, opening every
+  Settings page and closing the window leaves the shell's `RssAnon` 3.7-4.0 MB above where it started, the same
+  after three rounds. Not a growing leak, but over the 0 budget: first-open state (the settings registry, desktop
+  entries, glyph caches) outlives the window. Next step is a heap profile to split it by owner.
+
 ## Method
 
 1. Run from a TTY or an idle session with nothing on screen changing. Close the terminal that started the run
