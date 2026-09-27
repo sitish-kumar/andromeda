@@ -348,13 +348,21 @@ client is written against it.
 Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
 - Modules: `app` (Compose UI and Android services), `core` (domain and data over `link-ffi`). Dependency direction
   Presentation → Domain → Data; the domain layer imports neither.
-- Feature-first packages under `app`: `pairing`, `devices`, `presence`, `share`, `notifications` (`clipboard` when
-  its entry points land).
+- Feature-first packages under `app`: `pairing`, `devices` (Home and a desktop's page), `presence`, `share`,
+  `notifications` (the mirror and its per-app filter), `media`, `ring`, `calls`, `onboarding` (`clipboard` when its
+  entry points land).
+- The UI is the app's own design system in `ui/theme` (color, spacing, radius, type, shadow, and motion tokens: an
+  electric-blue accent over charcoal and stone, a #0A0A0A dark surface, Source Sans 3 under the SIL OFL) and
+  `ui/components` (the 28 dp soft card, 20 dp hero surface, 100 dp pills, selectable pills, the sliding-pill
+  segmented control, the expanding action orb, bento tiles, the connection orb, pull to refresh), built on Compose
+  foundation. The app does not depend on Material components; only `material-icons-core` supplies glyphs.
 - One `ViewModel` per screen exposing `StateFlow`; UI actions return `Result`, never throw into the UI. Coroutines
   only, no callbacks above the data layer. Manual constructor injection from one `AppContainer`, no DI framework.
 - `LinkRepository` reads `LinkClient.next_event()` for the life of the process, so `desktops` carries live connected
   flags and `incoming` every share; `ShareNotifier` turns each share into a notification (Open for a link, Copy for
-  text). POST_NOTIFICATIONS is requested once a desktop is paired.
+  text). POST_NOTIFICATIONS is requested once a desktop is paired; the other grants (notification access, DND
+  access, the battery-optimization exemption, and the call permissions) through the paged onboarding, each explained
+  before Android asks.
 - Presence: the phone is present while any of its activities is started (`ProcessLifecycleOwner`) and while "Stay
   connected" is on. That toggle runs `PresenceService`, a `connectedDevice` foreground service whose notification
   exists only while it runs; it holds no state and only lets the connection live in the background. The multicast
@@ -362,4 +370,6 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
 - The share target (`ACTION_SEND`, `text/plain`) sends to the only paired desktop, or asks which; a single http or
   https URL goes as a link.
 - E2E: `tests/e2e/link_android.sh` drives the Maestro flows under `link/android/maestro/` on an emulator against a
-  private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`.
+  private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`;
+  `link_android_features.sh` covers notifications, media, ring, and calls, with the `fixture` app as a stand-in media
+  session and chat; `link_android_ui.sh` screenshots every screen in light and dark to `artifacts/link-android-ui/`.

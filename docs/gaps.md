@@ -128,7 +128,9 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
    `link_android.sh`. **Slice C**: phone notifications on the desktop with actions, inline reply, and dismissal both
    ways (E2E `link_notifications.sh`, `link_android_features.sh`); media both ways, phone players as MPRIS players
    and desktop players on the phone (E2E `link_media.sh`); find my phone and find my desktop (E2E `link_ring.sh`); calls
-   with mute and decline, pausing desktop media (E2E `link_calls.sh`). Android 15 hides notifications it flags as sensitive (OTPs,
+   with mute and decline, pausing desktop media (E2E `link_calls.sh`); the app rebuilt on its own soft-tech design
+   system without Material, with Home, a device page, pairing, Media, and a permission onboarding (screenshots of
+   every screen in light and dark: `link_android_ui.sh`). Android 15 hides notifications it flags as sensitive (OTPs,
    some SMS) from listeners that are not trusted, so those arrive as "Sensitive notification content hidden".
    Remaining in phase 1: battery and network status, files over bulk streams (resumable, hashed),
    clipboard offers, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar

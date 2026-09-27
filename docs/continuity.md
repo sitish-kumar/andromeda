@@ -223,7 +223,10 @@ So: Android gets the full feature set, and iPhone gets notifications, media, and
   quick-settings tile.
 - **No-shared-network transfers**: `LocalOnlyHotspot` drops the phone's own Wi-Fi on phones without STA/AP
   concurrency; the app checks `isStaApConcurrencySupported()` and tells the user before a transfer.
-- Small by design: pairing, a device page, a share target, a list of granted features. The phone UI never
+- Small by design: Home (the primary desktop as a hero, its actions as a bento grid), pairing, a device page with
+  per-feature switches and the per-app notification filter, a media screen, a short permission onboarding, and a
+  share target. Its look is its own design system on Compose foundation (the soft-tech language: 28 dp cards, pills,
+  an electric-blue accent), not Material. The phone UI never
   duplicates desktop UI.
 - **iOS** after Android, limited to what iOS allows (above).
 
