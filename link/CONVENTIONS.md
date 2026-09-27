@@ -21,7 +21,9 @@ punctuation). Where this file is more specific, it wins for `link/`.
 - `default-features = false`, then enable only what is used.
 - `cargo deny check` (licenses, advisories, bans, sources; `deny.toml`) passes before a commit. Duplicate versions
   are warnings to fix, not to ignore.
-- One crypto provider: `ring`, through rustls and directly. No second hash or signature library.
+- One crypto provider: `ring`, through rustls and directly. No second hash or signature library. The one exception is
+  AES-256-CBC for Quick Share's secure channel, which ring lacks: RustCrypto `aes` and `cbc`, used only in
+  `link-quickshare`.
 
 ## Errors
 

@@ -13,6 +13,8 @@ link/crates/
   link-daemon  bin umbriel-linkd: D-Bus org.umbriel.Link1, systemd service, pairing window, device registry.
   link-phone   bin umbriel-link-phone: the headless phone for E2E tests, and the transcript schema check.
   link-ffi     UniFFI bindings of link-core for the Android app.
+  link-quickshare  Quick Share over the LAN (UKEY2, the D2D channel, sharing frames, mDNS and the BLE hint); bin
+               umbriel-quickshare for tests. Depends on no other crate of ours.
 link/android/  the Android app, Kotlin + Compose over link-ffi.
 ```
 
@@ -35,6 +37,8 @@ crate of ours; `core` never knows which binary runs it.
 | `thiserror` | proto, core | Library error enums |
 | `anyhow`, `clap`, `env_logger`, `log` | binaries (`log` everywhere) | CLI and logging |
 | `cddl` | phone | Validates E2E transcripts against `protocol/link-v1/messages.cddl` |
+| `prost`, `prost-types`, `prost-build` | quickshare | Quick Share frames are protobuf; generated from `protocol/quickshare/` at build time (needs `protoc`) |
+| `aes`, `cbc` | quickshare | AES-256-CBC with PKCS#7 for Quick Share's D2D channel; ring has no CBC (see CONVENTIONS) |
 
 ## Threads
 
@@ -159,6 +163,33 @@ Failure modes, each of which delivers nothing where it says so:
 - A fixed port lets a host firewall allow Link by name: the package ships the ufw profile
   `/etc/ufw/applications.d/umbriel-link` (4717/udp and mDNS 5353/udp), enabled with `sudo ufw allow "Umbriel Link"`.
   A desktop that fell back to a random port needs that port allowed by hand.
+
+## Quick Share (`link-quickshare`)
+
+Receive and send with stock Android Quick Share on the same network. The protocol is Google's; the reference for
+it is NearDrop's `PROTOCOL.md`.
+
+- Discovery: mDNS `_FC9F5ED42C8A._tcp`, instance name `base64url(0x23, 4-char endpoint id, FC 9F 5E, 00 00)`, TXT `n`
+  = endpoint info (device type in bits 1-3 of byte 0, 16 random bytes, name length, name). Android only looks for
+  receivers after it sees a BLE advertisement of service `fe2c` with data `FC 12 8E 01 42`, 12 zero bytes and 10
+  random ones; the receiver registers it with BlueZ's `LEAdvertisingManager1`.
+- Connection: TCP, every message a big-endian `u32` length and a protobuf. Plain connection request, UKEY2
+  (P-256, SHA-512 commitment, next protocol `AES_256_CBC-HMAC_SHA256`), plain connection responses (client first),
+  then every offline frame through the D2D channel: HKDF-SHA256 keys, AES-256-CBC with a fresh IV, HMAC-SHA256 over
+  header and body, sequence numbers from 1 per direction. Keep-alive every 10 s; 30 s of silence ends it.
+- Sharing: paired-key frames with random contents and result "unable" (contact certificates need a Google account),
+  introduction, the receiver's accept or reject, then file payloads in chunks with offsets; the receiver
+  disconnects when every file is in place. The PIN is the auth string folded base 31 modulo 9973.
+
+Failure modes, each ending with nothing written except complete, announced files:
+
+1. A client finish that does not hash to the client init's commitment, or a key off the curve: the handshake fails.
+2. A secure message with a bad HMAC, bad padding, or a sequence number out of order: the connection closes.
+3. A frame over 5 MiB, a bytes payload over 1 MiB, or text over 1 MiB: refused before allocation.
+4. File bytes past the announced size, or a last chunk short of it: the transfer fails and its part files are deleted.
+5. A hostile name (`../x`, `.bashrc`, NUL, control characters, over 255 bytes): saved as a bare, visible name.
+6. A name already taken: saved as `name (n).ext`; publishing is a hard link, so it never replaces a file.
+7. Declined or cancelled: nothing is written. The sender going silent: the connection ends after 30 s.
 
 ## D-Bus: `org.umbriel.Link1`
 
