@@ -153,11 +153,19 @@ In the repo's existing style: E2E only, each producing an artifact.
 | 5 | Phone camera as a PipeWire source, Wi-Fi Direct transfers, iPhone (ANCS/AMS, foreground share) | Camera visible to a stock app; transfer with no shared network |
 | 6 | Unlock with phone, after its threat model | Reviewed model plus E2E |
 
+## Decided: Rust core, native shells
+
+The core and `umbriel-linkd` are Rust; the phone UI is Kotlin (Compose) on Android and SwiftUI on iOS, bound by
+UniFFI. A C++ core was rejected: its bindings would be hand-written JNI or Djinni, the approach Dropbox built and then
+abandoned as costlier than writing the code twice; and this core parses untrusted input and holds keys, where
+Google measures Rust at roughly 1000x fewer memory-safety bugs per line than C/C++. No C++ is shared either way,
+since the daemon talks to the shell over D-Bus. Flutter over the same core stays possible if the phone UI grows.
+Costs accepted: a new language in the repo, a larger app binary, `cargo-ndk` in the Android build. QUIC loss
+behaviour (where `msquic` benchmarks ahead of `quinn`) is measured in the `tc netem` E2E tests rather than assumed.
+
 ## Open questions
 
 - Name and branding (Link is a placeholder).
-- Rust for the core and daemon is a new language in this repo; the alternative is C++ with `ngtcp2` on the desktop
-  and a separate Kotlin implementation on the phone, which gives up the shared core.
 - Whether the phone app is distributed through F-Droid, Play, or both (affects which Android APIs are usable).
 
 ## References
@@ -165,3 +173,6 @@ In the repo's existing style: E2E only, each producing an artifact.
 Prior art, read for what to avoid as much as what to keep:
 - KDE Connect protocol notes: https://github.com/KDE/kdeconnect-meta/blob/work/protocol-schemas/protocol.md
 - Valent's protocol reference (a GNOME implementation of KDE Connect): https://valent.andyholmes.ca/documentation/protocol.html
+- Dropbox on dropping its shared C++ mobile core: https://dropbox.tech/mobile/the-not-so-hidden-cost-of-sharing-code-between-ios-and-android
+- Google on Rust in Android: https://security.googleblog.com/2024/09/eliminating-memory-safety-vulnerabilities-Android.html
+- UniFFI: https://github.com/mozilla/uniffi-rs
