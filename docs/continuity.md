@@ -72,7 +72,7 @@ and nothing in the shell names either of them.
 ### Discovery and transport
 
 1. **mDNS/DNS-SD**: the daemon advertises `_umbriel-link._udp` with an in-process responder (`mdns-sd`), carrying
-   a device id hash, never the name. In-process rather than Avahi's D-Bus API because Avahi is often not running
+   a device id hash, never the name, and only while it has a paired device or an open pairing window. In-process rather than Avahi's D-Bus API because Avahi is often not running
    (it is not on the reference machine) and the network-namespace E2E then needs no system daemon; `mdns-sd`
    shares port 5353 with Avahi when both run. The phone uses Android's `NsdManager`.
 2. **Last-known addresses**: both ends remember every address that worked and dial them directly first, so a
@@ -86,10 +86,10 @@ and nothing in the shell names either of them.
    blocks a notification. Only the QUIC client (the phone) migrates: a phone roaming between networks keeps the
    connection, but a desktop address change ends it. What makes transfers survive either case is resumption by
    byte offset after a fast reconnect.
-5. **Connect on demand**: the connection closes after a short idle period instead of holding keepalives, and
-   reopens with 0-RTT session resumption when either side has something to send. Only idempotent messages
-   (presence, clipboard offers, notification sync by id) may ride in 0-RTT, since 0-RTT data can be replayed.
-   When the phone is not connected, the desktop reaches it through the BLE presence path.
+5. **Connect on demand**: the connection closes after 30 s idle instead of holding keepalives, and the next one
+   resumes the TLS session (0-RTT accepted), skipping the full handshake. No application data rides as early data,
+   so nothing can be replayed. When the phone is not connected, the desktop reaches it through the BLE presence
+   path.
 6. **BLE L2CAP control**: when no IP path works (client isolation, no shared network), control messages
    (notifications, clipboard offers, presence, "open a hotspot") travel over an L2CAP connection-oriented channel
    on the bond (BlueZ; Android API 29+), carrying the same CBOR messages, encrypted with the session keys derived
@@ -101,8 +101,10 @@ and nothing in the shell names either of them.
 
 ### Identity and pairing
 
-- Each device has an Ed25519 long-term key. The desktop keeps its key in the Secret Service (the shell's
-  `SecretStore` path); the phone keeps its key in the Android Keystore.
+- Each device has an Ed25519 long-term key. The desktop keeps it in a mode-0600 file in the daemon's state directory,
+  the one directory its systemd sandbox may write (the same model as SSH host keys); the Secret Service was rejected
+  because it would stop the daemon until the keyring unlocks. The phone keeps its key encrypted by a non-exportable
+  Android Keystore key, since TLS signing happens in the Rust core.
 - **Pairing**: the desktop shows a QR code (addresses, public key, one-time secret) in Settings; the phone scans it.
   Fallback: a 6-digit code typed on the phone. Either way the secret feeds SPAKE2, so a man in the middle without
   the code learns nothing and a wrong code fails the handshake instead of relying on the user to compare strings.

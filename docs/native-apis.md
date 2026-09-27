@@ -162,3 +162,19 @@ wlroots 0.20.2 headers. **Verified** unless marked.
 
 Timing protocols the shell uses for content animation: `wp_presentation` (stable; the shared clock),
 `wp_commit_timing_v1` and `wp_fifo_v1` (staging, present in `/usr/share/wayland-protocols/staging` here).
+
+## Link daemon (`umbriel-linkd`)
+
+Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` and a sandboxed run of
+`session/umbriel-linkd.service`.
+
+| API | Use |
+|---|---|
+| `org.umbriel.Link1` (served, session bus) | `StartPairing() → (s, s)`, `CancelPairing()`, `Unpair(s)`, properties `Devices a(ssb)` and `Pairing b` with `PropertiesChanged`, signals `PairingFinished(s, s)` and `PairingFailed(s)`. Contract: `protocol/link-v1/org.umbriel.Link1.xml` |
+| `org.freedesktop.hostname1` property `PrettyHostname` (system bus) | The name phones see; the kernel hostname (`/proc/sys/kernel/hostname`) when hostnamed is absent |
+| QUIC (`quinn` 0.11) over UDP, ALPN `umbriel-link/1` | The Link transport; one dual-stack socket on a port kept in `devices.json` |
+| TLS 1.3 raw public keys (`rustls` 0.23 `AlwaysResolves{Server,Client}RawPublicKeys`, `verify_tls13_signature_with_raw_key`) | Both sides authenticated by Ed25519 SPKI; the phone's pin rides in the TLS server name so one client config (and its session cache) serves every desktop |
+| TLS exporter (`quinn::Connection::export_keying_material`, label `EXPORTER-umbriel-link-pair`) | Binds SPAKE2 to the TLS session |
+| mDNS/DNS-SD (`mdns-sd` 0.21), `_umbriel-link._udp.local.` | Advertised only while a device is paired or a pairing window is open |
+| `getifaddrs` via netlink (`if-addrs` 0.15) | Addresses for the pairing QR code and the desktop's `hello` |
+| `$STATE_DIRECTORY` (systemd `StateDirectory=umbriel-link`) | `identity.pk8` (0600) and `devices.json` |
