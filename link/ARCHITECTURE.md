@@ -318,8 +318,10 @@ it is NearDrop's `PROTOCOL.md`.
 
 In the daemon it is `org.umbriel.Link1.QuickShare` on the Link object (contract in the XML): hidden until `Visible` is
 set, which persists across restarts; TCP 4718 (ufw profile), random if taken; every offer waits up to 60 s for
-`Accept` or `Decline`; files go to `XDG_DOWNLOAD_DIR`, the only writable path in home (`ReadWritePaths`). E2E
-`quickshare_daemon.sh`.
+`Accept` or `Decline`; files go to `XDG_DOWNLOAD_DIR`, the only writable path in home (`ReadWritePaths`). Sending:
+`StartDiscovery` browses mDNS and sends the BLE hint (Android phones advertise only after seeing it) and fills
+`Nearby`; `Send(peer, a(hs))` takes descriptors the shell opened, so the daemon still reads no path; `SendPin` and
+`SendFinished` report. E2E `quickshare_daemon.sh`, `quickshare_shell.sh`.
 
 Failure modes, each ending with nothing written except complete, announced files:
 
