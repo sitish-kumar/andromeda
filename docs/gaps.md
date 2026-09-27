@@ -118,7 +118,7 @@ mode (1.10), 1.13.
 
 Next, in this order (each lands with an E2E or harness proof and, for power items, a bench row):
 1. Screen recording follow-ups (1.9): audio (a PipeWire source into the same mux), region selection.
-3. Continuity with a phone, designed in `continuity.md`, code in `link/` (`link/ARCHITECTURE.md`). **Phase 0 done**:
+2. Continuity with a phone, designed in `continuity.md`, code in `link/` (`link/ARCHITECTURE.md`). **Phase 0 done**:
    protocol core, `umbriel-linkd` (sandboxed user service, `org.umbriel.Link1`), headless phone, mDNS plus
    last-known addresses, code and QR pairing with SPAKE2 bound to TLS, session resumption. E2E `link_pair.sh`.
-4. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
+3. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
