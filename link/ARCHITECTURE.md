@@ -232,6 +232,33 @@ Failure modes:
 4. Artwork the desktop cannot read, or over 49152 bytes: the player is sent without artwork.
 5. The session ends: the other side's players are forgotten; they return with the next connect's re-send.
 
+### Find my phone, find my desktop
+
+```
+either side                         other side
+  ring {on}                     ->  starts (true) or stops (false) ringing
+                                <-  ringing {on}   whenever its own ringing starts or stops, for any reason
+```
+
+- Both directions use the same two messages: the desktop rings the phone from the Devices tab or `link-ring`, the
+  phone rings the desktop from its home screen. Either side stops a ring, from where it rings or from where it was
+  started, and `ringing` keeps both surfaces showing the truth.
+- The phone rings on the alarm stream at full volume, through silent mode, and puts the alarm volume back when the
+  ring stops. Do Not Disturb lets alarms through unless the user blocked them there; before Android 15, DND access
+  also lifts DND for the ring, which Android 15 no longer allows an app to do. The desktop
+  plays the shell's alarm sound at full volume whatever the UI-sound setting.
+- A ring stops by itself after 2 minutes. It outlives the session that started it, since a phone that moved out of
+  reach is exactly the one being looked for.
+- Unacknowledged, at most once.
+
+Failure modes:
+
+1. A `ring {on: true}` while already ringing, or `{on: false}` while silent: ignored, apart from a fresh `ringing`
+   reply.
+2. A ring to a phone whose ring switch is off: ignored; its `ringing` stays false.
+3. `Ring` on D-Bus without a live session: `NotConnected`.
+4. A `ringing` report that does not match what the receiver asked: shown as reported; the report is the truth.
+
 ### Discovery
 
 - The desktop advertises `_umbriel-link._udp.local.` only while it has a paired device or an open window, so an

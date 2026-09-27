@@ -127,7 +127,7 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
    notifications), and 4717/udp by default with a ufw profile. E2E `link_share.sh`, `link_share_shell.sh`,
    `link_android.sh`. **Slice C**: phone notifications on the desktop with actions, inline reply, and dismissal both
    ways (E2E `link_notifications.sh`, `link_android_features.sh`); media both ways, phone players as MPRIS players
-   and desktop players on the phone (E2E `link_media.sh`). Android 15 hides notifications it flags as sensitive (OTPs,
+   and desktop players on the phone (E2E `link_media.sh`); find my phone and find my desktop (E2E `link_ring.sh`). Android 15 hides notifications it flags as sensitive (OTPs,
    some SMS) from listeners that are not trusted, so those arrive as "Sensitive notification content hidden".
    Remaining in phase 1: battery and network status, files over bulk streams (resumable, hashed),
    clipboard offers, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
