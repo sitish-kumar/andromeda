@@ -8,7 +8,8 @@ Conventions are in `CONVENTIONS.md`.
 ```
 link/crates/
   link-proto   sans-IO: wire messages, framing, pairing and session state machines. No I/O, no clock, no runtime.
-  link-core    the engine: identity and store, TLS/QUIC transport, mDNS, the session actor. Used by all three below.
+  link-core    the engine: identity and store, TLS/QUIC transport, mDNS, the session actor, and the phone's client
+               actor (presence, redial, events). Used by all three below.
   link-daemon  bin umbriel-linkd: D-Bus org.umbriel.Link1, systemd service, pairing window, device registry.
   link-phone   bin umbriel-link-phone: the headless phone for E2E tests, and the transcript schema check.
   link-ffi     UniFFI bindings of link-core for the Android app.
@@ -181,8 +182,18 @@ client is written against it.
 Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
 - Modules: `app` (Compose UI and Android services), `core` (domain and data over `link-ffi`). Dependency direction
   Presentation → Domain → Data; the domain layer imports neither.
-- Feature-first packages under `app`: `pairing`, `devices`, `share`, `clipboard`, `notifications`.
+- Feature-first packages under `app`: `pairing`, `devices`, `presence`, `share`, `notifications` (`clipboard` when
+  its entry points land).
 - One `ViewModel` per screen exposing `StateFlow`; UI actions return `Result`, never throw into the UI. Coroutines
   only, no callbacks above the data layer. Manual constructor injection from one `AppContainer`, no DI framework.
-- E2E with Maestro flows under `link/android/maestro/`, each writing screenshots and a JSON result to
-  `artifacts/link-android-*/`.
+- `LinkRepository` reads `LinkClient.next_event()` for the life of the process, so `desktops` carries live connected
+  flags and `incoming` every share; `ShareNotifier` turns each share into a notification (Open for a link, Copy for
+  text). POST_NOTIFICATIONS is requested once a desktop is paired.
+- Presence: the phone is present while any of its activities is started (`ProcessLifecycleOwner`) and while "Stay
+  connected" is on. That toggle runs `PresenceService`, a `connectedDevice` foreground service whose notification
+  exists only while it runs; it holds no state and only lets the connection live in the background. The multicast
+  lock is held while present, for the mDNS half of a redial.
+- The share target (`ACTION_SEND`, `text/plain`) sends to the only paired desktop, or asks which; a single http or
+  https URL goes as a link.
+- E2E: `tests/e2e/link_android.sh` drives the Maestro flows under `link/android/maestro/` on an emulator against a
+  private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`.

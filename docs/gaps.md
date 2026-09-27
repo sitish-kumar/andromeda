@@ -122,4 +122,13 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
 3. Continuity with a phone, designed in `continuity.md`, code in `link/` (`link/ARCHITECTURE.md`). **Phase 0 done**:
    protocol core, `umbriel-linkd` (sandboxed user service, `org.umbriel.Link1`), headless phone, mDNS plus
    last-known addresses, code and QR pairing with SPAKE2 bound to TLS, session resumption. E2E `link_pair.sh`.
+   **Phase 1, slice A done**: live presence (10 s QUIC keep-alive and redial with backoff while the phone wants it;
+   Android: in the foreground, or with "Stay connected" as a `connectedDevice` foreground service), a session actor
+   per connection on both sides, text and link shares both ways (D-Bus `Share` and `Received`, shell notifications
+   with Open and Copy, `link-share` IPC, Send clipboard in the Devices tab, the Android share target and
+   notifications), and 4717/udp by default with a ufw profile. E2E `link_share.sh`, `link_share_shell.sh`,
+   `link_android.sh`. Remaining in phase 1: battery and network status, files over bulk streams (resumable, hashed),
+   clipboard offers, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
+   indicator and share sheet, Quick Share, the KDE Connect baseline, and redial on an Android network change instead
+   of the next backoff step.
 4. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
