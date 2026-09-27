@@ -11,8 +11,8 @@ link/crates/
   link-core    the engine: identity and store, TLS/QUIC transport, mDNS, the session actor. Used by all three below.
   link-daemon  bin umbriel-linkd: D-Bus org.umbriel.Link1, systemd service, pairing window, device registry.
   link-phone   bin umbriel-link-phone: the headless phone for E2E tests, and the transcript schema check.
-  link-ffi     UniFFI bindings of link-core for the Android app (phase 2).
-link/android/  the Android app (phase 2), Kotlin + Compose over link-ffi.
+  link-ffi     UniFFI bindings of link-core for the Android app.
+link/android/  the Android app, Kotlin + Compose over link-ffi.
 ```
 
 Dependency direction is strictly downward: `daemon`, `phone`, `ffi` → `core` → `proto`. `proto` depends on no other
@@ -102,6 +102,48 @@ Failure modes, each of which must end in no stored key on either side:
   nothing is replayable. rustls reuses a cached session only with the same verifier and key-resolver objects, so the
   phone builds one client config and carries the desktop pin in the TLS server name
   (`<fingerprint[0..16]>.<fingerprint[16..32]>.link` in hex, `pairing.link` for code pairing).
+- Presence: while the phone wants to be present it dials with QUIC keep-alive every 10 s. That is a third of the
+  30 s idle timeout, so two lost PINGs in a row still keep the session, and it stays under the 30 s after which Linux
+  conntrack and many home routers drop an idle UDP mapping. When a present session ends for any reason but
+  unpairing, the phone redials (last-known addresses, then mDNS) after 1 s, doubling to at most 30 s, and resets the
+  delay on success. Only the phone sends PINGs; the desktop never dials.
+- The desktop keeps one session per device: a new session from a device closes the older one with 0, because a phone
+  whose network changed reconnects before the desktop's old connection idles out.
+- Each side runs one session actor per connection. It owns the control stream, reads it without a deadline, and is
+  reached through a handle for sending; the desktop's actors are the listener's connection tasks.
+
+### Session messages
+
+```
+either side                                    other side
+  share {kind: "text"|"link", text}        ->  hand to the local surface (D-Bus Received, the phone's events)
+                                           <-  share-ack {of: <the share's envelope id>}
+phone                                          desktop
+  unpair {}                                ->  forget the phone, close 0
+```
+
+- `text` is 1 to 61440 bytes of UTF-8, so a share always fits one 64 KiB frame. A `link` is also an absolute
+  `http://` or `https://` URL (scheme in any case) with a non-empty rest and no whitespace or control characters.
+  Every other scheme (`javascript:`, `file:`, `intent:`) is refused, so opening a received link cannot run or read
+  anything local.
+- The sender checks a share before sending it; the receiver checks it again while decoding.
+- A share is acknowledged once it reached the local surface. The sender waits 10 s for the ack.
+- Delivery is at most once per send: a send that failed may still have arrived, and resending may duplicate it.
+
+Failure modes, each of which delivers nothing where it says so:
+
+1. A `hello`, `pair-spake`, or `pair-confirm` once the session is running: close 5.
+2. A `share-ack` for an id with no outstanding share, including a second ack for the same share: close 5.
+3. A `share` with an empty or oversized text, an unknown kind, or a `link` that is not http or https: close 5,
+   nothing delivered.
+4. An `unpair` sent to the phone (the desktop unpairs with close 2): close 5.
+5. A share not acknowledged within 10 s: the send fails with "timed out"; the session stays up.
+6. The connection ends while a share waits for its ack: the send fails; the share may have arrived.
+7. `Share` on D-Bus for a device without a live session: fails at once with `org.umbriel.Link1.Error.NotConnected`;
+   nothing is dialled, since only the phone dials.
+8. A network black hole shorter than the idle timeout: the same connection survives (QUIC retransmits).
+9. A black hole longer than 30 s: both ends time out, the desktop shows the device disconnected, and the phone
+   redials with backoff until the path returns.
 
 ### Discovery
 
@@ -110,8 +152,12 @@ Failure modes, each of which must end in no stored key on either side:
   device name.
 - The phone dials, in order: last-known addresses (most recent success first), then mDNS results for the paired
   desktop's `DeviceId`. The first handshake that verifies wins.
-- The desktop's QUIC port is chosen at random on first start and kept in the store, so last-known addresses stay valid
-  across restarts.
+- The desktop's QUIC port is 4717/udp (unassigned at IANA) on first start, or a random port if 4717 is taken, and is
+  kept in the store either way, so last-known addresses stay valid across restarts. A store from before keeps its
+  port.
+- A fixed port lets a host firewall allow Link by name: the package ships the ufw profile
+  `/etc/ufw/applications.d/umbriel-link` (4717/udp and mDNS 5353/udp), enabled with `sudo ufw allow "Umbriel Link"`.
+  A desktop that fell back to a random port needs that port allowed by hand.
 
 ## D-Bus: `org.umbriel.Link1`
 
@@ -123,12 +169,14 @@ client is written against it.
 | method `StartPairing` | `() → (s code, s uri)` | Opens the 120 s window; a new call replaces the old window |
 | method `CancelPairing` | `()` | Closes the window |
 | method `Unpair` | `(s device_id)` | Forgets the device; it is told at next contact |
+| method `Share` | `(s device_id, s kind, s text)` | Sends `text` or `link` to a connected device and returns once it acknowledged; `org.umbriel.Link1.Error.NotConnected` without a live session, `org.umbriel.Link1.Error.Rejected` for a share that breaks the rules above, `org.umbriel.Link1.Error.Failed` when the device did not acknowledge it |
 | property `Devices` | `a(ssb)` | `(device_id, name, connected)`, with `PropertiesChanged` |
 | property `Pairing` | `b` | Whether a window is open |
 | signal `PairingFinished` | `(s device_id, s name)` | A device was paired |
 | signal `PairingFailed` | `(s reason)` | The window's attempt failed |
+| signal `Received` | `(s device_id, s kind, s text)` | A device shared text or a link (`kind` is `text` or `link`), already checked |
 
-## Android app (phase 2)
+## Android app
 
 Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
 - Modules: `app` (Compose UI and Android services), `core` (domain and data over `link-ffi`). Dependency direction
