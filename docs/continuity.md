@@ -86,10 +86,12 @@ and nothing in the shell names either of them.
    blocks a notification. Only the QUIC client (the phone) migrates: a phone roaming between networks keeps the
    connection, but a desktop address change ends it. What makes transfers survive either case is resumption by
    byte offset after a fast reconnect.
-5. **Connect on demand**: the connection closes after 30 s idle instead of holding keepalives, and the next one
-   resumes the TLS session (0-RTT accepted), skipping the full handshake. No application data rides as early data,
-   so nothing can be replayed. When the phone is not connected, the desktop reaches it through the BLE presence
-   path.
+5. **Connect on demand, present when wanted**: by default the connection closes after 30 s idle instead of
+   holding keepalives, and the next one resumes the TLS session (0-RTT accepted), skipping the full handshake. No
+   application data rides as early data, so nothing can be replayed. While the phone wants to be present (the app
+   in the foreground, or its "Stay connected" service running) it sends QUIC keep-alives every 10 s and redials
+   with backoff when the connection drops, so the desktop's device list shows the truth. When the phone is not
+   connected, the desktop reaches it through the BLE presence path.
 6. **BLE L2CAP control**: when no IP path works (client isolation, no shared network), control messages
    (notifications, clipboard offers, presence, "open a hotspot") travel over an L2CAP connection-oriented channel
    on the bond (BlueZ; Android API 29+), carrying the same CBOR messages, encrypted with the session keys derived
@@ -98,6 +100,9 @@ and nothing in the shell names either of them.
    by Android and readable by the app that opened it), sends its credentials over the L2CAP channel, and the
    daemon joins it through NetworkManager for the transfer, then leaves. This is Quick Share's approach, and
    more dependable than Wi-Fi Direct on Linux.
+8. **Firewall**: the desktop listens on 4717/udp (unassigned at IANA) unless that port is taken, so a host firewall
+   can allow it by name. The package ships a ufw profile; after installing, enable it once with
+   `sudo ufw allow "Umbriel Link"` (4717/udp, and mDNS on 5353/udp).
 
 ### Identity and pairing
 
@@ -129,7 +134,10 @@ and nothing in the shell names either of them.
 - **Capabilities** are negotiated per connection and gated per device by the user's grants, so the phone never
   sends what the desktop did not ask for.
 - **Bulk data** (files, clipboard images, attachments) opens its own stream: resumable by byte offset, a size
-  announced up front and enforced, content hashed (BLAKE3) and verified before the file is revealed.
+  announced up front and enforced, content hashed (SHA-256 through `ring`, the one crypto provider) and verified
+  before the file is revealed.
+- **Shares** of text and links are control messages, 1 to 61440 bytes, acknowledged by the receiver; a link must
+  be http or https, so opening one can never run or read anything local.
 
 ## Features
 
