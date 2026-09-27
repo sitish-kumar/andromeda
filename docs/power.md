@@ -88,6 +88,19 @@ browser. Needs `turbostat` (`pacman -S turbostat`). Root is used only by this me
      expensive effects on battery through the private protocol is still open.
    - Static kernel policy (ASPM, runtime PM, audio power save, USB autosuspend) ships as `tmpfiles.d` and `udev`
      rules in the `desktop` package. No TLP, auto-cpufreq, or powertop auto-tune: they fight each other and us.
+     Written in `session/power/` (checked with `udevadm verify`, `systemd-tmpfiles --dry-run --create`, and
+     `modprobe --showconfig -C`; not installed on this machine, whose cmdline and defaults already match):
+     - `umbriel-power.tmpfiles` sets ASPM to `powersupersave` (L1 substates). Safe to ship: the kernel refuses the
+       write when the firmware kept ASPM control (`_OSC`/FADT) or `pcie_aspm=off` was booted, and its per-device
+       quirks keep ASPM off links known to break. A machine that misbehaves opts out with an empty
+       `/etc/tmpfiles.d/umbriel-power.conf`.
+     - `60-umbriel-power.rules` sets runtime PM `auto` on every PCI device (the SOF DSP runtime-suspends through it)
+       except the drivers on TLP's deny list (`nouveau`, `radeon`, `mei_me`), and USB autosuspend on every device
+       without a HID interface.
+     - `umbriel-power.modprobe` gives `snd_hda_intel` `power_save=1` and `power_save_controller=Y`; SOF has no such
+       parameter and needs none.
+     - Still open: the `desktop-git` split in `pkg/PKGBUILD` that installs them to `/usr/lib/tmpfiles.d`,
+       `/usr/lib/udev/rules.d`, and `/usr/lib/modprobe.d`.
 7. **Quality of service, the macOS trick.** Arrow Lake-H has 2 LP-E cores on the SoC tile. Put background work
    (session daemons, indexers, apps on hidden workspaces) in a systemd slice with `AllowedCPUs=` on those cores and a
    low `CPUWeight=`. The compute tile can then stay power-gated while the desktop sits idle. On this machine the
