@@ -73,7 +73,11 @@ browser. Needs `turbostat` (`pacman -S turbostat`). Root is used only by this me
    - Shell: find the 25 wakeups/s Noctalia does at idle; every periodic timer must justify itself or become an event.
    - Clock ticks once per minute, aligned to the minute, unless seconds are shown.
 3. **Keep PSR on.** Assert zero commits over 60 s of a static screen in a harness check (frame counter via IPC) and
-   in the idle bench (PSR exit count 0). Anything that animates at idle is a bug.
+   in the idle bench (PSR exit count 0). Anything that animates at idle is a bug. Harness check 643: a panel, two
+   windows after a focus change, and a game drawing on a hidden workspace make zero commits over 3 s. E2E
+   `idle_commits.sh`: a clock-only bar and a gauge bar make zero commits over 30 s that hold no minute tick. The
+   harness boots no shell, so the shell half is the E2E. Nothing was found animating at idle. The idle bench's PSR
+   exit count needs root and is still open.
 4. **Refresh policy.** Measure three idle strategies on battery with PSR on: fixed 120 Hz, VRR (panel minimum), and a
    60 Hz mode while nothing moves. i915 may refuse PSR with VRR on; pick the default from the numbers.
 5. **Overlay planes.** Put fullscreen video and the cursor on KMS planes (`wlr_output_layer`) so playback does not
