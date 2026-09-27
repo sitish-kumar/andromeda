@@ -26,7 +26,8 @@ window, and it applies each change by calling the owner of that setting directly
 | Output modes, position, scale, VRR | Umbriel | Umbriel config | `zwlr_output_manager_v1` (standard) |
 | Mirroring, hotplug profiles | Umbriel | `displays.toml` (`mirror` key) | private protocol, `output` interface |
 | Casting to wireless displays (Miracast, Chromecast) | Casting service (planned) | none | PipeWire stream from xdg-desktop-portal ScreenCast; see below |
-| Input devices, keyboard layout | Umbriel | Umbriel config | private protocol, `input` interface |
+| Input devices, keyboard layout | Umbriel | Umbriel `settings.toml` over config | private protocol, `settings` interface |
+| Window appearance, animation, layout, workspaces, overview, focus | Umbriel | Umbriel `settings.toml` over config | private protocol, `settings` interface |
 | Surface motion (shell animations) | Umbriel | nothing (runtime) | private protocol, `motion` interface |
 | Layout per workspace | Umbriel | Umbriel config | Umbriel IPC (existing) |
 | Theme, colors, app templates | Noctalia | Noctalia config | in-process |
@@ -109,7 +110,7 @@ implements the same pipeline; reading its failure modes on this machine comes fi
 | Fork | Carries | Upstream candidate |
 |---|---|---|
 | umbriel | private protocol server, mirroring, hotplug profiles, floating layout, output layers, battery policy | output layers, mirroring (ask first, per SCOPE.md) |
-| noctalia | settings pages (displays, input, date and time, language, drives, printers, default apps), motion client, Settings portal | displays page (Noctalia already reads `zwlr_output_manager_v1`) |
+| noctalia | settings pages (displays, input, window style, layout, overview, behavior, date and time, language, drives, printers, default apps), motion client, Settings portal | displays page (Noctalia already reads `zwlr_output_manager_v1`) |
 
 ## Open decisions
 

@@ -53,6 +53,24 @@ first.
 | 2.6 | Printers | S: CUPS via libcups/IPP once cupsd is installed |
 | 2.7 | drm-lease (VR) | C U |
 
+## Tier 3: every user-facing setting is in Settings
+
+A desktop is configured from Settings; config files store what Settings saved and stay for power users. Where a
+hand-written value and a Settings value meet, Settings wins, in both processes: the shell overlays `settings.toml`
+on its config, and the compositor loads the file it writes after `config.toml`.
+
+| # | Gap | Owner | Fix |
+|---|---|---|---|
+| 3.1 | Flat 28-section sidebar; appearance spread over Appearance, Wallpaper, Templates, Desktop, Dock, Panels, Bar, OSD, Umbriel | S | **Done**: sidebar tree of categories (Appearance, Desktop, Windows, Devices, System, Advanced), one open at a time, a one-page category is its own row; Templates into Style, OSD into Notifications, panel placements into Panels, window switcher and hot corners into Windows > Behavior; old ids (`templates`, `osd`, `umbriel`) still open the page that absorbed them. E2E `settings_navigation.sh`: all 374 settings paths kept, none on two pages |
+| 3.2 | Group "tabs" are jump pills over collapsible cards | S | **Done**: real tabs, one group at a time (Plugins too); `settings_expand_all_groups` lays groups out untabbed |
+| 3.3 | Override badge, "Overridden" filter, and "Reset Page" on every page; per-monitor bar copies as extra sidebar rows | S | **Done**: a reset glyph on rows Settings changed; Reset page in the ⋮ menu with an inline confirm; a display picker on the Bar page; `settings-open bar:<name>` |
+| 3.4 | Compositor appearance, animation, layout, workspaces, overview, and focus are file-only | C S X | **Done**: `dsk_settings_manager_v1` replaces `dsk_input_manager_v1` over 85 keys (`managed_settings.cpp`), persisted to `settings.toml`, loaded after `config.toml` so Settings wins; Window Style, Motion > Windows, Layout, Overview, Behavior > Focus pages; Input page rows reset instead of locking. Harness check 636, E2E `compositor_settings.sh`. Umbriel hot corners stay file-only until they merge with the shell's (3.8) |
+| 3.5 | Keybinds are file-only | C S X | **Written, not built or run**: `bind`, `capture_chord`, and `keybind`/`action_spec` events on `dsk_settings_manager_v1`; the compositor records the chord itself so bound chords (Super+Q) can be captured; `"none"` unbinds a built-in; Devices > Keyboard Shortcuts page with add, move, remove, and reset, plus `general.mod_key`. Harness check 641 |
+| 3.6 | `input.toml` only applies when `config.toml` includes it, so Input page changes fail on configs without the include | C | **Done** with 3.4: `settings.toml` needs no include; a generated `input.toml` is renamed to it on first start |
+| 3.7 | `settings-open <section>` does not switch pages when Settings is already open | S | **Done**: navigates on every call (E2E `settings_navigation.sh`) |
+| 3.8 | Two hot-corner features: the shell's and Umbriel's `[hot_corners]` | C S | **Written, not built or run**: on Umbriel the compositor owns hot corners (`hot_corners.*` keys, Windows > Behavior); the shell stops detecting corners there and moves its configured ones to the compositor once. Other compositors keep the shell's |
+| 3.9 | Display options zwlr_output_manager_v1 lacks: VRR fullscreen, HDR, SDR white, tearing, per-display workspaces | C S X | **Written, not built or run**: `set_property`/`property` on `dsk_output_manager_v1`, saved to `displays.toml`; Displays page rows; an apply keeps a saved `vrr = "fullscreen"` |
+
 ## Spawn and thread audit (shell/src, 2026-09-27)
 
 Every `process::run{Async,Sync}` call, every raw `fork`/`execv*`, and every `std::thread`/`std::jthread` in
