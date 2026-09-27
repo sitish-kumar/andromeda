@@ -171,6 +171,8 @@ Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` 
 | API | Use |
 |---|---|
 | `org.umbriel.Link1` (served, session bus) | `StartPairing() → (s, s)`, `CancelPairing()`, `Unpair(s)`, `Share(s, s, s)` (errors `org.umbriel.Link1.Error.NotConnected`, `.Rejected`, `.Failed`), `NotificationAction(s, s, s, s)`, `NotificationDismiss(s, s)`, properties `Devices a(ssb)` and `Pairing b` with `PropertiesChanged`, signals `PairingFinished(s, s)`, `PairingFailed(s)`, `Received(s, s, s)`, `NotificationPosted(s, s, s, s, s, ay, a(ssb))`, `NotificationRemoved(s, s)`. Contract: `protocol/link-v1/org.umbriel.Link1.xml` |
+| `org.mpris.MediaPlayer2` and `.Player` (served, session bus, one connection per phone as `org.mpris.MediaPlayer2.umbriel_link_<device id>`) | A phone's player: `PlaybackStatus`, `Metadata` (`mpris:artUrl` a file in the state directory), `Position` (advanced locally, `Seeked` on a jump), `Volume` (writable), `Can*`; methods become `media-command`s |
+| `org.mpris.MediaPlayer2.*` (client, session bus): `NameOwnerChanged` with `arg0namespace`, `PropertiesChanged` and `Seeked` on `/org/mpris/MediaPlayer2`, `Properties.GetAll`, `Play`, `Pause`, `PlayPause`, `Next`, `Previous`, `SetPosition` (or `Seek` without a track id), `Volume` | The desktop's players for phones, re-read only when one signals |
 | `org.freedesktop.hostname1` property `PrettyHostname` (system bus) | The name phones see; the kernel hostname (`/proc/sys/kernel/hostname`) when hostnamed is absent |
 | QUIC (`quinn` 0.11) over UDP, ALPN `umbriel-link/1` | The Link transport; one dual-stack socket on 4717/udp (a random port if taken), kept in `devices.json`. The phone sets `TransportConfig::keep_alive_interval` (10 s) only while present |
 | TLS 1.3 raw public keys (`rustls` 0.23 `AlwaysResolves{Server,Client}RawPublicKeys`, `verify_tls13_signature_with_raw_key`) | Both sides authenticated by Ed25519 SPKI; the phone's pin rides in the TLS server name so one client config (and its session cache) serves every desktop |
@@ -190,6 +192,8 @@ The phone app, `link/android/`. **Verified** against the API 36 SDK stubs and ru
 | `Notification.Action.actionIntent` with `RemoteInput.addResultsToIntent` and `setResultsSource(SOURCE_FREE_FORM_INPUT)`, sent with `ActivityOptions.setPendingIntentBackgroundActivityStartMode` on API 34+ | Runs a desktop's action or reply through the notification's own `PendingIntent`, so every messaging app replies the way it does from the shade |
 | `Notification.extras["android.appInfo"]` with `PackageManager.getApplicationLabel/getApplicationIcon` | The posting app's name and icon without package visibility; the icon drawn at 64 px and sent as PNG |
 | `Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS` | Where the user grants notification access |
+| `Notification.EXTRA_MESSAGES` via `MessagingStyle.Message.getMessagesFromBundleArray` | A conversation's latest messages, since messaging apps may leave `EXTRA_TEXT` empty |
+| `MediaSessionManager.getActiveSessions(listener)` and `addOnActiveSessionsChangedListener`, `MediaController.Callback`, `TransportControls`, `setVolumeTo` | The phone's player for desktops (allowed to a notification listener), and their commands to it |
 
 ## Link in the shell
 

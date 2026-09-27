@@ -15,7 +15,8 @@ link/crates/
   link-ffi     UniFFI bindings of link-core for the Android app.
   link-quickshare  Quick Share over the LAN (UKEY2, the D2D channel, sharing frames, mDNS and the BLE hint); bin
                umbriel-quickshare for tests. Depends on no other crate of ours.
-link/android/  the Android app, Kotlin + Compose over link-ffi.
+link/android/  the Android app, Kotlin + Compose over link-ffi; `fixture/` is a stand-in media and chat app for the
+               emulator E2E.
 ```
 
 Dependency direction is strictly downward: `daemon`, `phone`, `ffi` → `core` → `proto`. `proto` depends on no other
@@ -32,8 +33,10 @@ crate of ours; `core` never knows which binary runs it.
 | `ciborium`, `serde`, `serde_bytes` | proto | CBOR wire encoding |
 | `mdns-sd` | core | mDNS responder and browser; no Avahi dependency (see continuity.md) |
 | `tokio` | core, daemon, phone | Runtime, current-thread only |
-| `zbus` | daemon | D-Bus service on the tokio runtime, no extra thread |
+| `zbus` | daemon | D-Bus service on the tokio runtime, no extra thread; also each exported MPRIS player and the client of the desktop's |
+| `futures-util` | daemon | `StreamExt` over zbus's `MessageStream`, for the MPRIS signals the daemon follows; already in the tree through zbus |
 | `serde_json` | core | The on-disk device store |
+| `hex` | phone, daemon | Transcript lines; artwork file names |
 | `thiserror` | proto, core | Library error enums |
 | `anyhow`, `clap`, `env_logger`, `log` | binaries (`log` everywhere) | CLI and logging |
 | `cddl` | phone | Validates E2E transcripts against `protocol/link-v1/messages.cddl` |
@@ -189,6 +192,45 @@ Failure modes:
 7. `NotificationAction` or `NotificationDismiss` on D-Bus without a live session: `NotConnected`; an empty id or
    action, or a reply over 4096 bytes: `Rejected`.
 8. A post lost with its connection: it shows at the next connect's re-post.
+
+### Media
+
+Both sides describe their own players and command the other's, with the same three messages:
+
+```
+either side                                                   other side
+  media-player {player, name, state, title, artist, album,  ->  phone players: an MPRIS player on the desktop
+                length_ms?, position_ms, volume?, artwork?,      desktop players: the phone's Media screen
+                can}
+  media-gone {player}                                       ->  that player is gone
+                                                            <-  media-command {player, command, value?}
+```
+
+- `player` is the sender's id for the player and `name` the app playing, 1 to 64 bytes each. `state` is `playing`,
+  `paused`, or `stopped`. `title`, `artist`, and `album` are at most 512 bytes each. `position_ms` is the position
+  when sent, which the receiver advances while playing; `length_ms` is absent when unknown. `volume` is 0 to 100,
+  absent when the player has none. `artwork` is a PNG or JPEG of 1 to 49152 bytes. `can` lists the commands the
+  player takes, each at most once.
+- `command` is `play`, `pause`, `play-pause`, `next`, `previous`, `seek` (`value` is the absolute position in ms), or
+  `volume` (`value` 0 to 100). `seek` and `volume` need a `value`; the others take none.
+- A player is re-sent when its state, metadata, commands, or volume change, or its position jumps; not on the
+  steady tick of playback. After every connect each side sends all its players.
+- The phone sends one player: the session Android lists first, the one its own media controls show; when that
+  changes it sends `media-gone` for the old one. The desktop sends every MPRIS player but the ones it exports for
+  phones, at most 8.
+- The daemon exports a phone's player as `org.mpris.MediaPlayer2.umbriel_link_<device id>` (the latest if a phone
+  sends more than one), with its artwork as a file in the state directory. Its methods become `media-command`s.
+  The name goes when the player does or the session ends, since a phone that cannot be reached cannot be commanded.
+- Unacknowledged, at most once, like notifications.
+
+Failure modes:
+
+1. A field over its limit, an unknown `state` or `command`, a repeated entry in `can`, a `seek` or `volume` without
+   `value`, a `value` on another command, or a volume over 100: close 5, nothing delivered.
+2. A command for a player the receiver does not have, or one it did not list in `can`: ignored.
+3. A 9th player from one device: the daemon drops the least recently updated one first.
+4. Artwork the desktop cannot read, or over 49152 bytes: the player is sent without artwork.
+5. The session ends: the other side's players are forgotten; they return with the next connect's re-send.
 
 ### Discovery
 
