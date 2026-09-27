@@ -83,6 +83,16 @@ include line needed, so a value set from Settings wins over one written by hand;
 holds the key, and unsetting it brings back the hand-written value or the default. A generated `input.toml` from
 before is renamed to `settings.toml` on first start.
 
+## `dsk_shell_v1`
+
+Compositor-to-shell events on the connection the shell already holds, so nothing is spawned to reach it.
+
+| Message | Kind | Args | Meaning |
+|---|---|---|---|
+| `action` | event | `string command` | A keybind's `shell:<command>`, run in the shell's own command language |
+| `lock_keys` | event | `uint caps_lock`, `uint num_lock`, `uint scroll_lock` | The keyboard lock state the compositor owns, on bind and on change |
+| `bell` | event (v2) | `string app_id` | A client rang `xdg_system_bell_v1`; empty `app_id` when the bell came without a surface. The shell plays its sound theme's `bell` |
+
 ## Versioning
 
 Every interface starts at version 1. Additions bump the version. A breaking change gets a new interface name.

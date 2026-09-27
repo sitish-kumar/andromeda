@@ -46,7 +46,7 @@ first.
 | # | Gap | Owner |
 |---|---|---|
 | 2.1 | KMS overlay planes (`wlr_output_layer`) for video and cursor | C U |
-| 2.2 | Missing protocols apps use: xdg-dialog, xdg-toplevel-drag, single-pixel-buffer, alpha-modifier (consumer code exists, no global), fifo, commit-timing, xdg-toplevel-icon, xdg-system-bell | C U |
+| 2.2 | Missing protocols apps use: xdg-dialog, xdg-toplevel-drag, single-pixel-buffer, alpha-modifier (consumer code exists, no global), fifo, commit-timing, xdg-toplevel-icon, xdg-system-bell. **Done**: all eight, each with a harness check (745 to 752); the bell reaches the shell as `dsk_shell_v1.bell` (E2E `system_bell.sh`); fifo, commit-timing, and toplevel-drag are Umbriel's own, since wlroots 0.20 has no helper (`native-apis.md`) | C U |
 | 2.3 | Accessibility: AT-SPI, screen zoom (compositor), screen reader path | C S |
 | 2.4 | Location from `api.noctalia.dev` HTTP (privacy, network wakeups); external IP lookup on the same host | S: geoclue D-Bus, IP lookup off by default |
 | 2.5 | Luau plugins unsandboxed with shell-wide file and process access | S: plugins off by default; sandbox before enabling any store |
