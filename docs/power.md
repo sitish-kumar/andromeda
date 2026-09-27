@@ -106,6 +106,17 @@ browser. Needs `turbostat` (`pacman -S turbostat`). Root is used only by this me
    low `CPUWeight=`. The compute tile can then stay power-gated while the desktop sits idle. On this machine the
    LP-E cores are CPUs 14 and 15 (2.5 GHz max; P-cores 0-5 at 5.1 GHz, E-cores 6-13 at 4.4 GHz). Confirm the gain
    with turbostat before shipping it, and check it does not fight `scx_lavd`.
+   - Written: a drop-in for systemd's own user `background.slice` (`session/background.slice.d/`, installed by
+     `umbriel-desktop-git`) adds `AllowedCPUs=14-15`; the slice already has `CPUWeight=30`. `umbriel-linkd` and the
+     portal run in it (`Slice=background.slice`). The user manager delegates `cpuset` here, so the pin holds
+     (`systemd-run --user --scope -p AllowedCPUs=14-15` sees `Cpus_allowed_list: 14-15`). Not installed or measured
+     yet. A machine with other LP-E cores overrides the drop-in in `~/.config/systemd/user/background.slice.d/`.
+   - Verify after installing: `systemctl --user show background.slice -p AllowedCPUs` says `14-15`;
+     `grep Cpus_allowed_list /proc/$(pidof umbriel-linkd)/status` says `14-15`; then
+     `sudo turbostat --quiet --show CPU,Busy%,Bzy_MHz,CPU%c6,CoreTmp,PkgWatt --interval 5` on a static screen shows
+     the daemons' work only on CPUs 14 and 15, and a `tools/measure-idle.sh` row before and after gives the watts.
+     `scx_lavd` schedules within each task's allowed CPUs, so the two only fight if lavd's own core compaction
+     prefers the compute tile; its idle rows decide.
 8. **Audio.** Verify WirePlumber suspends idle sinks (`session.suspend-timeout-seconds`) and that the SOF device
    runtime-suspends; notification sounds must not keep the DSP awake.
 9. **Session diet.** Every daemon in the session is either owned by us, required by an app in daily use, or
