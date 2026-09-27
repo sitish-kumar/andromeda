@@ -43,7 +43,7 @@ crate of ours; `core` never knows which binary runs it.
 ## Threads
 
 `umbriel-linkd` runs one tokio current-thread runtime (QUIC, D-Bus, timers, the store) plus `mdns-sd`'s responder
-thread while it advertises. Nothing else.
+thread while it advertises, and a second one while Quick Share is visible. Nothing else.
 
 ## Wire format (link-v1)
 
@@ -180,6 +180,11 @@ it is NearDrop's `PROTOCOL.md`.
 - Sharing: paired-key frames with random contents and result "unable" (contact certificates need a Google account),
   introduction, the receiver's accept or reject, then file payloads in chunks with offsets; the receiver
   disconnects when every file is in place. The PIN is the auth string folded base 31 modulo 9973.
+
+In the daemon it is `org.umbriel.Link1.QuickShare` on the Link object (contract in the XML): hidden until `Visible` is
+set, which persists across restarts; TCP 4718 (ufw profile), random if taken; every offer waits up to 60 s for
+`Accept` or `Decline`; files go to `XDG_DOWNLOAD_DIR`, the only writable path in home (`ReadWritePaths`). E2E
+`quickshare_daemon.sh`.
 
 Failure modes, each ending with nothing written except complete, announced files:
 
