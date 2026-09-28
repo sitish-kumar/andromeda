@@ -40,8 +40,8 @@ parsing only.
 
 - One subject line in the form `area: what changed`, lower case, no trailing period: `link: ...`, `shell: ...`,
   `compositor: ...`, `pkg: ...`, `docs: ...`. The body says why, and which test proves it.
-- `just format` (C++) and `cargo fmt` (Rust) before committing; CI runs the same checks as `just link` and the
-  builds.
+- `just format` (C++) and `cargo fmt` (Rust) before committing. CI runs only on `main`, so run `just link` and the
+  tests your change touches before opening the pull request, and paste their results into it.
 - Keep a pull request to one change. Update the document that describes what you changed (`link/ARCHITECTURE.md`,
   `docs/*.md`) in the same pull request.
 - Changes to `protocol/` keep older peers working, or say in the pull request why they cannot.
