@@ -13,7 +13,10 @@ link/crates/
   link-daemon  bin umbriel-linkd: D-Bus org.umbriel.Link1, systemd service, pairing window, device registry.
   link-phone   bin umbriel-link-phone: the headless phone for E2E tests, and the transcript schema check.
   link-ffi     UniFFI bindings of link-core for the Android app.
-link/android/  the Android app, Kotlin + Compose over link-ffi.
+  link-quickshare  Quick Share over the LAN (UKEY2, the D2D channel, sharing frames, mDNS and the BLE hint); bin
+               umbriel-quickshare for tests. Depends on no other crate of ours.
+link/android/  the Android app, Kotlin + Compose over link-ffi; `fixture/` is a stand-in media and chat app for the
+               emulator E2E.
 ```
 
 Dependency direction is strictly downward: `daemon`, `phone`, `ffi` → `core` → `proto`. `proto` depends on no other
@@ -31,19 +34,23 @@ crate of ours; `core` never knows which binary runs it.
 | `ciborium`, `serde`, `serde_bytes` | proto | CBOR wire encoding |
 | `mdns-sd` | core | mDNS responder and browser; no Avahi dependency (see continuity.md) |
 | `tokio` | core, daemon, phone | Runtime, current-thread only |
-| `zbus` | daemon | D-Bus service on the tokio runtime, no extra thread |
+| `zbus` | daemon | D-Bus service on the tokio runtime, no extra thread; also each exported MPRIS player and the client of the desktop's |
+| `futures-util` | daemon | `StreamExt` over zbus's `MessageStream`, for the MPRIS signals the daemon follows; already in the tree through zbus |
+| `serde_json` | core, daemon | The on-disk device store; LocalSend's JSON bodies |
+| `hex` | phone, daemon | Transcript lines; artwork file names |
 | `thiserror` | proto, core | Library error enums |
 | `anyhow`, `clap`, `env_logger`, `log` | binaries (`log` everywhere) | CLI and logging |
 | `cddl` | phone | Validates E2E transcripts against `protocol/link-v1/messages.cddl` |
+| `prost`, `prost-types`, `prost-build` | quickshare | Quick Share frames are protobuf; generated from `protocol/quickshare/` at build time (needs `protoc`) |
+| `aes`, `cbc` | quickshare | AES-256-CBC with PKCS#7 for Quick Share's D2D channel; ring has no CBC (see CONVENTIONS) |
 | `httparse` | daemon | LocalSend's HTTP/1.1 request and response heads: a small, allocation-free parser for untrusted input; bodies and routing are ours, since a full HTTP stack would be far larger |
 | `tokio-rustls` | daemon | LocalSend's TLS over tokio TCP streams, on the rustls and ring already in the tree |
-| `serde_json` | core, daemon | The on-disk device store; LocalSend's JSON bodies |
 
 ## Threads
 
 `umbriel-linkd` runs one tokio current-thread runtime (QUIC, D-Bus, timers, the store) plus `mdns-sd`'s responder
-thread while it advertises. Nothing else. File I/O runs on the runtime thread too: page-cache writes, an fdatasync per
-8 MiB, and hashing that yields between 256 KiB chunks.
+thread while it advertises, and a second one while Quick Share is visible. Nothing else. File I/O runs on the
+runtime thread too: page-cache writes, an fdatasync per 8 MiB, and hashing that yields between 256 KiB chunks.
 
 ## Wire format (link-v1)
 
@@ -238,9 +245,8 @@ on paste or read:
 - Echoes: each side keeps the SHA-256 of the last clip it applied from the other and offers nothing with that hash.
   The shell also marks the selection it serves for a phone (`application/x-umbriel-link-remote`), so reading its own
   selection never pulls it.
-- Grants: `clipboard` (on after pairing), `files` (on), `notifications` (off), per device in the store. The desktop
-  sends no clip-offer to a device without the clipboard grant and drops one from it; an offer from a device without
-  the files grant is declined.
+- Grants (Grants below): the desktop sends no clip-offer to a device without the clipboard grant and drops one from
+  it; an offer from a device without the files grant is declined. The phone does the same with its switches.
 
 Failure modes:
 
@@ -299,6 +305,145 @@ Failure modes:
 4. `cancel` for an unknown session: 200, nothing changes.
 5. As a sender: a peer whose certificate is not the announced fingerprint fails the handshake; 403 is `declined`,
    409 and 429 are `busy`, anything else `failed`.
+### Notifications
+
+```
+phone                                                          desktop
+  notification-posted {id, app, title, text, icon?, actions} ->  D-Bus NotificationPosted; the shell shows it
+  notification-removed {id}                                  ->  D-Bus NotificationRemoved; the shell closes it
+                                                             <-  notification-action {id, action, reply_text?}
+                                                             <-  notification-dismiss {id}
+```
+
+- `id` is the phone's notification key, 1 to 256 bytes; a post with an id the desktop shows replaces it. `app` is
+  1 to 128 bytes, `title` at most 512, `text` at most 4096 (the phone truncates at a character boundary). `icon` is
+  the app icon as a PNG of 1 to 16384 bytes (the phone draws it at 64 px). At most 3 `actions`, each an `id` and a
+  `label` of 1 to 64 bytes and `reply`, whether it takes RemoteInput text. `reply_text` is 1 to 4096 bytes. A post
+  is at most about 22 KiB, well inside one frame.
+- The phone sends posts and removals, the desktop actions and dismissals; neither is acknowledged, so each is
+  delivered at most once. After every connect the phone posts every notification it mirrors and removes the ones it
+  mirrored earlier that are gone; the daemon keeps each device's live notifications in memory across sessions and
+  drops a re-post identical to the one it holds, so a reconnect shows nothing new.
+- The daemon holds at most 64 live notifications per device; a post of a new id beyond that removes the oldest
+  first. Unpairing removes all of the device's notifications.
+- The phone mirrors only what the user would see: no ongoing, low-importance, or group-summary notifications, none
+  of its own, and while the phone is locked none whose lock-screen visibility (the app's, or the user's override
+  for its channel) is secret, and a private one as its public version when it has one. The user can exclude apps.
+
+Failure modes:
+
+1. A `notification-posted` or `-removed` sent to the phone, or an `-action` or `-dismiss` sent to the desktop: close 5.
+2. A post with an empty or oversized field, more than 3 actions, or an icon over 16 KiB; a `reply_text` empty or
+   over 4096 bytes: close 5, nothing delivered.
+3. An icon that is not a decodable PNG of at most 256 by 256 pixels (checked in its header before decoding, so a
+   small file cannot inflate into a huge bitmap): the shell shows the notification with the phone glyph.
+4. A removal, action, or dismissal for an id the receiver does not hold: ignored, since either side may have lost it
+   to a reconnect or an expiry.
+5. An action id the notification no longer has, or `reply_text` for an action that takes none: the phone ignores it.
+6. A 65th live notification from one device: the oldest is removed on the desktop before the new one shows.
+7. `NotificationAction` or `NotificationDismiss` on D-Bus without a live session: `NotConnected`; an empty id or
+   action, or a reply over 4096 bytes: `Rejected`.
+8. A post lost with its connection: it shows at the next connect's re-post.
+
+### Media
+
+Both sides describe their own players and command the other's, with the same three messages:
+
+```
+either side                                                   other side
+  media-player {player, name, state, title, artist, album,  ->  phone players: an MPRIS player on the desktop
+                length_ms?, position_ms, volume?, artwork?,      desktop players: the phone's Media screen
+                can}
+  media-gone {player}                                       ->  that player is gone
+                                                            <-  media-command {player, command, value?}
+```
+
+- `player` is the sender's id for the player and `name` the app playing, 1 to 64 bytes each. `state` is `playing`,
+  `paused`, or `stopped`. `title`, `artist`, and `album` are at most 512 bytes each. `position_ms` is the position
+  when sent, which the receiver advances while playing; `length_ms` is absent when unknown. `volume` is 0 to 100,
+  absent when the player has none. `artwork` is a PNG or JPEG of 1 to 49152 bytes. `can` lists the commands the
+  player takes, each at most once.
+- `command` is `play`, `pause`, `play-pause`, `next`, `previous`, `seek` (`value` is the absolute position in ms), or
+  `volume` (`value` 0 to 100). `seek` and `volume` need a `value`; the others take none.
+- A player is re-sent when its state, metadata, commands, or volume change, or its position jumps; not on the
+  steady tick of playback. After every connect each side sends all its players.
+- The phone sends one player: the session Android lists first, the one its own media controls show; when that
+  changes it sends `media-gone` for the old one. The desktop sends every MPRIS player but the ones it exports for
+  phones, at most 8.
+- The daemon exports a phone's player as `org.mpris.MediaPlayer2.umbriel_link_<device id>` (the latest if a phone
+  sends more than one), with its artwork as a file in the state directory. Its methods become `media-command`s.
+  The name goes when the player does or the session ends, since a phone that cannot be reached cannot be commanded.
+- Unacknowledged, at most once, like notifications.
+
+Failure modes:
+
+1. A field over its limit, an unknown `state` or `command`, a repeated entry in `can`, a `seek` or `volume` without
+   `value`, a `value` on another command, or a volume over 100: close 5, nothing delivered.
+2. A command for a player the receiver does not have, or one it did not list in `can`: ignored.
+3. A 9th player from one device: the daemon drops the least recently updated one first.
+4. Artwork the desktop cannot read, or over 49152 bytes: the player is sent without artwork.
+5. The session ends: the other side's players are forgotten; they return with the next connect's re-send.
+
+### Find my phone, find my desktop
+
+```
+either side                         other side
+  ring {on}                     ->  starts (true) or stops (false) ringing
+                                <-  ringing {on}   whenever its own ringing starts or stops, for any reason
+```
+
+- Both directions use the same two messages: the desktop rings the phone from the Devices tab or `link-ring`, the
+  phone rings the desktop from its home screen. Either side stops a ring, from where it rings or from where it was
+  started, and `ringing` keeps both surfaces showing the truth.
+- The phone rings on the alarm stream at full volume, through silent mode, and puts the alarm volume back when the
+  ring stops. Do Not Disturb lets alarms through unless the user blocked them there; before Android 15, DND access
+  also lifts DND for the ring, which Android 15 no longer allows an app to do. The desktop
+  plays the shell's alarm sound at full volume whatever the UI-sound setting.
+- A ring stops by itself after 2 minutes. It outlives the session that started it, since a phone that moved out of
+  reach is exactly the one being looked for.
+- Unacknowledged, at most once.
+
+Failure modes:
+
+1. A `ring {on: true}` while already ringing, or `{on: false}` while silent: ignored, apart from a fresh `ringing`
+   reply.
+2. A ring to a phone whose ring switch is off: ignored; its `ringing` stays false.
+3. `Ring` on D-Bus without a live session: `NotConnected`.
+4. A `ringing` report that does not match what the receiver asked: shown as reported; the report is the truth.
+
+### Calls
+
+```
+phone                                              desktop
+  call {state, number?, name?}                 ->  D-Bus Call; the shell's incoming-call notification
+                                               <-  call-action {action}   ("mute" or "decline")
+```
+
+- `state` is `ringing`, `active`, or `idle`, as Android's call state says; the phone sends each change. `number` is
+  at most 64 bytes and only sent when Android gives the app the number (`READ_CALL_LOG`); `name` is at most 128
+  bytes and only sent when the number is in the contacts and the app may read them (`READ_CONTACTS`).
+- `mute` silences the ringer until the call ends; `decline` ends a ringing call (`TelecomManager.endCall`, which
+  needs `ANSWER_PHONE_CALLS`).
+- While any phone's call is ringing or active, the daemon pauses the desktop's playing MPRIS players, and resumes
+  those it paused when every call is idle.
+- Unacknowledged, at most once.
+
+Failure modes:
+
+1. A `call` sent to the phone or a `call-action` sent to the desktop: close 5.
+2. An unknown state or action, or a number or name over its limit: close 5.
+3. `call-action` with no ringing call, or `decline` without the permission: the phone ignores it.
+4. The session ends during a call: the daemon treats the call as idle and resumes the paused players, since it will
+   not hear the end.
+5. `CallAction` on D-Bus without a live session: `NotConnected`; an unknown action: `Rejected`.
+
+### Grants
+
+One switch per paired device and feature, in the store (`grants` in `devices.json`; a phone store's older
+`sharing` is read as it): `clipboard`, `files`, `notifications`, `media`, `ring`, and `calls`, all on after pairing.
+Each side applies its own: the desktop's say what that phone may send it (D-Bus `SetGrant` and `Grants`, the Devices
+tab's toggles), the phone's what it shares with that desktop (the device page). A message whose feature is off is
+dropped where it arrives, and logged; a file offer is declined, not dropped, so the sender learns at once.
 
 ### Discovery
 
@@ -313,6 +458,40 @@ Failure modes:
 - A fixed port lets a host firewall allow Link by name: the package ships the ufw profile
   `/etc/ufw/applications.d/umbriel-link` (4717/udp and mDNS 5353/udp), enabled with `sudo ufw allow "Umbriel Link"`.
   A desktop that fell back to a random port needs that port allowed by hand.
+
+## Quick Share (`link-quickshare`)
+
+Receive and send with stock Android Quick Share on the same network. The protocol is Google's; the reference for
+it is NearDrop's `PROTOCOL.md`.
+
+- Discovery: mDNS `_FC9F5ED42C8A._tcp`, instance name `base64url(0x23, 4-char endpoint id, FC 9F 5E, 00 00)`, TXT `n`
+  = endpoint info (device type in bits 1-3 of byte 0, 16 random bytes, name length, name). Android only looks for
+  receivers after it sees a BLE advertisement of service `fe2c` with data `FC 12 8E 01 42`, 12 zero bytes and 10
+  random ones; the receiver registers it with BlueZ's `LEAdvertisingManager1`.
+- Connection: TCP, every message a big-endian `u32` length and a protobuf. Plain connection request, UKEY2
+  (P-256, SHA-512 commitment, next protocol `AES_256_CBC-HMAC_SHA256`), plain connection responses (client first),
+  then every offline frame through the D2D channel: HKDF-SHA256 keys, AES-256-CBC with a fresh IV, HMAC-SHA256 over
+  header and body, sequence numbers from 1 per direction. Keep-alive every 10 s; 30 s of silence ends it.
+- Sharing: paired-key frames with random contents and result "unable" (contact certificates need a Google account),
+  introduction, the receiver's accept or reject, then file payloads in chunks with offsets; the receiver
+  disconnects when every file is in place. The PIN is the auth string folded base 31 modulo 9973.
+
+In the daemon it is `org.umbriel.Link1.QuickShare` on the Link object (contract in the XML): hidden until `Visible` is
+set, which persists across restarts; TCP 4718 (ufw profile), random if taken; every offer waits up to 60 s for
+`Accept` or `Decline`; files go to `XDG_DOWNLOAD_DIR`, the only writable path in home (`ReadWritePaths`). Sending:
+`StartDiscovery` browses mDNS and sends the BLE hint (Android phones advertise only after seeing it) and fills
+`Nearby`; `Send(peer, a(hs))` takes descriptors the shell opened, so the daemon still reads no path; `SendPin` and
+`SendFinished` report. E2E `quickshare_daemon.sh`, `quickshare_shell.sh`.
+
+Failure modes, each ending with nothing written except complete, announced files:
+
+1. A client finish that does not hash to the client init's commitment, or a key off the curve: the handshake fails.
+2. A secure message with a bad HMAC, bad padding, or a sequence number out of order: the connection closes.
+3. A frame over 5 MiB, a bytes payload over 1 MiB, or text over 1 MiB: refused before allocation.
+4. File bytes past the announced size, or a last chunk short of it: the transfer fails and its part files are deleted.
+5. A hostile name (`../x`, `.bashrc`, NUL, control characters, over 255 bytes): saved as a bare, visible name.
+6. A name already taken: saved as `name (n).ext`; publishing is a hard link, so it never replaces a file.
+7. Declined or cancelled: nothing is written. The sender going silent: the connection ends after 30 s.
 
 ## D-Bus: `org.umbriel.Link1`
 
@@ -357,13 +536,21 @@ the shell, so a second backend (Quick Share, LocalSend) plugs into the same sign
 Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
 - Modules: `app` (Compose UI and Android services), `core` (domain and data over `link-ffi`). Dependency direction
   Presentation → Domain → Data; the domain layer imports neither.
-- Feature-first packages under `app`: `pairing`, `devices`, `presence`, `share`, `transfer`, `notifications` (`clipboard` when
-  its entry points land).
+- Feature-first packages under `app`: `pairing`, `devices` (Home and a desktop's page), `presence`, `share`,
+  `notifications` (the mirror and its per-app filter), `media`, `ring`, `calls`, `onboarding`, `transfer` (files),
+  and `clipboard`.
+- The UI is the app's own design system in `ui/theme` (color, spacing, radius, type, shadow, and motion tokens: an
+  electric-blue accent over charcoal and stone, a #0A0A0A dark surface, Source Sans 3 under the SIL OFL) and
+  `ui/components` (the 28 dp soft card, 20 dp hero surface, 100 dp pills, selectable pills, the sliding-pill
+  segmented control, the expanding action orb, bento tiles, the connection orb, pull to refresh), built on Compose
+  foundation. The app does not depend on Material components; only `material-icons-core` supplies glyphs.
 - One `ViewModel` per screen exposing `StateFlow`; UI actions return `Result`, never throw into the UI. Coroutines
   only, no callbacks above the data layer. Manual constructor injection from one `AppContainer`, no DI framework.
 - `LinkRepository` reads `LinkClient.next_event()` for the life of the process, so `desktops` carries live connected
   flags and `incoming` every share; `ShareNotifier` turns each share into a notification (Open for a link, Copy for
-  text). POST_NOTIFICATIONS is requested once a desktop is paired.
+  text). POST_NOTIFICATIONS is requested once a desktop is paired; the other grants (notification access, DND
+  access, the battery-optimization exemption, and the call permissions) through the paged onboarding, each explained
+  before Android asks.
 - Presence: the phone is present while any of its activities is started (`ProcessLifecycleOwner`) and while "Stay
   connected" is on. That toggle runs `PresenceService`, a `connectedDevice` foreground service whose notification
   exists only while it runs; it holds no state and only lets the connection live in the background. The multicast
@@ -387,4 +574,6 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   focused, offers it unless its hash is the last desktop clip, and finishes. The same activity serves the
   quick-settings tile (`ClipboardTileService`) and "Send to desktop" in the text-selection menu (`PROCESS_TEXT`).
 - E2E: `tests/e2e/link_android.sh` drives the Maestro flows under `link/android/maestro/` on an emulator against a
-  private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`.
+  private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`;
+  `link_android_features.sh` covers notifications, media, ring, and calls, with the `fixture` app as a stand-in media
+  session and chat; `link_android_ui.sh` screenshots every screen in light and dark to `artifacts/link-android-ui/`.

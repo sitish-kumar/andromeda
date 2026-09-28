@@ -170,7 +170,9 @@ Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` 
 
 | API | Use |
 |---|---|
-| `org.umbriel.Link1` (served, session bus) | `StartPairing() → (s, s)`, `CancelPairing()`, `Unpair(s)`, `Share(s, s, s)` (errors `org.umbriel.Link1.Error.NotConnected`, `.Rejected`, `.Failed`), properties `Devices a(ssb)` and `Pairing b` with `PropertiesChanged`, signals `PairingFinished(s, s)`, `PairingFailed(s)`, `Received(s, s, s)`. Contract: `protocol/link-v1/org.umbriel.Link1.xml` |
+| `org.umbriel.Link1` (served, session bus) | `StartPairing() → (s, s)`, `CancelPairing()`, `Unpair(s)`, `Share(s, s, s)` (errors `org.umbriel.Link1.Error.NotConnected`, `.Rejected`, `.Failed`), `NotificationAction(s, s, s, s)`, `NotificationDismiss(s, s)`, `Ring(s, b)`, `DesktopRinging(s, b)`, `CallAction(s, s)`, properties `Devices a(ssb)` and `Pairing b` with `PropertiesChanged`, signals `PairingFinished(s, s)`, `PairingFailed(s)`, `Received(s, s, s)`, `NotificationPosted(s, s, s, s, s, ay, a(ssb))`, `NotificationRemoved(s, s)`, `RingRequested(s, b)`, `PhoneRinging(s, b)`, `Call(s, s, s, s)`. Contract: `protocol/link-v1/org.umbriel.Link1.xml` |
+| `org.mpris.MediaPlayer2` and `.Player` (served, session bus, one connection per phone as `org.mpris.MediaPlayer2.umbriel_link_<device id>`) | A phone's player: `PlaybackStatus`, `Metadata` (`mpris:artUrl` a file in the state directory), `Position` (advanced locally, `Seeked` on a jump), `Volume` (writable), `Can*`; methods become `media-command`s |
+| `org.mpris.MediaPlayer2.*` (client, session bus): `NameOwnerChanged` with `arg0namespace`, `PropertiesChanged` and `Seeked` on `/org/mpris/MediaPlayer2`, `Properties.GetAll`, `Play`, `Pause`, `PlayPause`, `Next`, `Previous`, `SetPosition` (or `Seek` without a track id), `Volume` | The desktop's players for phones, re-read only when one signals |
 | `org.freedesktop.hostname1` property `PrettyHostname` (system bus) | The name phones see; the kernel hostname (`/proc/sys/kernel/hostname`) when hostnamed is absent |
 | QUIC (`quinn` 0.11) over UDP, ALPN `umbriel-link/1` | The Link transport; one dual-stack socket on 4717/udp (a random port if taken), kept in `devices.json`. The phone sets `TransportConfig::keep_alive_interval` (10 s) only while present |
 | TLS 1.3 raw public keys (`rustls` 0.23 `AlwaysResolves{Server,Client}RawPublicKeys`, `verify_tls13_signature_with_raw_key`) | Both sides authenticated by Ed25519 SPKI; the phone's pin rides in the TLS server name so one client config (and its session cache) serves every desktop |
@@ -189,6 +191,24 @@ Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` 
 | LocalSend v2 (<https://github.com/localsend/protocol>) | UDP 53317 joined to 224.0.0.167 (`UdpSocket::join_multicast_v4`); HTTPS on TCP 53317 (`tokio-rustls`, TLS 1.3, a self-signed ECDSA P-256 certificate written as DER with `ring`); `httparse` for HTTP/1.1 heads; `register`, `info`, `prepare-upload`, `upload`, `cancel` served and called; `SetLocalSendVisible(b)`, properties `LocalSendVisible b` and `Nearby a(ss)` |
 | `$XDG_DOWNLOAD_DIR`, else `XDG_DOWNLOAD_DIR` in `$XDG_CONFIG_HOME/user-dirs.dirs`, else `~/Downloads` | Where received files land; the unit adds `ReadWritePaths=-%h/Downloads` |
 
+## Link on Android
+
+The phone app, `link/android/`. **Verified** against the API 36 SDK stubs and runs on the api35 emulator
+(`tests/e2e/link_android_features.sh`).
+
+| API | Use |
+|---|---|
+| `NotificationListenerService` (`onNotificationPosted`, `onNotificationRemoved`, `getActiveNotifications`, `getCurrentRanking`, `cancelNotification`) | Mirrors notifications while the user grants notification access; `Ranking.getImportance` and `getLockscreenVisibilityOverride` decide what is mirrored; a desktop dismissal cancels |
+| `Notification.Action.actionIntent` with `RemoteInput.addResultsToIntent` and `setResultsSource(SOURCE_FREE_FORM_INPUT)`, sent with `ActivityOptions.setPendingIntentBackgroundActivityStartMode` on API 34+ | Runs a desktop's action or reply through the notification's own `PendingIntent`, so every messaging app replies the way it does from the shade |
+| `Notification.extras["android.appInfo"]` with `PackageManager.getApplicationLabel/getApplicationIcon` | The posting app's name and icon without package visibility; the icon drawn at 64 px and sent as PNG |
+| `Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS` | Where the user grants notification access |
+| `Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`), `PowerManager.isIgnoringBatteryOptimizations` | The onboarding's exemption so Android does not stop Stay connected |
+| `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS`, `NotificationManager.isNotificationPolicyAccessGranted` | The onboarding's DND access page |
+| `Notification.EXTRA_MESSAGES` via `MessagingStyle.Message.getMessagesFromBundleArray` | A conversation's latest messages, since messaging apps may leave `EXTRA_TEXT` empty |
+| `AudioManager.setStreamVolume(STREAM_ALARM)`, `MediaPlayer` with `AudioAttributes.USAGE_ALARM` and the default alarm tone (`RingtoneManager`), `NotificationManager.setInterruptionFilter` before API 35 | Find my phone at full volume through silent mode; volume and filter put back after |
+| `TelephonyManager.ACTION_PHONE_STATE_CHANGED` to a manifest receiver (`READ_PHONE_STATE`; `EXTRA_INCOMING_NUMBER` with `READ_CALL_LOG`), `ContactsContract.PhoneLookup` (`READ_CONTACTS`), `AudioManager.adjustStreamVolume(STREAM_RING, ADJUST_MUTE)`, `TelecomManager.endCall` (`ANSWER_PHONE_CALLS`) | Calls for desktops, and their mute and decline |
+| `MediaSessionManager.getActiveSessions(listener)` and `addOnActiveSessionsChangedListener`, `MediaController.Callback`, `TransportControls`, `setVolumeTo` | The phone's player for desktops (allowed to a notification listener), and their commands to it |
+
 ## Link in the shell
 
 The control center's Devices tab and the `link-*` IPC verbs (`src/dbus/link/`, `src/shell/control_center/tabs/`).
@@ -197,7 +217,7 @@ against `umbriel-linkd` (`tests/e2e/link_devices.sh`).
 
 | API | Use |
 |---|---|
-| `org.umbriel.Link1` (session bus, client) | `Properties.GetAll` and `PropertiesChanged` for `Devices` and `Pairing`; async `StartPairing`, `CancelPairing`, `Unpair`, `Share`; signals `PairingFinished`, `PairingFailed`, `Received` (posted as an internal notification through `NotificationManager::addOrReplace`; its action copies through `ClipboardService::copyText` or opens through `net::openInBrowser`) |
+| `org.umbriel.Link1` (session bus, client) | `Properties.GetAll` and `PropertiesChanged` for `Devices` and `Pairing`; async `StartPairing`, `CancelPairing`, `Unpair`, `Share`; signals `PairingFinished`, `PairingFailed`, `Received` (posted as an internal notification through `NotificationManager::addOrReplace`; its action copies through `ClipboardService::copyText` or opens through `net::openInBrowser`); `NotificationPosted` and `NotificationRemoved` (a phone notification through `NotificationManager::addOrReplace` and `close`, its PNG icon checked in its IHDR header and decoded with `decodeRasterImage`; its buttons and inline reply run through `NotificationAction`, and `NotificationManager::addCloseObserver` turns a user dismissal into `NotificationDismiss`); `RingRequested` and `PhoneRinging` (the ring through `SoundPlayer::playAlert("alarm-clock-elapsed")`, full volume whatever `audio.enable_sounds` says, replayed every 2.5 s since the player has no loop; a Critical notification whose Stop calls `DesktopRinging`); `Call` (an incoming-call notification whose Mute ringer and Decline call `CallAction`) |
 | `org.umbriel.Link1` transfers (client) | Signals `TransferOffered` (a notification with Accept and Decline), `TransferProgress` (a transient notification updated with `NotificationManager::updateBody`, with Cancel), `TransferFinished` (Open and Show in folder through `net::openInBrowser` on a `g_filename_to_uri` URI); `SendFiles` with `sdbus::UnixFd` descriptors the shell opens `O_RDONLY \| O_CLOEXEC`, from `link-send-file` and the Devices tab's file dialog |
 | `org.umbriel.Link1` clipboard (client) | Each new selection another client owns, once `ClipboardService` read it, goes to `OfferClipboard` in a `memfd_create` descriptor; `ClipboardOffered` becomes a data-control source (`ClipboardService::offerRemote`) whose `send` events call `PullClipboard` with the paste target's fd; the source also offers `application/x-umbriel-link-remote`, and a selection with that type is never read back. `SetGrant` and `Grants` behind the Devices tab's toggles |
 | `org.umbriel.Link1` LocalSend (client) | "Visible to LocalSend" toggle and a Nearby list with Send in the Devices tab (`SetLocalSendVisible`, `LocalSendVisible`, `Nearby`); offers from `localsend:` ids are named by their Nearby alias |

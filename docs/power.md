@@ -89,6 +89,9 @@ browser. Needs `turbostat` (`pacman -S turbostat`). Root is used only by this me
    with turbostat before shipping it, and check it does not fight `scx_lavd`.
 8. **Audio.** Verify WirePlumber suspends idle sinks (`session.suspend-timeout-seconds`) and that the SOF device
    runtime-suspends; notification sounds must not keep the DSP awake.
+   **Verified 2026-09-28**: on the live session, with the shell's `noctalia` PipeWire node present and nothing playing,
+   the HD Audio controller (`0000:00:1f.3`, SOF `skl_hda_dsp_generic`) is `runtime_status=suspended` with
+   `control=auto`; WirePlumber's default idle suspend is in effect, so no change is needed.
 9. **Session diet.** Every daemon in the session is either owned by us, required by an app in daily use, or
    removed. `kded6` and `kdeconnect` are the first two to justify.
 
