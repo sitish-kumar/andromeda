@@ -483,7 +483,8 @@ phone (client)                                        desktop (server)
   and PING/PONG. The control stream's frames go ahead of queued bulk data, and at most 64 KiB of bulk data waits for
   the writer. Keep-alive and the idle timeout are QUIC's (10 s, 30 s). `link_core::wire` holds either connection
   behind the one API the session and transfers use.
-- Moving up: while a session runs over Bluetooth, the phone probes for an IP path every 30 s, off its actor. A probe
+- Moving up: while a session runs over Bluetooth, the phone probes for an IP path at once and then every 30 s, off
+  its actor, punching the desktop's firewall first (see below). A probe
   that reaches the desktop becomes a QUIC session; the desktop then closes the Bluetooth one, as it does any older
   session, and open transfers resume on the new one by offset.
 - Files over Bluetooth are capped at 20 MiB per offer (`BLUETOOTH_FILE_LIMIT`), from both sides, before any byte
@@ -507,6 +508,37 @@ Failure modes:
    until the new one is adopted.
 6. RFCOMM dropping mid-file: the partial stays and the transfer resumes by offset on the next session.
 7. More than 20 MiB offered on Bluetooth: refused at once, from D-Bus and from the phone.
+
+### Through the desktop's firewall
+
+A host firewall (ufw, firewalld) drops the phone's QUIC dial, so the session would stay on Bluetooth at a few
+tens of KB/s. The user is never asked to open a port: the desktop sends first, so its firewall takes the dial for a
+reply.
+
+```
+phone (on Bluetooth)                             desktop
+  punch {addresses: ["ip:port", ...]}        ->  one UDP byte from the Link port to each
+                                                 (conntrack now expects replies from there)
+  QUIC from that port to the desktop         ->  ESTABLISHED, accepted: a new session, the Bluetooth one closes
+```
+
+- `addresses` are the phone's own interface addresses with its dialer's port, IPv4 first, at most 8. The desktop
+  sends from the listening socket itself (a clone of the one quinn reads), since conntrack matches the exact pair.
+- The phone punches before every probe, and probes at once when a session lands on Bluetooth instead of after 30 s.
+  An early dial that crosses the punch is dropped and QUIC's retransmit gets through.
+- The byte is not QUIC; the phone's endpoint drops it. The desktop punches only addresses that parse, and a peer can
+  make it send no more than 8 one-byte datagrams per message.
+- Out of reach: a network that isolates clients (guest Wi-Fi) drops both directions, and an outbound-blocking
+  firewall drops the punch; both stay on Bluetooth and the hotspot move still works.
+- E2E: `tests/e2e/link_firewall.sh` puts the desktop behind an nftables input policy of drop (established only).
+
+Failure modes:
+
+1. `punch` with more than 8 addresses or one that is not `ip:port`: close 5 while decoding. `punch` sent to the phone:
+   close 5.
+2. A punch the network loses: the probe fails and the next one, 30 s later, punches again.
+3. A phone with no Bluetooth session to the desktop cannot ask for a punch: it stays unreachable behind the firewall
+   until it has one.
 
 ### Hotspot
 
