@@ -28,31 +28,38 @@ crate of ours; `core` never knows which binary runs it.
 |---|---|---|
 | `quinn` | core | QUIC: streams, 0-RTT, client migration. The protocol's transport |
 | `rustls` (ring) | core | TLS 1.3 inside QUIC; RFC 7250 raw public keys |
-| `ring` | proto, core | Ed25519 keys, SHA-256, HKDF, HMAC; the only crypto provider |
+| `ring` | proto, core, phone | Ed25519 keys, SHA-256, HKDF, HMAC; the only crypto provider |
+| `rustix` (`fs`) | core | `statvfs` for the free space an offer needs and `O_NOFOLLOW` on part files; std has neither, and it is already in the tree |
 | `spake2` | proto | The PAKE for code and QR pairing (RustCrypto) |
 | `ciborium`, `serde`, `serde_bytes` | proto | CBOR wire encoding |
 | `mdns-sd` | core | mDNS responder and browser; no Avahi dependency (see continuity.md) |
 | `tokio` | core, daemon, phone | Runtime, current-thread only |
 | `zbus` | daemon | D-Bus service on the tokio runtime, no extra thread; also each exported MPRIS player and the client of the desktop's |
 | `futures-util` | daemon | `StreamExt` over zbus's `MessageStream`, for the MPRIS signals the daemon follows; already in the tree through zbus |
-| `serde_json` | core | The on-disk device store |
+| `serde_json` | core, daemon | The on-disk device store; LocalSend's JSON bodies |
 | `hex` | phone, daemon | Transcript lines; artwork file names |
 | `thiserror` | proto, core | Library error enums |
 | `anyhow`, `clap`, `env_logger`, `log` | binaries (`log` everywhere) | CLI and logging |
 | `cddl` | phone | Validates E2E transcripts against `protocol/link-v1/messages.cddl` |
 | `prost`, `prost-types`, `prost-build` | quickshare | Quick Share frames are protobuf; generated from `protocol/quickshare/` at build time (needs `protoc`) |
 | `aes`, `cbc` | quickshare | AES-256-CBC with PKCS#7 for Quick Share's D2D channel; ring has no CBC (see CONVENTIONS) |
+| `httparse` | daemon | LocalSend's HTTP/1.1 request and response heads: a small, allocation-free parser for untrusted input; bodies and routing are ours, since a full HTTP stack would be far larger |
+| `tokio-rustls` | daemon | LocalSend's TLS over tokio TCP streams, on the rustls and ring already in the tree |
 
 ## Threads
 
 `umbriel-linkd` runs one tokio current-thread runtime (QUIC, D-Bus, timers, the store) plus `mdns-sd`'s responder
-thread while it advertises, and a second one while Quick Share is visible. Nothing else.
+thread while it advertises, and a second one while Quick Share is visible. Nothing else. File I/O runs on the
+runtime thread too: page-cache writes, an fdatasync per 8 MiB, and hashing that yields between 256 KiB chunks.
 
 ## Wire format (link-v1)
 
 - QUIC, ALPN `umbriel-link/1`, TLS 1.3 with raw public keys (Ed25519 SPKI) on both sides.
 - The phone is always the QUIC client, the desktop the server. The phone's first bidirectional stream is the control
-  stream; later streams carry bulk data (phase 1).
+  stream; unidirectional streams, opened by either side, carry bulk data (at most 8 at once per side).
+- Congestion control is BBR: loss-based control collapses under the random loss of Wi-Fi. quinn's BBR keeps the
+  lowest RTT a connection ever saw, so a path whose delay grows under a live connection runs near its minimum
+  window until the next connection.
 - A frame is a big-endian `u32` length then one CBOR envelope `{type: tstr, id: uint, body: map}`; control frames are
   at most 64 KiB. Schema: `protocol/link-v1/messages.cddl`.
 - Close codes (QUIC application error): 0 done, 1 not-paired, 2 unpaired, 3 unsupported-version, 4 pairing-failed,
@@ -153,6 +160,151 @@ Failure modes, each of which delivers nothing where it says so:
 9. A black hole longer than 30 s: both ends time out, the desktop shows the device disconnected, and the phone
    redials with backoff until the path returns.
 
+### Files
+
+LocalSend v2's offer and accept, plus resume by byte offset, a streaming SHA-256, and an enforced size.
+
+```
+sender                                               receiver
+  offer {transfer, files: [{id, name, size,      ->  consent: a notification, or the device's auto-accept
+         mime, sha256}]}
+                                                 <-  offer-reply {transfer, accepted, reason?}
+  one unidirectional stream per file, at most 4
+  at once: file-data {transfer, file, offset}    ->  write .<name>.linkpart, hash, fsync every 8 MiB
+  then the bytes from offset to size
+                                                 <-  file-done {transfer, file, ok}   (after verify and publish)
+after a reconnect:
+  resume {transfer}                              ->
+                                                 <-  file-done for each finished file, then
+                                                     resume-at {transfer, offsets: [{file, offset}]}
+either side, any time:
+  cancel {transfer}                              ->  both drop the transfer; the receiver deletes its partials
+```
+
+- `transfer` is 16 random bytes (32 hex characters on D-Bus); file ids are unique within an offer. An offer must fit
+  one control frame. `reason` is `declined`, `no-space` (the files exceed statvfs' free space), `too-large` (they
+  exceed the whole filesystem), or `busy` (8 transfers from that device are already open).
+- A stream's first frame is a `file-data` envelope in the control framing; the raw bytes follow it.
+- The receiver writes `Downloads/.<name>.linkpart`, created `O_EXCL` (a taken name gets ` (1)`, ` (2)`, ...), hashes
+  as it writes (`ring::digest::Context`), and records the durably written offset in its state file, fsyncing every
+  8 MiB and when a stream stops early. When the size is reached and the hash matches, it hard-links the part to a
+  free final name (`name (1).ext` when `name.ext` exists), never overwriting, and unlinks the part. Android denies
+  apps hard links, so there it renames with `RENAME_NOREPLACE` instead.
+- A resumed file is truncated to its durable offset and re-hashed from disk, since a digest context cannot be saved.
+- The receiver keeps its state on disk (`transfers/<id>.json` in the state directory) and drops transfers older than
+  24 h with their partials. The sender keeps its sources open in memory for 24 h: a transfer resumes across
+  reconnects and across a receiver restart, not across a sender restart.
+- Names are sanitized on receipt: the basename after the last `/` or `\`, NUL and control characters removed,
+  leading dots stripped, at most 255 bytes cut on a UTF-8 boundary; an empty or all-dots result is `file`.
+- The desktop's sandbox cannot read the user's files, so the shell opens them and passes the descriptors (`SendFiles`,
+  `a(hs)`). The daemon accepts only regular files.
+
+Failure modes:
+
+1. An offer with no files, duplicate file ids, an empty name or mime, or a wrong-length id or hash; an `offer-reply`
+   whose `accepted` and `reason` disagree; a `resume-at` with duplicate files: close 5 while decoding.
+2. An offer reusing a transfer id the receiver holds: close 5.
+3. An `offer-reply` for a transfer not offered to that peer, or already answered: close 5.
+4. A `file-data` on the control stream, or any other message as a stream's first frame: close 5.
+5. A stream for an unknown or unaccepted transfer, an unknown or finished file, a file that already has a stream, or
+   an offset other than the receiver's: the stream is stopped with 5 and nothing is written.
+6. A byte past the announced size, or a stream finished before it: the stream is stopped with 5, the partial deleted,
+   and the file reported `file-done {ok: false}`.
+7. A stream reset or a connection lost mid-file: the partial and its durable offset stay for a resume.
+8. A hash mismatch: the partial is deleted, nothing is published, and the file is reported failed.
+9. A `resume` for a transfer the receiver does not hold (finished, cancelled, expired): answered with `cancel`.
+10. A `resume-at` for a transfer that was not resumed, naming a file the transfer lacks or already finished, or an
+    offset past a file's size: close 5.
+11. A `file-done` for a transfer or file the sender does not have, or contradicting an earlier one: close 5. The same
+    result again (after a resume) is accepted.
+12. A `cancel` for an unknown transfer: ignored, since it may have crossed the end.
+13. No consent within 120 s: declined. The session ending before the answer: the offer is withdrawn on both sides.
+14. `SendFiles` with a descriptor that is not a regular file, or for a device without a live session: fails at once.
+
+### Clipboard
+
+Automatic both ways, for devices holding the clipboard grant. Content moves only when it is used, except text sent
+inline so the other side can set it at once.
+
+```
+either side                                     other side
+  clip-offer {id, mimes, size, text?}      ->   desktop: a Wayland selection owned by the shell, served on paste
+                                                phone: text set at once; other types as a content:// URI
+on paste or read:
+                                           <-   clip-pull {id, mime}
+  a unidirectional stream: clip-data       ->   the bytes, then FIN
+  {id, mime}, then at most `size` bytes
+```
+
+- `id` counts up per sender; a new offer replaces the sender's previous one, and only the latest can be pulled.
+  `mimes` (1 to 16, each at most 255 bytes) is in the sender's order of preference; `size` (at most 64 MiB) is the
+  length of the first. `text` (at most 61440 bytes) is allowed only when a `text/plain` type is offered, and a pull
+  of that type is answered from it without a stream. The desktop inlines text it offers; the headless phone never
+  does, so the E2E can prove a lazy pull; the Android app inlines text, since its process may be frozen by the time
+  a desktop app pastes.
+- Echoes: each side keeps the SHA-256 of the last clip it applied from the other and offers nothing with that hash.
+  The shell also marks the selection it serves for a phone (`application/x-umbriel-link-remote`), so reading its own
+  selection never pulls it.
+- Grants (Grants below): the desktop sends no clip-offer to a device without the clipboard grant and drops one from
+  it; an offer from a device without the files grant is declined. The phone does the same with its switches.
+
+Failure modes:
+
+1. A `clip-offer` with no types or more than 16, a type longer than 255 bytes, a size over 64 MiB, or `text` without
+   a `text/plain` type: close 5 while decoding.
+2. A `clip-pull` for an id that is not the latest offer, or a type it did not offer: the offerer answers with a
+   `clip-data` stream it resets at once, so the paste fails and nothing is sent.
+3. A `clip-data` stream nobody pulled, or bytes past the offered size: the stream is stopped with 5 and the paste
+   fails.
+4. A pull not answered within 10 s: the paste fails; the session stays.
+5. A `clip-offer` from a device without the clipboard grant: dropped, and logged.
+
+### Status and limits
+
+- `status {battery, charging, network}` goes from the phone to the desktop when a session starts and when the value
+  changes, at most every 10 s (a change inside that window goes out when it ends). `network` is `wifi`, `cellular`,
+  `ethernet`, `none`, or `other`. The desktop keeps it only while the session lives.
+- The desktop limits what one phone connection sends, per feature, with a token bucket: 10 shares then one per 2 s,
+  5 file offers then one per 6 s, 20 clipboard offers then one per second, 3 statuses then one per 10 s.
+
+Failure modes:
+
+1. A `status` with a battery over 100 or an unknown network: close 5 while decoding. A `status` sent to the phone:
+   close 5.
+2. A share over its limit: dropped without an ack, so the sender's send times out; nothing reaches D-Bus.
+3. A file offer over its limit: answered `busy`; nothing reaches D-Bus.
+4. A clipboard offer or a status over its limit: dropped.
+
+### LocalSend
+
+A second transfer backend in `umbriel-linkd`, off until "Visible to LocalSend" is turned on, so any LocalSend app
+(protocol v2) can send to the desktop without Link, and the desktop can send to LocalSend devices on the LAN.
+
+- While on: UDP 53317 joined to 224.0.0.167 for announcements (ours: `announce: true` when turned on; theirs are
+  answered with an HTTPS `POST /api/localsend/v2/register` to the announcer), and HTTPS on TCP 53317.
+- TLS 1.3 with a self-signed ECDSA P-256 certificate made once and kept in the state directory (`localsend.pk8`,
+  `localsend.der`, mode 0600); its SHA-256, lowercase hex, is the LocalSend fingerprint. As a client the daemon
+  accepts any certificate whose SHA-256 is the fingerprint the peer announced, and nothing else.
+- Receive: `prepare-upload` becomes the same `TransferOffered` as a Link offer and waits for the answer (120 s);
+  accepted, it returns a session id and one token per file; `upload?sessionId&fileId&token` streams a file into the
+  same part files as Link (sanitized names, O_EXCL, size enforced, published by hard link), verified against
+  `sha256` when the sender gave one; `cancel` drops the session and its partials. Device ids are
+  `localsend:<fingerprint>`.
+- Send: `SendFiles` to a `localsend:<fingerprint>` id discovered on the LAN (the `Nearby` property) posts
+  `prepare-upload` with each file's SHA-256, then uploads each accepted file.
+- HTTP/1.1 is parsed with `httparse` (request and response heads); bodies are `Content-Length` or chunked, JSON
+  bodies at most 1 MiB. One session at a time: a second `prepare-upload` while one is open is answered 409.
+
+Failure modes:
+
+1. A body over 1 MiB, malformed JSON, a head over 16 KiB, or an unknown path: 400 or 404, connection closed.
+2. `prepare-upload` declined or unanswered for 120 s: 403. A file set larger than the free space: 403 and a
+   `no-space` result; another session open: 409.
+3. `upload` with an unknown session, file, or token, or a file already uploaded: 403; a body longer or shorter than
+   the file's size: 400 and the partial deleted; a SHA-256 that does not match the sender's: 422, nothing published.
+4. `cancel` for an unknown session: 200, nothing changes.
+5. As a sender: a peer whose certificate is not the announced fingerprint fails the handshake; 403 is `declined`,
+   409 and 429 are `busy`, anything else `failed`.
 ### Notifications
 
 ```
@@ -285,6 +437,14 @@ Failure modes:
    not hear the end.
 5. `CallAction` on D-Bus without a live session: `NotConnected`; an unknown action: `Rejected`.
 
+### Grants
+
+One switch per paired device and feature, in the store (`grants` in `devices.json`; a phone store's older
+`sharing` is read as it): `clipboard`, `files`, `notifications`, `media`, `ring`, and `calls`, all on after pairing.
+Each side applies its own: the desktop's say what that phone may send it (D-Bus `SetGrant` and `Grants`, the Devices
+tab's toggles), the phone's what it shares with that desktop (the device page). A message whose feature is off is
+dropped where it arrives, and logged; a file offer is declined, not dropped, so the sender learns at once.
+
 ### Discovery
 
 - The desktop advertises `_umbriel-link._udp.local.` only while it has a paired device or an open window, so an
@@ -344,11 +504,32 @@ client is written against it.
 | method `CancelPairing` | `()` | Closes the window |
 | method `Unpair` | `(s device_id)` | Forgets the device; it is told at next contact |
 | method `Share` | `(s device_id, s kind, s text)` | Sends `text` or `link` to a connected device and returns once it acknowledged; `org.umbriel.Link1.Error.NotConnected` without a live session, `org.umbriel.Link1.Error.Rejected` for a share that breaks the rules above, `org.umbriel.Link1.Error.Failed` when the device did not acknowledge it |
+| method `SendFiles` | `(s device_id, a(hs) files) → s transfer_id` | Offers the files behind the descriptors (regular files only, each with the name the device sees); returns at once, the signals below report the rest. `NotConnected`, `Rejected`, `Failed` as for `Share` |
+| method `AcceptTransfer`, `DeclineTransfer` | `(s transfer_id)` | Consent for a `TransferOffered`; `Rejected` once it no longer waits |
+| method `CancelTransfer` | `(s transfer_id)` | Either direction; the device is told, partials are deleted |
+| method `SetAutoAccept` | `(s device_id, b enabled)` | Accept that device's offers without asking; off after pairing |
 | property `Devices` | `a(ssb)` | `(device_id, name, connected)`, with `PropertiesChanged` |
+| method `SetLocalSendVisible` | `(b visible)` | "Visible to LocalSend"; kept in the store |
+| property `LocalSendVisible` | `b` | Whether the LocalSend backend listens |
+| property `Nearby` | `a(ss)` | LocalSend devices on the LAN, `(localsend:<fingerprint>, alias)`; `SendFiles` takes these ids |
+| method `SetGrant` | `(s device_id, s feature, b granted)` | `clipboard`, `files`, or `notifications` |
+| method `OfferClipboard` | `(as mimes, h data)` | The desktop's clipboard changed; `data` is the first type's bytes. Offered to connected devices with the clipboard grant, text inline |
+| method `PullClipboard` | `(s device_id, t id, s mime, h sink) → t bytes` | Writes a device's offered clip into the paste target's pipe |
+| property `AutoAccept` | `as` | Devices whose offers are accepted without asking |
+| property `Grants` | `a{sas}` | Device id to the features it holds |
+| property `DeviceStatus` | `a{s(ubs)}` | Connected device id to `(battery, charging, network)` |
 | property `Pairing` | `b` | Whether a window is open |
 | signal `PairingFinished` | `(s device_id, s name)` | A device was paired |
 | signal `PairingFailed` | `(s reason)` | The window's attempt failed |
 | signal `Received` | `(s device_id, s kind, s text)` | A device shared text or a link (`kind` is `text` or `link`), already checked |
+| signal `ClipboardOffered` | `(s device_id, t id, as mimes, t size)` | A device's clipboard changed; served as a selection, pulled on paste |
+| signal `TransferOffered` | `(s transfer_id, s device_id, a(st) files)` | A device offers files `(sanitized name, size)`; not sent for auto-accept devices |
+| signal `TransferProgress` | `(s transfer_id, t bytes, t total)` | Either direction, at most 4 Hz per transfer |
+| signal `TransferFinished` | `(s transfer_id, s status, as paths)` | `done`, `failed`, `declined`, `no-space`, `too-large`, `busy`, or `cancelled`; `paths` are the verified files an incoming transfer published |
+
+Transfers and consent are backend-neutral in the daemon: the transfer actor (`link_core::transfer`) owns every
+transfer and reports offers to the hub, which answers from the device's auto-accept setting or forwards the offer to
+the shell, so a second backend (Quick Share, LocalSend) plugs into the same signals and notifications.
 
 ## Android app
 
@@ -356,8 +537,8 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
 - Modules: `app` (Compose UI and Android services), `core` (domain and data over `link-ffi`). Dependency direction
   Presentation → Domain → Data; the domain layer imports neither.
 - Feature-first packages under `app`: `pairing`, `devices` (Home and a desktop's page), `presence`, `share`,
-  `notifications` (the mirror and its per-app filter), `media`, `ring`, `calls`, `onboarding` (`clipboard` when its
-  entry points land).
+  `notifications` (the mirror and its per-app filter), `media`, `ring`, `calls`, `onboarding`, `transfer` (files),
+  and `clipboard`.
 - The UI is the app's own design system in `ui/theme` (color, spacing, radius, type, shadow, and motion tokens: an
   electric-blue accent over charcoal and stone, a #0A0A0A dark surface, Source Sans 3 under the SIL OFL) and
   `ui/components` (the 28 dp soft card, 20 dp hero surface, 100 dp pills, selectable pills, the sliding-pill
@@ -376,6 +557,22 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   lock is held while present, for the mDNS half of a redial.
 - The share target (`ACTION_SEND`, `text/plain`) sends to the only paired desktop, or asks which; a single http or
   https URL goes as a link.
+- Files: the share target also takes `ACTION_SEND` and `ACTION_SEND_MULTIPLE` of any type; each content URI is
+  opened as a descriptor the core takes over (`detachFd`), so a provider that hands out a pipe is refused. Offers
+  from the desktop become a notification with Accept and Decline (`TransferNotifier`, `TransferReceiver`). The core
+  writes received files to app storage; `Downloads` then inserts a `MediaStore.Downloads` entry with `IS_PENDING=1`,
+  copies while hashing, and clears `IS_PENDING` only when the copy's SHA-256 is the one the core verified.
+  `TransferService`, a `dataSync` foreground service, runs while a transfer is open, since Android freezes a cached
+  process and its sockets.
+- Status: `StatusReporter` follows the sticky `ACTION_BATTERY_CHANGED` broadcast and the default network callback
+  and hands every change to the core, which rate-limits what it sends.
+- Clipboard (`clipboard` package): `ClipboardSync` sets a desktop's text at once and other types as a URI of
+  `ClipProvider`, whose `openFile` pulls the type into a pipe; it clears the clip after 2 minutes unless the clipboard
+  changed. `ClipboardWatcher` runs while `PresenceService` does and `READ_LOGS` is granted: it follows
+  `logcat -T 1 ClipboardService:E` for the denial Android logs for this app on every copy elsewhere (it holds a
+  clipboard listener for that reason) and starts `ClipboardReadActivity`, transparent, which reads the clipboard once
+  focused, offers it unless its hash is the last desktop clip, and finishes. The same activity serves the
+  quick-settings tile (`ClipboardTileService`) and "Send to desktop" in the text-selection menu (`PROCESS_TEXT`).
 - E2E: `tests/e2e/link_android.sh` drives the Maestro flows under `link/android/maestro/` on an emulator against a
   private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`;
   `link_android_features.sh` covers notifications, media, ring, and calls, with the `fixture` app as a stand-in media

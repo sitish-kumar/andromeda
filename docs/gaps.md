@@ -143,15 +143,36 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
    per connection on both sides, text and link shares both ways (D-Bus `Share` and `Received`, shell notifications
    with Open and Copy, `link-share` IPC, Send clipboard in the Devices tab, the Android share target and
    notifications), and 4717/udp by default with a ufw profile. E2E `link_share.sh`, `link_share_shell.sh`,
-   `link_android.sh`. **Slice C**: phone notifications on the desktop with actions, inline reply, and dismissal both
+   `link_android.sh`. **Phase 1, slice B, files done**: LocalSend-style offer and consent over the control stream,
+   one QUIC stream per file (four at once, BBR congestion control), part files synced every 8 MiB and published by
+   hard link once the SHA-256 matches, resume by durable offset across reconnects, address changes, and a receiver
+   restart, sanitized names, enforced sizes; D-Bus `SendFiles` with descriptors, consent, progress, and results;
+   shell notifications (Accept, Decline, progress with Cancel, Open, Show in folder), `link-send-file`, and a Send
+   button in the Devices tab; Android share target for any file, consent notifications, Downloads through
+   MediaStore once verified, and a `dataSync` foreground service while a transfer runs. E2E `link_files.sh` (1 GiB
+   at 5% loss and 50 ms, through a daemon kill and an address change), `link_files_shell.sh`, `link_android.sh`.
+   **Clipboard done**: automatic both ways for devices with the clipboard grant (per-device grants for clipboard,
+   files, and notifications in the store, on D-Bus, and as toggles in the Devices tab); text inline, other types
+   pulled on paste through a shell-owned Wayland source and an Android content provider; no echoes (hash of the last
+   applied clip on both sides, a marker type on the shell's own source); phone to desktop automatic through
+   KDE Connect's `READ_LOGS` approach in the sideload build, and one tap (tile, text-selection action, share target)
+   otherwise. E2E `link_clipboard.sh`, `link_android.sh`. **Status and limits done**: the phone reports battery,
+   charging, and network on connect and on change (at most every 10 s); D-Bus `DeviceStatus`; the Devices tab and a
+   bar phone indicator that exists only while a phone is connected; per-feature token buckets on shares, file offers,
+   clipboard offers, and statuses. E2E `link_status.sh`, `link_status_shell.sh`, `link_android.sh`. **LocalSend
+   done**: a second backend in `umbriel-linkd` behind "Visible to LocalSend" (off by default): multicast discovery
+   and register, HTTPS on 53317 with a self-signed certificate whose SHA-256 is the fingerprint, prepare-upload
+   through the same consent notification, uploads into the same part files with sizes and hashes enforced, and
+   sending to `localsend:<fingerprint>` peers with the certificate pinned; ufw profile `Umbriel Link LocalSend`. E2E
+   `link_localsend.sh` against curl and a peer written from the spec. **Slice C**: phone notifications on the desktop with actions, inline reply, and dismissal both
    ways (E2E `link_notifications.sh`, `link_android_features.sh`); media both ways, phone players as MPRIS players
    and desktop players on the phone (E2E `link_media.sh`); find my phone and find my desktop (E2E `link_ring.sh`); calls
    with mute and decline, pausing desktop media (E2E `link_calls.sh`); the app rebuilt on its own soft-tech design
    system without Material, with Home, a device page, pairing, Media, and a permission onboarding (screenshots of
    every screen in light and dark: `link_android_ui.sh`). Android 15 hides notifications it flags as sensitive (OTPs,
    some SMS) from listeners that are not trusted, so those arrive as "Sensitive notification content hidden".
-   Remaining in phase 1: battery and network status, files over bulk streams (resumable, hashed),
-   clipboard offers, per-feature grants and per-feature rate limits (a paired phone can flood shares today), the bar
-   indicator and share sheet, Quick Share, the KDE Connect baseline, and redial on an Android network change instead
-   of the next backoff step.
+   Grants are one model for all six features (clipboard, files, notifications, media, ring, calls), on after pairing
+   and applied by each side to what it receives. Remaining in phase 1: the share sheet, folding Quick Share into the
+   hub's backend-neutral transfer signals (it keeps its own `org.umbriel.Link1.QuickShare` today), the KDE Connect
+   baseline, and redial on an Android network change instead of the next backoff step.
 2. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).

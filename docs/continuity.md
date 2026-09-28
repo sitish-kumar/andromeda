@@ -18,9 +18,9 @@ has since added mDNS next to broadcast, and connecting by IP; the rows below are
 | Phone drops off, or a permanent notification drains the battery | An always-on foreground service with keepalives, or Android killing it | `CompanionDeviceManager` presence starts the app's foreground service only while the desktop is in range; connections close when idle and reopen on demand with 0-RTT |
 | Transfers stall or fail on Wi-Fi changes | One TCP socket per payload on a negotiated port; restarts from zero | QUIC: one connection, a stream per transfer, resumable by byte offset after a reconnect |
 | Pairing can be MITM'd by a careless click | Compare a short verification key, often skipped | QR or 6-digit code through a PAKE bound to the TLS session; a wrong code fails cryptographically |
-| Clipboard from the phone needs manual steps | Android 10+ lets only the focused app or the keyboard read the clipboard | Desktop to phone is automatic; phone to desktop is one tap through official entry points, with no log-reading or privileged-shell workarounds (see Clipboard) |
+| Clipboard from the phone needs manual steps | Android 10+ lets only the focused app or the keyboard read the clipboard | Desktop to phone is automatic; phone to desktop is automatic in the sideload build (a one-time `READ_LOGS` grant over adb, as KDE Connect) and one tap through official entry points in a Play build (see Clipboard) |
 | Features feel scattered | Plugins with their own UIs and a separate app | No UI in the daemon; the shell owns every surface |
-| Large attack surface | Run-command, SFTP with a password, plugins on by default | Per-device, per-feature grants, off until the user turns them on; no remote command execution |
+| Large attack surface | Run-command, SFTP with a password, plugins on by default | Per-device, per-feature grants (only clipboard and files on after pairing); no remote command execution |
 
 ## Architecture
 
@@ -60,6 +60,9 @@ and nothing in the shell names either of them.
   works over the phone hotspot), Quick Share otherwise. The user never sees the choice unless it fails.
 - **One receive.** An incoming Link or Quick Share transfer produces the same accept/decline notification, the
   same progress, the same Downloads destination, and the same "open" action.
+- **LocalSend too.** With "Visible to LocalSend" on (off by default), any LocalSend app (Android, iOS, Windows,
+  macOS) can send to the desktop and receive from it without installing anything, through the same consent
+  notification and Downloads; `sudo ufw allow "Umbriel Link LocalSend"` opens 53317/tcp and /udp for it.
 - **Never show an action that cannot work.** Each device advertises what it can do right now, and the shell shows
   only those actions. A phone without the app shows "Send files" and nothing else; its card offers the app once
   ("Get notifications, clipboard, and more"), then stays quiet. Nothing is greyed out with a caveat.
@@ -136,6 +139,11 @@ and nothing in the shell names either of them.
 - **Bulk data** (files, clipboard images, attachments) opens its own stream: resumable by byte offset, a size
   announced up front and enforced, content hashed (SHA-256 through `ring`, the one crypto provider) and verified
   before the file is revealed.
+- **Files** follow LocalSend v2's offer and accept: the sender offers names, sizes, types, and hashes; the receiver's
+  user accepts (or the device is set to auto-accept); each file then streams on its own QUIC stream, four at once.
+  The receiver writes a hidden part file in Downloads, syncs every 8 MiB, and publishes it under a name that never
+  overwrites once the hash matches. After any reconnect, or a receiver restart, the sender asks where to resume and
+  continues from the durable offset. Names are reduced to a safe basename. Details: `link/ARCHITECTURE.md` (Files).
 - **Shares** of text and links are control messages, 1 to 61440 bytes, acknowledged by the receiver; a link must
   be http or https, so opening one can never run or read anything local.
 
@@ -165,23 +173,30 @@ is system-only). NetworkManager remembers the phone's hotspot after the user joi
 
 ### Clipboard
 
-Everything here uses documented Android APIs. Automatic background reading of the phone clipboard is possible only
-for the default keyboard or the focused app, and we do not work around that (no `READ_LOGS` log scraping, no
-Shizuku, no accessibility-service tricks): they break across Android releases and would be rejected by Play.
+Automatic both ways for every device holding the clipboard grant, which a device gets at pairing and the user can
+turn off per device in the Devices tab.
 
-- **Desktop to phone, automatic.** A desktop copy goes to present devices that hold the clipboard grant. Text is
-  set on the phone clipboard at once (apps may write it in the background). Images and files are set as a
-  `content://` URI served by the app, so the bytes move only when a phone app pastes. Cleared after 2 minutes if
-  unchanged.
-- **Phone to desktop, one tap.** Three official entry points: the Share button on Android 13+'s copy overlay,
-  which appears on every copy (Link is a share target); "Send to <desktop>" in the text-selection menu
-  (`ACTION_PROCESS_TEXT`); and a quick-settings tile or a presence-notification action that opens a transparent
-  activity, reads the clipboard while focused, sends it, and closes.
+- **Desktop to phone, automatic.** A desktop copy goes to connected devices. Text is set on the phone clipboard at
+  once (apps may write it in the background). Images and files are set as a `content://` URI served by the app, so
+  the bytes move only when a phone app pastes. Cleared after 2 minutes unless the clipboard changed since.
+- **Phone to desktop, automatic, in the sideload build.** Android lets only the focused app or the keyboard read the
+  clipboard. As KDE Connect does, the app registers a clipboard listener, which makes Android log a denial for it on
+  every copy in another app; with `READ_LOGS` (a development permission, granted once with
+  `adb shell pm grant org.umbriel.link android.permission.READ_LOGS`) the app watches logcat for that line while
+  "Stay connected" runs, and on each one brings up a transparent activity for a moment, which reads the clipboard
+  while focused, offers it, and closes. Starting that activity from the background needs "Display over other apps"
+  too, and Android 13+ asks once per start of the log reader. Without the grants the app shows them in one line. Play would reject
+  `READ_LOGS` scraping, so a Play build keeps only the one-tap path.
+- **Phone to desktop, one tap.** Three official entry points: the Share button on Android 13+'s copy overlay, which
+  appears on every copy (Link is a share target); "Send to desktop" in the text-selection menu
+  (`ACTION_PROCESS_TEXT`); and a quick-settings tile that opens the same transparent activity.
 - **Lazy on the desktop.** A phone offer becomes a Wayland data source owned by the shell's `ClipboardService`;
   the content is pulled when a desktop app pastes, so a large image moves only if it is used.
+- **No echoes.** Each side keeps the hash of the last clip it applied from the other and never offers it back; the
+  shell also marks the selection it serves for a phone, so reading its own selection never pulls it.
 - **Watch Android 17's `UniversalClipboardManager`** (`android.companion.datatransfer.continuity`, a system service
-  for Google's own Handoff sync). If Google opens it to companion apps, it becomes the automatic path; until then,
-  one tap is the best any third-party app can do.
+  for Google's own Handoff sync). If Google opens it to companion apps, it becomes the automatic path for Play builds
+  too.
 
 ### iPhone
 
@@ -199,8 +214,9 @@ So: Android gets the full feature set, and iPhone gets notifications, media, and
 
 ## Security model
 
-- **Per device, per feature grants**, all off after pairing except presence. The Settings page lists exactly
-  what each device may do.
+- **Per device, per feature grants**: presence always; clipboard and files on after pairing (the two things a user
+  pairs for), notifications and everything later off until turned on. The Devices tab lists exactly what each
+  device may do.
 - **Nothing executes.** No remote commands; received files are never opened automatically; receiving from an
   unpaired device is impossible by design.
 - **Limits enforced by the daemon**: message size, stream count, transfer size (announced and verified), and
