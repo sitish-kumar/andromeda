@@ -163,6 +163,23 @@ wlroots 0.20.2 headers. **Verified** unless marked.
 Timing protocols the shell uses for content animation: `wp_presentation` (stable; the shared clock),
 `wp_commit_timing_v1` and `wp_fifo_v1` (staging, present in `/usr/share/wayland-protocols/staging` here).
 
+## Protocols apps use (compositor)
+
+wlroots 0.20.2 headers and the wayland-protocols staging XML in `/usr/share/wayland-protocols/staging`. **Verified.**
+wlroots 0.20 has no helper for fifo, commit-timing, or xdg-toplevel-drag, so Umbriel serves those itself. Each has a
+harness check with `tests/harness/clients/surface_protocols_client.cpp` (checks 745 to 752).
+
+| Protocol | API | Use |
+|---|---|---|
+| `wp_single_pixel_buffer_manager_v1` | `wlr_single_pixel_buffer_manager_v1_create` | Solid-colour buffers, drawn by the scene without a texture |
+| `wp_alpha_modifier_v1` | `wlr_alpha_modifier_v1_create`, `wlr_alpha_modifier_v1_get_surface_state` | The client's opacity, multiplied into the compositor's own window opacity |
+| `xdg_wm_dialog_v1` | `wlr_xdg_wm_dialog_v1_create`, `wlr_xdg_dialog_v1_try_from_wlr_xdg_toplevel` | A modal dialog is IPC `modal`, and focusing its parent focuses it |
+| `xdg_toplevel_icon_manager_v1` | `wlr_xdg_toplevel_icon_manager_v1_create`, `events.set_icon` | The icon name, reported as IPC `icon_name`. No preferred sizes are advertised: nothing draws icon buffers yet |
+| `xdg_system_bell_v1` | `wlr_xdg_system_bell_v1_create`, `events.ring` | Sent to the shell as `dsk_shell_v1.bell`, which plays the sound theme's `bell` at the UI-sound volume |
+| `wp_fifo_manager_v1` | `wlr_surface.events.client_commit` and `.commit`, `wlr_surface_lock_pending`, `wlr_surface_unlock_cached`, `wlr_surface.current_outputs`, `wlr_subsurface.synchronized` | A waiting update is held until an output the surface is on has committed a frame after the barrier was set; waits of off-screen surfaces and synchronized subsurfaces are ignored, as the protocol allows |
+| `wp_commit_timing_manager_v1` | the same surface locks, `wl_event_loop_add_timer` | An update is held until `CLOCK_MONOTONIC` reaches its timestamp, so it is never presented early |
+| `xdg_toplevel_drag_manager_v1` | `wlr_seat.events.start_drag`, `wlr_drag.events.destroy`, `wlr_scene_buffer.point_accepts_input` | The attached window floats under the pointer at the client's offset and is skipped when the drag picks its target. The `wl_data_source` resource's user data is read as its `wlr_data_source`, the first member of wlroots' client data source |
+
 ## Link daemon (`umbriel-linkd`)
 
 Rust, in `link/`. **Verified** against the crate sources in `~/.cargo/registry` and a sandboxed run of
