@@ -50,3 +50,16 @@ parsing only.
 
 [docs/gaps.md](docs/gaps.md) lists what is missing, by component and priority, and the order of work;
 [docs/link-plan.md](docs/link-plan.md) covers Link. Open an issue before large work, so it can be placed.
+
+## Syncing upstream
+
+`compositor/`, `shell/`, and `portal/` are merged with upstream, not rebased, so a sync is one merge per directory:
+
+```sh
+git fetch https://github.com/noctalia-dev/umbriel main && git merge -X subtree=compositor FETCH_HEAD
+git fetch https://github.com/noctalia-dev/noctalia main && git merge -X subtree=shell FETCH_HEAD
+git fetch https://github.com/noctalia-dev/xdg-desktop-portal-umbriel main && git merge -X subtree=portal FETCH_HEAD
+```
+
+Resolve conflicts by porting our change to where upstream moved the code, then run `just build`, `cd compositor
+&& just test && just check`, and the E2E tests the merged areas touch before committing.
