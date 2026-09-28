@@ -108,6 +108,9 @@ the mount, then checks the mount is gone after disconnect and that `../` escapes
 
 ## 5. Mirroring the phone's screen
 
+**Built 2026-09-28**: desktop side proven headless (`link_mirror.sh`); the Android capture, encoder, and input service
+wait for the real-phone pass. Glass-to-glass latency is measured there.
+
 - Phone: `MediaProjection` (a `mediaProjection` foreground service; Android asks every session, which no app can
   skip) into a hardware H.264 `MediaCodec` surface, at most 1080p and 60 fps, low-latency and realtime priority,
   bitrate stepped down under loss, a keyframe on request. One unidirectional stream of length-prefixed access units
@@ -125,11 +128,16 @@ draws, taps a fixture button through the viewer, and saves frames and the latenc
 
 ## 6. The internet path
 
+**Done 2026-09-28** for overlay networks: Tailscale addresses are announced and kept like LAN ones (`link_tailnet.sh`).
+
 First, addresses on a Tailscale (or any routed) interface are advertised and dialled like LAN ones, so two devices on
 one tailnet connect from anywhere. A relay of our own (hole punching, then a relayed QUIC path) only if that proves
 insufficient.
 
 ## 7. Phone apps as desktop windows (lowest priority)
+
+**Built 2026-09-28**: `umbriel-link-apps` over wireless debugging and scrcpy; `link_apps.sh` needs scrcpy and the
+emulator.
 
 DeX-like: each phone app in its own Umbriel window. Only the ADB route can do it: the `shell` user may create a
 virtual display and launch activities on it (scrcpy's `--new-display` and `--start-app`), which a sideloaded app may

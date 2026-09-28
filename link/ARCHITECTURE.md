@@ -459,6 +459,15 @@ dropped where it arrives, and logged; a file offer is declined, not dropped, so 
   `/etc/ufw/applications.d/umbriel-link` (4717/udp and mDNS 5353/udp), enabled with `sudo ufw allow "Umbriel Link"`.
   A desktop that fell back to a random port needs that port allowed by hand.
 
+### From anywhere (Tailscale)
+
+The desktop's hello lists every address a phone could dial except loopback, IPv6 link-local, and container or VM
+bridges (`docker*`, `br-*`, `veth*`, `virbr*`, ...): LAN IPv4, then overlay IPv4 (Tailscale's `100.64.0.0/10`), LAN
+IPv6, overlay IPv6 (`fd7a:115c:a1e0::/48`). The phone keeps up to 8, with the one that last worked first and the
+latest hello's next, so a full list still takes a new network's addresses. Two devices on one tailnet then reach each
+other through last-known addresses like on a LAN; mDNS does not cross it. A phone on mobile data does not probe from
+a Bluetooth session, so an overlay never moves one onto the data plan. E2E `link_tailnet.sh`.
+
 ### Bluetooth
 
 A paired phone with no IP path to its desktop runs the same session over RFCOMM. Pairing stays QUIC-only: SPAKE2
@@ -573,6 +582,33 @@ desktop                                          phone (on Bluetooth)
 - Neither the hotspot's address nor the addresses the desktop announces on it are kept as last-known addresses.
 - Android: `LocalHotspot` over `WifiManager.startLocalOnlyHotspot` (`NEARBY_WIFI_DEVICES` on Android 13+, fine
   location before), asked with `BLUETOOTH_CONNECT` on the onboarding's last page.
+
+### Wi-Fi Direct
+
+Tried before the hotspot, since the desktop joins a Wi-Fi Direct group as a P2P client beside its own Wi-Fi instead
+of leaving it. Same slot, timers, and answers as the hotspot; only the start differs.
+
+```
+desktop                                          phone (on Bluetooth)
+  wifi-direct-ready {name}                   ->  on every Bluetooth session, when NetworkManager has a P2P device
+  hotspot-request {}                         ->  (or the phone's own send over 1 MiB)
+                                             <-  wifi-direct {name}, then connect to the desktop's name as owner
+  find that name, join it through NetworkManager
+  hotspot-joined {address}  or  hotspot-end  ->  QUIC there (via "wifi-direct"), or fall back to the hotspot
+```
+
+- Both sides connect at once: a connection the app starts needs no confirmation on Android, and iwd accepts the
+  negotiation it asked for. The phone owns the group (intent 15) and serves DHCP.
+- The desktop's name is its host name, which both iwd and wpa_supplicant show; it finds the phone by name with
+  `WifiP2P.StartFind` for up to 20 s, then activates a volatile, non-autoconnect `wifi-p2p` profile for the peer's
+  hardware address. No `Hotspot` D-Bus signal, since the desktop kept its network.
+- The phone falls back to the hotspot when its group does not form, the desktop answers `hotspot-end`, or 25 s pass
+  (`WIFI_DIRECT_TIMEOUT`); it does not try a group again in that session. `wifi-direct` shares `hotspot`'s rate
+  limit, and one over it is answered with `hotspot-end`.
+- Before dialling the reported address, the phone sends `punch` with its addresses on the new link, so a desktop
+  firewall takes the dial for a reply (hotspot too).
+- Android: `WifiDirectGroup` over `WifiP2pManager` (`NEARBY_WIFI_DEVICES`, as for the hotspot). E2E
+  `link_wifi_direct.sh`; interop with a real phone is proven by `tools/wifi-direct-spike.py`.
 - E2E: `tests/e2e/link_hotspot.sh`, with `--hotspot` on the headless phone and `tests/e2e/nm_mock.py` standing in for
   NetworkManager by bringing up a second link between the namespaces.
 
@@ -588,6 +624,52 @@ Failure modes:
 5. The phone vanishes with the hotspot up: the session over it ends and the desktop leaves; NetworkManager would drop
    the profile anyway once the network is gone.
 
+### Mirroring
+
+The phone's screen in a desktop window (`umbriel-link-mirror`), with the desktop's input back on the phone. Only over
+IP, since video needs Wi-Fi, and only while the phone's `screen` switch for the desktop is on (off after pairing).
+
+```
+viewer          desktop                                  phone
+OpenMirror  ->  mirror-request {}                     -> screen switch off: mirror-stop {reason}
+                                                         else a notification; Allow opens Android's capture prompt
+                                                      <- mirror-started {width, height}
+                                                      <- uni stream: mirror-data {width, height}, then access units
+fd, size    <-  hands the viewer a socket, pumps units into it
+MirrorInput ->  mirror-input {action, x, y, ...}      -> gestures, global actions, text
+MirrorKeyframe  mirror-keyframe {}                    -> the encoder's next frame is a keyframe
+close fd    ->  mirror-stop {"the viewer closed"}     -> capture stops (or the phone's Stop: mirror-stop back)
+```
+
+- Video: Android's hardware H.264 encoder behind a `MediaProjection` virtual display, at most 1080 px on the short
+  side, 60 fps, 8 Mbit/s, realtime priority, a keyframe every 2 s or on request; the codec configuration goes in front
+  of every keyframe, so the viewer can start at any. Each unit is a u32 length, u64 presentation time (µs), a flags
+  byte (1 keyframe, 2 configuration), then Annex B bytes of at most 4 MiB; the daemon's socket to the viewer carries
+  the same framing.
+- The viewer: `appsrc ! h264parse ! vah264dec ! gtk4paintablesink sync=false` (VA-API on the Arc 140T,
+  `avdec_h264` without it), letterboxed; a press under 12 px is a tap (a long press past 500 ms), a drag a swipe with
+  its duration, a wheel notch a 15 % scroll at the pointer, Escape is Back, typed characters text. Coordinates are in
+  1/10000 of the video.
+- Input on Android goes through the `ScreenInput` accessibility service, which the user turns on once: a sideloaded
+  app has no other way (`INJECT_EVENTS` is signature-only). Gestures by `dispatchGesture`, Back, Home, and Recents by
+  `performGlobalAction`, text by `ACTION_SET_TEXT` on the focused field (appending; U+0008 deletes).
+- Android asks for capture every session, and an app may not skip it; the request notification times out with the
+  desktop's 60 s. `mirror-request` is limited to 2 per 10 s and `mirror-input` to a burst of 120, 100 a second.
+- One mirror per phone; a second `OpenMirror` fails. A stream nobody asked for is stopped.
+- E2E `link_mirror.sh` (headless: a file of SMPTE bars stands in for the encoder, `--frames` decodes to PNG).
+
+### Phone apps in desktop windows
+
+`umbriel-link-apps <phone>` (the Devices tab's apps button) opens the phone's apps one per desktop window. Only the
+ADB `shell` user may create a virtual display and launch an activity on it, so this rides wireless debugging and
+scrcpy (`--new-display --start-app`, each app its own display and window with full keyboard and mouse input), not the
+Link session. The phone is found in `adb devices`, else by connecting to the `_adb-tls-connect` services `adb mdns`
+lists, matched by `settings get global device_name` when there is more than one; an unpaired phone gets a pairing
+page that takes the code from Wireless debugging's "Pair with code" dialog (`adb pair` to its `_adb-tls-pairing`
+service). Closing a window ends its display. `--list` and `--launch <package>` do the same without a window. E2E
+`link_apps.sh` (emulator and scrcpy).
+
+### Browsing
 ### Browsing
 
 The desktop reads the phone's shared storage, read-only, while the phone's browse switch for it is on (off after

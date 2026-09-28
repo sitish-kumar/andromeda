@@ -201,3 +201,26 @@ Next, in order:
 7. Link phase 2: CompanionDeviceManager presence, the KDE Connect baseline, the phone matrix.
 8. Link's next stages, from the phone pass: `link-plan.md` (Home and picker, Bluetooth, hotspot handoff, browsing,
    mirroring, the internet path, then phone apps as desktop windows). Stage 1 is next.
+
+### Handoff, 2026-09-28 evening
+
+Built since the morning handoff, each with its E2E: the desktop reached through its firewall (`punch`, `link_firewall.sh`)
+and on a fixed port; any send over 1 MiB on Bluetooth moves off it, falling back to Bluetooth up to 20 MiB
+(`link_hotspot.sh`); Wi-Fi Direct before the hotspot, so the laptop keeps its Wi-Fi (`link_wifi_direct.sh`); overlay
+networks such as Tailscale (`link_tailnet.sh`, Link stage 6); mirroring the phone's screen with input
+(`link_mirror.sh`, stage 5, desktop side); phone apps in desktop windows over wireless debugging and scrcpy
+(`link_apps.sh`, stage 7). `tools/link-speed.py` times a transfer on the running daemon; `tools/wifi-direct-spike.py`
+tries Wi-Fi Direct with a real phone.
+
+One real-phone pass covers all of it, with the r-current package, the APK, and `sudo pacman -S gst-plugin-gtk4 scrcpy`:
+1. Same Wi-Fi, firewall on: the session is on Wi-Fi (`journalctl --user -u umbriel-linkd | grep "connected over"`);
+   `tools/link-speed.py 100 wifi`.
+2. Phone off the shared Wi-Fi, on Bluetooth: a 5 MiB and a 50 MiB send both ways; the session moves to Wi-Fi Direct
+   and the laptop keeps its network (`nmcli dev`); `tools/link-speed.py 100 wifi-direct`. If the group fails,
+   `tools/wifi-direct-spike.py "<phone's Wi-Fi Direct name>"` says where, and the hotspot must still carry it.
+3. Mirroring: turn on Screen and the "control from the desktop" accessibility service on the phone, press the screen
+   button in the Devices tab, allow capture; tap, swipe, scroll, type, Back/Home/Recents from the window; note the
+   delay a stopwatch on the phone shows against its picture.
+4. Apps: turn on Wireless debugging, press the apps button, pair with the code once, open two apps in two windows.
+5. Tailscale on both: phone on mobile data, no Bluetooth in range: it connects over the tailnet.
+6. The morning list's item 1 (pairing, clipboard, notifications, media, ring, calls, Quick Share, LocalSend).
