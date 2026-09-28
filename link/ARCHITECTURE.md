@@ -487,8 +487,10 @@ phone (client)                                        desktop (server)
   its actor, punching the desktop's firewall first (see below). A probe
   that reaches the desktop becomes a QUIC session; the desktop then closes the Bluetooth one, as it does any older
   session, and open transfers resume on the new one by offset.
-- Files over Bluetooth are capped at 20 MiB per offer (`BLUETOOTH_FILE_LIMIT`), from both sides, before any byte
-  moves; the refusal says "too large to send over Bluetooth".
+- A send past 1 MiB (`BLUETOOTH_UPGRADE_ABOVE`) on Bluetooth asks for the phone's hotspot first, from both sides,
+  since it takes longer over Bluetooth than joining. When the hotspot fails, files up to 20 MiB per offer
+  (`BLUETOOTH_FILE_LIMIT`) go over Bluetooth; larger ones are refused before any byte moves with "too large to send
+  over Bluetooth". A `hotspot` over the peer's rate limit is answered with `hotspot-end`, so neither side waits.
 - Android: `BluetoothSocket` exposes only streams, so `RfcommLink` pumps it through a socket pair on two threads and
   hands the core the other end. `BLUETOOTH_CONNECT` is asked on the onboarding's last page.
 - E2E: `tests/e2e/link_bluetooth.sh` replaces RFCOMM with a Unix socket (`UMBRIEL_LINK_TEST_BLUETOOTH_SOCKET` on the
@@ -547,7 +549,7 @@ larger than Bluetooth carries.
 
 ```
 desktop                                          phone (on Bluetooth)
-  hotspot-request {}                         ->  (or the phone's own send over 20 MiB)
+  hotspot-request {}                         ->  (or the phone's own send over 1 MiB)
                                                  start a local-only hotspot
                                              <-  hotspot {ssid, passphrase}
   join it through NetworkManager
