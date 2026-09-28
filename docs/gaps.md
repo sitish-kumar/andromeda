@@ -176,3 +176,26 @@ Next, in this order (each lands with an E2E or harness proof and, for power item
    hub's backend-neutral transfer signals (it keeps its own `org.umbriel.Link1.QuickShare` today), the KDE Connect
    baseline, and redial on an Android network change instead of the next backoff step.
 2. Tier 2 in the order apps need it: overlay planes (2.1), missing protocols (2.2), accessibility (2.3).
+
+### Handoff, 2026-09-28
+
+Landed since phase 0, each with its E2E or harness proof: Link slices A to C (presence, shares, files, clipboard,
+status, grants, notifications, media, ring, calls, the app's own design system), LocalSend, Quick Share both ways
+inside `umbriel-linkd` with a Phone & Devices settings page, the screen magnifier (2.3), all eight missing protocols
+(2.2), zero-commit idle and suspended hidden windows, the static power policy (`umbriel-power-git`, optional), the LP-E
+core slice, GeoClue location (2.4), event-driven icon theme (0.3), and Settings 3.5, 3.8, and 3.9 proven.
+
+Next, in order:
+1. Real-phone pass on the OnePlus 12 with the r-current package and APK: pairing, Stay connected, shares, files both
+   ways, clipboard both ways (grant `READ_LOGS` with adb), notifications with reply, media, ring, calls, Quick Share
+   and LocalSend both ways. Sending to an Android Quick Share receiver was not yet seen working (the phone stayed
+   hidden; check its visibility is Everyone).
+2. AT-SPI for the shell (2.3): a native bridge over sdbus-c++ on the a11y bus, roles and names in the toolkit, and
+   notification announcements, proven with a Python Atspi client. Not started.
+3. Quick Share through the hub's shared transfer signals, so Link, LocalSend, and Quick Share share one consent and
+   progress path.
+4. `displays.toml` loads only when config.toml includes it, so a config without the include cannot save display
+   properties; decide whether it should load like `settings.toml`.
+5. Settings memory after close is 3.7 MB over its 0 budget (`performance.md`); heap-profile it.
+6. Overlay planes (2.1) need real KMS: the harness cannot prove them; plan a TTY bench.
+7. Link phase 2: CompanionDeviceManager presence, the KDE Connect baseline, the phone matrix.
