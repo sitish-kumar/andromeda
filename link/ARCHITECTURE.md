@@ -459,6 +459,141 @@ dropped where it arrives, and logged; a file offer is declined, not dropped, so 
   `/etc/ufw/applications.d/umbriel-link` (4717/udp and mDNS 5353/udp), enabled with `sudo ufw allow "Umbriel Link"`.
   A desktop that fell back to a random port needs that port allowed by hand.
 
+### Bluetooth
+
+A paired phone with no IP path to its desktop runs the same session over RFCOMM. Pairing stays QUIC-only: SPAKE2
+binds to the QUIC TLS exporter.
+
+```
+phone (client)                                        desktop (server)
+  RFCOMM to the desktop's adapter, SDP service     ->  BlueZ Profile1.NewConnection hands the socket over
+  5c3b1e5a-7d2f-4a8e-9b61-3f0c2d4e8a17, insecure
+  TLS 1.3, raw public keys, ALPN umbriel-link-stream/1, the desktop pinned by fingerprint
+  mux frames: the control stream (bidirectional, id 0), then bulk streams, exactly as over QUIC
+```
+
+- Where: the desktop's hello lists `bt:AA:BB:CC:DD:EE:FF` among its `addresses`; phones from before skip it, since it
+  is not a socket address. The phone keeps it in its store as the peer's `bluetooth`.
+- When: the phone tries last-known addresses and mDNS first, then Bluetooth if the store has an address and the
+  platform can open RFCOMM (`BluetoothOpener`). No Bluetooth bond is made: Link's TLS authenticates both ends, so the
+  profile asks BlueZ for neither authentication nor authorization, and the phone opens an insecure socket.
+- The multiplexer (`link_proto::mux`, `link_core::mux`) gives a byte stream QUIC's stream model: a 9-byte header
+  (`kind: u8`, `stream: u32`, `len: u32`), streams opened by the client even and by the server odd, DATA of at most
+  16 KiB, a 256 KiB credit window per stream, FIN, RESET and STOP with a code, CLOSE with a close code and reason,
+  and PING/PONG. The control stream's frames go ahead of queued bulk data, and at most 64 KiB of bulk data waits for
+  the writer. Keep-alive and the idle timeout are QUIC's (10 s, 30 s). `link_core::wire` holds either connection
+  behind the one API the session and transfers use.
+- Moving up: while a session runs over Bluetooth, the phone probes for an IP path every 30 s, off its actor. A probe
+  that reaches the desktop becomes a QUIC session; the desktop then closes the Bluetooth one, as it does any older
+  session, and open transfers resume on the new one by offset.
+- Files over Bluetooth are capped at 20 MiB per offer (`BLUETOOTH_FILE_LIMIT`), from both sides, before any byte
+  moves; the refusal says "too large to send over Bluetooth".
+- Android: `BluetoothSocket` exposes only streams, so `RfcommLink` pumps it through a socket pair on two threads and
+  hands the core the other end. `BLUETOOTH_CONNECT` is asked on the onboarding's last page.
+- E2E: `tests/e2e/link_bluetooth.sh` replaces RFCOMM with a Unix socket (`UMBRIEL_LINK_TEST_BLUETOOTH_SOCKET` on the
+  daemon, `--bluetooth-socket` on the headless phone), so everything after the descriptor handover is the real code.
+
+Failure modes:
+
+1. No adapter, or Bluetooth off, on either side: no `bt:` address, or the RFCOMM connect fails; the phone reports the
+   IP error and redials with backoff as before.
+2. A phone whose key is not paired: admitted as over QUIC and refused with `not-paired`; nothing is delivered. A
+   pairing attempt over Bluetooth is refused the same way.
+3. A desktop presenting another key: the pinned handshake fails before any mux frame.
+4. Garbage or a malformed mux frame: the handshake fails, or the connection closes with `protocol-error`; the daemon
+   keeps serving. A peer opening a stream with the wrong parity, a reused id, more than 9 streams, or DATA past its
+   window is a violation.
+5. The IP path returning mid-session: the session moves to QUIC; no share is lost, since the old session stays up
+   until the new one is adopted.
+6. RFCOMM dropping mid-file: the partial stays and the transfer resumes by offset on the next session.
+7. More than 20 MiB offered on Bluetooth: refused at once, from D-Bus and from the phone.
+
+### Hotspot
+
+A Bluetooth session moves to the phone's own local-only hotspot (no tethering, no mobile data) when a transfer is
+larger than Bluetooth carries.
+
+```
+desktop                                          phone (on Bluetooth)
+  hotspot-request {}                         ->  (or the phone's own send over 20 MiB)
+                                                 start a local-only hotspot
+                                             <-  hotspot {ssid, passphrase}
+  join it through NetworkManager
+  hotspot-joined {address: "ip:port"}        ->
+                                             <-  QUIC to that address: a new session, the Bluetooth one closes
+  either side: hotspot-end {reason?}         ->  stop / leave
+```
+
+- Only for a session on Bluetooth, and only with the files grant on; one hotspot at a time on the phone. The desktop
+  rate-limits `hotspot` to two per 30 s, since each one makes it join a network.
+- The desktop joins as a volatile, non-autoconnect WPA-PSK profile for the user (`AddAndActivateConnection2`,
+  `persist: volatile`), so NetworkManager deletes it once it deactivates and brings the usual network back by itself.
+  Android 13+ may run the hotspot in WPA3 transition mode; joining as WPA2-PSK avoids the SAE interop failures seen
+  with wpa_supplicant 2.11. The laptop leaves its current Wi-Fi while joined; D-Bus signals `Hotspot(device, ssid)`
+  on joining and with an empty SSID on leaving.
+- A send over the limit waits up to 60 s for the move (`UPGRADE_TIMEOUT`), then goes over the new session; on either
+  side, a failure comes back with its reason ("hotspot: NetworkManager could not join it").
+- The phone stops the hotspot after 60 s with no transfer (`hotspot::IDLE`), tells the desktop, and closes the
+  session that ran over it, so the redial falls back to Bluetooth at once instead of after the idle timeout. The
+  desktop leaves when told, when that session ends, or when a Bluetooth session replaces it.
+- Neither the hotspot's address nor the addresses the desktop announces on it are kept as last-known addresses.
+- Android: `LocalHotspot` over `WifiManager.startLocalOnlyHotspot` (`NEARBY_WIFI_DEVICES` on Android 13+, fine
+  location before), asked with `BLUETOOTH_CONNECT` on the onboarding's last page.
+- E2E: `tests/e2e/link_hotspot.sh`, with `--hotspot` on the headless phone and `tests/e2e/nm_mock.py` standing in for
+  NetworkManager by bringing up a second link between the namespaces.
+
+Failure modes:
+
+1. The phone cannot start a hotspot (no provider, Android refused, the files switch off, another desktop has it):
+   `hotspot-end` with the reason; the send fails with it and nothing is sent.
+2. NetworkManager cannot join (wrong passphrase, out of range): `hotspot-end` with the reason to the phone; the send
+   fails with it.
+3. The session never moves within 60 s: the send fails with "too large to send over Bluetooth".
+4. `hotspot` on a session already on IP, or a second one: ignored. `hotspot-joined` from a desktop the hotspot does
+   not serve: ignored.
+5. The phone vanishes with the hotspot up: the session over it ends and the desktop leaves; NetworkManager would drop
+   the profile anyway once the network is gone.
+
+### Browsing
+
+The desktop reads the phone's shared storage, read-only, while the phone's browse switch for it is on (off after
+pairing).
+
+```
+desktop                                         phone
+  fs-list {req, path, cursor?}              ->
+                                            <-  fs-entries {req, entries, next?}   (128 per page, name order)
+  fs-read {req, path, offset, len}          ->
+                                            <-  fs-data {req, offset, data, last?} (48 KiB each, in order)
+                                            <-  fs-error {req, reason}             (instead of either answer)
+```
+
+- Paths: `/` lists the roots the app gives (`Storage` = shared storage, `Photos` = its `DCIM`, and none without All
+  files access); below that, `/<root>/<name>/...` with no empty, `.`, or `..` component, checked while decoding. The
+  phone canonicalizes every path and refuses one that leaves its root once symlinks resolve (`denied`); hidden
+  entries are left out. At most 8 requests are served at once (`busy` beyond).
+- Answers go on the control stream, so reads are chunked to keep other messages moving. A read is at most 1 MiB.
+- The desktop pairs answers to requests by `req` (`link-daemon/src/browse.rs`), follows cursors to the end of a
+  listing (at most 16384 entries), and fails a request the phone does not answer within 15 s. D-Bus: `ListFiles` and
+  `ReadFile`, whose `.Refused` errors carry the phone's reason.
+- `umbriel-link-mount` (crate `link-mount`), a user service outside the daemon's sandbox, mounts `~/Phone` with
+  FUSE: one folder per connected phone, named after it, and under it the phone's roots. Listings and attributes stand
+  5 s; reads go through 1 MiB blocks (32 kept), so a sequential read fetches ahead. Read-only, `noexec`, `nosuid`,
+  `nodev`. The shell's Devices tab opens a phone's folder.
+- E2E: `tests/e2e/link_browse.sh` mounts in private user, network, and mount namespaces against the headless phone's
+  `--browse-root`.
+
+Failure modes:
+
+1. The switch off: `not-allowed`, EACCES through the mount; nothing is read.
+2. A path out of its root, by `..` (refused while decoding) or by symlink (`denied`); a missing file (`not-found`,
+   ENOENT); a folder read as a file or the reverse (EISDIR, ENOTDIR).
+3. A phone that disconnects: pending requests fail at once, and its folder leaves the mount once the root listing
+   goes stale.
+4. A phone answering against the protocol (a read longer than asked, a listing past the cap): the request fails
+   with EIO; the session stays.
+5. Writes through the mount: EROFS.
+
 ## Quick Share (`link-quickshare`)
 
 Receive and send with stock Android Quick Share on the same network. The protocol is Google's; the reference for
@@ -538,12 +673,11 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   Presentation → Domain → Data; the domain layer imports neither.
 - Feature-first packages under `app`: `pairing`, `devices` (Home and a desktop's page), `presence`, `share`,
   `notifications` (the mirror and its per-app filter), `media`, `ring`, `calls`, `onboarding`, `transfer` (files),
-  and `clipboard`.
+  `files` (the phone's storage and the in-app picker), and `clipboard`.
 - The UI is the app's own design system in `ui/theme` (color, spacing, radius, type, shadow, and motion tokens: an
   electric-blue accent over charcoal and stone, a #0A0A0A dark surface, Source Sans 3 under the SIL OFL) and
-  `ui/components` (the 28 dp soft card, 20 dp hero surface, 100 dp pills, selectable pills, the sliding-pill
-  segmented control, the expanding action orb, bento tiles, the connection orb, pull to refresh), built on Compose
-  foundation. The app does not depend on Material components; only `material-icons-core` supplies glyphs.
+  `ui/components` (the 28 dp soft card, 20 dp hero surface, 100 dp pills, the sliding-pill segmented control, switch
+  and navigation rows, the connection orb, pull to refresh), built on Compose foundation. The app does not depend on Material components; only `material-icons-core` supplies glyphs.
 - One `ViewModel` per screen exposing `StateFlow`; UI actions return `Result`, never throw into the UI. Coroutines
   only, no callbacks above the data layer. Manual constructor injection from one `AppContainer`, no DI framework.
 - `LinkRepository` reads `LinkClient.next_event()` for the life of the process, so `desktops` carries live connected
@@ -557,6 +691,10 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   lock is held while present, for the mDNS half of a redial.
 - The share target (`ACTION_SEND`, `text/plain`) sends to the only paired desktop, or asks which; a single http or
   https URL goes as a link.
+- The in-app picker (`files`): a sheet over Home with Photos and Videos from `MediaStore` (`READ_MEDIA_*`, or the
+  Android 14 partial grant) and Files, the shared-storage tree under All files access (`MANAGE_EXTERNAL_STORAGE`; on
+  Android 10 the legacy read grant). Home's recent-photos row and the sheet share one selection. Picked items go
+  through the same `sendFiles` path as the share target: a MediaStore or `file:` URI opened as a descriptor.
 - Files: the share target also takes `ACTION_SEND` and `ACTION_SEND_MULTIPLE` of any type; each content URI is
   opened as a descriptor the core takes over (`detachFd`), so a provider that hands out a pipe is refused. Offers
   from the desktop become a notification with Accept and Decline (`TransferNotifier`, `TransferReceiver`). The core
@@ -571,7 +709,9 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   changed. `ClipboardWatcher` runs while `PresenceService` does and `READ_LOGS` is granted: it follows
   `logcat -T 1 ClipboardService:E` for the denial Android logs for this app on every copy elsewhere (it holds a
   clipboard listener for that reason) and starts `ClipboardReadActivity`, transparent, which reads the clipboard once
-  focused, offers it unless its hash is the last desktop clip, and finishes. The same activity serves the
+  focused, offers it unless its hash is the last desktop clip, and finishes. Home's Clipboard action offers the clip the
+  same way, so it lands on the desktop's clipboard rather than in a notification. The onboarding's last page, optional,
+  walks through the two grants and copies the adb command; the watcher starts as soon as both are there. The same activity serves the
   quick-settings tile (`ClipboardTileService`) and "Send to desktop" in the text-selection menu (`PROCESS_TEXT`).
 - E2E: `tests/e2e/link_android.sh` drives the Maestro flows under `link/android/maestro/` on an emulator against a
   private `umbriel-linkd`, writing screenshots and `results.json` to `artifacts/link-android/`;

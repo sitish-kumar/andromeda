@@ -199,5 +199,5 @@ Next, in order:
 5. Settings memory after close is 3.7 MB over its 0 budget (`performance.md`); heap-profile it.
 6. Overlay planes (2.1) need real KMS: the harness cannot prove them; plan a TTY bench.
 7. Link phase 2: CompanionDeviceManager presence, the KDE Connect baseline, the phone matrix.
-8. Link's next six stages, from the phone pass: `link-plan.md` (Home and picker, Bluetooth, hotspot handoff,
-   browsing, mirroring, the internet path). Stage 1 is next.
+8. Link's next stages, from the phone pass: `link-plan.md` (Home and picker, Bluetooth, hotspot handoff, browsing,
+   mirroring, the internet path, then phone apps as desktop windows). Stage 1 is next.
