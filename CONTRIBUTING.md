@@ -53,12 +53,13 @@ parsing only.
 
 ## Syncing upstream
 
-`compositor/`, `shell/`, and `portal/` are merged with upstream, not rebased, so a sync is one merge per directory:
+`compositor/`, `shell/`, `portal/`, and `greeter/` are merged with upstream, not rebased, so a sync is one merge per directory:
 
 ```sh
 git fetch https://github.com/noctalia-dev/umbriel main && git merge -X subtree=compositor FETCH_HEAD
 git fetch https://github.com/noctalia-dev/noctalia main && git merge -X subtree=shell FETCH_HEAD
 git fetch https://github.com/noctalia-dev/xdg-desktop-portal-umbriel main && git merge -X subtree=portal FETCH_HEAD
+git fetch https://github.com/noctalia-dev/noctalia-greeter main && git merge -X subtree=greeter FETCH_HEAD
 ```
 
 Resolve conflicts by porting our change to where upstream moved the code, then run `just build`, `cd compositor

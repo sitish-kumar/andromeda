@@ -23,6 +23,7 @@ desktop/
   compositor/   git subtree of the Umbriel fork   (remote: upstream umbriel)
   shell/        git subtree of the Noctalia fork  (remote: upstream noctalia)
   portal/       git subtree of xdg-desktop-portal-umbriel
+  greeter/      git subtree of the noctalia-greeter fork (greetd login, face first)
   protocol/     desktop-unstable-v1.xml, the only copy
   session/      systemd units, portals.conf, tmpfiles.d, udev rules, session entry
   tests/e2e/    cross-process flows only

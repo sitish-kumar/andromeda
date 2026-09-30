@@ -88,6 +88,26 @@ SDDM is the fprintd workaround, an empty password submitted and then a wait. gre
 lets it cancel at any time, which is what face and password side by side need. The first login after boot still takes
 the password, since the keyring needs it.
 
+## Greeter failure cases (`tests/e2e/face_greeter.sh` against `mock_greetd.py`)
+
+`greeter/` is the noctalia-greeter fork on greetd. It opens the PAM session as soon as a user is shown, so pam_gaze
+starts at once; the stack is `pam_gaze` (sequential, service `gdm-face` so Gaze hands the keyring password over), then
+`pam_unix`, then `pam_gnome_keyring use_authtok`. Sequential mode keeps the password prompt behind the face check
+(at most Gaze's 5 s no-face deadline), so the greeter queues a password typed meanwhile and answers the prompt with it
+the moment it opens.
+
+| # | Case | Required outcome |
+|---|---|---|
+| G1 | Face matches, nothing typed | `start_session` without any password posted |
+| G2 | Password typed and submitted while the face check runs | The field stays usable; the password is posted as soon as the secret prompt arrives, with no second Enter |
+| G3 | Wrong password | The field clears, the session is cancelled, and a new one starts at once (face runs again) |
+| G4 | No face enrolled (PAM goes straight to the password prompt) | Waits for the password like a plain greeter |
+| G5 | Face gives up (dark, no face) | Gaze's reason is shown, then the password prompt; nothing is submitted for the user |
+
+Switching user mid-check waits for greetd's reply (at most about 5 s): greetd reads one request at a time. A Gaze change
+that lets marker-speaking hosts run face and password in parallel (the polkit path) would remove the wait and the
+queue; it goes upstream.
+
 ## Order of work
 
 1. Lock screen (L1 to L11).
