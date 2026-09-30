@@ -37,7 +37,7 @@ The InsightFace models Gaze downloads on first start are for non-commercial use.
 | polkit sheet | `pam_gaze.so` in `/etc/pam.d/polkit-1`; the shell registers `polkit-1` with `AddPamInternal`, so the agent gets `GAZE_*` markers and draws face state and a Confirm button | PAM |
 | `run0`, `pkexec` | Through polkit, so the same sheet | PAM |
 | `sudo` in a terminal | `pam_gaze.so` in `/etc/pam.d/sudo`; text prompt, Enter to confirm | PAM |
-| SDDM | Password on the first login after boot (the keyring needs it) | PAM |
+| Greeter | SDDM today, password only. Face needs a greetd greeter (see Greeter) | PAM |
 | Settings, Face Unlock page | EnrollStart, ListFaces, DeleteFace, VerifyStart over D-Bus | `gazed` |
 | Apps and scripts | `org.umbriel.Auth1.Request(reason)` and `umbriel-auth`: the polkit sheet as a presence check, never a privilege grant | PAM |
 
@@ -57,21 +57,41 @@ The InsightFace models Gaze downloads on first start are for non-commercial use.
 | L10 | Unlocked by password | VerifyStop and Release; the camera goes dark |
 | L11 | `lockscreen.face = false` | Never claims |
 
-## polkit failure cases (`tests/e2e/face_polkit.sh`)
+## The password is never blocked
 
-| # | Case | Required outcome |
-|---|---|---|
-| P1 | `GAZE_MSG_LOOK_CAMERA` or `GAZE_MSG_LOOK_OR_PASSWORD` | Sheet shows "Look at the camera", the password field stays usable |
-| P2 | `GAZE_REQUIRE_CONFIRMATION` request | Sheet shows "Face verified" and a Confirm button; Confirm answers `GAZE_CONFIRMED`, Cancel answers `GAZE_CANCEL` |
-| P3 | Typed password while confirmation is pending | Sent as the answer; Gaze falls back to it |
-| P4 | `GAZE_MSG_FACE_NOT_RECOGNIZED`, `_NOT_DETECTED`, `_TOO_DARK`, `_TIMED_OUT`, `_UNAVAILABLE` | Readable reason, then the password prompt |
-| P5 | An unknown `GAZE_*` marker | Never shown raw |
-| P6 | `gazed` missing at shell start | No `AddPamInternal`; Gaze's English text is shown as before |
+Every surface accepts the password from the first moment, while the face check runs, and a submitted password ends the
+face check. The lock screen does this itself (face runs over D-Bus beside the field). PAM surfaces need
+`pam_gaze.so simultaneous` in `/etc/pam.d/polkit-1` and `/etc/pam.d/sudo`: the default sequential mode holds the
+password prompt until the face check ends (up to 12 s).
+
+## polkit failure cases (`tests/e2e/face_polkit.sh`, live: real polkit, PAM, gazed, and the user)
+
+| # | Case | Required outcome | Checked |
+|---|---|---|---|
+| P1 | `GAZE_MSG_LOOK_CAMERA` or `GAZE_MSG_LOOK_OR_PASSWORD` | Face glyph and "Look at the camera"; with `simultaneous`, the password field is open beside it | Live, `look.png` |
+| P2 | `GAZE_REQUIRE_CONFIRMATION` (as info while the password prompt is open, or as the prompt itself) | "Face verified", a Confirm button; Enter or Confirm answers `GAZE_CONFIRMED`; Cancel cancels the request | Live, `confirm.png`, pkexec exit 0 |
+| P3 | A typed password while face runs or confirmation is pending | Sent as the answer; Gaze uses it as the password | Code path only: the test never submits the real password |
+| P4 | `GAZE_MSG_FACE_NOT_RECOGNIZED`, `_NOT_DETECTED`, `_TOO_DARK`, `_TIMED_OUT`, `_UNAVAILABLE` | Readable reason with the error glyph, then the password prompt | Live once (liveness budget spent, "Face not recognized") |
+| P5 | An unknown `GAZE_*` marker | Never shown raw | Code path |
+| P6 | `gazed` missing at shell start, or restarted | `AddPamInternal("polkit-1")` runs whenever the name gains an owner; without it Gaze sends English text | Code path |
+
+The shell under test registers for one process (`NOCTALIA_POLKIT_TEST_PROCESS`), since `pkexec` asks on behalf of its
+parent; the user's own agent keeps the session. The test removes `polkit-1` from gazed's list on exit, or the user's
+agent would receive markers.
+
+## Greeter
+
+SDDM cannot give this flow. Its theme API is one call, `login(user, password, session)`: PAM starts only after the
+password is submitted, the theme never sees individual PAM messages, and a running attempt cannot be cancelled. Face at
+SDDM is the fprintd workaround, an empty password submitted and then a wait. greetd's IPC (`create_session`,
+`auth_message` per PAM message, `post_auth_message_response`, `cancel_session`) gives the greeter every message and
+lets it cancel at any time, which is what face and password side by side need. The first login after boot still takes
+the password, since the keyring needs it.
 
 ## Order of work
 
 1. Lock screen (L1 to L11).
-2. polkit sheet (P1 to P6), `AddPamInternal("polkit-1")` at shell start.
+2. polkit sheet (P1 to P6), `AddPamInternal("polkit-1")` whenever gazed appears; `simultaneous` in polkit-1 and sudo.
 3. Settings Face Unlock page.
 4. `org.umbriel.Auth1` and `umbriel-auth`.
-5. SDDM theme, `pkg/PKGBUILD` dependency on `gaze-bin`, the shipped `/etc/gaze/config.toml`.
+5. greetd greeter, `pkg/PKGBUILD` dependency on `gaze-bin`, the shipped `/etc/gaze/config.toml` and PAM lines.
