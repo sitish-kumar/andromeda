@@ -90,11 +90,14 @@ the password, since the keyring needs it.
 
 ## Greeter failure cases (`tests/e2e/face_greeter.sh` against `mock_greetd.py`)
 
-`greeter/` is the noctalia-greeter fork on greetd. It opens the PAM session as soon as a user is shown, so pam_gaze
-starts at once; the stack is `pam_gaze` (sequential, service `gdm-face` so Gaze hands the keyring password over), then
-`pam_unix`, then `pam_gnome_keyring use_authtok`. Sequential mode keeps the password prompt behind the face check
-(at most Gaze's 5 s no-face deadline), so the greeter queues a password typed meanwhile and answers the prompt with it
-the moment it opens.
+`greeter/` is the noctalia-greeter fork on greetd. It opens the PAM session as soon as a user is shown and registers
+with gazed as the marker host for `gdm-face` (`AddPamInternal`). The stack is `pam_gaze simultaneous` (service
+`gdm-face`, so Gaze hands the keyring password over), then `pam_unix`, then `pam_gnome_keyring use_authtok`. The
+password prompt opens at once beside the face check. greetd carries one conversation with no message ids, so pam_gaze
+cannot send "face matched" while that prompt is open; gazed sends the match signal to the registered host instead,
+and the greeter answers the open prompt with `GAZE_CONFIRMED`, which pam_gaze accepts only after its own match. This
+needs the Gaze change on `~/src/gaze` branch `feat/marker-host-race` (for upstream); with stock Gaze the stack must
+stay sequential, and the greeter then queues a password typed during the face check.
 
 | # | Case | Required outcome |
 |---|---|---|
@@ -103,10 +106,11 @@ the moment it opens.
 | G3 | Wrong password | The field clears, the session is cancelled, and a new one starts at once (face runs again) |
 | G4 | No face enrolled (PAM goes straight to the password prompt) | Waits for the password like a plain greeter |
 | G5 | Face gives up (dark, no face) | Gaze's reason is shown, then the password prompt; nothing is submitted for the user |
+| G6 | Patched Gaze: gazed's match arrives while the password prompt is open | The greeter answers `GAZE_CONFIRMED` and the session starts |
+| G7 | Patched Gaze: password typed at once | Posted at once, no wait for the face check |
 
-Switching user mid-check waits for greetd's reply (at most about 5 s): greetd reads one request at a time. A Gaze change
-that lets marker-speaking hosts run face and password in parallel (the polkit path) would remove the wait and the
-queue; it goes upstream.
+With stock Gaze, switching user mid-check waits for greetd's reply (at most about 5 s): greetd reads one request at a
+time. With the patch the prompt is already open, so a switch cancels at once.
 
 ## Order of work
 
