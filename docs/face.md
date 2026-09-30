@@ -108,6 +108,11 @@ stay sequential, and the greeter then queues a password typed during the face ch
 | G5 | Face gives up (dark, no face) | Gaze's reason is shown, then the password prompt; nothing is submitted for the user |
 | G6 | Patched Gaze: gazed's match arrives while the password prompt is open | The greeter answers `GAZE_CONFIRMED` and the session starts |
 | G7 | Patched Gaze: password typed at once | Posted at once, no wait for the face check |
+| G8 | Taps anywhere (empty space, the hint line) before typing | Keys still reach the password field; nothing else takes text under Ryoku |
+| G9 | Enter on an empty field | Nothing is sent: an empty answer is a failed password to PAM and faillock |
+| G10 | A session picked from the session list | That session starts; with nothing chosen before, Umbriel |
+| G11 | A face match while a list is open | The login waits until the list closes, so a pick is never overtaken |
+| G12 | The face check gives up (no face, too dark) | gazed tells the host; the hint says so instead of asking for the camera |
 
 With stock Gaze, switching user mid-check waits for greetd's reply (at most about 5 s): greetd reads one request at a
 time. With the patch the prompt is already open, so a switch cancels at once.
