@@ -484,8 +484,16 @@ phone (client)                                        desktop (server)
 - Where: the desktop's hello lists `bt:AA:BB:CC:DD:EE:FF` among its `addresses`; phones from before skip it, since it
   is not a socket address. The phone keeps it in its store as the peer's `bluetooth`.
 - When: the phone tries last-known addresses and mDNS first, then Bluetooth if the store has an address and the
-  platform can open RFCOMM (`BluetoothOpener`). No Bluetooth bond is made: Link's TLS authenticates both ends, so the
-  profile asks BlueZ for neither authentication nor authorization, and the phone opens an insecure socket.
+  platform can open RFCOMM (`BluetoothOpener`). The profile asks BlueZ for neither authentication nor authorization,
+  since Link's TLS authenticates both ends, but BlueZ accepts connections only from bonded devices, so the phone
+  bonds with the desktop once (below) and then opens an encrypted socket.
+- Bonding, over a Wi-Fi session: the desktop's hello lists `feature:bt-pairing`; a phone not yet bonded sends
+  `bt-pairing {}`, and the desktop accepts unpaired connections for 60 s; Android then pairs (the user taps Pair
+  once) and the phone sends `bt-pairing {passkey}`. The shell's BlueZ agent asks `ConfirmBluetoothPairing` (which
+  waits up to 10 s for the report) and confirms a match without a prompt; anything else gets the normal prompt.
+- Bonding with no network: the QR code names the adapter (`b=`), and the desktop accepts unpaired connections while
+  a pairing window is open. A phone that reaches no address bonds (confirmed on both screens, since no session can
+  vouch for the code) and runs the same pairing over the Bluetooth stream, bound to the stream's TLS exporter.
 - The multiplexer (`link_proto::mux`, `link_core::mux`) gives a byte stream QUIC's stream model: a 9-byte header
   (`kind: u8`, `stream: u32`, `len: u32`), streams opened by the client even and by the server odd, DATA of at most
   16 KiB, a 256 KiB credit window per stream, FIN, RESET and STOP with a code, CLOSE with a close code and reason,
@@ -509,8 +517,9 @@ Failure modes:
 
 1. No adapter, or Bluetooth off, on either side: no `bt:` address, or the RFCOMM connect fails; the phone reports the
    IP error and redials with backoff as before.
-2. A phone whose key is not paired: admitted as over QUIC and refused with `not-paired`; nothing is delivered. A
-   pairing attempt over Bluetooth is refused the same way.
+2. A phone whose key is not paired: admitted as over QUIC and refused with `not-paired`; nothing is delivered. Over
+   Bluetooth, a pairing attempt runs only while a pairing window is open, and a wrong QR secret fails it
+   (`link_pair_bluetooth.sh`).
 3. A desktop presenting another key: the pinned handshake fails before any mux frame.
 4. Garbage or a malformed mux frame: the handshake fails, or the connection closes with `protocol-error`; the daemon
    keeps serving. A peer opening a stream with the wrong parity, a reused id, more than 9 streams, or DATA past its
@@ -597,9 +606,17 @@ desktop                                          phone (on Bluetooth)
   hotspot-joined {address}  or  hotspot-end  ->  QUIC there (via "wifi-direct"), or fall back to the hotspot
 ```
 
-- Both sides connect at once: a connection the app starts needs no confirmation on Android, and iwd accepts the
-  negotiation it asked for. The phone owns the group (intent 15) and serves DHCP.
-- The desktop's name is its host name, which both iwd and wpa_supplicant show; it finds the phone by name with
+- Both sides connect at once: a connection the app starts needs no confirmation on Android (an incoming one shows
+  "Invitation to connect"), and NetworkManager accepts the negotiation it asked for; it cannot join an existing group
+  (it always negotiates). The desktop waits 3 s after finding the phone, so the phone's request goes first and its
+  intent 15 makes it the owner, serving DHCP: a desktop-owned group's DHCP is dropped by host firewalls. Groups are
+  temporary (`WifiP2pConfig.Builder`), since Android re-invokes a persistent one by invitation.
+- Needs NetworkManager on wpa_supplicant: with iwd on iwlwifi every P2P scan fails ("Network is down"), so groups
+  never form and sends fall back to the hotspot.
+- The phone matches the desktop by the P2P device address in `wifi-direct-ready` (the Wi-Fi device's permanent
+  address; wpa_supplicant shows no name by default), sent only to phones whose hello lists
+  `feature:wifi-direct-address`, else by name.
+- The desktop finds the phone by name with
   `WifiP2P.StartFind` for up to 20 s, then activates a volatile, non-autoconnect `wifi-p2p` profile for the peer's
   hardware address. No `Hotspot` D-Bus signal, since the desktop kept its network.
 - The phone falls back to the hotspot when its group does not form, the desktop answers `hotspot-end`, or 25 s pass
@@ -796,6 +813,17 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   and navigation rows, the connection orb, pull to refresh), built on Compose foundation. The app does not depend on Material components; only `material-icons-core` supplies glyphs.
 - One `ViewModel` per screen exposing `StateFlow`; UI actions return `Result`, never throw into the UI. Coroutines
   only, no callbacks above the data layer. Manual constructor injection from one `AppContainer`, no DI framework.
+- Home, Activity, and Settings have a persistent bottom navigation. Home is a device-first dashboard with a live
+  connection card, a target selector for multiple desktops, the file picker, and clipboard, ring, media, and device
+  controls. Clipboard still targets all connected desktops that grant it. Features disabled for the selected desktop
+  lead to that desktop's settings rather than silently failing.
+- Settings groups background connection, sharing and permissions, paired desktops, appearance, and app information.
+  Appearance persists System, Light, or Dark in SharedPreferences and applies across all app activities. The permission
+  onboarding itself is unchanged. Device settings separate everyday sharing from optional screen and storage access;
+  unpairing requires confirmation.
+- Activity exposes real transfer offers, progress, completion/failure, Accept/Decline/Cancel, and links to received
+  files and Downloads. `LinkRepository.transferActivity` retains the latest 30 observed transfers for the current
+  process only; it is explicitly a session list, not a persisted history. Notifications and their actions still work.
 - `LinkRepository` reads `LinkClient.next_event()` for the life of the process, so `desktops` carries live connected
   flags and `incoming` every share; `ShareNotifier` turns each share into a notification (Open for a link, Copy for
   text). POST_NOTIFICATIONS is requested once a desktop is paired; the other grants (notification access, DND
@@ -825,8 +853,11 @@ Kotlin, Jetpack Compose, one Gradle project under `link/android/`:
   changed. `ClipboardWatcher` runs while `PresenceService` does and `READ_LOGS` is granted: it follows
   `logcat -T 1 ClipboardService:E` for the denial Android logs for this app on every copy elsewhere (it holds a
   clipboard listener for that reason) and starts `ClipboardReadActivity`, transparent, which reads the clipboard once
-  focused, offers it unless its hash is the last desktop clip, and finishes. Home's Clipboard action offers the clip the
-  same way, so it lands on the desktop's clipboard rather than in a notification. The onboarding's last page, optional,
+  focused, offers it unless it came from a desktop, and finishes. Text stays inline; URI content, including screenshot
+  images, is copied while the activity is focused into a private snapshot capped at 64 MiB, then offered with its MIME
+  type through `offer_clip_file`. The core holds the snapshot open for lazy pulls after its path is removed. Desktop
+  `ClipProvider` URIs are never offered back. Home's Clipboard action offers the clip the same way, so it lands on the
+  desktop's clipboard rather than in a notification. The onboarding's last page, optional,
   walks through the two grants and copies the adb command; the watcher starts as soon as both are there. The same activity serves the
   quick-settings tile (`ClipboardTileService`) and "Send to desktop" in the text-selection menu (`PROCESS_TEXT`).
 - E2E: `tests/e2e/link_android.sh` drives the Maestro flows under `link/android/maestro/` on an emulator against a
