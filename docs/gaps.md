@@ -71,6 +71,52 @@ on its config, and the compositor loads the file it writes after `config.toml`.
 | 3.8 | Two hot-corner features: the shell's and Umbriel's `[hot_corners]` | C S | **Done** (harness check 647: a corner set from settings persists, fires, and clears; E2E `hot_corners_handover.sh`: the shell's corners reach the compositor once with translated actions and its delay, and a restart leaves them alone): on Umbriel the compositor owns hot corners (`hot_corners.*` keys, Windows > Behavior); the shell stops detecting corners there and moves its configured ones to the compositor once. Other compositors keep the shell's |
 | 3.9 | Display options zwlr_output_manager_v1 lacks: VRR fullscreen, HDR, SDR white, tearing, per-display workspaces | C S X | **Done** (harness check 646: every property reported, set, saved, applied to workspaces, refused when invalid, cleared; it still needs the `displays.toml` include in config.toml, unlike settings.toml, so a config without it cannot save them): `set_property`/`property` on `dsk_output_manager_v1`, saved to `displays.toml`; Displays page rows; an apply keeps a saved `vrr = "fullscreen"` |
 
+## Tier 4: first-party apps
+
+The desktop ships no apps of its own. Files open in whatever the user installed; the Default apps page (1.7) only
+chooses between them. Media is the first hole: nothing in `shell/` or `link/` plays or shows a file. The only media
+code is Link's mirror viewer (GTK 4 + GStreamer, `pkg/PKGBUILD`), which renders a live phone stream, not files.
+
+| # | Gap | Owner | Needs |
+|---|---|---|---|
+| 4.1 | Image viewer | S | Open from the file chooser and `xdg-open`; zoom, pan, rotate, next/previous in folder; HEIC/AVIF/WebP/RAW via in-process decoders; Wayland-native, fractional scale, no spawn per image |
+| 4.2 | Audio player | S | Gapless playback through PipeWire; tags and cover art; queue; MPRIS so the bar, lock screen, and Link media control drive it |
+| 4.3 | Video player | S | GStreamer with VA-API decode (`gst-plugin-va`, already packaged); subtitles, audio and subtitle track pick; idle inhibit while playing (Inhibit portal, 1.11); MPRIS; hardware-decode power bench row against `mpv` |
+| 4.4 | Shared toolkit decision | S | One toolkit for 4.1-4.3 (GTK 4 is already a Link dependency; the shell's own UI layer is not reusable as an app toolkit); decide before writing the first app |
+| 4.5 | Default-app registration | S | Each app ships a `.desktop` file and MIME list so 1.7's Default apps page lists it and first boot picks it |
+
+Out of scope until 4.4 is decided: file manager, terminal, text editor, PDF viewer.
+
+## Tier 5: face unlock
+
+One identity check behind every prompt the session shows, not a PAM module that only `sudo` and the lock screen
+happen to call. Today `lockscreen` authenticates through `auth/pam_authenticator.cpp` (service `login`, 1.4) and the
+shell's `polkit` agent takes a password; nothing else can unlock.
+
+Hardware on the reference machine (2026-09-30): Shinetech `3277:0055`, Windows Hello-certified. `/dev/video2` is the
+IR sensor (640x360 GREY, 15 fps); `/dev/video0` is RGB. TPM 2.0 at `/dev/tpmrm0`. The IR node sits on its own UVC
+control interface (USB interface 2) with its own extension units. Unit 14 `{0f3f95dc-2632-4c4e-92c9-a04782f43bc8}`
+is Microsoft's camera control unit; its selector 6 is `FACE_AUTHENTICATION` (9 bytes, current `01 03 01 00 00 00 00 00
+00`, equal to its default) and selector 9 is 4 bytes (current `01 00 00 00`). Upstream reports for this exact device
+(visage #117, Zenbook 14) say the emitter strobes by firmware default, alternating lit and unlit frames, so no
+enable command is needed. Confirmed on this machine (2026-09-30, 30 frames from `/dev/video2`): every other frame
+is lit (mean 67-92 of 255, rising as auto-exposure settles) and the rest are exactly 0, so 7.5 usable fps. Nothing has
+been written to the camera.
+
+| # | Gap | Owner | Needs |
+|---|---|---|---|
+| 5.1 | IR frame pairing | N | This camera strobes the emitter per frame, so the daemon must tell lit from unlit frames (brightness pair) and match only lit ones; cameras that need an enable command get a per-device table keyed on VID:PID, and unknown cameras are refused |
+| 5.2 | Face daemon | N | Sandboxed user service (like `umbriel-linkd`) owning camera, emitter, detection, embedding, liveness, and templates; `org.umbriel.Face1` on D-Bus; one enrolment and verify path for every consumer |
+| 5.3 | Template storage | N | Templates sealed to the TPM through `tpmrm0`, never readable outside the daemon; no plaintext embeddings on disk |
+| 5.4 | Liveness | N | IR-only matching, reject screens and printed photos, refuse when the privacy control is set or the frame is dark; measured with a spoof set, not assumed |
+| 5.5 | Lock screen, greeter, polkit | S | Each calls the daemon directly: face on wake without a click, password always available; the polkit agent unlocks by face |
+| 5.6 | PAM module | N | A thin `pam_umbriel_face.so` for `sudo` and the TTY that asks the same daemon; nothing in it decides a match |
+| 5.7 | Limits | N | A face match never releases the keyring or any secret that needs the password; attempt rate limit and lockout; enrolment needs the password |
+| 5.8 | Settings page | S | Enrol, remove, test, per-consumer enable, all through the daemon; lands under Devices (Tier 3 rule: every setting in Settings) |
+
+Failure cases written before the code: covered camera, dark room, photo replay, phone-screen replay, two faces in
+frame, emitter stuck on or off, camera unplugged mid-attempt, daemon killed mid-auth, TPM cleared, wrong user's face.
+
 ## Spawn and thread audit (shell/src, 2026-09-27)
 
 Every `process::run{Async,Sync}` call, every raw `fork`/`execv*`, and every `std::thread`/`std::jthread` in
